@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Flag / Config — ExperimentLab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:#1565c0; --primary-light:#e3f2fd; --primary-mid:#90caf9;
+      --success:#2e7d32; --success-light:#e8f5e9;
+      --error:#c62828;   --error-light:#ffebee;
+      --warn:#e65100;    --warn-light:#fff3e0;
+      --purple:#6a1b9a;  --purple-light:#f3e5f5;
+      --teal:#00695c;    --teal-light:#e0f2f1;
+      --bg:#f0f2f5; --surface:#fff; --border:#e0e0e0;
+      --text:#212121; --text2:#616161; --text3:#9e9e9e;
+      --radius:8px;
+      --shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+      --shadow-md:0 3px 6px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.08);
+    }
+    body { font-family:'Roboto',sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.6; }
+
+    /* NAV */
+    .navbar { background:var(--primary); color:white; padding:0 24px; display:flex; align-items:center; gap:12px; height:56px; box-shadow:var(--shadow-md); position:sticky; top:0; z-index:100; }
+    .navbar-brand { font-size:18px; font-weight:500; display:flex; align-items:center; gap:8px; margin-right:auto; }
+    .nav-link { color:rgba(255,255,255,.8); font-size:13px; font-weight:500; text-decoration:none; padding:6px 12px; border-radius:4px; }
+    .nav-link:hover { background:rgba(255,255,255,.12); color:white; }
+    .nav-link.active { background:rgba(255,255,255,.15); color:white; }
+
+    /* LAYOUT */
+    .container { max-width:960px; margin:0 auto; padding:28px 24px; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:700px){.grid-2{grid-template-columns:1fr;}}
+
+    /* TYPE SELECTOR */
+    .type-selector { display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:20px; overflow:hidden; border:1px solid var(--border); }
+    .type-option { padding:20px 24px; cursor:pointer; display:flex; align-items:center; gap:16px; transition:all .15s; border-right:1px solid var(--border); position:relative; }
+    .type-option:last-child { border-right:none; }
+    .type-option:hover { background:#f8f9ff; }
+    .type-option.selected { background:var(--primary-light); }
+    .type-option.selected::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--primary); }
+    .type-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .type-icon .material-icons { font-size:22px; }
+    .type-name { font-size:15px; font-weight:500; margin-bottom:2px; }
+    .type-desc { font-size:12px; color:var(--text2); }
+    .type-tag { display:inline-block; font-size:10px; font-weight:600; padding:1px 7px; border-radius:10px; margin-top:4px; }
+
+    /* CARDS */
+    .card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:16px; }
+    .card-header { padding:16px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .card-icon { width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .card-icon .material-icons { font-size:16px; }
+    .card-title { font-size:14px; font-weight:500; flex:1; }
+    .card-body { padding:20px; }
+
+    /* PROFILES */
+    .profiles-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+    .profile-card { border:2px solid var(--border); border-radius:var(--radius); padding:14px 16px; cursor:pointer; transition:all .15s; position:relative; }
+    .profile-card:hover { border-color:var(--primary-mid); box-shadow:var(--shadow); }
+    .profile-card.selected { border-color:var(--primary); background:var(--primary-light); }
+    .profile-icon { font-size:22px; margin-bottom:6px; }
+    .profile-name { font-size:13px; font-weight:500; margin-bottom:3px; }
+    .profile-desc { font-size:11px; color:var(--text2); line-height:1.4; }
+    .profile-badge { display:inline-block; font-size:10px; font-weight:500; padding:1px 6px; border-radius:10px; margin-top:5px; }
+    .profile-check { position:absolute; top:8px; right:8px; width:18px; height:18px; border-radius:50%; background:var(--primary); display:none; align-items:center; justify-content:center; }
+    .profile-check .material-icons { font-size:12px; color:white; }
+    .profile-card.selected .profile-check { display:flex; }
+
+    /* FORM */
+    .form-group { margin-bottom:18px; }
+    .form-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text2); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+    .form-input { width:100%; border:1px solid var(--border); border-radius:6px; padding:10px 12px; font-size:14px; font-family:inherit; color:var(--text); background:var(--surface); transition:border-color .15s; }
+    .form-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(21,101,192,.1); }
+    .form-input.mono { font-family:monospace; }
+    select.form-input { cursor:pointer; }
+    .form-prefix { display:flex; align-items:center; border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+    .prefix-label { background:#f5f5f5; border-right:1px solid var(--border); padding:10px 12px; font-size:12px; color:var(--text3); white-space:nowrap; }
+    .form-prefix .form-input { border:none; border-radius:0; }
+    .form-prefix .form-input:focus { box-shadow:none; }
+    .form-hint { font-size:11px; color:var(--text3); margin-top:5px; line-height:1.4; }
+
+    /* EXPLAIN / CALLOUT */
+    .explain { background:#f8f9ff; border:1px solid var(--primary-light); border-radius:6px; padding:10px 14px; margin-top:6px; font-size:12px; color:var(--text2); line-height:1.5; }
+    .explain strong { color:var(--text); }
+    .callout { display:flex; gap:10px; padding:12px 14px; border-radius:var(--radius); font-size:13px; align-items:flex-start; margin-bottom:16px; }
+    .callout .material-icons { font-size:16px; margin-top:2px; flex-shrink:0; }
+    .callout-info   { background:var(--primary-light); color:#0d47a1; }
+    .callout-warn   { background:var(--warn-light);    color:var(--warn); }
+    .callout-success{ background:var(--success-light); color:var(--success); }
+
+    /* ROLLOUT SLIDER */
+    .rollout-wrap { display:flex; align-items:center; gap:12px; }
+    .rollout-wrap input[type=range] { flex:1; }
+    .rollout-pct { font-size:20px; font-weight:300; width:52px; text-align:right; flex-shrink:0; }
+    .rollout-preview { margin-top:8px; border-radius:6px; overflow:hidden; height:24px; display:flex; }
+    .rollout-in  { background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:10px; color:white; font-weight:500; transition:flex .3s; }
+    .rollout-out { background:#e0e0e0; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--text2); font-weight:500; flex:1; transition:flex .3s; }
+
+    /* RULES BUILDER */
+    .rules-list { display:flex; flex-direction:column; gap:8px; }
+    .rule-row { display:flex; align-items:center; gap:8px; padding:10px 12px; background:#fafafa; border:1px solid var(--border); border-radius:6px; }
+    .rule-row select, .rule-row input { border:1px solid var(--border); border-radius:4px; padding:6px 8px; font-size:13px; font-family:inherit; background:white; }
+    .rule-row select:focus, .rule-row input:focus { outline:none; border-color:var(--primary); }
+    .rule-connector { font-size:11px; font-weight:600; color:var(--primary); padding:0 4px; }
+    .rule-remove { background:none; border:none; cursor:pointer; color:var(--text3); padding:4px; border-radius:4px; display:flex; align-items:center; }
+    .rule-remove:hover { background:var(--error-light); color:var(--error); }
+    .add-rule-btn { display:flex; align-items:center; gap:6px; padding:8px 12px; border:1px dashed var(--border); border-radius:6px; background:none; cursor:pointer; font-size:13px; color:var(--text2); font-family:inherit; width:100%; justify-content:center; margin-top:4px; }
+    .add-rule-btn:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-light); }
+
+    /* VALUE EDITOR */
+    .value-type-tabs { display:flex; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
+    .value-tab { padding:5px 12px; border-radius:4px; border:1px solid var(--border); background:white; cursor:pointer; font-size:12px; font-weight:500; font-family:inherit; color:var(--text2); transition:all .15s; }
+    .value-tab.active { border-color:var(--primary); background:var(--primary-light); color:var(--primary); }
+    .value-preview { background:#1e1e2e; color:#cdd6f4; border-radius:6px; padding:10px 14px; font-family:monospace; font-size:12px; margin-top:8px; }
+
+    /* CODE SNIPPET */
+    .code-block { background:#1e1e2e; color:#cdd6f4; border-radius:6px; padding:14px 16px; font-family:monospace; font-size:12px; line-height:1.6; overflow-x:auto; margin-top:8px; }
+    .code-comment { color:#6c7086; }
+    .code-kw  { color:#cba6f7; }
+    .code-str { color:#a6e3a1; }
+    .code-fn  { color:#89b4fa; }
+    .code-var { color:#f38ba8; }
+    .code-num { color:#fab387; }
+    .tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:12px; }
+    .tab-btn  { padding:6px 14px; font-size:12px; font-weight:500; color:var(--text2); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; font-family:inherit; background:none; border-top:none; border-left:none; border-right:none; }
+    .tab-btn:hover { color:var(--primary); }
+    .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    /* BADGE */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:500; }
+    .badge-returns { background:#f3e5f5; color:#6a1b9a; }
+    .badge-all    { background:var(--teal-light); color:var(--teal); }
+    .badge-bool   { background:#e3f2fd; color:#1565c0; }
+
+    /* KILLSWITCH */
+    .toggle-wrap { display:flex; align-items:center; gap:12px; padding:14px 16px; background:#fafafa; border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+    .toggle { position:relative; width:44px; height:24px; flex-shrink:0; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; inset:0; background:#bdbdbd; border-radius:12px; transition:.2s; cursor:pointer; }
+    .toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:white; border-radius:50%; transition:.2s; }
+    .toggle input:checked + .toggle-slider { background:var(--error); }
+    .toggle input:checked + .toggle-slider::before { transform:translateX(20px); }
+    .toggle-label { flex:1; }
+    .toggle-name { font-size:13px; font-weight:500; }
+    .toggle-desc { font-size:11px; color:var(--text2); margin-top:1px; }
+
+    /* DIFF PREVIEW */
+    .diff-preview { border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+    .diff-row { display:flex; }
+    .diff-label { width:80px; padding:8px 12px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; display:flex; align-items:center; flex-shrink:0; }
+    .diff-value { flex:1; padding:8px 12px; font-size:13px; border-left:1px solid var(--border); font-family:monospace; }
+    .diff-row.control { background:#f8f9ff; }
+    .diff-row.test    { background:#f6fff6; }
+    .diff-row.control .diff-label { color:#1565c0; }
+    .diff-row.test    .diff-label { color:var(--success); }
+
+    /* SUBMIT */
+    .submit-row { display:flex; gap:12px; align-items:center; justify-content:flex-end; padding:20px 0; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 20px; border-radius:6px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border:none; transition:all .15s; }
+    .btn-primary { background:var(--primary); color:white; }
+    .btn-primary:hover { background:#1976d2; }
+    .btn-secondary { background:white; color:var(--text); border:1px solid var(--border); }
+    .btn-secondary:hover { background:#f5f5f5; }
+
+    code { font-family:monospace; font-size:12px; background:#f5f5f5; padding:1px 5px; border-radius:3px; }
+
+    /* TOOLTIP */
+    [data-tip] { position:relative; display:inline-block; cursor:help; }
+    [data-tip]::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:#212121; color:white; padding:7px 11px; border-radius:5px; font-size:11px; font-family:'Roboto',sans-serif; font-weight:400; line-height:1.4; white-space:normal; width:max-content; max-width:260px; pointer-events:none; opacity:0; transition:opacity .15s; z-index:9999; text-align:left; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+    [data-tip]:hover::after { opacity:1; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand"><span class="material-icons">science</span> ExperimentLab</div>
+  <a href="index.html" class="nav-link">Dashboard</a>
+  <a href="new-experiment.html" class="nav-link">New Experiment</a>
+  <a href="#" class="nav-link active">New Flag / Config</a>
+</nav>
+
+<div class="container">
+
+  <div style="margin-bottom:20px">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">
+      <a href="index.html" style="color:var(--primary);text-decoration:none">Dashboard</a>
+      <span style="margin:0 4px">›</span> New
+    </div>
+    <div style="font-size:22px;font-weight:500">Create a feature flag or global config</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">
+      Feature flags control who sees what. Global configs set values that apply to everyone.
+    </div>
+  </div>
+
+  <!-- TYPE SELECTOR -->
+  <div class="type-selector">
+    <div class="type-option selected" id="type-gk" onclick="selectType('gk')">
+      <div class="type-icon" style="background:#e3f2fd">
+        <span class="material-icons" style="color:var(--primary)">toggle_on</span>
+      </div>
+      <div>
+        <div class="type-name">Feature Gate <span class="badge badge-bool">returns boolean</span></div>
+        <div class="type-desc">On/off switch per user. Supports targeting rules and gradual rollout. Same user always sees the same state.</div>
+        <div class="profile-badge" style="background:#e3f2fd;color:var(--primary)">GK · Feature Flag</div>
+      </div>
+    </div>
+    <div class="type-option" id="type-sv" onclick="selectType('sv')">
+      <div class="type-icon" style="background:var(--teal-light)">
+        <span class="material-icons" style="color:var(--teal)">settings</span>
+      </div>
+      <div>
+        <div class="type-name">Global Config <span class="badge badge-all">same for all users</span></div>
+        <div class="type-desc">A typed value shared by all users. No targeting. Use for timeouts, limits, copy text, feature parameters.</div>
+        <div class="profile-badge" style="background:var(--teal-light);color:var(--teal)">SV · Sitevar · Config</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GK SECTION -->
+  <div id="section-gk">
+
+    <!-- QUICK PROFILES -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#e3f2fd"><span class="material-icons" style="color:var(--primary);font-size:16px">bolt</span></div>
+        <div class="card-title">Quick setup profiles</div>
+      </div>
+      <div class="card-body">
+        <div class="profiles-grid">
+          <div class="profile-card selected" onclick="applyGKProfile('rollout')" id="gk-rollout">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">📈</div>
+            <div class="profile-name">Gradual rollout</div>
+            <div class="profile-desc">Enable for X% of users. No targeting rules. Good for progressive launches.</div>
+            <div class="profile-badge" style="background:#e3f2fd;color:var(--primary)">rollout_pct</div>
+          </div>
+          <div class="profile-card" onclick="applyGKProfile('targeted')" id="gk-targeted">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">🎯</div>
+            <div class="profile-name">Targeted feature</div>
+            <div class="profile-desc">Enable only for users matching specific rules (plan, country, email domain).</div>
+            <div class="profile-badge" style="background:#e8f5e9;color:var(--success)">rules + rollout</div>
+          </div>
+          <div class="profile-card" onclick="applyGKProfile('killswitch')" id="gk-killswitch">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">🔴</div>
+            <div class="profile-name">Killswitch</div>
+            <div class="profile-desc">Emergency disable for a live feature. Propagates in ~150ms via CDN purge.</div>
+            <div class="profile-badge" style="background:var(--error-light);color:var(--error)">killswitch mode</div>
+          </div>
+          <div class="profile-card" onclick="applyGKProfile('beta')" id="gk-beta">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">🧪</div>
+            <div class="profile-name">Beta / Internal</div>
+            <div class="profile-desc">Enable only for beta users or internal email domains before broader rollout.</div>
+            <div class="profile-badge" style="background:#f3e5f5;color:var(--purple)">email domain rule</div>
+          </div>
+        </div>
+        <div class="explain" id="gk-profile-explain" style="margin-top:12px">
+          <strong>Gradual rollout:</strong> Enables the flag for a fixed percentage of users. Users are assigned deterministically by hashing their user_id — the same user always sees the same state. Start at 5–10% and increase as confidence grows.
+        </div>
+      </div>
+    </div>
+
+    <!-- BASICS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#e8f5e9"><span class="material-icons" style="color:var(--success);font-size:16px">info</span></div>
+        <div class="card-title">What is this flag?</div>
+      </div>
+      <div class="card-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <div class="form-label">
+              Flag name
+              <span class="material-icons" style="font-size:14px;color:var(--text3)" data-tip="Used in code: client.getFlag('this_name'). Lowercase and underscores only. Cannot be changed after creation.">help_outline</span>
+            </div>
+            <div class="form-prefix">
+              <div class="prefix-label">flag_</div>
+              <input type="text" class="form-input mono" id="gk-name" placeholder="new_checkout_button" oninput="updateGKCode()">
+            </div>
+            <div class="form-hint">What you type in code: <code>client.getFlag('flag_<span id="gk-name-preview">new_checkout_button</span>')</code></div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">What does this flag do?</div>
+            <input type="text" class="form-input" id="gk-desc" placeholder="Enables the new checkout button color for eligible users">
+            <div class="form-hint">Plain English — appears in the dashboard so anyone understands it.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROLLOUT -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#fff3e0"><span class="material-icons" style="color:var(--warn);font-size:16px">tune</span></div>
+        <div class="card-title">Rollout percentage</div>
+        <span class="badge badge-bool" id="gk-rollout-badge">50% of eligible users</span>
+      </div>
+      <div class="card-body">
+        <div class="rollout-wrap">
+          <input type="range" id="gk-rollout" min="0" max="100" value="50" oninput="updateRollout()">
+          <div class="rollout-pct" id="gk-rollout-pct">50%</div>
+        </div>
+        <div class="rollout-preview" id="rollout-bar">
+          <div class="rollout-in" id="rollout-in" style="flex:50">50% see flag ON</div>
+          <div class="rollout-out" id="rollout-out">50% see flag OFF</div>
+        </div>
+        <div class="form-hint" style="margin-top:8px" id="gk-rollout-hint">
+          50 in every 100 eligible users will have this flag enabled. Assignment is deterministic — same user always gets the same result. You can increase this over time but <strong>cannot decrease</strong> it without reshuffling assignments (would invalidate any experiment using this flag).
+        </div>
+      </div>
+    </div>
+
+    <!-- TARGETING RULES -->
+    <div class="card" id="gk-rules-card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#f3e5f5"><span class="material-icons" style="color:var(--purple);font-size:16px">filter_alt</span></div>
+        <div class="card-title">Targeting rules <span style="font-size:12px;color:var(--text3);font-weight:400;margin-left:4px">(optional — leave empty to target all users)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="callout callout-info" style="margin-bottom:16px">
+          <span class="material-icons">info</span>
+          <div>Rules narrow who is <em>eligible</em> for the rollout. A user must match ALL rules AND fall within the rollout percentage to see the flag as ON. Users who fail a rule always see OFF.</div>
+        </div>
+        <div class="rules-list" id="gk-rules">
+          <!-- rules rendered by JS -->
+        </div>
+        <button class="add-rule-btn" onclick="addRule()">
+          <span class="material-icons" style="font-size:16px">add</span> Add targeting rule
+        </button>
+        <div class="form-hint" style="margin-top:10px">
+          Available attributes: <code>plan</code>, <code>country</code>, <code>email</code>, <code>user_id</code>, <code>company_size</code>, <code>created_at</code>
+        </div>
+        <!-- Add this inside the rules card-body, after the form-hint -->
+        <div style="margin-top:14px;padding:12px 14px;background:#fafafa;border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:8px;">
+            Registered attributes — available in rules
+          </div>
+          <div id="attr-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;">
+            Missing an attribute? Add it with <code>ourapp attributes register name --type string</code>
+            or select "+ Register new attribute…" in the rule dropdown.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KILLSWITCH -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:var(--error-light)"><span class="material-icons" style="color:var(--error);font-size:16px">emergency</span></div>
+        <div class="card-title">Killswitch mode</div>
+      </div>
+      <div class="card-body">
+        <div class="toggle-wrap" onclick="toggleKillswitch()">
+          <label class="toggle">
+            <input type="checkbox" id="gk-killswitch" onchange="updateGKCode()">
+            <div class="toggle-slider"></div>
+          </label>
+          <div class="toggle-label">
+            <div class="toggle-name">Enable killswitch mode</div>
+            <div class="toggle-desc">When disabled, bypasses the 300s CDN cache — propagates in ~150ms instead of up to 5 minutes. Use for features that may need emergency shutdown.</div>
+          </div>
+          <span class="badge" id="ks-badge" style="background:#f5f5f5;color:var(--neutral)">Off</span>
+        </div>
+        <div class="explain" style="margin-top:10px">
+          <strong>When to use:</strong> Any feature where you might need to disable it instantly in an incident — payment flows, auth, new API integrations. Costs nothing extra; just changes the CDN cache behavior on disable.
+        </div>
+      </div>
+    </div>
+
+    <!-- CODE SNIPPET -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#e8f5e9"><span class="material-icons" style="color:var(--success);font-size:16px">code</span></div>
+        <div class="card-title">Generated code — copy into your codebase</div>
+      </div>
+      <div class="card-body">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="showTab('gk-ts',this)">TypeScript</button>
+          <button class="tab-btn" onclick="showTab('gk-py',this)">Python</button>
+          <button class="tab-btn" onclick="showTab('gk-rb',this)">Ruby</button>
+          <button class="tab-btn" onclick="showTab('gk-go',this)">Go</button>
+        </div>
+        <div id="gk-ts" class="tab-panel active">
+          <div class="code-block" id="gk-code-ts"><!-- generated --></div>
+        </div>
+        <div id="gk-py" class="tab-panel">
+          <div class="code-block" id="gk-code-py"><!-- generated --></div>
+        </div>
+        <div id="gk-rb" class="tab-panel">
+          <div class="code-block" id="gk-code-rb"><!-- generated --></div>
+        </div>
+        <div id="gk-go" class="tab-panel">
+          <div class="code-block" id="gk-code-go"><!-- generated --></div>
+        </div>
+        <div class="form-hint" style="margin-top:10px">
+          The flag is <strong>off by default</strong> until you enable it from this page or via the CLI: <code>ourapp gates enable flag_<span class="gk-name-ref">new_checkout_button</span></code>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /section-gk -->
+
+  <!-- SV SECTION -->
+  <div id="section-sv" style="display:none">
+
+    <!-- QUICK PROFILES -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:var(--teal-light)"><span class="material-icons" style="color:var(--teal);font-size:16px">bolt</span></div>
+        <div class="card-title">Quick setup profiles</div>
+      </div>
+      <div class="card-body">
+        <div class="profiles-grid">
+          <div class="profile-card selected" onclick="applySVProfile('number')" id="sv-number">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">🔢</div>
+            <div class="profile-name">Number / Limit</div>
+            <div class="profile-desc">Timeout, rate limit, max retries, page size. Change without a deploy.</div>
+            <div class="profile-badge" style="background:#fff3e0;color:var(--warn)">number</div>
+          </div>
+          <div class="profile-card" onclick="applySVProfile('string')" id="sv-string">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">💬</div>
+            <div class="profile-name">Text / Copy</div>
+            <div class="profile-desc">Banner text, error messages, button labels. Live-edit without a deploy.</div>
+            <div class="profile-badge" style="background:#e8f5e9;color:var(--success)">string</div>
+          </div>
+          <div class="profile-card" onclick="applySVProfile('boolean')" id="sv-boolean">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">✅</div>
+            <div class="profile-name">Boolean toggle</div>
+            <div class="profile-desc">Global feature on/off with no targeting. Everyone gets the same value.</div>
+            <div class="profile-badge" style="background:#e3f2fd;color:var(--primary)">boolean</div>
+          </div>
+          <div class="profile-card" onclick="applySVProfile('object')" id="sv-object">
+            <div class="profile-check"><span class="material-icons">check</span></div>
+            <div class="profile-icon">📦</div>
+            <div class="profile-name">Config object</div>
+            <div class="profile-desc">Structured config (pricing tiers, feature matrix, API endpoints).</div>
+            <div class="profile-badge" style="background:#f3e5f5;color:var(--purple)">JSON object</div>
+          </div>
+        </div>
+        <div class="explain" id="sv-profile-explain" style="margin-top:12px">
+          <strong>Number config:</strong> Use for timeouts, limits, and numeric parameters that you want to change without a code deploy. Validated at read time with a decoder. Example: <code>getConfig('api_timeout_ms', v =&gt; Number(v))</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- BASICS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:var(--teal-light)"><span class="material-icons" style="color:var(--teal);font-size:16px">info</span></div>
+        <div class="card-title">What is this config?</div>
+      </div>
+      <div class="card-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <div class="form-label">
+              Config name
+              <span class="material-icons" style="font-size:14px;color:var(--text3)" data-tip="Used in code: getConfig('this_name', decoder). Lowercase and underscores.">help_outline</span>
+            </div>
+            <input type="text" class="form-input mono" id="sv-name" placeholder="checkout_timeout_ms" oninput="updateSVCode()">
+            <div class="form-hint">In code: <code>getConfig('<span id="sv-name-preview">checkout_timeout_ms</span>', decoder)</code></div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">What does this config control?</div>
+            <input type="text" class="form-input" id="sv-desc" placeholder="Timeout for the checkout API call in milliseconds">
+            <div class="form-hint">Plain English. Appears in the dashboard for your team.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VALUE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:var(--teal-light)"><span class="material-icons" style="color:var(--teal);font-size:16px">data_object</span></div>
+        <div class="card-title">Value</div>
+        <span class="badge badge-all" id="sv-type-badge">number</span>
+      </div>
+      <div class="card-body">
+        <div class="callout callout-info" style="margin-bottom:16px">
+          <span class="material-icons">info</span>
+          <div>Configs apply to <strong>all users equally</strong> — no targeting, no rollout percentage. If you need different values per user segment, use a Feature Gate or Experiment instead.</div>
+        </div>
+
+        <div class="form-label">Value type</div>
+        <div class="value-type-tabs" id="sv-type-tabs">
+          <button class="value-tab active" onclick="setSVType('number',this)">number</button>
+          <button class="value-tab" onclick="setSVType('string',this)">string</button>
+          <button class="value-tab" onclick="setSVType('boolean',this)">boolean</button>
+          <button class="value-tab" onclick="setSVType('object',this)">JSON object</button>
+          <button class="value-tab" onclick="setSVType('array',this)">JSON array</button>
+        </div>
+
+        <div id="sv-value-number">
+          <div class="form-group">
+            <div class="form-label">Value</div>
+            <input type="number" class="form-input mono" id="sv-val-number" value="5000" oninput="updateSVCode()">
+            <div class="form-hint">Stored as a JSON number. Always use a numeric decoder at read time: <code>v =&gt; Number(v)</code></div>
+          </div>
+        </div>
+
+        <div id="sv-value-string" style="display:none">
+          <div class="form-group">
+            <div class="form-label">Value</div>
+            <input type="text" class="form-input mono" id="sv-val-string" value="Try it free" oninput="updateSVCode()">
+            <div class="form-hint">Stored as a JSON string. Use <code>v =&gt; String(v)</code> as decoder.</div>
+          </div>
+        </div>
+
+        <div id="sv-value-boolean" style="display:none">
+          <div class="form-group">
+            <div class="form-label">Value</div>
+            <select class="form-input" id="sv-val-boolean" onchange="updateSVCode()">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+            <div class="form-hint">Boolean configs are simpler than gates — no targeting, no rollout %. Same value for everyone.</div>
+          </div>
+        </div>
+
+        <div id="sv-value-object" style="display:none">
+          <div class="form-group">
+            <div class="form-label">Value (JSON)</div>
+            <textarea class="form-input mono" id="sv-val-object" rows="5" oninput="updateSVCode()">{
+  "timeout_ms": 5000,
+  "retries": 3,
+  "base_url": "https://api.example.com"
+}</textarea>
+            <div class="form-hint">Must be valid JSON. Use a Zod schema as the decoder for type safety.</div>
+          </div>
+        </div>
+
+        <div id="sv-value-array" style="display:none">
+          <div class="form-group">
+            <div class="form-label">Value (JSON array)</div>
+            <textarea class="form-input mono" id="sv-val-array" rows="4" oninput="updateSVCode()">["US", "CA", "GB"]</textarea>
+            <div class="form-hint">Must be valid JSON array.</div>
+          </div>
+        </div>
+
+        <!-- LIVE PREVIEW -->
+        <div style="margin-top:16px">
+          <div class="form-label" style="margin-bottom:6px">What users receive</div>
+          <div class="diff-preview">
+            <div class="diff-row" style="background:#fafafa">
+              <div class="diff-label" style="color:var(--teal)">All users</div>
+              <div class="diff-value" id="sv-value-preview">5000</div>
+            </div>
+          </div>
+          <div class="form-hint" style="margin-top:6px">This value is the same for 100% of users. Change it here → propagates to all servers in ~150ms.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODE SNIPPET -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:var(--teal-light)"><span class="material-icons" style="color:var(--teal);font-size:16px">code</span></div>
+        <div class="card-title">Generated code</div>
+      </div>
+      <div class="card-body">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="showTab('sv-ts',this)">TypeScript</button>
+          <button class="tab-btn" onclick="showTab('sv-py',this)">Python</button>
+          <button class="tab-btn" onclick="showTab('sv-rb',this)">Ruby</button>
+          <button class="tab-btn" onclick="showTab('sv-go',this)">Go</button>
+        </div>
+        <div id="sv-ts" class="tab-panel active"><div class="code-block" id="sv-code-ts"></div></div>
+        <div id="sv-py" class="tab-panel"><div class="code-block" id="sv-code-py"></div></div>
+        <div id="sv-rb" class="tab-panel"><div class="code-block" id="sv-code-rb"></div></div>
+        <div id="sv-go" class="tab-panel"><div class="code-block" id="sv-code-go"></div></div>
+        <div class="form-hint" style="margin-top:10px">
+          Config updates propagate in ~150ms. The decoder validates the type at runtime — if someone accidentally sets a string value for a number config, it fails loudly instead of silently returning <code>NaN</code>.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /section-sv -->
+
+  <!-- SUBMIT -->
+  <div class="submit-row">
+    <button class="btn btn-secondary" onclick="history.back()">Cancel</button>
+    <button class="btn btn-secondary" onclick="alert('Saved as draft')">
+      <span class="material-icons" style="font-size:15px">save</span> Save draft
+    </button>
+    <button class="btn btn-primary" onclick="handleCreate()">
+      <span class="material-icons" style="font-size:15px">check_circle</span>
+      <span id="create-btn-text">Create flag</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentType   = 'gk'
+let currentGKProfile = 'rollout'
+let currentSVProfile = 'number'
+let currentSVType    = 'number'
+let gkRules = []
+
+// ── TYPE SWITCHER ─────────────────────────────────────────────────────────────
+function selectType(t) {
+  currentType = t
+  document.getElementById('type-gk').classList.toggle('selected', t === 'gk')
+  document.getElementById('type-sv').classList.toggle('selected', t === 'sv')
+  document.getElementById('section-gk').style.display = t === 'gk' ? '' : 'none'
+  document.getElementById('section-sv').style.display = t === 'sv' ? '' : 'none'
+  document.getElementById('create-btn-text').textContent = t === 'gk' ? 'Create flag' : 'Create config'
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function showTab(id, btn) {
+  const parent = btn.closest('.card-body')
+  parent.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
+  btn.closest('.tab-bar').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  btn.classList.add('active')
+}
+
+// ── GK PROFILES ───────────────────────────────────────────────────────────────
+const GK_PROFILES = {
+  rollout: {
+    name: '', desc: '', rollout: 50, rules: [], killswitch: false,
+    explain: '<strong>Gradual rollout:</strong> Enables the flag for a fixed percentage of users. Users are assigned deterministically — same user always gets the same result. Start at 5–10% and increase as confidence grows. No targeting rules needed.',
+  },
+  targeted: {
+    name: '', desc: '', rollout: 100, killswitch: false,
+    rules: [{ attr: 'plan', op: 'eq', val: 'enterprise' }],
+    explain: '<strong>Targeted feature:</strong> Only users matching the rules see the flag as ON. Other users always see OFF, regardless of rollout %. Rules are evaluated server-side — not visible to the client.',
+  },
+  killswitch: {
+    name: '', desc: '', rollout: 100, rules: [], killswitch: true,
+    explain: '<strong>Killswitch:</strong> 100% rollout with killswitch mode on. When you disable this flag, CDN caches are bypassed and the change propagates in ~150ms instead of up to 5 minutes. Use for any feature you might need to disable in an incident.',
+  },
+  beta: {
+    name: '', desc: '', rollout: 100, killswitch: false,
+    rules: [{ attr: 'email', op: 'ends_with', val: '@yourcompany.com' }],
+    explain: '<strong>Beta / Internal:</strong> Restricts the flag to users with a specific email domain. Useful for internal dogfooding before a wider rollout. Add more email domain rules to expand access incrementally.',
+  },
+}
+
+function applyGKProfile(key) {
+  currentGKProfile = key
+  document.querySelectorAll('[id^="gk-"]').forEach(el => {
+    if (el.classList.contains('profile-card')) el.classList.remove('selected')
+  })
+  document.getElementById('gk-' + key).classList.add('selected')
+
+  const p = GK_PROFILES[key]
+  document.getElementById('gk-rollout').value = p.rollout
+  document.getElementById('gk-killswitch').checked = p.killswitch
+  gkRules = [...(p.rules ?? [])]
+  document.getElementById('gk-profile-explain').innerHTML = p.explain
+
+  updateRollout()
+  renderRules()
+  updateGKCode()
+
+  // Show/hide killswitch badge
+  const ksBadge = document.getElementById('ks-badge')
+  ksBadge.textContent = p.killswitch ? 'ON — fast propagation' : 'Off'
+  ksBadge.style.background = p.killswitch ? 'var(--error-light)' : '#f5f5f5'
+  ksBadge.style.color = p.killswitch ? 'var(--error)' : 'var(--neutral)'
+}
+
+// ── SV PROFILES ───────────────────────────────────────────────────────────────
+function applySVProfile(key) {
+  currentSVProfile = key
+  ;['number','string','boolean','object','array'].forEach(t => {
+    document.getElementById('sv-' + t)?.classList.remove('selected')
+  })
+  document.getElementById('sv-' + key).classList.add('selected')
+
+  const explains = {
+    number:  '<strong>Number config:</strong> Use for timeouts, limits, and numeric parameters. Change without a deploy. Example: <code>getConfig(\'api_timeout_ms\', v =&gt; Number(v))</code>',
+    string:  '<strong>Text config:</strong> Use for copy, messages, and string parameters. Change the text without a deploy. Example: <code>getConfig(\'cta_text\', v =&gt; String(v))</code>',
+    boolean: '<strong>Boolean config:</strong> Global on/off with no targeting. If you need per-user control, use a Feature Gate instead.',
+    object:  '<strong>Config object:</strong> Structured configuration as a JSON object. Use a Zod schema decoder to validate the shape.',
+  }
+  document.getElementById('sv-profile-explain').innerHTML = explains[key] ?? explains.number
+
+  // Set the type to match the profile
+  const typeMap = { number:'number', string:'string', boolean:'boolean', object:'object', array:'array' }
+  const type = typeMap[key] ?? 'number'
+  document.querySelectorAll('#sv-type-tabs .value-tab').forEach(b => {
+    b.classList.toggle('active', b.textContent === type)
+  })
+  setSVType(type, null)
+}
+
+function setSVType(type, btn) {
+  currentSVType = type
+  ;['number','string','boolean','object','array'].forEach(t => {
+    const el = document.getElementById('sv-value-' + t)
+    if (el) el.style.display = t === type ? '' : 'none'
+  })
+  if (btn) {
+    document.querySelectorAll('#sv-type-tabs .value-tab').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+  }
+  document.getElementById('sv-type-badge').textContent = type
+  updateSVCode()
+}
+
+// ── ROLLOUT ───────────────────────────────────────────────────────────────────
+function updateRollout() {
+  const pct = parseInt(document.getElementById('gk-rollout').value)
+  document.getElementById('gk-rollout-pct').textContent = pct + '%'
+  document.getElementById('gk-rollout-badge').textContent = pct + '% of eligible users'
+  document.getElementById('rollout-in').style.flex  = pct
+  document.getElementById('rollout-out').style.flex = 100 - pct
+  document.getElementById('rollout-in').textContent  = pct < 10 ? '' : pct + '% ON'
+  document.getElementById('rollout-out').textContent = (100 - pct) < 10 ? '' : (100 - pct) + '% OFF'
+
+  const hints = [
+    [0,   'Off for everyone. Enable the flag when you\'re ready to start rolling out.'],
+    [1,   '1% is a great starting point to catch issues early with minimal exposure.'],
+    [10,  '10% canary — enough data to detect regressions before broader rollout.'],
+    [50,  '50% gives roughly equal control and treatment groups for comparison.'],
+    [100, '100% — all eligible users see the flag as ON. Remove the flag from code once stable.'],
+  ]
+  const h = hints.filter(([p]) => p <= pct).pop()
+  if (h) document.getElementById('gk-rollout-hint').textContent = h[1]
+  updateGKCode()
+}
+
+// ── RULES BUILDER ─────────────────────────────────────────────────────────────
+// Attribute catalog — in production this comes from GET /admin/attributes
+// Shows type, enum values, and description in the rule builder
+const ATTR_CATALOG = [
+  { name: 'user_id',      type: 'string',  required: true,  desc: 'Unique user identifier', hint: '' },
+  { name: 'plan',         type: 'enum',    required: false, desc: 'Subscription plan',
+    values: ['free', 'pro', 'premium', 'enterprise'] },
+  { name: 'country',      type: 'string',  required: false, desc: 'ISO 3166-1 country code', hint: 'e.g. US, GB, DE' },
+  { name: 'email',        type: 'string',  required: false, desc: 'User email address', hint: '@example.com' },
+  { name: 'company_size', type: 'number',  required: false, desc: 'Employees (number)', hint: '100' },
+  { name: 'created_at',   type: 'date',    required: false, desc: 'Account creation date', hint: '2025-01-01' },
+]
+const RULE_ATTRS = ATTR_CATALOG.map(a => a.name)
+const RULE_OPS   = {
+  plan:         [['eq','equals'],['in','is any of'],['ne','is not']],
+  country:      [['in','is any of'],['eq','equals'],['ne','is not']],
+  email:        [['ends_with','ends with'],['contains','contains'],['eq','equals']],
+  user_id:      [['in','is any of'],['eq','equals']],
+  company_size: [['gt','greater than'],['lt','less than'],['gte','at least'],['lte','at most']],
+  created_at:   [['after','after'],['before','before']],
+}
+const RULE_PLACEHOLDERS = {
+  plan: 'enterprise', country: 'US,CA,GB', email: '@yourcompany.com',
+  user_id: 'u_123,u_456', company_size: '100', created_at: '2025-01-01',
+}
+
+function addRule() {
+  const attr = ATTR_CATALOG[1] || ATTR_CATALOG[0]  // default to 'plan'
+  gkRules.push({ attr: attr.name, op: RULE_OPS[attr.name]?.[0]?.[0] ?? 'eq', val: attr.values?.[0] ?? '' })
+  renderRules()
+  updateGKCode()
+}
+
+function removeRule(i) {
+  gkRules.splice(i, 1)
+  renderRules()
+  updateGKCode()
+}
+
+function updateRule(i, field, val) {
+  if (field === 'attr' && val === '__new__') {
+    const name = prompt('New attribute name (lowercase, underscores):\nExample: company_tier')
+    if (!name || !/^[a-z_][a-z0-9_]*$/.test(name)) { renderRules(); return }
+    const type = prompt(`Type for "${name}":\nstring | number | boolean | enum | date`, 'string') || 'string'
+    ATTR_CATALOG.push({ name, type, required: false, desc: `Custom attribute: ${name}`, hint: '' })
+    RULE_ATTRS.push(name)
+    RULE_OPS[name] = type === 'number' ? [['eq','equals'],['gt','>'],['lt','<'],['gte','≥'],['lte','≤']] : [['eq','equals'],['in','is any of']]
+    RULE_PLACEHOLDERS[name] = ''
+    gkRules[i].attr = name
+    gkRules[i].op   = RULE_OPS[name][0][0]
+    gkRules[i].val  = ''
+    renderRules()
+    updateGKCode()
+    return
+  }
+  // ... rest of existing updateRule logic
+  gkRules[i][field] = val
+  if (field === 'attr') {
+    gkRules[i].op  = RULE_OPS[val]?.[0]?.[0] ?? 'eq'
+    gkRules[i].val = RULE_PLACEHOLDERS[val] ?? ''
+  }
+  renderRules()
+  updateGKCode()
+}
+
+function renderRules() {
+  const list = document.getElementById('gk-rules')
+  list.innerHTML = gkRules.map((r, i) => {
+    const attrDef = ATTR_CATALOG.find(a => a.name === r.attr) || { type: 'string', values: [] }
+    const type    = attrDef.type
+
+    // Attribute select with type badge
+    const attrOpts = ATTR_CATALOG.map(a =>
+      `<option value="${a.name}"${a.name===r.attr?' selected':''}>${a.name} (${a.type})</option>`
+    ).join('') + '<option value="__new__" style="color:var(--primary)">+ Register new attribute…</option>'
+
+    // Operator options based on type
+    const ops     = RULE_OPS[r.attr] ?? [['eq','equals']]
+    const opOpts  = ops.map(([v,l]) => `<option value="${v}"${v===r.op?' selected':''}>${l}</option>`).join('')
+
+    // Value input based on attribute type
+    let valueInput
+    if (type === 'enum' && attrDef.values?.length) {
+      const valOpts = attrDef.values.map(v => `<option value="${v}"${v===r.val?' selected':''}>${v}</option>`).join('')
+      valueInput = `<select onchange="updateRule(${i},'val',this.value)" style="flex:1;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:13px">${valOpts}</select>`
+    } else if (type === 'number') {
+      valueInput = `<input type="number" value="${r.val||''}" placeholder="e.g. 100" style="flex:1;min-width:80px;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:13px" oninput="updateRule(${i},'val',this.value)">`
+    } else if (type === 'date') {
+      valueInput = `<input type="date" value="${r.val||''}" style="flex:1;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:13px" oninput="updateRule(${i},'val',this.value)">`
+    } else {
+      const ph = RULE_PLACEHOLDERS[r.attr] || attrDef.hint || ''
+      valueInput = `<input type="text" value="${r.val||''}" placeholder="${ph}" style="flex:1;min-width:80px;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:13px" oninput="updateRule(${i},'val',this.value)">`
+    }
+
+    const connector = i < gkRules.length - 1 ? '<div style="text-align:center;font-size:11px;font-weight:600;color:var(--primary);padding:2px 0">AND</div>' : ''
+
+    return `<div>
+      <div class="rule-row">
+        <select onchange="updateRule(${i},'attr',this.value)" style="min-width:160px">${attrOpts}</select>
+        <select onchange="updateRule(${i},'op',this.value)">${opOpts}</select>
+        ${valueInput}
+        <button class="rule-remove" onclick="removeRule(${i})">
+          <span class="material-icons" style="font-size:16px">close</span>
+        </button>
+      </div>
+      ${connector}
+    </div>`
+  }).join('')
+}
+
+// ── KILLSWITCH ────────────────────────────────────────────────────────────────
+function toggleKillswitch() {
+  const cb = document.getElementById('gk-killswitch')
+  cb.checked = !cb.checked
+  const badge = document.getElementById('ks-badge')
+  badge.textContent = cb.checked ? 'ON — fast propagation' : 'Off'
+  badge.style.background = cb.checked ? 'var(--error-light)' : '#f5f5f5'
+  badge.style.color      = cb.checked ? 'var(--error)' : 'var(--text3)'
+  updateGKCode()
+}
+
+// ── CODE GENERATION ───────────────────────────────────────────────────────────
+function h(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+function updateGKCode() {
+  const rawName = document.getElementById('gk-name').value || 'new_checkout_button'
+  const name    = 'flag_' + rawName.replace(/\s+/g,'_').toLowerCase()
+  document.querySelectorAll('.gk-name-ref').forEach(el => el.textContent = rawName)
+  document.getElementById('gk-name-preview').textContent = rawName
+
+  const ks  = document.getElementById('gk-killswitch').checked
+  const ksNote = ks ? '\n<span class="code-comment">// Killswitch mode ON — disabling propagates in ~150ms</span>' : ''
+
+  document.getElementById('gk-code-ts').innerHTML = `<span class="code-comment">// TypeScript / Next.js</span>
+<span class="code-kw">const</span> isEnabled = client.<span class="code-fn">getFlag</span>(<span class="code-str">'${h(name)}'</span>, user)${ksNote}
+
+<span class="code-kw">if</span> (isEnabled) {
+  <span class="code-comment">// New behaviour</span>
+} <span class="code-kw">else</span> {
+  <span class="code-comment">// Original behaviour</span>
+}`
+
+  document.getElementById('gk-code-py').innerHTML = `<span class="code-comment"># Python</span>
+is_enabled = client.get_flag(<span class="code-str">'${h(name)}'</span>, user_context)${ksNote}
+
+<span class="code-kw">if</span> is_enabled:
+    <span class="code-comment"># New behaviour</span>
+<span class="code-kw">else</span>:
+    <span class="code-comment"># Original behaviour</span>`
+
+  document.getElementById('gk-code-rb').innerHTML = `<span class="code-comment"># Ruby / Rails</span>
+is_enabled = FLAGLAB.get_flag(<span class="code-str">'${h(name)}'</span>, user_context)${ksNote}
+
+<span class="code-kw">if</span> is_enabled
+  <span class="code-comment"># New behaviour</span>
+<span class="code-kw">else</span>
+  <span class="code-comment"># Original behaviour</span>
+<span class="code-kw">end</span>`
+
+  document.getElementById('gk-code-go').innerHTML = `<span class="code-comment">// Go</span>
+isEnabled := client.<span class="code-fn">GetFlag</span>(<span class="code-str">"${h(name)}"</span>, userCtx)${ksNote}
+
+<span class="code-kw">if</span> isEnabled {
+    <span class="code-comment">// New behaviour</span>
+} <span class="code-kw">else</span> {
+    <span class="code-comment">// Original behaviour</span>
+}`
+}
+
+function updateSVCode() {
+  const name = document.getElementById('sv-name').value || 'checkout_timeout_ms'
+  document.getElementById('sv-name-preview').textContent = name
+  const type = currentSVType
+
+  let rawVal = '5000'
+  if (type === 'number')  rawVal = document.getElementById('sv-val-number')?.value || '5000'
+  if (type === 'string')  rawVal = `"${document.getElementById('sv-val-string')?.value || 'Try it free'}"`
+  if (type === 'boolean') rawVal = document.getElementById('sv-val-boolean')?.value || 'true'
+  if (type === 'object')  {
+    try { rawVal = JSON.stringify(JSON.parse(document.getElementById('sv-val-object')?.value || '{}'), null, 2) } catch { rawVal = '{...}' }
+  }
+  if (type === 'array')   {
+    try { rawVal = JSON.stringify(JSON.parse(document.getElementById('sv-val-array')?.value || '[]')) } catch { rawVal = '[...]' }
+  }
+
+  // Update live preview
+  document.getElementById('sv-value-preview').textContent = rawVal
+
+  // Decoder by type
+  const decoders = {
+    number:  `(v) => {\n  <span class="code-kw">const</span> n = <span class="code-fn">Number</span>(v)\n  <span class="code-kw">if</span> (<span class="code-fn">isNaN</span>(n)) <span class="code-kw">throw new</span> <span class="code-fn">Error</span>(<span class="code-str">'Expected number'</span>)\n  <span class="code-kw">return</span> n\n}`,
+    string:  `(v) => <span class="code-fn">String</span>(v)`,
+    boolean: `(v) => v === <span class="code-str">'true'</span> || v === <span class="code-kw">true</span>`,
+    object:  `(v) => <span class="code-fn">MyConfigSchema</span>.<span class="code-fn">parse</span>(v)  <span class="code-comment">// use Zod for safety</span>`,
+    array:   `(v) => <span class="code-fn">z.array</span>(<span class="code-fn">z.string</span>()).<span class="code-fn">parse</span>(v)`,
+  }
+  const dec = decoders[type] ?? decoders.number
+
+  document.getElementById('sv-code-ts').innerHTML = `<span class="code-comment">// TypeScript — decoder validates runtime type</span>
+<span class="code-kw">const</span> value = client.<span class="code-fn">getConfig</span>(
+  <span class="code-str">'${h(name)}'</span>,
+  ${dec}
+)
+<span class="code-comment">// value is typed correctly; throws if server returns wrong type</span>`
+
+  document.getElementById('sv-code-py').innerHTML = `<span class="code-comment"># Python</span>
+value = client.get_config(
+    <span class="code-str">'${h(name)}'</span>,
+    decoder=<span class="code-kw">lambda</span> v: ${type === 'number' ? 'int(v)' : type === 'boolean' ? 'bool(v)' : 'str(v)'}
+)`
+
+  document.getElementById('sv-code-rb').innerHTML = `<span class="code-comment"># Ruby</span>
+value = FLAGLAB.get_config(
+  <span class="code-str">'${h(name)}'</span>
+  ${type === 'number' ? '<span class="code-comment"># coerce to integer if needed: value.to_i</span>' : ''}
+)`
+
+  document.getElementById('sv-code-go').innerHTML = `<span class="code-comment">// Go</span>
+value := client.<span class="code-fn">GetConfig</span>(<span class="code-str">"${h(name)}"</span>)
+<span class="code-comment">// Cast to expected type:</span>
+${type === 'number' ? `n, _ := strconv.<span class="code-fn">Atoi</span>(<span class="code-fn">fmt.Sprint</span>(value))` : `s := <span class="code-fn">fmt.Sprint</span>(value)`}`
+}
+
+// ── ATTRIBUTE LIST ────────────────────────────────────────────────────────────
+function renderAttrList() {
+  const container = document.getElementById('attr-list')
+  if (!container) return
+  container.innerHTML = ATTR_CATALOG.map(a => {
+    const colors = { string:'#e3f2fd:#1565c0', enum:'#f3e5f5:#6a1b9a', number:'#fff3e0:#e65100', boolean:'#e8f5e9:#2e7d32', date:'#fce4ec:#c2185b' }
+    const [bg, fg] = (colors[a.type] || '#f5f5f5:#616161').split(':')
+    return `<span title="${a.desc}${a.required ? ' (required)' : ''}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;font-size:11px;background:${bg};color:${fg};cursor:default">
+      ${a.required ? '★ ' : ''}${a.name}
+      <span style="opacity:.6;font-size:10px">${a.type}</span>
+    </span>`
+  }).join('')
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+function handleCreate() {
+  if (currentType === 'gk') {
+    const name = document.getElementById('gk-name').value
+    if (!name) { alert('Please enter a flag name'); return }
+    alert(`✓ Feature gate "flag_${name}" created!\n\nIt's disabled by default.\nEnable it when ready:\n  ourapp gates enable flag_${name}`)
+  } else {
+    const name = document.getElementById('sv-name').value
+    if (!name) { alert('Please enter a config name'); return }
+    alert(`✓ Config "${name}" created!\n\nThe value is live immediately — all servers will pick it up within ~150ms.`)
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+applyGKProfile('rollout')
+applySVProfile('number')
+updateGKCode()
+updateSVCode()
+renderAttrList()
+</script>
+</body>
+</html>

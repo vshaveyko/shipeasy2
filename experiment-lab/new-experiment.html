@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Experiment — ExperimentLab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:#1565c0; --primary-light:#e3f2fd; --primary-mid:#90caf9;
+      --success:#2e7d32; --success-light:#e8f5e9;
+      --error:#c62828;   --error-light:#ffebee;
+      --warn:#e65100;    --warn-light:#fff3e0;
+      --neutral:#616161;
+      --bg:#f0f2f5; --surface:#fff; --border:#e0e0e0;
+      --text:#212121; --text2:#616161; --text3:#9e9e9e;
+      --radius:8px;
+      --shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+      --shadow-md:0 3px 6px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.08);
+    }
+    body { font-family:'Roboto',sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.6; }
+
+    /* NAV */
+    .navbar { background:var(--primary); color:white; padding:0 24px; display:flex; align-items:center; gap:12px; height:56px; box-shadow:var(--shadow-md); position:sticky; top:0; z-index:100; }
+    .navbar-brand { font-size:18px; font-weight:500; display:flex; align-items:center; gap:8px; margin-right:auto; }
+    .nav-link { color:rgba(255,255,255,.8); font-size:13px; font-weight:500; text-decoration:none; padding:6px 12px; border-radius:4px; }
+    .nav-link:hover { background:rgba(255,255,255,.12); color:white; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border-radius:6px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border:none; transition:all .15s; }
+    .btn-primary { background:white; color:var(--primary); }
+    .btn-primary:hover { background:#e3f2fd; }
+    .btn-outline { background:transparent; color:rgba(255,255,255,.9); border:1px solid rgba(255,255,255,.4); }
+    .btn-outline:hover { background:rgba(255,255,255,.1); }
+
+    /* LAYOUT */
+    .container { max-width:900px; margin:0 auto; padding:28px 24px; }
+
+    /* PAGE HEADER */
+    .page-header { margin-bottom:24px; }
+    .page-title { font-size:22px; font-weight:500; margin-bottom:4px; }
+    .page-sub { font-size:13px; color:var(--text2); }
+    .breadcrumb { font-size:12px; color:var(--text3); margin-bottom:8px; display:flex; align-items:center; gap:4px; }
+    .breadcrumb a { color:var(--primary); text-decoration:none; }
+
+    /* CARDS */
+    .card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:20px; }
+    .card-header { padding:16px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+    .card-icon { width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .card-icon .material-icons { font-size:18px; }
+    .card-title { font-size:14px; font-weight:500; flex:1; }
+    .card-sub { font-size:12px; color:var(--text2); margin-top:2px; }
+    .card-body { padding:20px; }
+    .card-hint { font-size:12px; color:var(--text3); margin-top:4px; }
+
+    /* QUICK PROFILES */
+    .profiles-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; margin-bottom:4px; }
+    .profile-card { border:2px solid var(--border); border-radius:var(--radius); padding:14px 16px; cursor:pointer; transition:all .15s; position:relative; }
+    .profile-card:hover { border-color:var(--primary-mid); box-shadow:var(--shadow); }
+    .profile-card.selected { border-color:var(--primary); background:var(--primary-light); }
+    .profile-icon { font-size:24px; margin-bottom:6px; }
+    .profile-name { font-size:13px; font-weight:500; margin-bottom:4px; }
+    .profile-desc { font-size:11px; color:var(--text2); line-height:1.4; }
+    .profile-tag { display:inline-block; font-size:10px; font-weight:500; padding:1px 6px; border-radius:10px; margin-top:6px; background:#f0f0f0; color:var(--neutral); }
+    .profile-selected-badge { position:absolute; top:8px; right:8px; width:18px; height:18px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; }
+    .profile-selected-badge .material-icons { font-size:12px; color:white; }
+
+    /* FORM */
+    .form-group { margin-bottom:20px; }
+    .form-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text2); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+    .form-label .material-icons { font-size:14px; color:var(--text3); cursor:help; }
+    .form-input { width:100%; border:1px solid var(--border); border-radius:6px; padding:10px 12px; font-size:14px; font-family:inherit; color:var(--text); background:var(--surface); transition:border-color .15s; }
+    .form-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(21,101,192,.1); }
+    .form-input.monospace { font-family:monospace; }
+    select.form-input { cursor:pointer; }
+    textarea.form-input { resize:vertical; min-height:80px; }
+    .form-input-prefix { display:flex; align-items:center; border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+    .input-prefix { background:#f5f5f5; border-right:1px solid var(--border); padding:10px 12px; font-size:12px; color:var(--text3); white-space:nowrap; }
+    .form-input-prefix .form-input { border:none; border-radius:0; }
+    .form-input-prefix .form-input:focus { box-shadow:none; }
+    .form-hint { font-size:11px; color:var(--text3); margin-top:5px; line-height:1.4; }
+    .form-hint.warn  { color:var(--warn); }
+    .form-hint.error { color:var(--error); }
+    .form-hint.good  { color:var(--success); }
+    .form-row { display:grid; gap:16px; }
+    .form-row.col-2 { grid-template-columns:1fr 1fr; }
+    .form-row.col-3 { grid-template-columns:1fr 1fr 1fr; }
+    @media(max-width:700px) { .form-row.col-2,.form-row.col-3 { grid-template-columns:1fr; } }
+
+    /* EXPLAIN BOXES */
+    .explain { background:#f8f9ff; border:1px solid var(--primary-light); border-radius:6px; padding:10px 14px; margin-top:6px; font-size:12px; color:var(--text2); line-height:1.5; }
+    .explain strong { color:var(--text); }
+    .explain-toggle { font-size:11px; color:var(--primary); cursor:pointer; margin-top:4px; display:inline-flex; align-items:center; gap:3px; user-select:none; }
+    .explain-toggle .material-icons { font-size:13px; }
+
+    /* CALLOUT */
+    .callout { display:flex; gap:10px; padding:12px 14px; border-radius:6px; font-size:13px; align-items:flex-start; margin-bottom:16px; line-height:1.5; }
+    .callout .material-icons { font-size:16px; margin-top:1px; flex-shrink:0; }
+    .callout-info  { background:var(--primary-light); color:#0d47a1; }
+    .callout-warn  { background:var(--warn-light);    color:var(--warn); }
+    .callout-success { background:var(--success-light); color:var(--success); }
+
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:500; white-space:nowrap; }
+    .badge-info    { background:var(--primary-light); color:var(--primary); }
+    .badge-success { background:var(--success-light); color:var(--success); }
+    .badge-warn    { background:var(--warn-light);    color:var(--warn); }
+    .badge-neutral { background:#f5f5f5; color:var(--neutral); }
+
+    /* GROUPS SECTION */
+    .groups-container { display:flex; flex-direction:column; gap:10px; }
+    .group-row { display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--border); border-radius:6px; background:#fafafa; }
+    .group-row.control { border-left:3px solid #1976d2; }
+    .group-row.test    { border-left:3px solid var(--success); }
+    .group-color { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .group-name-input { width:140px; }
+    .group-weight-input { width:80px; }
+    .group-allocation-bar { flex:1; }
+    .alloc-track { background:#e0e0e0; border-radius:4px; height:8px; overflow:hidden; }
+    .alloc-fill { height:100%; border-radius:4px; background:var(--primary); transition:width .3s; }
+    .group-remove { background:none; border:none; cursor:pointer; color:var(--text3); padding:4px; border-radius:4px; display:flex; align-items:center; }
+    .group-remove:hover { background:var(--error-light); color:var(--error); }
+    .add-group-btn { display:flex; align-items:center; gap:6px; padding:8px 12px; border:1px dashed var(--border); border-radius:6px; background:none; cursor:pointer; font-size:13px; color:var(--text2); font-family:inherit; width:100%; justify-content:center; }
+    .add-group-btn:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-light); }
+
+    /* METRICS TABLE */
+    .metrics-table { width:100%; border-collapse:collapse; }
+    .metrics-table th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text3); text-align:left; padding:8px 10px; border-bottom:2px solid var(--border); }
+    .metrics-table td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:middle; font-size:13px; }
+    .metrics-table tr:last-child td { border-bottom:none; }
+    .role-select { padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:12px; font-family:inherit; cursor:pointer; }
+    .role-select.goal      { border-color:#1976d2; color:#1565c0; background:#e3f2fd; }
+    .role-select.guardrail { border-color:var(--warn); color:var(--warn); background:var(--warn-light); }
+    .role-select.secondary { border-color:var(--border); color:var(--neutral); }
+    .remove-metric { background:none; border:none; cursor:pointer; color:var(--text3); padding:3px; border-radius:4px; }
+    .remove-metric:hover { color:var(--error); background:var(--error-light); }
+
+    /* ALLOCATION PREVIEW */
+    .alloc-preview { margin-top:12px; }
+    .alloc-preview-bar { display:flex; border-radius:6px; overflow:hidden; height:28px; }
+    .alloc-segment { display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:white; transition:flex .3s; }
+    .alloc-labels { display:flex; margin-top:4px; }
+    .alloc-label { font-size:10px; color:var(--text2); flex:1; text-align:center; }
+    .alloc-summary { font-size:12px; color:var(--text2); margin-top:8px; }
+
+    /* POWER SECTION */
+    .power-card { background:linear-gradient(135deg,#e3f2fd,#f3f7ff); border:1px solid var(--primary-light); border-radius:var(--radius); padding:16px; }
+    .power-header { font-size:13px; font-weight:500; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .power-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .power-stat { text-align:center; }
+    .power-val { font-size:22px; font-weight:300; }
+    .power-lbl { font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--text3); }
+    .power-meter { background:rgba(255,255,255,.6); border-radius:4px; height:6px; overflow:hidden; margin-top:10px; }
+    .power-fill { height:100%; border-radius:4px; background:var(--primary); transition:width .3s; }
+
+    /* CODE SNIPPET */
+    .code-snippet { background:#1e1e2e; color:#cdd6f4; border-radius:6px; padding:14px 16px; font-family:monospace; font-size:12px; line-height:1.6; overflow-x:auto; margin-top:8px; }
+    .code-comment { color:#6c7086; }
+    .code-keyword { color:#cba6f7; }
+    .code-string  { color:#a6e3a1; }
+    .code-fn      { color:#89b4fa; }
+    .code-var     { color:#f38ba8; }
+
+    /* DIVIDER */
+    .divider { height:1px; background:var(--border); margin:20px 0; }
+
+    /* STEP INDICATOR */
+    .steps { display:flex; align-items:center; gap:0; margin-bottom:28px; }
+    .step { display:flex; align-items:center; gap:8px; }
+    .step-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+    .step-num.done    { background:var(--success); color:white; }
+    .step-num.current { background:var(--primary); color:white; }
+    .step-num.future  { background:#e0e0e0; color:var(--text3); }
+    .step-label { font-size:12px; font-weight:500; }
+    .step-label.future { color:var(--text3); }
+    .step-connector { flex:1; height:1px; background:var(--border); margin:0 8px; min-width:20px; }
+
+    /* SUBMIT ROW */
+    .submit-row { display:flex; gap:12px; align-items:center; justify-content:flex-end; padding:20px 0; }
+    .btn-lg { padding:10px 24px; font-size:14px; border-radius:6px; cursor:pointer; border:none; font-family:inherit; font-weight:500; display:inline-flex; align-items:center; gap:8px; transition:all .15s; }
+    .btn-lg-primary { background:var(--primary); color:white; }
+    .btn-lg-primary:hover { background:#1976d2; }
+    .btn-lg-secondary { background:white; color:var(--text); border:1px solid var(--border); }
+    .btn-lg-secondary:hover { background:#f5f5f5; }
+
+    /* TOOLTIP — must be display:inline-block so position:relative works on inline elements */
+    [data-tip] { position:relative; display:inline-block; }
+    [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #212121;
+      color: white;
+      padding: 7px 11px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 400;
+      line-height: 1.4;
+      white-space: normal;
+      width: max-content;
+      max-width: 260px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+      z-index: 9999;
+      text-align: left;
+      box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    }
+    [data-tip]:hover::after { opacity: 1; }
+
+    /* HIGHLIGHT WORD */
+    .hl { background:var(--primary-light); color:var(--primary); padding:0 4px; border-radius:3px; font-weight:500; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand">
+    <span class="material-icons">science</span> ExperimentLab
+  </div>
+  <a href="index.html" class="nav-link">Dashboard</a>
+  <a href="#" class="nav-link" style="color:white;background:rgba(255,255,255,.15)">New Experiment</a>
+  <button class="btn btn-outline" onclick="alert('Saved as draft')">
+    <span class="material-icons" style="font-size:16px">save</span> Save Draft
+  </button>
+</nav>
+
+<div class="container">
+
+  <!-- BREADCRUMB + HEADER -->
+  <div class="breadcrumb">
+    <a href="index.html">Experiments</a>
+    <span class="material-icons" style="font-size:14px">chevron_right</span>
+    <span>New Experiment</span>
+  </div>
+  <div class="page-header">
+    <div class="page-title">Create a new experiment</div>
+    <div class="page-sub">Define what you're testing, who sees it, how traffic is split, and what counts as success.</div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step"><div class="step-num current">1</div><div class="step-label">Basics</div></div>
+    <div class="step-connector"></div>
+    <div class="step"><div class="step-num future">2</div><div class="step-label future">Traffic</div></div>
+    <div class="step-connector"></div>
+    <div class="step"><div class="step-num future">3</div><div class="step-label future">Metrics</div></div>
+    <div class="step-connector"></div>
+    <div class="step"><div class="step-num future">4</div><div class="step-label future">Instrument</div></div>
+    <div class="step-connector"></div>
+    <div class="step"><div class="step-num future">5</div><div class="step-label future">Launch</div></div>
+  </div>
+
+  <!-- ── SECTION 1: QUICK SETUP PROFILES ─────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#e3f2fd"><span class="material-icons" style="color:var(--primary)">bolt</span></div>
+      <div>
+        <div class="card-title">Quick setup profiles</div>
+        <div class="card-sub">Pick a template to pre-fill all settings. You can change anything after.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="profiles-grid">
+
+        <div class="profile-card" onclick="applyProfile('conversion')" id="profile-conversion">
+          <div class="profile-icon">🛒</div>
+          <div class="profile-name">Conversion Experiment</div>
+          <div class="profile-desc">Test a UI change and measure whether more users complete a key action (purchase, signup, submit).</div>
+          <div class="profile-tag">count_users · binary</div>
+        </div>
+
+        <div class="profile-card" onclick="applyProfile('revenue')" id="profile-revenue">
+          <div class="profile-icon">💰</div>
+          <div class="profile-name">Revenue Experiment</div>
+          <div class="profile-desc">Test pricing, upsells, or checkout flow and measure total revenue per user.</div>
+          <div class="profile-tag">sum · continuous</div>
+        </div>
+
+        <div class="profile-card" onclick="applyProfile('retention')" id="profile-retention">
+          <div class="profile-icon">🔁</div>
+          <div class="profile-name">Retention Experiment</div>
+          <div class="profile-desc">Test an engagement feature and measure whether users come back after 7 or 30 days.</div>
+          <div class="profile-tag">retention_7d · binary</div>
+        </div>
+
+        <div class="profile-card" onclick="applyProfile('performance')" id="profile-performance">
+          <div class="profile-icon">⚡️</div>
+          <div class="profile-name">Performance Experiment</div>
+          <div class="profile-desc">Test a speed or infra change and measure load time or error rate. Any regression blocks shipping.</div>
+          <div class="profile-tag">avg · guardrail-heavy</div>
+        </div>
+
+        <div class="profile-card" onclick="applyProfile('onboarding')" id="profile-onboarding">
+          <div class="profile-icon">🚀</div>
+          <div class="profile-name">Onboarding Experiment</div>
+          <div class="profile-desc">Test a flow simplification and measure activation rate plus long-term retention.</div>
+          <div class="profile-tag">count_users + retention</div>
+        </div>
+
+        <div class="profile-card" onclick="applyProfile('blank')" id="profile-blank">
+          <div class="profile-icon">📋</div>
+          <div class="profile-name">Blank — start from scratch</div>
+          <div class="profile-desc">Fill in every field manually. Use when none of the templates fit your situation.</div>
+          <div class="profile-tag">custom</div>
+        </div>
+
+      </div>
+      <div class="explain" id="profile-explain" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 2: BASICS ──────────────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#e8f5e9"><span class="material-icons" style="color:var(--success)">info</span></div>
+      <div>
+        <div class="card-title">What are you testing?</div>
+        <div class="card-sub">Name the experiment and describe the hypothesis in plain English.</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <div class="form-group">
+        <div class="form-label">
+          Experiment name
+          <span class="material-icons" data-tip="Used in code as client.getExperiment('this_name'). Lowercase, underscores only. Cannot be changed after launch.">help_outline</span>
+        </div>
+        <div class="form-input-prefix">
+          <div class="input-prefix">exp_</div>
+          <input type="text" class="form-input monospace" id="exp-name" placeholder="checkout_button_color" oninput="updateCodeSnippet()">
+        </div>
+        <div class="form-hint">Lowercase, underscores only. This is what you type in code: <code>client.getExperiment('exp_<span id="name-preview">your_name</span>')</code></div>
+      </div>
+
+      <div class="form-row col-2">
+        <div class="form-group">
+          <div class="form-label">
+            The question you're answering
+            <span class="material-icons" data-tip="One sentence describing what you want to learn. Example: 'Does a green checkout button convert more users than the gray one?'">help_outline</span>
+          </div>
+          <input type="text" class="form-input" id="exp-question" placeholder="Does a green checkout button convert more users than the gray one?">
+          <div class="form-hint">This appears on the dashboard so anyone can understand what the experiment is about without reading code.</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">
+            What counts as success?
+            <span class="material-icons" data-tip="One action that means the experiment worked. Example: 'User completes a purchase'. This is your goal metric event.">help_outline</span>
+          </div>
+          <input type="text" class="form-input" id="exp-success" placeholder="User completes a purchase">
+          <div class="form-hint">One specific action. If users do this, the experiment is working. Vague answers make it hard to decide later.</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">
+          What are you changing?
+          <span class="material-icons" data-tip="Briefly describe the change: what's different between control and test.">help_outline</span>
+        </div>
+        <textarea class="form-input" id="exp-change" rows="2" placeholder="Control: gray checkout button. Test: green checkout button. Same position, same size, only color changes."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 3: UNIVERSE + TARGETING ──────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#fff3e0"><span class="material-icons" style="color:var(--warn)">people</span></div>
+      <div>
+        <div class="card-title">Who sees the experiment?</div>
+        <div class="card-sub">Universe defines the eligible population. Targeting further filters within it.</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <div class="form-row col-2">
+        <div class="form-group">
+          <div class="form-label">
+            Universe
+            <span class="material-icons" data-tip="A universe groups mutually-exclusive experiments. Users can only be in ONE experiment per universe at a time. Pick an existing universe or create a new one. Each universe has its own holdout group.">help_outline</span>
+          </div>
+          <select class="form-input monospace" id="exp-universe" onchange="handleUniverseChange(this)">
+            <option value="">— select a universe —</option>
+            <optgroup label="Existing universes">
+              <option value="checkout">checkout — 2 active experiments · holdout 5%</option>
+              <option value="onboarding">onboarding — 1 active experiment · no holdout</option>
+              <option value="feed">feed — 3 active experiments · holdout 5%</option>
+              <option value="monetisation">monetisation — 0 active experiments · holdout 10%</option>
+              <option value="engagement">engagement — 1 active experiment · no holdout</option>
+              <option value="infrastructure">infrastructure — 0 active experiments · no holdout</option>
+            </optgroup>
+            <optgroup label="">
+              <option value="__new__">+ Create new universe…</option>
+            </optgroup>
+          </select>
+          <!-- New universe creation (hidden by default) -->
+          <div id="new-universe-fields" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--primary-light);border-radius:6px;background:var(--primary-light)">
+            <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:8px">New universe settings</div>
+            <div class="form-row col-2" style="gap:10px">
+              <div>
+                <div class="form-hint" style="margin-bottom:4px">Universe name</div>
+                <input type="text" class="form-input monospace" id="new-universe-name" placeholder="e.g. search" oninput="syncNewUniverse()">
+              </div>
+              <div>
+                <div class="form-hint" style="margin-bottom:4px">Holdout % (0 = no holdout)</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <input type="number" class="form-input" id="new-universe-holdout" value="5" min="0" max="20" step="1" oninput="syncNewUniverse()">
+                  <span style="color:var(--text3);white-space:nowrap">% of traffic</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-hint" style="margin-top:6px" id="new-universe-preview">Holdout: segments 0–499 (5% of users permanently excluded from all experiments in this universe)</div>
+          </div>
+          <div class="form-hint" id="universe-hint">All experiments in the same universe are <strong>mutually exclusive</strong> — a user can be in at most one at a time. The holdout range is set on the universe, not on individual experiments.</div>
+          <div class="explain" id="universe-explain" style="display:none"></div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">
+            Unit type
+            <span class="material-icons" data-tip="What identifies a user for bucketing. Use user_id for logged-in users. Use anonymous_id for logged-out / pre-auth flows.">help_outline</span>
+          </div>
+          <select class="form-input" id="exp-unit" onchange="updatePower()">
+            <option value="user_id" selected>user_id — logged-in users</option>
+            <option value="anonymous_id">anonymous_id — logged-out / pre-auth</option>
+            <option value="session_id">session_id — per-session (not recommended)</option>
+          </select>
+          <div class="form-hint">Use <code>user_id</code> whenever possible. It guarantees the same user always sees the same variant, even across devices.</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">
+          Targeting gate (optional)
+          <span class="material-icons" data-tip="Only users who pass this feature gate are eligible for the experiment. If empty, all users in the universe are eligible.">help_outline</span>
+        </div>
+        <input type="text" class="form-input monospace" id="exp-targeting" placeholder="Leave blank to target all users">
+        <div class="form-hint">Example: only run this experiment for users on the <code>paid_plan</code> gate. Users who fail the gate get control group defaults and are <em>not</em> counted in the analysis.</div>
+      </div>
+
+      <div class="callout callout-info" style="margin-top:4px">
+        <span class="material-icons">info</span>
+        <div><strong>Holdout is configured on the universe, not here.</strong> When you selected a universe above, its holdout range applies automatically to this experiment (and all others in that universe). To change the holdout, edit the universe in <a href="#" style="color:var(--primary)">Universe Settings</a>.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 4: TRAFFIC SPLIT ──────────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#fce4ec"><span class="material-icons" style="color:#c2185b">call_split</span></div>
+      <div>
+        <div class="card-title">Traffic split & group sizes</div>
+        <div class="card-sub">How much traffic enters the experiment, and how is it divided between groups.</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <div class="form-group">
+        <div class="form-label">
+          Experiment allocation
+          <span class="material-icons" data-tip="What % of eligible users enter this experiment. The rest see control group defaults and are not counted in analysis. Start small, increase over time.">help_outline</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <input type="range" id="allocation-slider" min="1" max="100" value="50" oninput="updateAllocation()" style="flex:1">
+          <div style="font-size:20px;font-weight:300;width:52px;text-align:right" id="allocation-display">50%</div>
+        </div>
+        <div class="form-hint" id="allocation-hint">50% of eligible users enter the experiment. The other 50% see control defaults and are excluded from analysis.</div>
+        <div class="explain">
+          <strong>Start conservative.</strong> Begin at 5–10% to catch any bugs or unexpected regressions before exposing everyone. Increase allocation as you gain confidence. Note: you can increase allocation but <em>not decrease</em> it once started — reducing it would reshuffle who's in which group, invalidating the experiment.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">Variant groups</div>
+        <div class="groups-container" id="groups-container">
+          <div class="group-row control" id="group-control">
+            <div class="group-color" style="background:#1976d2"></div>
+            <input type="text" class="form-input group-name-input" value="control" readonly style="background:#f5f5f5">
+            <span style="font-size:12px;color:var(--text3);width:80px;text-align:center">50% of experiment</span>
+            <div class="group-allocation-bar">
+              <div class="alloc-track"><div class="alloc-fill" id="fill-control" style="width:50%"></div></div>
+            </div>
+            <span style="font-size:11px;color:var(--text3);width:80px;text-align:right" id="users-control">?? users</span>
+          </div>
+          <div class="group-row test" id="group-test">
+            <div class="group-color" style="background:var(--success)"></div>
+            <input type="text" class="form-input group-name-input" value="test" oninput="updateCodeSnippet()">
+            <div>
+              <input type="number" class="form-input group-weight-input" value="50" min="1" max="99" oninput="updateGroups()" style="text-align:center"> %
+            </div>
+            <div class="group-allocation-bar">
+              <div class="alloc-track"><div class="alloc-fill" id="fill-test" style="width:50%;background:var(--success)"></div></div>
+            </div>
+            <span style="font-size:11px;color:var(--text3);width:80px;text-align:right" id="users-test">?? users</span>
+            <button class="group-remove" onclick="removeGroup('test')" style="display:none"><span class="material-icons" style="font-size:16px">close</span></button>
+          </div>
+        </div>
+        <button class="add-group-btn" onclick="addGroup()" style="margin-top:8px">
+          <span class="material-icons" style="font-size:16px">add</span> Add variant (for multi-arm tests)
+        </button>
+        <div class="form-hint" id="groups-hint" style="margin-top:8px">Control and test split traffic equally. Control always gets the existing experience.</div>
+      </div>
+
+      <!-- ALLOCATION PREVIEW VISUAL -->
+      <div class="alloc-preview">
+        <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">Traffic flow preview</div>
+        <div class="alloc-preview-bar" id="alloc-preview-bar">
+          <div class="alloc-segment" style="flex:50;background:#e0e0e0;color:var(--text2)">50% not in experiment</div>
+          <div class="alloc-segment" style="flex:25;background:#1976d2">25% → control</div>
+          <div class="alloc-segment" style="flex:25;background:var(--success)">25% → test</div>
+        </div>
+        <div class="alloc-summary" id="alloc-summary">
+          For every 1,000 eligible users: <strong>500</strong> not in experiment, <strong>250</strong> in control, <strong>250</strong> in test.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 5: METRICS ──────────────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#e8f5e9"><span class="material-icons" style="color:var(--success)">bar_chart</span></div>
+      <div>
+        <div class="card-title">Metrics — what you're measuring</div>
+        <div class="card-sub">Define what events count as success (goal) and what must not get worse (guardrails).</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <div class="callout callout-info">
+        <span class="material-icons">lightbulb</span>
+        <div>Pre-register your goal metric <em>before</em> launching. Looking at 20 metrics after the fact and picking the green one is p-hacking — it inflates your false positive rate. Commit to 1 goal, 1–3 guardrails, then launch.</div>
+      </div>
+
+      <table class="metrics-table">
+        <thead>
+          <tr>
+            <th>Metric name</th>
+            <th>Success event <span class="material-icons" style="font-size:12px;vertical-align:middle" data-tip="The event name you'll pass to client.track()">help_outline</span></th>
+            <th>Aggregation <span class="material-icons" style="font-size:12px;vertical-align:middle" data-tip="How to combine multiple events per user into one number for the t-test">help_outline</span></th>
+            <th>Role <span class="material-icons" style="font-size:12px;vertical-align:middle" data-tip="Goal: must improve to ship. Guardrail: must not regress. Secondary: informational only.">help_outline</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="metrics-tbody">
+          <tr id="metric-row-0">
+            <td><input type="text" class="form-input" value="conversion_rate" style="min-width:120px"></td>
+            <td><input type="text" class="form-input monospace" value="purchase_completed" style="min-width:140px"></td>
+            <td>
+              <select class="form-input" onchange="showAggExplain(this, 0)">
+                <option value="count_users" selected>count_users</option>
+                <option value="count_events">count_events</option>
+                <option value="sum">sum</option>
+                <option value="avg">avg</option>
+                <option value="retention_7d">retention_7d</option>
+                <option value="retention_30d">retention_30d</option>
+              </select>
+            </td>
+            <td>
+              <select class="role-select goal" onchange="this.className='role-select '+this.value">
+                <option value="goal" selected>goal</option>
+                <option value="guardrail">guardrail</option>
+                <option value="secondary">secondary</option>
+              </select>
+            </td>
+            <td><button class="remove-metric" onclick="removeMetric(0)"><span class="material-icons" style="font-size:16px">close</span></button></td>
+          </tr>
+          <tr id="metric-row-1">
+            <td><input type="text" class="form-input" value="avg_order_value"></td>
+            <td><input type="text" class="form-input monospace" value="purchase_completed"></td>
+            <td>
+              <select class="form-input" onchange="showAggExplain(this, 1)">
+                <option value="count_users">count_users</option>
+                <option value="count_events">count_events</option>
+                <option value="sum" selected>sum</option>
+                <option value="avg">avg</option>
+                <option value="retention_7d">retention_7d</option>
+                <option value="retention_30d">retention_30d</option>
+              </select>
+            </td>
+            <td>
+              <select class="role-select secondary" onchange="this.className='role-select '+this.value">
+                <option value="goal">goal</option>
+                <option value="guardrail">guardrail</option>
+                <option value="secondary" selected>secondary</option>
+              </select>
+            </td>
+            <td><button class="remove-metric" onclick="removeMetric(1)"><span class="material-icons" style="font-size:16px">close</span></button></td>
+          </tr>
+          <tr id="metric-row-2">
+            <td><input type="text" class="form-input" value="page_load_time"></td>
+            <td><input type="text" class="form-input monospace" value="page_loaded"></td>
+            <td>
+              <select class="form-input" onchange="showAggExplain(this, 2)">
+                <option value="count_users">count_users</option>
+                <option value="count_events">count_events</option>
+                <option value="sum">sum</option>
+                <option value="avg" selected>avg</option>
+                <option value="retention_7d">retention_7d</option>
+                <option value="retention_30d">retention_30d</option>
+              </select>
+            </td>
+            <td>
+              <select class="role-select guardrail" onchange="this.className='role-select '+this.value">
+                <option value="goal">goal</option>
+                <option value="guardrail" selected>guardrail</option>
+                <option value="secondary">secondary</option>
+              </select>
+            </td>
+            <td><button class="remove-metric" onclick="removeMetric(2)"><span class="material-icons" style="font-size:16px">close</span></button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div id="agg-explains"></div>
+
+      <button class="add-group-btn" onclick="addMetricRow()" style="margin-top:10px">
+        <span class="material-icons" style="font-size:16px">add</span> Add metric
+      </button>
+
+      <div style="margin-top:16px">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:10px">Aggregation type reference</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
+          <div class="explain" style="margin-top:0">
+            <strong>count_users</strong><br>
+            Did the user do the event at least once? → <span class="hl">1</span> or <span class="hl">0</span> per user.<br>
+            Result: <em>conversion rate</em>. Use for: signups, purchases, activations.
+          </div>
+          <div class="explain" style="margin-top:0">
+            <strong>count_events</strong><br>
+            How many times did the user do it? → <span class="hl">integer</span> per user.<br>
+            Result: <em>events per user</em>. Use for: page views, searches, clicks.
+          </div>
+          <div class="explain" style="margin-top:0">
+            <strong>sum</strong><br>
+            Total numeric value across all events per user → <span class="hl">float</span>.<br>
+            Result: <em>total per user</em>. Use for: revenue, points, bytes downloaded.
+          </div>
+          <div class="explain" style="margin-top:0">
+            <strong>avg</strong><br>
+            Mean value per event per user → <span class="hl">float</span>.<br>
+            Result: <em>average intensity</em>. Use for: session duration, page load time.
+          </div>
+          <div class="explain" style="margin-top:0">
+            <strong>retention_7d / 30d</strong><br>
+            Did the user return exactly 7 (or 30) days after first exposure? → <span class="hl">1</span> or <span class="hl">0</span>.<br>
+            Result: <em>Nd retention rate</em>. Track <code>session_start</code> events.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 6: STATISTICAL POWER ─────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#fce4ec"><span class="material-icons" style="color:#c2185b">speed</span></div>
+      <div>
+        <div class="card-title">Statistical power & sample size</div>
+        <div class="card-sub">Can this experiment detect the effect size that matters to your business?</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <div class="form-row col-3">
+        <div class="form-group">
+          <div class="form-label">Daily eligible users</div>
+          <input type="number" class="form-input" id="daily-users" value="1000" oninput="updatePower()">
+          <div class="form-hint">How many unique users hit the experiment entry point per day</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Minimum effect you care about</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" class="form-input" id="mde-input" value="2" min="0.1" max="50" step="0.1" oninput="updatePower()">
+            <span style="color:var(--text3)">%</span>
+          </div>
+          <div class="form-hint">The smallest improvement worth shipping. Smaller = need more users.</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Baseline rate (control)</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" class="form-input" id="baseline-input" value="5" min="0.1" max="99" step="0.1" oninput="updatePower()">
+            <span style="color:var(--text3)">%</span>
+          </div>
+          <div class="form-hint">Current conversion rate for the goal metric</div>
+        </div>
+      </div>
+
+      <div class="power-card" id="power-card">
+        <div class="power-header">
+          <span class="material-icons" style="color:var(--primary);font-size:16px">analytics</span>
+          Power analysis — based on your settings
+        </div>
+        <div class="power-grid">
+          <div class="power-stat">
+            <div class="power-val" id="power-n">?</div>
+            <div class="power-lbl">Users needed / group</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-val" id="power-days">?</div>
+            <div class="power-lbl">Days to run</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-val" id="power-pct" style="color:var(--warn)">?%</div>
+            <div class="power-lbl">Estimated power</div>
+          </div>
+        </div>
+        <div class="power-meter"><div class="power-fill" id="power-fill" style="width:0%"></div></div>
+        <div style="font-size:12px;color:var(--text2);margin-top:10px" id="power-message"></div>
+      </div>
+
+      <div class="explain" style="margin-top:12px">
+        <strong>Statistical power</strong> = probability of detecting a real effect if it exists. We want ≥80%. Below 80% means you're likely to miss real improvements and incorrectly conclude "no effect." <strong>MDE</strong> = minimum detectable effect — the smallest improvement you could reliably detect with this sample size. Effects smaller than the MDE will show as gray bars on the dashboard, even if they're real.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 7: INSTRUMENTATION CODE ─────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#e8f5e9"><span class="material-icons" style="color:var(--success)">code</span></div>
+      <div>
+        <div class="card-title">Code to add — generated from your settings</div>
+        <div class="card-sub">Copy-paste this into your codebase. Update as you change fields above.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="callout callout-success">
+        <span class="material-icons">check_circle</span>
+        <div><strong>Exposure is automatic.</strong> Calling <code>getExperiment()</code> is all you need — the SDK logs the exposure event for you. You only need to call <code>track()</code> for the success/metric events.</div>
+      </div>
+      <div class="code-snippet" id="code-snippet">
+<span class="code-comment">// ─── Step 1: Get experiment assignment (auto-logs exposure) ───</span>
+<span class="code-keyword">const</span> exp = <span class="code-keyword">await</span> client.<span class="code-fn">getExperiment</span>(<span class="code-string">'exp_your_name'</span>)
+
+<span class="code-comment">// Render based on group assignment</span>
+<span class="code-keyword">if</span> (exp.group === <span class="code-string">'test'</span>) {
+  <span class="code-fn">renderNewVersion</span>(exp.params)
+} <span class="code-keyword">else</span> {
+  <span class="code-fn">renderControl</span>()
+}
+
+<span class="code-comment">// ─── Step 2: Track success events ─────────────────────────────</span>
+<span class="code-comment">// Call client.track() when the success event happens</span>
+client.<span class="code-fn">track</span>(<span class="code-string">'purchase_completed'</span>, { value: order.total })
+
+<span class="code-comment">// Guardrail: track page load time</span>
+client.<span class="code-fn">track</span>(<span class="code-string">'page_loaded'</span>, { value: <span class="code-var">performance</span>.now() })
+      </div>
+      <div class="form-hint" style="margin-top:8px">The analysis runs nightly at 04:00 UTC. Results appear on the dashboard the next morning.</div>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <div class="submit-row">
+    <button class="btn-lg btn-lg-secondary" onclick="history.back()">Cancel</button>
+    <button class="btn-lg btn-lg-secondary" onclick="alert('Saved as draft — you can finish later')">
+      <span class="material-icons" style="font-size:16px">save</span> Save draft
+    </button>
+    <button class="btn-lg btn-lg-primary" onclick="handleLaunch()">
+      <span class="material-icons" style="font-size:16px">rocket_launch</span> Launch experiment
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ── UNIVERSE SELECTOR ───────────────────────────────────────
+const UNIVERSE_INFO = {
+  checkout:       { experiments: 2, holdout: '5% (segs 0–499)', holdoutPct: 5 },
+  onboarding:     { experiments: 1, holdout: 'none', holdoutPct: 0 },
+  feed:           { experiments: 3, holdout: '5% (segs 0–499)', holdoutPct: 5 },
+  monetisation:   { experiments: 0, holdout: '10% (segs 0–999)', holdoutPct: 10 },
+  engagement:     { experiments: 1, holdout: 'none', holdoutPct: 0 },
+  infrastructure: { experiments: 0, holdout: 'none', holdoutPct: 0 },
+}
+
+function handleUniverseChange(sel) {
+  const val = sel.value
+  const newFields = document.getElementById('new-universe-fields')
+  const hint      = document.getElementById('universe-hint')
+  const explain   = document.getElementById('universe-explain')
+
+  if (val === '__new__') {
+    newFields.style.display = 'block'
+    hint.innerHTML = 'Creating a new universe. Give it a short lowercase name and optionally define a holdout percentage.'
+    explain.style.display = 'none'
+    return
+  }
+
+  newFields.style.display = 'none'
+
+  if (val && UNIVERSE_INFO[val]) {
+    const info = UNIVERSE_INFO[val]
+    const holdoutMsg = info.holdoutPct > 0
+      ? `<strong>Holdout: ${info.holdout}</strong> — ${info.holdoutPct}% of users are permanently excluded from all experiments in this universe to measure cumulative impact.`
+      : `<strong>No holdout</strong> — all eligible users can enter experiments in this universe.`
+    explain.style.display = 'block'
+    explain.innerHTML = `<strong>${val}</strong> — ${info.experiments} experiment${info.experiments !== 1 ? 's' : ''} currently active. ${holdoutMsg}`
+    hint.innerHTML = `Users are automatically excluded from this experiment if they fall in the <strong>${val}</strong> universe holdout (${info.holdout}).`
+  } else {
+    explain.style.display = 'none'
+    hint.innerHTML = 'All experiments in the same universe are <strong>mutually exclusive</strong> — a user can be in at most one at a time.'
+  }
+}
+
+function syncNewUniverse() {
+  const name    = document.getElementById('new-universe-name').value || 'my_universe'
+  const pct     = parseInt(document.getElementById('new-universe-holdout').value) || 0
+  const segs    = Math.round(pct * 100)
+  const preview = document.getElementById('new-universe-preview')
+  if (pct > 0) {
+    preview.textContent = `Holdout: segments 0–${segs - 1} (${pct}% of users permanently excluded from all experiments in universe "${name}")`
+  } else {
+    preview.textContent = `No holdout — all eligible users can enter experiments in universe "${name}"`
+  }
+}
+
+// ── PROFILES ────────────────────────────────────────────────
+const PROFILES = {
+  conversion: {
+    name: 'checkout_button_color',
+    question: 'Does a green checkout button convert more users than the gray one?',
+    success: 'User completes a purchase',
+    change: 'Control: gray checkout button. Test: green checkout button. Same position, same size, only color changes.',
+    universe: 'checkout',
+    allocation: 50,
+    metrics: [
+      { name:'conversion_rate', event:'purchase_completed', agg:'count_users', role:'goal' },
+      { name:'avg_order_value', event:'purchase_completed', agg:'sum',         role:'secondary' },
+      { name:'cart_abandonment',event:'cart_abandoned',     agg:'count_users', role:'guardrail' },
+    ],
+    explainTitle: '🛒 Conversion Experiment',
+    explain: 'A simple A/B test measuring whether a UI change makes more users complete a purchase. <strong>count_users</strong> on purchase_completed gives you a binary conversion rate (1 if the user bought, 0 if not). The t-test then compares what % of control vs test users converted.'
+  },
+  revenue: {
+    name: 'premium_upsell_banner',
+    question: 'Does a contextual upsell banner increase revenue per user?',
+    success: 'User upgrades to paid plan or makes a purchase',
+    change: 'Control: no upsell prompt. Test: contextual banner shown after key action.',
+    universe: 'monetisation',
+    allocation: 20,
+    metrics: [
+      { name:'revenue_per_user',  event:'purchase_completed', agg:'sum',         role:'goal' },
+      { name:'conversion_rate',   event:'purchase_completed', agg:'count_users', role:'secondary' },
+      { name:'feature_engagement',event:'feature_used',       agg:'count_events',role:'secondary' },
+      { name:'churn_rate',        event:'subscription_cancelled', agg:'count_users', role:'guardrail' },
+    ],
+    explainTitle: '💰 Revenue Experiment',
+    explain: 'Measures total revenue impact. <strong>sum</strong> on purchase value gives total revenue per user (users who buy nothing contribute $0). This is more sensitive than conversion rate — it captures both "did they buy?" and "how much did they buy?". churn_rate as guardrail prevents optimising short-term revenue at the cost of long-term retention.'
+  },
+  retention: {
+    name: 'weekly_digest_email',
+    question: 'Do weekly digest emails bring users back more often after 7 days?',
+    success: 'User opens the app 7 days after first receiving an email',
+    change: 'Control: no digest email. Test: weekly digest email sent every Monday.',
+    universe: 'engagement',
+    allocation: 30,
+    metrics: [
+      { name:'D7_retention',   event:'session_start', agg:'retention_7d', role:'goal' },
+      { name:'D30_retention',  event:'session_start', agg:'retention_30d',role:'secondary' },
+      { name:'open_rate',      event:'email_opened',  agg:'count_users',  role:'secondary' },
+      { name:'unsubscribe_rate',event:'unsubscribed', agg:'count_users',  role:'guardrail' },
+    ],
+    explainTitle: '🔁 Retention Experiment',
+    explain: 'Measures whether users come back after N days. <strong>retention_7d</strong> is binary: did the user start a session between Day 7 and Day 8 after their first exposure? Track <code>session_start</code> events. Unsubscribe_rate as guardrail prevents sending emails that annoy users even if they briefly boost opens.'
+  },
+  performance: {
+    name: 'cdn_image_optimisation',
+    question: 'Does CDN-based image optimisation reduce page load time without hurting conversion?',
+    success: 'Page loads faster (lower avg load time) with no drop in conversion',
+    change: 'Control: current image delivery. Test: optimised images via CDN with WebP + lazy loading.',
+    universe: 'infrastructure',
+    allocation: 10,
+    metrics: [
+      { name:'page_load_time',  event:'page_loaded',      agg:'avg',        role:'goal' },
+      { name:'error_rate',      event:'js_error',         agg:'count_users',role:'guardrail' },
+      { name:'conversion_rate', event:'purchase_completed',agg:'count_users',role:'guardrail' },
+      { name:'lcp_ms',          event:'lcp_recorded',     agg:'avg',        role:'secondary' },
+    ],
+    explainTitle: '⚡️ Performance Experiment',
+    explain: 'Tests an infrastructure change. <strong>avg</strong> on load time gives mean page load per user (lower = better — note the direction!). Both conversion_rate and error_rate are guardrails: performance work must not accidentally break the checkout flow or introduce JS errors. Start at 10% allocation to catch regressions early.'
+  },
+  onboarding: {
+    name: 'onboarding_flow_v2',
+    question: 'Does a 3-step onboarding activate more users than the current 6-step flow?',
+    success: 'User completes setup and takes their first action within the product',
+    change: 'Control: 6-step onboarding. Test: 3-step onboarding (removed profile photo, team import, tutorial video).',
+    universe: 'onboarding',
+    allocation: 50,
+    metrics: [
+      { name:'activation_rate', event:'user_activated',     agg:'count_users',  role:'goal' },
+      { name:'D7_retention',    event:'session_start',      agg:'retention_7d', role:'secondary' },
+      { name:'support_tickets', event:'support_ticket_created', agg:'count_users', role:'guardrail' },
+      { name:'completion_rate', event:'onboarding_completed',   agg:'count_users', role:'secondary' },
+    ],
+    explainTitle: '🚀 Onboarding Experiment',
+    explain: 'Tests a flow simplification. Activation (did user reach first value moment?) is the primary goal. D7_retention as secondary catches novelty effects — if the 3-step flow just feels faster but users churn sooner, D7 will show it. Support_tickets as guardrail catches confusion caused by removing steps.'
+  },
+  blank: {
+    name: '',
+    question: '',
+    success: '',
+    change: '',
+    universe: '',
+    allocation: 50,
+    metrics: [],
+    explainTitle: '📋 Blank',
+    explain: 'Fill in all fields manually. Use this when none of the templates fit your experiment.'
+  },
+}
+
+let selectedProfile = null
+
+function applyProfile(key) {
+  const p = PROFILES[key]
+
+  // Highlight card
+  document.querySelectorAll('.profile-card').forEach(c => {
+    c.classList.remove('selected')
+    const b = c.querySelector('.profile-selected-badge')
+    if (b) b.remove()
+  })
+  const card = document.getElementById('profile-' + key)
+  card.classList.add('selected')
+  const badge = document.createElement('div')
+  badge.className = 'profile-selected-badge'
+  badge.innerHTML = '<span class="material-icons">check</span>'
+  card.appendChild(badge)
+
+  selectedProfile = key
+
+  // Fill fields
+  if (p.name)      document.getElementById('exp-name').value     = p.name
+  if (p.question)  document.getElementById('exp-question').value  = p.question
+  if (p.success)   document.getElementById('exp-success').value   = p.success
+  if (p.change)    document.getElementById('exp-change').value    = p.change
+  if (p.universe) {
+    const sel = document.getElementById('exp-universe')
+    sel.value = p.universe
+    handleUniverseChange(sel)
+  }
+  document.getElementById('allocation-slider').value = p.allocation
+
+  // Metrics
+  if (p.metrics.length > 0) {
+    const tbody = document.getElementById('metrics-tbody')
+    tbody.innerHTML = ''
+    p.metrics.forEach((m, i) => addMetricRowWithData(m, i))
+  }
+
+  // Profile explain
+  const el = document.getElementById('profile-explain')
+  el.style.display = 'block'
+  el.innerHTML = `<strong>${p.explainTitle}</strong> — ${p.explain}`
+
+  updateAllocation()
+  updateCodeSnippet()
+  updatePower()
+}
+
+// ── ALLOCATION ──────────────────────────────────────────────
+function updateAllocation() {
+  const alloc = parseInt(document.getElementById('allocation-slider').value)
+  document.getElementById('allocation-display').textContent = alloc + '%'
+  document.getElementById('allocation-hint').textContent =
+    `${alloc}% of eligible users enter the experiment. The other ${100 - alloc}% see control defaults and are excluded from analysis.`
+
+  const notIn = 100 - alloc
+  const half  = alloc / 2  // assume 50/50 for preview
+  const bar   = document.getElementById('alloc-preview-bar')
+  bar.innerHTML = `
+    <div class="alloc-segment" style="flex:${notIn};background:#e0e0e0;color:var(--text2);font-size:${notIn < 15 ? '9px' : '11px'}">${notIn < 5 ? '' : notIn + '% not in exp'}</div>
+    <div class="alloc-segment" style="flex:${half};background:#1976d2;font-size:${half < 10 ? '9px' : '11px'}">${half < 4 ? '' : half + '% control'}</div>
+    <div class="alloc-segment" style="flex:${half};background:var(--success);font-size:${half < 10 ? '9px' : '11px'}">${half < 4 ? '' : half + '% test'}</div>
+  `
+  const per1000 = (v) => Math.round(v * 10)
+  document.getElementById('alloc-summary').innerHTML =
+    `For every 1,000 eligible users: <strong>${per1000(notIn)}</strong> not in experiment, <strong>${per1000(half)}</strong> in control, <strong>${per1000(half)}</strong> in test.`
+
+  updatePower()
+}
+
+// ── GROUPS ──────────────────────────────────────────────────
+let groupCount = 2
+function addGroup() {
+  groupCount++
+  const idx = groupCount
+  const container = document.getElementById('groups-container')
+  const row = document.createElement('div')
+  row.className = 'group-row test'
+  row.id = 'group-variant-' + idx
+  const colors = ['#9c27b0','#ff5722','#009688','#ff9800']
+  const color  = colors[(groupCount - 2) % colors.length]
+  row.innerHTML = `
+    <div class="group-color" style="background:${color}"></div>
+    <input type="text" class="form-input group-name-input" value="variant_${idx - 1}" oninput="updateCodeSnippet()">
+    <div>
+      <input type="number" class="form-input group-weight-input" value="25" min="1" max="99" oninput="updateGroups()"> %
+    </div>
+    <div class="group-allocation-bar">
+      <div class="alloc-track"><div class="alloc-fill" style="width:25%;background:${color}"></div></div>
+    </div>
+    <span style="font-size:11px;color:var(--text3);width:80px;text-align:right">?? users</span>
+    <button class="group-remove" onclick="this.closest('.group-row').remove();updateGroups()"><span class="material-icons" style="font-size:16px">close</span></button>
+  `
+  container.appendChild(row)
+  document.getElementById('groups-hint').textContent = 'Multi-arm test: users are split across all variants. Control always gets the existing experience.'
+}
+
+function removeGroup(id) { /* placeholder */ }
+function updateGroups() { /* live preview */ }
+
+// ── METRICS ─────────────────────────────────────────────────
+let metricCount = 3
+function addMetricRow() {
+  addMetricRowWithData({ name:'', event:'', agg:'count_users', role:'secondary' }, metricCount)
+  metricCount++
+}
+
+function addMetricRowWithData(m, i) {
+  const tbody = document.getElementById('metrics-tbody')
+  const tr = document.createElement('tr')
+  tr.id = 'metric-row-' + i
+  tr.innerHTML = `
+    <td><input type="text" class="form-input" value="${m.name}" style="min-width:120px" placeholder="metric_name"></td>
+    <td><input type="text" class="form-input monospace" value="${m.event}" style="min-width:140px" placeholder="event_name"></td>
+    <td>
+      <select class="form-input" onchange="showAggExplain(this,${i})">
+        ${['count_users','count_events','sum','avg','retention_7d','retention_30d']
+          .map(v => `<option value="${v}"${v===m.agg?' selected':''}>${v}</option>`).join('')}
+      </select>
+    </td>
+    <td>
+      <select class="role-select ${m.role}" onchange="this.className='role-select '+this.value">
+        ${['goal','guardrail','secondary']
+          .map(v => `<option value="${v}"${v===m.role?' selected':''}>${v}</option>`).join('')}
+      </select>
+    </td>
+    <td><button class="remove-metric" onclick="document.getElementById('metric-row-${i}').remove()"><span class="material-icons" style="font-size:16px">close</span></button></td>
+  `
+  tbody.appendChild(tr)
+}
+
+function removeMetric(i) {
+  const el = document.getElementById('metric-row-' + i)
+  if (el) el.remove()
+}
+
+const AGG_EXPLAINS = {
+  count_users:   'Binary per user (1 or 0). "Did the user do <em>event</em> at least once?" Gives a <strong>conversion rate</strong>. Use for: purchases, signups, activations.',
+  count_events:  'Count of events per user. "How many times did the user do <em>event</em>?" Gives <strong>volume per user</strong>. Use for: page views, searches, API calls.',
+  sum:           'Sum of the <code>value</code> field across all events per user. Gives <strong>total per user</strong>. Remember to pass <code>{value: amount}</code> in <code>client.track()</code>. Use for: revenue, points, bytes.',
+  avg:           'Mean of the <code>value</code> field per event per user. Gives <strong>average intensity</strong>. Remember to pass <code>{value: duration_ms}</code> in <code>client.track()</code>. Use for: load time, session duration.',
+  retention_7d:  'Did the user trigger <em>event</em> between Day 7 and Day 8 after their first exposure? → 1 or 0. Gives <strong>7-day retention rate</strong>. Track <code>session_start</code> events.',
+  retention_30d: 'Did the user trigger <em>event</em> between Day 30 and Day 31 after first exposure? → 1 or 0. Gives <strong>30-day retention rate</strong>. Track <code>session_start</code> events.',
+}
+
+function showAggExplain(sel, idx) {
+  const key = sel.value
+  const container = document.getElementById('agg-explains')
+  let el = document.getElementById('agg-explain-' + idx)
+  if (!el) {
+    el = document.createElement('div')
+    el.id = 'agg-explain-' + idx
+    el.className = 'explain'
+    el.style.marginTop = '8px'
+    container.appendChild(el)
+  }
+  el.innerHTML = `<strong>${key}:</strong> ${AGG_EXPLAINS[key]}`
+  setTimeout(() => el.remove(), 6000)
+}
+
+// ── CODE SNIPPET ────────────────────────────────────────────
+function updateCodeSnippet() {
+  const name = document.getElementById('exp-name').value || 'your_experiment_name'
+  document.getElementById('name-preview').textContent = name
+
+  const metrics = [...document.querySelectorAll('#metrics-tbody tr')].map(tr => {
+    const inputs = tr.querySelectorAll('input, select')
+    return { event: inputs[1]?.value || 'your_event', agg: inputs[2]?.value || 'count_users' }
+  })
+  const uniqueEvents = [...new Set(metrics.map(m => m.event))]
+  const trackLines  = uniqueEvents.map(ev => {
+    const m = metrics.find(x => x.event === ev)
+    const hasValue = m?.agg === 'sum' || m?.agg === 'avg'
+    return `client.<span class="code-fn">track</span>(<span class="code-string">'${ev}'</span>${hasValue ? ', { value: <span class="code-var">number</span> }' : ''})`
+  }).join('\n')
+
+  document.getElementById('code-snippet').innerHTML = `<span class="code-comment">// ─── Step 1: Get experiment (auto-logs exposure) ──────────────</span>
+<span class="code-keyword">const</span> exp = <span class="code-keyword">await</span> client.<span class="code-fn">getExperiment</span>(<span class="code-string">'exp_${name}'</span>)
+
+<span class="code-comment">// Render based on group assignment</span>
+<span class="code-keyword">if</span> (exp.group === <span class="code-string">'test'</span>) {
+  <span class="code-fn">renderNewVersion</span>(exp.params)
+} <span class="code-keyword">else</span> {
+  <span class="code-fn">renderControl</span>()
+}
+
+<span class="code-comment">// ─── Step 2: Track success events ─────────────────────────────</span>
+${trackLines}`
+}
+
+// ── POWER CALCULATION ───────────────────────────────────────
+function updatePower() {
+  const daily   = parseInt(document.getElementById('daily-users').value) || 1000
+  const mde     = parseFloat(document.getElementById('mde-input').value) / 100 || 0.02
+  const base    = parseFloat(document.getElementById('baseline-input').value) / 100 || 0.05
+  const alloc   = parseInt(document.getElementById('allocation-slider').value) / 100 || 0.5
+
+  // n needed for 80% power, α=0.05, two-sided
+  // Using approximation: n = (z_alpha/2 + z_beta)^2 * (p1*(1-p1) + p2*(1-p2)) / delta^2
+  const p1 = base, p2 = base + mde
+  const z  = 1.96 + 0.842 // z_0.025 + z_0.2 for 80% power
+  const n  = Math.ceil(z * z * (p1*(1-p1) + p2*(1-p2)) / (mde*mde))
+
+  const usersInExp   = daily * alloc
+  const usersPerGrp  = usersInExp / 2
+  const daysNeeded   = Math.ceil(n / Math.max(usersPerGrp, 1))
+  const currentPower = Math.min(99, Math.max(5, Math.round((usersPerGrp / n) * 80)))
+
+  document.getElementById('power-n').textContent   = n.toLocaleString()
+  document.getElementById('power-days').textContent = daysNeeded + 'd'
+  document.getElementById('power-pct').textContent  = currentPower + '%'
+  const fill = document.getElementById('power-fill')
+  fill.style.width = currentPower + '%'
+  fill.style.background = currentPower >= 80 ? 'var(--success)' : currentPower >= 60 ? 'var(--warn)' : 'var(--error)'
+
+  const msg = document.getElementById('power-message')
+  if (currentPower >= 80) {
+    msg.innerHTML = `✓ <strong style="color:var(--success)">Good power.</strong> You can detect effects ≥${(mde*100).toFixed(1)}% in ${daysNeeded} days at current allocation.`
+  } else if (daysNeeded <= 90) {
+    msg.innerHTML = `⚠ <strong style="color:var(--warn)">Run for ${daysNeeded} days</strong> to reach 80% power. Or increase allocation to ${Math.min(100,Math.ceil(alloc*100 * (n/usersPerGrp)))}%.`
+  } else {
+    msg.innerHTML = `✗ <strong style="color:var(--error)">Underpowered.</strong> Even running 90 days won't reach 80% power at this allocation. Increase allocation to ${Math.min(100,Math.ceil(alloc*100 * n / (daily*0.5 * 90)))}% or accept a larger MDE.`
+  }
+
+  document.getElementById('power-pct').style.color =
+    currentPower >= 80 ? 'var(--success)' : currentPower >= 60 ? 'var(--warn)' : 'var(--error)'
+}
+
+// ── LAUNCH ──────────────────────────────────────────────────
+function handleLaunch() {
+  const name = document.getElementById('exp-name').value
+  const q    = document.getElementById('exp-question').value
+  const s    = document.getElementById('exp-success').value
+
+  if (!name) { alert('Please enter an experiment name'); return }
+  if (!q)    { alert('Please describe the question you are answering'); return }
+  if (!s)    { alert('Please define what counts as success'); return }
+
+  const goalMetrics = [...document.querySelectorAll('.role-select.goal')]
+  if (goalMetrics.length === 0) {
+    if (!confirm('You have no goal metric defined. Are you sure you want to launch? It will be hard to make a ship/hold decision without one.')) return
+  }
+
+  alert(`✓ Experiment "exp_${name}" launched!\n\nThe first results will appear on the dashboard tomorrow at 04:00 UTC after the nightly analysis run.\n\nGo add the instrumentation code to your codebase.`)
+}
+
+// ── INIT ────────────────────────────────────────────────────
+updateAllocation()
+updateCodeSnippet()
+updatePower()
+</script>
+</body>
+</html>
