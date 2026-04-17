@@ -1,0 +1,74 @@
+name: Publish Ruby gems
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/sdk-ruby/**"
+      - "packages/i18n-rails/**"
+  workflow_dispatch:
+
+jobs:
+  publish-sdk-ruby:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/sdk-ruby
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: false
+
+      - name: Configure RubyGems credentials
+        run: |
+          mkdir -p ~/.gem
+          printf -- "---\n:rubygems_api_key: %s\n" "$RUBYGEMS_API_KEY" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+
+      - name: Build and publish shipeasy-sdk
+        run: |
+          VERSION=$(ruby -e "require_relative 'lib/shipeasy/sdk/version'; puts Shipeasy::SDK::VERSION")
+          if gem list shipeasy-sdk --remote --exact --version "$VERSION" | grep -q shipeasy-sdk; then
+            echo "Already published: shipeasy-sdk $VERSION"
+          else
+            gem build shipeasy-sdk.gemspec
+            gem push "shipeasy-sdk-${VERSION}.gem"
+            echo "Published shipeasy-sdk $VERSION"
+          fi
+
+  publish-i18n-rails:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/i18n-rails
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: false
+
+      - name: Configure RubyGems credentials
+        run: |
+          mkdir -p ~/.gem
+          printf -- "---\n:rubygems_api_key: %s\n" "$RUBYGEMS_API_KEY" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+
+      - name: Build and publish i18n-rails
+        run: |
+          VERSION=$(ruby -e "require_relative 'lib/i18n/rails/version'; puts ShipEasyI18n::Rails::VERSION")
+          if gem list i18n-rails --remote --exact --version "$VERSION" | grep -q i18n-rails; then
+            echo "Already published: i18n-rails $VERSION"
+          else
+            gem build i18n-rails.gemspec
+            gem push "i18n-rails-${VERSION}.gem"
+            echo "Published i18n-rails $VERSION"
+          fi

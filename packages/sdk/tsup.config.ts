@@ -11,7 +11,7 @@ export default defineConfig([
   {
     entry: { index: "src/client/index.ts" },
     outDir: "dist/client",
-    format: ["esm"],
+    format: ["cjs", "esm"],
     dts: true,
   },
 ]);
