@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { ApiError } from "@shipeasy/core";
 import { userAttributes } from "@shipeasy/core/db/schema";
 import { attributeCreateSchema, attributeUpdateSchema } from "@shipeasy/core/schemas/attributes";
-import { scopedDb } from "../db";
+import { scopedDb, scopedDbSA } from "../db";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
 
@@ -23,7 +23,7 @@ export async function createAttribute(identity: AdminIdentity, input: unknown) {
     throw new ApiError("enum_values required for type 'enum'", 422);
   }
   const id = crypto.randomUUID();
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   try {
     await s.insert(userAttributes).values({
       id,
@@ -46,7 +46,7 @@ export async function createAttribute(identity: AdminIdentity, input: unknown) {
 
 export async function updateAttribute(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = attributeUpdateSchema.parse(input);
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(userAttributes, eq(userAttributes.id, id));
   if (rows.length === 0) throw new ApiError("Attribute not found", 404);
 
@@ -63,7 +63,7 @@ export async function updateAttribute(identity: AdminIdentity, id: string, input
 }
 
 export async function deleteAttribute(identity: AdminIdentity, id: string) {
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(userAttributes, eq(userAttributes.id, id));
   if (rows.length === 0) throw new ApiError("Attribute not found", 404);
   await s.delete(userAttributes).where(eq(userAttributes.id, id));

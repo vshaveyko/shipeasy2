@@ -7,13 +7,19 @@ test.describe("Metrics", () => {
     await expect(page.getByRole("heading", { name: /^metrics$/i, level: 1 })).toBeVisible();
     await expect(page.getByText(/no metrics yet/i)).toBeVisible();
 
-    for (const agg of ["count_users", "sum", "avg", "retention_Nd"]) {
-      await expect(page.getByText(agg).first()).toBeVisible();
+    // Check visible hint text in the reference cards (not hidden <option> text)
+    for (const hint of [
+      /binary conversion/i,
+      /total value per user/i,
+      /mean value per user/i,
+      /come back on day n/i,
+    ]) {
+      await expect(page.getByText(hint)).toBeVisible();
     }
   });
 
-  test("new-metric button is disabled until the form is wired", async ({ page }) => {
+  test("new-metric form is wired and submit button is enabled", async ({ page }) => {
     await page.goto("/dashboard/experiments/metrics");
-    await expect(page.getByRole("button", { name: /^new metric$/i })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /^new metric$/i })).toBeEnabled();
   });
 });

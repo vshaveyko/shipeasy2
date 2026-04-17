@@ -2,14 +2,14 @@ import { eq } from "drizzle-orm";
 import { checkLimit, ApiError, getPlan } from "@shipeasy/core";
 import { metrics, events } from "@shipeasy/core/db/schema";
 import { metricCreateSchema, metricUpdateSchema } from "@shipeasy/core/schemas/metrics";
-import { scopedDb } from "../db";
-import { getEnv } from "../env";
+import { scopedDb, scopedDbSA } from "../db";
+import { getEnv, getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
 
 async function assertEventExists(projectId: string, name: string) {
-  const s = scopedDb(projectId);
+  const s = await scopedDbSA(projectId);
   const rows = await s.selectWhere(events, eq(events.name, name));
   if (rows.length === 0) throw new ApiError(`Event '${name}' not registered`, 422);
   if (rows[0].pending === 1) throw new ApiError(`Event '${name}' is pending review`, 422);
@@ -30,13 +30,13 @@ export async function createMetric(identity: AdminIdentity, input: unknown) {
   const parsed = metricCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
   const plan = getPlan(project.plan);
-  const env = getEnv();
+  const env = await getEnvAsync();
 
   await assertEventExists(identity.projectId, parsed.event_name);
   await checkLimit(env.DB, identity.projectId, "metrics", plan);
 
   const id = crypto.randomUUID();
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   try {
     await s.insert(metrics).values({
       id,
@@ -58,7 +58,7 @@ export async function createMetric(identity: AdminIdentity, input: unknown) {
 
 export async function updateMetric(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = metricUpdateSchema.parse(input);
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(metrics, eq(metrics.id, id));
   if (rows.length === 0) throw new ApiError("Metric not found", 404);
 
@@ -79,7 +79,7 @@ export async function updateMetric(identity: AdminIdentity, id: string, input: u
 }
 
 export async function deleteMetric(identity: AdminIdentity, id: string) {
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(metrics, eq(metrics.id, id));
   if (rows.length === 0) throw new ApiError("Metric not found", 404);
   await s.delete(metrics).where(eq(metrics.id, id));

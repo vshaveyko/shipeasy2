@@ -21,11 +21,11 @@ export default defineConfig({
   projects: [
     {
       name: "setup",
-      testMatch: "**/auth.setup.ts",
+      testMatch: "auth.setup.ts",
     },
     {
       name: "guest",
-      testMatch: "**/guest/*.spec.ts",
+      testMatch: "guest/**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -33,7 +33,7 @@ export default defineConfig({
     },
     {
       name: "auth",
-      testMatch: "**/auth/*.spec.ts",
+      testMatch: "auth/**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },

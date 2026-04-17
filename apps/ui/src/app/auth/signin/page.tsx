@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { Logo } from "@shipeasy/shared/Logo";
 
 export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <Link href="/" className="font-bold text-2xl">
+          <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl">
+            <Logo className="size-8" />
             ShipEasy
           </Link>
         </div>

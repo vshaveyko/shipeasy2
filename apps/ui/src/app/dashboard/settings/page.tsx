@@ -1,13 +1,31 @@
 import { auth, signOut } from "@/auth";
+import { getProject } from "@/lib/handlers/projects";
+import { getPlan } from "@shipeasy/core";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { updateProjectAction } from "./actions";
 
 export default async function SettingsPage() {
   const session = await auth();
+  const projectId = session?.user?.project_id;
+
+  let project: { id: string; name: string; plan: string } | null = null;
+  if (projectId) {
+    try {
+      project = await getProject(
+        { projectId, actorEmail: session?.user?.email ?? "unknown", source: "jwt" },
+        projectId,
+      );
+    } catch {
+      // DB not available in dev without wrangler
+    }
+  }
+
+  const plan = project ? getPlan(project.plan) : null;
 
   return (
     <div className="space-y-6">
@@ -19,14 +37,29 @@ export default async function SettingsPage() {
           <CardDescription>Metadata visible to your team and SDKs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="project-name">Name</Label>
-            <Input id="project-name" defaultValue="Default project" disabled />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="project-id">Project ID</Label>
-            <Input id="project-id" defaultValue="proj_local" className="font-mono" disabled />
-          </div>
+          <form action={updateProjectAction} className="space-y-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="project-name">Name</Label>
+              <Input
+                id="project-name"
+                name="name"
+                defaultValue={project?.name ?? ""}
+                placeholder="My project"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="project-id">Project ID</Label>
+              <Input
+                id="project-id"
+                defaultValue={project?.id ?? projectId ?? ""}
+                className="font-mono"
+                disabled
+              />
+            </div>
+            <Button size="sm" type="submit">
+              Save
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
@@ -38,9 +71,11 @@ export default async function SettingsPage() {
         <CardContent className="space-y-4 pt-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-medium">Free</div>
+              <div className="text-sm font-medium capitalize">{project?.plan ?? "free"}</div>
               <div className="text-xs text-muted-foreground">
-                5 flags · 1 experiment · 30d results retention
+                {plan
+                  ? `${plan.max_flags === -1 ? "∞" : plan.max_flags} flags · ${plan.max_experiments_running === -1 ? "∞" : plan.max_experiments_running} running experiments`
+                  : "—"}
               </div>
             </div>
             <Badge variant="secondary">current</Badge>

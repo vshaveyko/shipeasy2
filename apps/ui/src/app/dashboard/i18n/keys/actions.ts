@@ -1,8 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { deleteKey } from "@/lib/handlers/i18n";
+import { deleteKey, updateKey, upsertDraftKey } from "@/lib/handlers/i18n";
 import type { AdminIdentity } from "@/lib/admin-auth";
 
 async function getIdentity(): Promise<AdminIdentity> {
@@ -15,7 +16,23 @@ async function getIdentity(): Promise<AdminIdentity> {
 export async function deleteKeyAction(formData: FormData) {
   const identity = await getIdentity();
   const id = formData.get("id") as string;
-  const back = (formData.get("back") as string) || "/dashboard/i18n/keys";
   await deleteKey(identity, id);
-  redirect(back);
+  revalidatePath("/dashboard/i18n/keys");
+}
+
+export async function updateKeyAction(formData: FormData) {
+  const identity = await getIdentity();
+  const id = formData.get("id") as string;
+  const value = formData.get("value") as string;
+  await updateKey(identity, id, { value });
+  revalidatePath("/dashboard/i18n/keys");
+}
+
+export async function upsertDraftKeyAction(formData: FormData) {
+  const identity = await getIdentity();
+  const draftId = formData.get("draftId") as string;
+  const key = formData.get("key") as string;
+  const value = formData.get("value") as string;
+  await upsertDraftKey(identity, draftId, key, value);
+  revalidatePath("/dashboard/i18n/keys");
 }

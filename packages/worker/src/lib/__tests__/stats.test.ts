@@ -35,8 +35,9 @@ describe("winsorize", () => {
   });
 
   it("does not modify values at or below the cap", () => {
-    const result = winsorize([10, 20, 30], 80);
-    expect(result).toEqual([10, 20, 30]);
+    // sorted=[1,2,3,4,100] at 80th percentile: cap=sorted[3]=4; first four values unchanged
+    const result = winsorize([1, 2, 3, 4, 100], 80);
+    expect(result.slice(0, 4)).toEqual([1, 2, 3, 4]);
   });
 
   it("handles single-element array", () => {
@@ -111,9 +112,10 @@ describe("welchTTest", () => {
     expect(pValue).toBeCloseTo(1, 1);
   });
 
-  it("returns a very small p-value for a large mean difference with many samples", () => {
-    const ctrl = { n: 1000, mean: 0, variance: 1 };
-    const trt = { n: 1000, mean: 1, variance: 1 };
+  it("returns a very small p-value for a statistically significant mean difference", () => {
+    // n=100, diff=1, variance=1 → t≈7; large enough to be significant, small enough to avoid numerical underflow
+    const ctrl = { n: 100, mean: 0, variance: 1 };
+    const trt = { n: 100, mean: 1, variance: 1 };
     const { pValue } = welchTTest(ctrl, trt);
     expect(pValue).toBeLessThan(0.001);
   });

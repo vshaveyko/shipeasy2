@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
-export type ProductId = "configs" | "experiments" | "i18n";
+export type ProductId = "gates" | "configs" | "experiments" | "i18n";
 
 export type NavItem = {
   href: string;
@@ -46,26 +46,36 @@ export type Product = {
 
 export const PRODUCTS: Product[] = [
   {
-    id: "configs",
-    name: "Configs",
-    tagline: "Feature flags & dynamic values",
+    id: "gates",
+    name: "Gates",
+    tagline: "Feature flags & targeted rollouts",
     icon: ToggleLeft,
-    basePath: "/dashboard/configs",
-    rootHref: "/dashboard/configs",
+    basePath: "/dashboard/gates",
+    rootHref: "/dashboard/gates",
     nav: [
       {
         title: "Ship",
         items: [
           {
-            href: "/dashboard/configs",
-            label: "Overview",
-            icon: LayoutDashboard,
-          },
-          {
-            href: "/dashboard/configs/gates",
+            href: "/dashboard/gates",
             label: "Gates",
             icon: ToggleLeft,
           },
+        ],
+      },
+    ],
+  },
+  {
+    id: "configs",
+    name: "Configs",
+    tagline: "Dynamic values & remote config",
+    icon: Layers,
+    basePath: "/dashboard/configs",
+    rootHref: "/dashboard/configs/values",
+    nav: [
+      {
+        title: "Ship",
+        items: [
           {
             href: "/dashboard/configs/values",
             label: "Configs",

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
+import { createGateAction } from "../actions";
 
 export default function NewGatePage() {
   return (
@@ -18,7 +19,7 @@ export default function NewGatePage() {
         }
       />
 
-      <form className="grid gap-6 lg:grid-cols-3">
+      <form action={createGateAction} className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
             <CardTitle>Basics</CardTitle>
@@ -32,6 +33,9 @@ export default function NewGatePage() {
                 name="key"
                 placeholder="new_checkout_flow"
                 className="font-mono"
+                required
+                pattern="[a-z0-9][a-z0-9_\-]{0,63}"
+                title="Lowercase letters, digits, _ or -; max 64 chars"
               />
               <p className="text-xs text-muted-foreground">
                 Lowercase, snake_case. Used from SDKs as getGate(&apos;new_checkout_flow&apos;).
@@ -101,7 +105,7 @@ export default function NewGatePage() {
           <LinkButton variant="ghost" size="sm" href="/dashboard/configs/gates">
             Cancel
           </LinkButton>
-          <Button size="sm" type="submit" disabled>
+          <Button size="sm" type="submit">
             Create gate
           </Button>
         </div>

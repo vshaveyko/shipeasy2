@@ -1,65 +1,65 @@
-name: Deploy
+# name: Deploy
 
-on:
-  push:
-    branches: [main]
+# on:
+#   push:
+#     branches: [main]
 
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: deploy-${{ github.ref }}
+#   cancel-in-progress: true
 
-jobs:
-  deploy-docs:
-    name: Deploy docs (shipeasy-docs → docs.shipeasy.ai)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @shipeasy/docs exec fumadocs-mdx
-      - run: pnpm --filter @shipeasy/docs exec next build
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
-          workingDirectory: apps/docs
+# jobs:
+#   deploy-docs:
+#     name: Deploy docs (shipeasy-docs → docs.shipeasy.ai)
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: pnpm/action-setup@v4
+#         with:
+#           version: 10.33.0
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: pnpm
+#       - run: pnpm install --frozen-lockfile
+#       - run: pnpm --filter @shipeasy/docs exec fumadocs-mdx
+#       - run: pnpm --filter @shipeasy/docs exec next build
+#       - uses: cloudflare/wrangler-action@v3
+#         with:
+#           apiToken: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
+#           workingDirectory: apps/docs
 
-  deploy-worker:
-    name: Deploy edge worker (shipeasy-worker → cdn.shipeasy.ai)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
-          workingDirectory: packages/worker
+#   deploy-worker:
+#     name: Deploy edge worker (shipeasy-worker → cdn.shipeasy.ai)
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: pnpm/action-setup@v4
+#         with:
+#           version: 10.33.0
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: pnpm
+#       - run: pnpm install --frozen-lockfile
+#       - uses: cloudflare/wrangler-action@v3
+#         with:
+#           apiToken: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
+#           workingDirectory: packages/worker
 
-  deploy-ui:
-    name: Deploy admin UI (shipeasy → shipeasy.ai)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @shipeasy/ui run deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}
+#   deploy-ui:
+#     name: Deploy admin UI (shipeasy → shipeasy.ai)
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: pnpm/action-setup@v4
+#         with:
+#           version: 10.33.0
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: pnpm
+#       - run: pnpm install --frozen-lockfile
+#       - run: pnpm --filter @shipeasy/ui run deploy
+#         env:
+#           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_TOKEN }}

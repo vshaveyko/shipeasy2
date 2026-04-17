@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/link-button";
+import { Logo } from "@shipeasy/shared/Logo";
 
 export default async function LandingPage() {
   const session = await auth();
@@ -10,7 +11,10 @@ export default async function LandingPage() {
       {/* Nav */}
       <header className="border-b">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="font-bold text-lg">ShipEasy</span>
+          <span className="flex items-center gap-2 font-bold text-lg">
+            <Logo className="size-6" />
+            ShipEasy
+          </span>
           <nav className="flex items-center gap-4">
             <a
               href="https://docs.shipeasy.ai"

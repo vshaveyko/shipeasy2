@@ -13,10 +13,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-dvh flex-col bg-background">
       <TopBar user={session.user ?? {}} />
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground md:block">
+        <aside className="hidden w-60 shrink-0 overflow-y-auto border-r bg-sidebar text-sidebar-foreground md:block">
           <SidebarNav />
         </aside>
         <main className="flex-1 overflow-y-auto bg-muted/30">

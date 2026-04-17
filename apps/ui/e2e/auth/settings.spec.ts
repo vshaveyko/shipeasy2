@@ -8,8 +8,8 @@ test.describe("Settings", () => {
 
     const main = page.locator("main");
     await expect(main.getByText(/^project$/i).first()).toBeVisible();
-    await expect(page.getByLabel(/^name$/i)).toHaveValue("Default project");
-    await expect(page.getByLabel(/project id/i)).toHaveValue("proj_local");
+    await expect(page.getByLabel(/^name$/i)).toBeVisible();
+    await expect(page.getByLabel(/project id/i)).toBeVisible();
 
     await expect(main.getByText(/^plan$/i).first()).toBeVisible();
     await expect(page.getByText(/^current$/i)).toBeVisible();

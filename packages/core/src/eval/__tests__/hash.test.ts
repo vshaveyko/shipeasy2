@@ -54,6 +54,26 @@ describe("murmur3_v1", () => {
   });
 });
 
+describe("murmur3_v1 — cross-language parity vectors", () => {
+  // All SDKs must produce identical values for these inputs.
+  // Verified against murmurhash-js (npm) and the production-format vectors in 04-evaluation.md.
+  // Note: 04-evaluation.md has incorrect short-string vectors for 1-5 char inputs (doc bug).
+  // The "exp_001:..." production vectors are authoritative — endianness bugs surface there.
+  it.each([
+    ["", 0x00000000],
+    ["a", 0x3c2569b2],
+    ["ab", 0x9bbfd75f],
+    ["abc", 0xb3dd93fa],
+    ["aaaa", 0x7eeed987],
+    ["aaaaa", 0xe9ca302b],
+    ["The quick brown fox jumps over the lazy dog", 0x2e4ff723],
+    ["exp_001:alloc:user_abc", 0x4032d3f7],
+    ["exp_001:group:user_abc", 0x49cf4eee],
+  ] as [string, number][])("murmur3_v1(%j)", (input, expected) => {
+    expect(murmur3_v1(input)).toBe(expected >>> 0);
+  });
+});
+
 describe("getHashFn", () => {
   it("returns a function that matches murmur3_v1 for version 1", () => {
     const fn = getHashFn(1);

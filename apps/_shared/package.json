@@ -1,0 +1,14 @@
+{
+  "name": "@shipeasy/shared",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.tsx"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14"
+  }
+}

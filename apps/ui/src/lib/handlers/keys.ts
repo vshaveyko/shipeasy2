@@ -9,8 +9,8 @@ import {
 } from "@shipeasy/core";
 import { sdkKeys } from "@shipeasy/core/db/schema";
 import { keyCreateSchema } from "@shipeasy/core/schemas/keys";
-import { scopedDb } from "../db";
-import { getEnv } from "../env";
+import { scopedDb, scopedDbSA } from "../db";
+import { getEnv, getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
@@ -31,7 +31,7 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
   const parsed = keyCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
   const plan = getPlan(project.plan);
-  const env = getEnv();
+  const env = await getEnvAsync();
 
   await checkLimit(env.DB, identity.projectId, "sdk_keys", plan);
 
@@ -42,7 +42,7 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
   const expiresAt =
     parsed.type === "admin" ? new Date(Date.now() + 90 * 86_400_000).toISOString() : null;
 
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   await s.insert(sdkKeys).values({
     id,
     keyHash: hash,
@@ -61,8 +61,8 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
 }
 
 export async function revokeKey(identity: AdminIdentity, id: string) {
-  const env = getEnv();
-  const s = scopedDb(identity.projectId);
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(sdkKeys, eq(sdkKeys.id, id));
   if (rows.length === 0) throw new ApiError("Key not found", 404);
   const key = rows[0];

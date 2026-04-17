@@ -5,6 +5,7 @@ import {
   labelChunks,
   labelKeys,
   labelDrafts,
+  labelDraftKeys,
   i18nUsageDaily,
 } from "@shipeasy/core/db/schema";
 import {
@@ -14,8 +15,8 @@ import {
   draftCreateSchema,
   draftUpdateSchema,
 } from "@shipeasy/core/schemas/i18n";
-import { scopedDb } from "../db";
-import { getEnv } from "../env";
+import { scopedDb, scopedDbSA } from "../db";
+import { getEnv, getEnvAsync } from "../env";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
 
@@ -28,7 +29,7 @@ export async function listProfiles(identity: AdminIdentity) {
 
 export async function createProfile(identity: AdminIdentity, input: unknown) {
   const parsed = profileCreateSchema.parse(input);
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const id = crypto.randomUUID();
   try {
     await s.insert(labelProfiles).values({
@@ -47,7 +48,7 @@ export async function createProfile(identity: AdminIdentity, input: unknown) {
 }
 
 export async function deleteProfile(identity: AdminIdentity, id: string) {
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const existing = await s.selectWhere(labelProfiles, eq(labelProfiles.id, id));
   if (existing.length === 0) throw new ApiError("Profile not found", 404);
   await s.delete(labelProfiles).where(eq(labelProfiles.id, id));
@@ -102,7 +103,7 @@ export async function listKeys(identity: AdminIdentity, profileId?: string): Pro
 
 export async function upsertKeys(identity: AdminIdentity, input: unknown) {
   const parsed = keysPushSchema.parse(input);
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
 
   const profile = await s.selectWhere(labelProfiles, eq(labelProfiles.id, parsed.profile_id));
   if (profile.length === 0) throw new ApiError("Profile not found", 404);
@@ -126,7 +127,7 @@ export async function upsertKeys(identity: AdminIdentity, input: unknown) {
     chunk = created[0];
   }
 
-  const env = getEnv();
+  const env = await getEnvAsync();
   const db = getDb(env.DB);
   const now = new Date().toISOString();
   let upserted = 0;
@@ -166,7 +167,7 @@ export async function upsertKeys(identity: AdminIdentity, input: unknown) {
 
 export async function updateKey(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = keyUpdateSchema.parse(input);
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const existing = await s.selectWhere(labelKeys, eq(labelKeys.id, id));
   if (existing.length === 0) throw new ApiError("Key not found", 404);
 
@@ -185,7 +186,7 @@ export async function updateKey(identity: AdminIdentity, id: string, input: unkn
 }
 
 export async function deleteKey(identity: AdminIdentity, id: string) {
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const existing = await s.selectWhere(labelKeys, eq(labelKeys.id, id));
   if (existing.length === 0) throw new ApiError("Key not found", 404);
   await s.delete(labelKeys).where(eq(labelKeys.id, id));
@@ -205,7 +206,7 @@ export async function listDrafts(identity: AdminIdentity, profileId?: string) {
 
 export async function createDraft(identity: AdminIdentity, input: unknown) {
   const parsed = draftCreateSchema.parse(input);
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
 
   const profile = await s.selectWhere(labelProfiles, eq(labelProfiles.id, parsed.profile_id));
   if (profile.length === 0) throw new ApiError("Profile not found", 404);
@@ -234,7 +235,7 @@ export async function createDraft(identity: AdminIdentity, input: unknown) {
 
 export async function updateDraft(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = draftUpdateSchema.parse(input);
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const existing = await s.selectWhere(labelDrafts, eq(labelDrafts.id, id));
   if (existing.length === 0) throw new ApiError("Draft not found", 404);
 
@@ -250,12 +251,74 @@ export async function updateDraft(identity: AdminIdentity, id: string, input: un
 }
 
 export async function deleteDraft(identity: AdminIdentity, id: string) {
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
   const existing = await s.selectWhere(labelDrafts, eq(labelDrafts.id, id));
   if (existing.length === 0) throw new ApiError("Draft not found", 404);
   await s.delete(labelDrafts).where(eq(labelDrafts.id, id));
   await writeAudit(identity, "i18n.draft.delete", "label_draft", id);
   return { ok: true };
+}
+
+// ── Draft keys ───────────────────────────────────────────────────────────────
+
+export type DraftKeyRow = {
+  id: string;
+  draftId: string;
+  key: string;
+  value: string;
+  description: string | null;
+  updatedBy: string;
+  updatedAt: string;
+};
+
+export async function listDraftKeys(
+  identity: AdminIdentity,
+  draftId: string,
+): Promise<DraftKeyRow[]> {
+  const s = scopedDb(identity.projectId);
+  const rows = await s.selectWhere(labelDraftKeys, eq(labelDraftKeys.draftId, draftId));
+  return rows as DraftKeyRow[];
+}
+
+export async function upsertDraftKey(
+  identity: AdminIdentity,
+  draftId: string,
+  key: string,
+  value: string,
+  description?: string | null,
+) {
+  const s = await scopedDbSA(identity.projectId);
+  const draft = await s.selectWhere(labelDrafts, eq(labelDrafts.id, draftId));
+  if (draft.length === 0) throw new ApiError("Draft not found", 404);
+  if (draft[0].status !== "open") throw new ApiError("Draft is not open", 400);
+
+  const env = await getEnvAsync();
+  const db = getDb(env.DB);
+  const now = new Date().toISOString();
+
+  await db
+    .insert(labelDraftKeys)
+    .values({
+      id: crypto.randomUUID(),
+      projectId: identity.projectId,
+      draftId,
+      key,
+      value,
+      description: description ?? null,
+      updatedBy: identity.actorEmail,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [labelDraftKeys.draftId, labelDraftKeys.key],
+      set: {
+        value,
+        description: description ?? null,
+        updatedBy: identity.actorEmail,
+        updatedAt: now,
+      },
+    });
+
+  await writeAudit(identity, "i18n.draft.key.upsert", "label_draft_key", draftId, { key, value });
 }
 
 // ── Overview stats ────────────────────────────────────────────────────────────

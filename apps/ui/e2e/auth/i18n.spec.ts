@@ -107,18 +107,15 @@ test.describe("i18n / Profiles", () => {
     await expect(page.getByRole("link", { name: /new profile/i }).first()).toBeVisible();
   });
 
-  test("list page shows empty state when no profiles exist", async ({ page }) => {
+  test("list page shows the seeded en:test profile", async ({ page }) => {
     await page.goto("/dashboard/i18n/profiles");
-    await expect(page.getByText(/no profiles yet/i)).toBeVisible();
+    await expect(page.getByRole("cell", { name: "en:test", exact: true })).toBeVisible();
   });
 
-  test("empty state links to new-profile page", async ({ page }) => {
+  test("seeded profile row shows a Browse keys link", async ({ page }) => {
     await page.goto("/dashboard/i18n/profiles");
-    await page
-      .getByRole("link", { name: /new profile/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/dashboard\/i18n\/profiles\/new$/);
+    const row = page.getByRole("row").filter({ hasText: "en:test" });
+    await expect(row.getByRole("link", { name: /browse keys/i })).toBeVisible();
   });
 
   test("new-profile form renders heading, name field and cancel link", async ({ page }) => {
@@ -175,39 +172,39 @@ test.describe("i18n / Keys", () => {
     await page.goto("/dashboard/i18n/keys");
 
     await expect(page.getByRole("heading", { name: /^label keys$/i, level: 1 })).toBeVisible();
-    await expect(page.getByText(/push keys via the cli/i)).toBeVisible();
+    await expect(page.getByText(/manage translation keys/i)).toBeVisible();
   });
 
-  test("shows empty state with CLI hint when no keys exist", async ({ page }) => {
+  test("profile tab for seeded profile is visible", async ({ page }) => {
     await page.goto("/dashboard/i18n/keys");
-    await expect(page.getByText(/no keys yet/i)).toBeVisible();
-    await expect(page.getByText(/shipeasy i18n push/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: "en:test", exact: true })).toBeVisible();
   });
 
-  test("shows key count in the toolbar", async ({ page }) => {
+  test("shows key count for seeded profile", async ({ page }) => {
     await page.goto("/dashboard/i18n/keys");
-    // '0 keys' shown in toolbar
-    await expect(page.getByText(/^0 keys$/i)).toBeVisible();
+    await expect(page.getByText(/5 keys/i)).toBeVisible();
   });
 
-  test("profile filter select is rendered", async ({ page }) => {
+  test("search input renders with placeholder", async ({ page }) => {
     await page.goto("/dashboard/i18n/keys");
-    await expect(page.getByLabel(/^profile$/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/filter keys/i)).toBeVisible();
   });
 
-  test("profile filter has 'All profiles' as default option", async ({ page }) => {
+  test("expand / collapse button is rendered", async ({ page }) => {
     await page.goto("/dashboard/i18n/keys");
-    const filter = page.getByLabel(/^profile$/i);
-    await expect(filter).toHaveValue("");
+    await expect(page.getByTitle(/expand all/i)).toBeVisible();
   });
 
-  test("filtering by profile updates the URL", async ({ page }) => {
+  test("Translate with AI button is visible but disabled", async ({ page }) => {
     await page.goto("/dashboard/i18n/keys");
-    // When no profiles exist the filter is still rendered; navigating via URL works
-    await page.goto("/dashboard/i18n/keys?profile=some-profile-id");
-    await expect(page).toHaveURL(/profile=some-profile-id/);
-    // Shows 'no keys for this profile' empty state
-    await expect(page.getByText(/no keys for this profile/i)).toBeVisible();
+    const btn = page.getByRole("button", { name: /translate with ai/i });
+    await expect(btn).toBeVisible();
+    await expect(btn).toBeDisabled();
+  });
+
+  test("New draft action link is shown in page header", async ({ page }) => {
+    await page.goto("/dashboard/i18n/keys");
+    await expect(page.getByRole("link", { name: /new draft/i })).toBeVisible();
   });
 });
 
@@ -312,14 +309,10 @@ test.describe("i18n cross-workflow navigation", () => {
     await expect(page).toHaveURL(/\/dashboard\/i18n\/profiles$/);
   });
 
-  test("keys page profile filter preserves the URL correctly on navigation", async ({ page }) => {
+  test("keys page profile tab selection is stateful (no URL change)", async ({ page }) => {
     await page.goto("/dashboard/i18n/keys");
+    // Profile selection is client-side — URL stays the same
     await expect(page).toHaveURL(/\/dashboard\/i18n\/keys$/);
-    // Direct navigation with a query param
-    await page.goto("/dashboard/i18n/keys?profile=abc");
-    await expect(page.getByText(/no keys for this profile/i)).toBeVisible();
-    // Navigating back without the filter shows the general empty state
-    await page.goto("/dashboard/i18n/keys");
-    await expect(page.getByText(/no keys yet/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: "en:test", exact: true })).toBeVisible();
   });
 });

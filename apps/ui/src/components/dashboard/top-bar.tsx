@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Logo } from "@shipeasy/shared/Logo";
 
 type TopBarProps = {
   user: {
@@ -38,9 +39,10 @@ export function TopBar({ user, projectName = "Default project", planLabel = "Fre
       .slice(0, 2) ?? "?";
 
   return (
-    <header className="flex h-14 items-center justify-between gap-4 border-b bg-background px-6">
+    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-background px-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="font-bold text-base">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-base">
+          <Logo className="size-5" />
           ShipEasy
         </Link>
         <span className="text-muted-foreground">/</span>

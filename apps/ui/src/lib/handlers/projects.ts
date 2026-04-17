@@ -15,7 +15,7 @@ import {
   auditLog,
 } from "@shipeasy/core/db/schema";
 import { projectUpdateSchema, projectPlanUpdateSchema } from "@shipeasy/core/schemas/keys";
-import { getEnv } from "../env";
+import { getEnv, getEnvAsync } from "../env";
 import { writeAudit } from "../audit";
 import { rebuildFlags, rebuildExperiments } from "@shipeasy/core";
 import type { AdminIdentity } from "../admin-auth";
@@ -31,7 +31,7 @@ export async function getProject(identity: AdminIdentity, id: string) {
 export async function updateProject(identity: AdminIdentity, id: string, input: unknown) {
   if (id !== identity.projectId) throw new ApiError("Forbidden", 403);
   const parsed = projectUpdateSchema.parse(input);
-  const env = getEnv();
+  const env = await getEnvAsync();
 
   const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (parsed.name !== undefined) patch.name = parsed.name;
@@ -44,7 +44,7 @@ export async function updateProject(identity: AdminIdentity, id: string, input: 
 export async function updateProjectPlan(identity: AdminIdentity, id: string, input: unknown) {
   if (id !== identity.projectId) throw new ApiError("Forbidden", 403);
   const parsed = projectPlanUpdateSchema.parse(input);
-  const env = getEnv();
+  const env = await getEnvAsync();
 
   await updateProjectRow(env.DB, id, {
     plan: parsed.plan,

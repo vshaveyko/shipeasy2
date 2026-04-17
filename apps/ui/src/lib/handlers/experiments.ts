@@ -12,8 +12,8 @@ import {
   experimentUpdateSchema,
   experimentMetricsUpdateSchema,
 } from "@shipeasy/core/schemas/experiments";
-import { scopedDb } from "../db";
-import { getEnv } from "../env";
+import { scopedDb, scopedDbSA } from "../db";
+import { getEnv, getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
@@ -32,7 +32,7 @@ export async function getExperiment(identity: AdminIdentity, id: string) {
 }
 
 async function assertUniverseExists(projectId: string, name: string) {
-  const s = scopedDb(projectId);
+  const s = await scopedDbSA(projectId);
   const rows = await s.selectWhere(universes, eq(universes.name, name));
   if (rows.length === 0) throw new ApiError(`Universe '${name}' not found`, 422);
 }
@@ -41,7 +41,7 @@ export async function createExperiment(identity: AdminIdentity, input: unknown) 
   const parsed = experimentCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
   const plan = getPlan(project.plan);
-  const env = getEnv();
+  const env = await getEnvAsync();
 
   if (
     parsed.groups.length > plan.max_groups_per_experiment &&
@@ -64,7 +64,7 @@ export async function createExperiment(identity: AdminIdentity, input: unknown) 
   const id = crypto.randomUUID();
   const salt = parsed.salt ?? crypto.randomUUID().replace(/-/g, "");
   const now = new Date().toISOString();
-  const s = scopedDb(identity.projectId);
+  const s = await scopedDbSA(identity.projectId);
 
   try {
     await s.insert(experiments).values({
@@ -97,8 +97,8 @@ export async function createExperiment(identity: AdminIdentity, input: unknown) 
 
 export async function updateExperiment(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = experimentUpdateSchema.parse(input);
-  const env = getEnv();
-  const s = scopedDb(identity.projectId);
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
 
   const rows = await s.selectWhere(experiments, eq(experiments.id, id));
   if (rows.length === 0) throw new ApiError("Experiment not found", 404);
@@ -146,8 +146,8 @@ export async function setExperimentStatus(
 ) {
   const project = await loadProject(identity.projectId);
   const plan = getPlan(project.plan);
-  const env = getEnv();
-  const s = scopedDb(identity.projectId);
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
 
   const rows = await s.selectWhere(experiments, eq(experiments.id, id));
   if (rows.length === 0) throw new ApiError("Experiment not found", 404);
@@ -183,8 +183,8 @@ export async function setExperimentStatus(
 
 export async function updateExperimentMetrics(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = experimentMetricsUpdateSchema.parse(input);
-  const env = getEnv();
-  const s = scopedDb(identity.projectId);
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(experiments, eq(experiments.id, id));
   if (rows.length === 0) throw new ApiError("Experiment not found", 404);
 
@@ -255,8 +255,8 @@ export async function reanalyzeExperiment(identity: AdminIdentity, id: string) {
 }
 
 export async function deleteExperiment(identity: AdminIdentity, id: string) {
-  const env = getEnv();
-  const s = scopedDb(identity.projectId);
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(experiments, eq(experiments.id, id));
   if (rows.length === 0) throw new ApiError("Experiment not found", 404);
   if (rows[0].status === "running") throw new ApiError("Stop the experiment before deleting", 409);

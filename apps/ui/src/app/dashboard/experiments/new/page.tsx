@@ -1,24 +1,106 @@
+"use client";
+
+import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
+import { cn } from "@/lib/utils";
+import { createExperimentAction } from "../actions";
 
 const PROFILES = [
-  { id: "conversion", label: "Conversion", hint: "Binary — did the user do X?" },
-  { id: "revenue", label: "Revenue", hint: "Sum of value per user" },
-  { id: "retention", label: "Retention", hint: "Did the user return on day N?" },
-  { id: "performance", label: "Performance", hint: "Mean load time (lower = better)" },
-  { id: "onboarding", label: "Onboarding", hint: "Activation + D7 retention" },
+  {
+    id: "conversion",
+    emoji: "🎯",
+    label: "Conversion",
+    tag: "binary",
+    hint: "Did the user complete the target action?",
+    metric: "conversion_rate",
+  },
+  {
+    id: "revenue",
+    emoji: "💰",
+    label: "Revenue",
+    tag: "sum",
+    hint: "Total revenue generated per user",
+    metric: "revenue_per_user",
+  },
+  {
+    id: "retention",
+    emoji: "🔄",
+    label: "Retention",
+    tag: "binary",
+    hint: "Did the user return on day N?",
+    metric: "d7_retention",
+  },
+  {
+    id: "performance",
+    emoji: "⚡",
+    label: "Performance",
+    tag: "mean",
+    hint: "Mean latency or load time (lower = better)",
+    metric: "p50_latency_ms",
+  },
+  {
+    id: "onboarding",
+    emoji: "🚀",
+    label: "Onboarding",
+    tag: "composite",
+    hint: "Activation + D7 retention bundle",
+    metric: "activation_rate",
+  },
+] as const;
+
+type Group = { name: string; pct: number };
+
+const DEFAULT_GROUPS: Group[] = [
+  { name: "control", pct: 50 },
+  { name: "test", pct: 50 },
 ];
 
 export default function NewExperimentPage() {
+  const [selectedProfile, setSelectedProfile] = useState("conversion");
+  const [allocation, setAllocation] = useState(100);
+  const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
+  const [, startTransition] = useTransition();
+
+  function distributeEvenly(count: number) {
+    const base = Math.floor(100 / count);
+    const remainder = 100 - base * count;
+    return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
+  }
+
+  function addGroup() {
+    const newName = `variant_${groups.length}`;
+    const count = groups.length + 1;
+    const pcts = distributeEvenly(count);
+    setGroups(
+      groups
+        .map((g, i) => ({ ...g, pct: pcts[i] }))
+        .concat({ name: newName, pct: pcts[count - 1] }),
+    );
+  }
+
+  function removeGroup(idx: number) {
+    if (groups.length <= 2) return;
+    const next = groups.filter((_, i) => i !== idx);
+    const pcts = distributeEvenly(next.length);
+    setGroups(next.map((g, i) => ({ ...g, pct: pcts[i] })));
+  }
+
+  function updateGroupName(idx: number, name: string) {
+    setGroups(groups.map((g, i) => (i === idx ? { ...g, name } : g)));
+  }
+
+  const profile = PROFILES.find((p) => p.id === selectedProfile)!;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="New experiment"
-        description="Fill in the basics; you can tune guardrails and traffic split before starting."
+        description="Define a hypothesis, split your traffic, and pre-register your goal metric."
         actions={
           <LinkButton variant="ghost" size="sm" href="/dashboard/experiments">
             Cancel
@@ -26,45 +108,81 @@ export default function NewExperimentPage() {
         }
       />
 
+      {/* Quick profiles */}
       <Card>
         <CardHeader className="border-b pb-4">
           <CardTitle>Quick setup</CardTitle>
           <CardDescription>
-            Pick a template — we&apos;ll pre-fill metric type, aggregation, and guardrails.
+            Pick a template — pre-fills metric type, aggregation, and guardrails.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-5">
-          {PROFILES.map((profile) => (
+          {PROFILES.map((p) => (
             <button
-              key={profile.id}
+              key={p.id}
               type="button"
-              className="flex flex-col items-start gap-1 rounded-lg border bg-background p-3 text-left text-sm transition-colors hover:border-foreground/40 hover:bg-muted"
+              onClick={() => setSelectedProfile(p.id)}
+              className={cn(
+                "relative flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left text-sm transition-colors",
+                selectedProfile === p.id
+                  ? "border-foreground/60 bg-muted"
+                  : "bg-background hover:border-foreground/30 hover:bg-muted/50",
+              )}
             >
-              <span className="font-medium">{profile.label}</span>
-              <span className="text-xs text-muted-foreground">{profile.hint}</span>
+              {selectedProfile === p.id && (
+                <span className="absolute right-2 top-2 flex size-4 items-center justify-center rounded-full bg-foreground text-[10px] text-background">
+                  ✓
+                </span>
+              )}
+              <span className="text-xl">{p.emoji}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium">{p.label}</span>
+                <span className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {p.tag}
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">{p.hint}</span>
             </button>
           ))}
         </CardContent>
       </Card>
 
-      <form className="grid gap-6 lg:grid-cols-3">
+      <form
+        action={(fd) => startTransition(() => createExperimentAction(fd))}
+        className="grid gap-6 lg:grid-cols-3"
+      >
+        <input type="hidden" name="profile" value={selectedProfile} />
+        <input type="hidden" name="goal_metric" value={profile.metric} />
+        <input type="hidden" name="group_count" value={groups.length} />
+
+        {/* Basics */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
             <CardTitle>Basics</CardTitle>
-            <CardDescription>Identify the experiment and what it tests.</CardDescription>
+            <CardDescription>Identify the experiment and frame the hypothesis.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="exp-key">Name</Label>
-              <Input
-                id="exp-key"
-                name="name"
-                placeholder="checkout_redesign_q2"
-                className="font-mono"
-              />
+              <Label htmlFor="exp-key">
+                Name <span className="text-muted-foreground">(slug)</span>
+              </Label>
+              <div className="flex rounded-lg border focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                <span className="flex items-center rounded-l-lg bg-muted px-3 text-sm text-muted-foreground border-r">
+                  exp_
+                </span>
+                <Input
+                  id="exp-key"
+                  name="name"
+                  placeholder="checkout_redesign_q2"
+                  className="font-mono rounded-l-none border-0 shadow-none focus-visible:ring-0"
+                  required
+                  pattern="[a-z0-9][a-z0-9_\-]{0,59}"
+                  title="Lowercase letters, digits, _ or -; max 64 chars total"
+                />
+              </div>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="exp-question">Hypothesis / question</Label>
+              <Label htmlFor="exp-question">Hypothesis</Label>
               <Input
                 id="exp-question"
                 name="question"
@@ -82,10 +200,11 @@ export default function NewExperimentPage() {
           </CardContent>
         </Card>
 
+        {/* Universe */}
         <Card>
           <CardHeader className="border-b pb-4">
             <CardTitle>Universe</CardTitle>
-            <CardDescription>Which users are eligible.</CardDescription>
+            <CardDescription>Which users are eligible for this experiment.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
@@ -105,52 +224,137 @@ export default function NewExperimentPage() {
           </CardContent>
         </Card>
 
+        {/* Traffic split */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
             <CardTitle>Traffic split</CardTitle>
             <CardDescription>
-              Allocation % of the universe, divided equally between groups by default.
+              Allocation % of the universe. Groups split that traffic evenly.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="exp-allocation">Allocation (% of universe)</Label>
-              <Input
-                id="exp-allocation"
-                type="number"
+              <div className="flex items-center justify-between">
+                <Label htmlFor="exp-allocation">Allocation (% of universe)</Label>
+                <span className="text-xl font-semibold tabular-nums">{allocation}%</span>
+              </div>
+              <input
+                type="range"
                 name="allocation"
-                defaultValue={100}
                 min={1}
                 max={100}
+                value={allocation}
+                onChange={(e) => setAllocation(Number(e.target.value))}
+                className="w-full accent-foreground"
               />
             </div>
-            <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
-              Preview: 50% control · 50% test · 0% not-in-experiment
+
+            {/* Groups */}
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground px-1">
+                <span>Group name</span>
+                <span className="w-12 text-center">Split</span>
+                <span className="w-6" />
+              </div>
+              {groups.map((g, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_auto_auto] items-center gap-2">
+                  <input type="hidden" name={`group_weight_${idx}`} value={g.pct * 100} />
+                  <div className="flex items-center gap-2 rounded-lg border px-3 py-1.5">
+                    <span
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{
+                        background:
+                          idx === 0
+                            ? "hsl(var(--foreground))"
+                            : `hsl(${(idx * 137) % 360} 70% 55%)`,
+                      }}
+                    />
+                    <Input
+                      value={g.name}
+                      onChange={(e) => updateGroupName(idx, e.target.value)}
+                      name={`group_name_${idx}`}
+                      className="h-auto border-0 p-0 font-mono text-sm shadow-none focus-visible:ring-0"
+                    />
+                  </div>
+                  <span className="w-12 text-center text-sm font-medium tabular-nums">
+                    {g.pct}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeGroup(idx)}
+                    disabled={groups.length <= 2}
+                    className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground disabled:opacity-20"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {/* Visual split bar */}
+              <div className="flex h-2 overflow-hidden rounded-full mt-2">
+                {groups.map((g, idx) => (
+                  <div
+                    key={idx}
+                    className="transition-all"
+                    style={{
+                      width: `${(g.pct / 100) * allocation}%`,
+                      background:
+                        idx === 0 ? "hsl(var(--foreground))" : `hsl(${(idx * 137) % 360} 70% 55%)`,
+                    }}
+                  />
+                ))}
+                <div
+                  className="flex-1 bg-muted"
+                  style={{ display: allocation < 100 ? "block" : "none" }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {groups.map((g) => `${g.pct}% ${g.name}`).join(" · ")}{" "}
+                {allocation < 100 && `· ${100 - allocation}% not in experiment`}
+              </p>
+
+              <button
+                type="button"
+                onClick={addGroup}
+                className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+              >
+                + Add variant
+              </button>
             </div>
           </CardContent>
         </Card>
 
+        {/* Statistical power */}
         <Card>
           <CardHeader className="border-b pb-4">
             <CardTitle>Statistical power</CardTitle>
-            <CardDescription>Estimated days to detect the MDE.</CardDescription>
+            <CardDescription>Estimated runtime at 80% power, 5% significance.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 pt-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Daily users</span>
-              <span className="font-medium">—</span>
+          <CardContent className="space-y-4 pt-4">
+            <div className="rounded-lg bg-muted/50 p-4 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Daily users</span>
+                <span className="font-medium">—</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Days needed</span>
+                <span className="font-medium">—</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Power</span>
+                <span className="font-medium">80%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div className="h-full w-4/5 rounded-full bg-foreground" />
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Days needed</span>
-              <span className="font-medium">—</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Power</span>
-              <span className="font-medium">80%</span>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Add a goal metric and set MDE to get precise estimates.
+            </p>
           </CardContent>
         </Card>
 
+        {/* Metrics */}
         <Card className="lg:col-span-3">
           <CardHeader className="border-b pb-4">
             <CardTitle>Metrics</CardTitle>
@@ -159,8 +363,19 @@ export default function NewExperimentPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              Metric picker will attach once metrics exist for this project.
+            <div className="rounded-lg border bg-muted/20 p-4 text-sm">
+              <div className="flex items-center gap-3">
+                <span className="rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                  goal
+                </span>
+                <span className="font-mono">{profile.metric}</span>
+                <span className="text-muted-foreground text-xs">
+                  pre-filled from {profile.label} template
+                </span>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Add guardrail and secondary metrics after saving the experiment.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -169,11 +384,8 @@ export default function NewExperimentPage() {
           <LinkButton variant="ghost" size="sm" href="/dashboard/experiments">
             Cancel
           </LinkButton>
-          <Button variant="outline" size="sm" type="submit" disabled>
+          <Button size="sm" type="submit">
             Save draft
-          </Button>
-          <Button size="sm" type="submit" disabled>
-            Create &amp; review
           </Button>
         </div>
       </form>
