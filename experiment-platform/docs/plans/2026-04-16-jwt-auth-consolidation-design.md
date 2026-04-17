@@ -8,13 +8,13 @@
 
 ## Security Assessment
 
-| Concern | Risk | Mitigation |
-|---|---|---|
-| No per-session revocation (sessions table removed) | LOW | 15-minute JWT expiry; compromised session self-expires. AUTH_SECRET rotation as nuclear option. |
-| Pages Worker gains D1/KV write access | LOW | Same Cloudflare trust boundary; `scopedDb()` enforces project isolation identically. |
-| CLI admin path moves to Next.js Route Handlers | LOW | CLI sends `X-SDK-Key`; Next.js validates against KV the same way Worker did. |
-| CF_API_TOKEN (CDN purge) now in Pages env | LOW | Pages env vars are already trusted (they hold AUTH_SECRET, OAuth secrets). Scope is Cache Purge only. |
-| plans.yaml no longer compiled into Worker only | NONE | Shared `@flaglab/core` package; same build-time import, no runtime difference. |
+| Concern                                            | Risk | Mitigation                                                                                            |
+| -------------------------------------------------- | ---- | ----------------------------------------------------------------------------------------------------- |
+| No per-session revocation (sessions table removed) | LOW  | 15-minute JWT expiry; compromised session self-expires. AUTH_SECRET rotation as nuclear option.       |
+| Pages Worker gains D1/KV write access              | LOW  | Same Cloudflare trust boundary; `scopedDb()` enforces project isolation identically.                  |
+| CLI admin path moves to Next.js Route Handlers     | LOW  | CLI sends `X-SDK-Key`; Next.js validates against KV the same way Worker did.                          |
+| CF_API_TOKEN (CDN purge) now in Pages env          | LOW  | Pages env vars are already trusted (they hold AUTH_SECRET, OAuth secrets). Scope is Cache Purge only. |
+| plans.yaml no longer compiled into Worker only     | NONE | Shared `@flaglab/core` package; same build-time import, no runtime difference.                        |
 
 **No significant security risk from this consolidation.**
 

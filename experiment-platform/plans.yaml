@@ -4,25 +4,25 @@
 # -1 means unlimited (subject to platform ceilings — see cost.md).
 
 plans:
-
   free:
     display_name: "Free"
     price_usd_per_month: 0
 
     # ── SDK delivery ─────────────────────────────────────────────────────────
-    poll_interval_seconds: 300          # server SDKs poll /sdk/flags every 5min
-                                        # CDN max-age=300; purge fires on change (~150ms)
+    poll_interval_seconds:
+      300 # server SDKs poll /sdk/flags every 5min
+      # CDN max-age=300; purge fires on change (~150ms)
 
     # ── Resource limits (enforced at write time, 422 on exceed) ──────────────
-    max_flags: 50                       # total gates per project
-    max_configs: 20                     # total global configs per project
-    max_experiments_running: 1          # concurrently running experiments
-    max_universes: 3                    # experiment namespaces
-    max_groups_per_experiment: 2        # control + 1 test only (A/B, not A/B/C)
-    max_metrics: 15                     # reusable metric definitions
-    max_events_catalog: 20             # registered event types
-    max_sdk_keys: 5                     # total (server + client + admin combined)
-    max_team_members: 1                 # admin users per project
+    max_flags: 50 # total gates per project
+    max_configs: 20 # total global configs per project
+    max_experiments_running: 1 # concurrently running experiments
+    max_universes: 3 # experiment namespaces
+    max_groups_per_experiment: 2 # control + 1 test only (A/B, not A/B/C)
+    max_metrics: 15 # reusable metric definitions
+    max_events_catalog: 20 # registered event types
+    max_sdk_keys: 5 # total (server + client + admin combined)
+    max_team_members: 1 # admin users per project
 
     # ── Scale limits ─────────────────────────────────────────────────────────
     # Note: per-project RPM enforcement is done via Cloudflare Workers Rate
@@ -32,26 +32,27 @@ plans:
     max_evaluate_per_day: 500_000
 
     # ── Analysis ─────────────────────────────────────────────────────────────
-    analysis_frequency: "daily"         # "daily" only — "weekly" not yet implemented in cron dispatch logic
-    results_retention_days: 30          # non-final experiment_results rows purged after this many days
-    results_final_archive_days: 365     # is_final=1 rows archived to R2 and deleted from D1 after this many days
-                                        # prevents D1 2GB ceiling from terminal result accumulation
-    ae_retention_days: 90               # raw AE event queryability (CF free tier)
+    analysis_frequency: "daily" # "daily" only — "weekly" not yet implemented in cron dispatch logic
+    results_retention_days: 30 # non-final experiment_results rows purged after this many days
+    results_final_archive_days:
+      365 # is_final=1 rows archived to R2 and deleted from D1 after this many days
+      # prevents D1 2GB ceiling from terminal result accumulation
+    ae_retention_days: 90 # raw AE event queryability (CF free tier)
 
     # ── Features ─────────────────────────────────────────────────────────────
-    holdout_groups: false               # universe-level holdout ranges
-    cuped_enabled: false                # CUPED variance reduction in analysis
-    srm_detection: true                 # SRM always on (it's a safety check)
-    data_export: false                  # Enables scheduled export of experiment results, exposure logs,
-                                        # and metric events to customer data warehouses (S3, GCS, BigQuery).
-                                        # Enterprise only. Export runs as a daily cron job writing NDJSON
-                                        # to a customer-configured bucket.
-    mcp_access: false                   # AI-assisted experiment setup
+    holdout_groups: false # universe-level holdout ranges
+    cuped_enabled: false # CUPED variance reduction in analysis
+    srm_detection: true # SRM always on (it's a safety check)
+    data_export:
+      false # Enables scheduled export of experiment results, exposure logs,
+      # and metric events to customer data warehouses (S3, GCS, BigQuery).
+      # Enterprise only. Export runs as a daily cron job writing NDJSON
+      # to a customer-configured bucket.
+    mcp_access: false # AI-assisted experiment setup
     audit_log_retention_days: 7
     custom_significance_threshold: false # per-experiment p-value threshold
-    sequential_testing: false           # mSPRT sequential p-values (always-valid, see 06-analysis.md § Step 6.5)
-    durable_ingestion: false            # queue-backed /collect with retry (vs fire-and-forget AE write)
-
+    sequential_testing: false # mSPRT sequential p-values (always-valid, see 06-analysis.md § Step 6.5)
+    durable_ingestion: false # queue-backed /collect with retry (vs fire-and-forget AE write)
 
   pro:
     display_name: "Pro"
@@ -74,22 +75,22 @@ plans:
 
     analysis_frequency: "daily"
     results_retention_days: 90
-    results_final_archive_days: 730     # 2 years
+    results_final_archive_days: 730 # 2 years
     ae_retention_days: 90
 
     holdout_groups: true
     cuped_enabled: true
     srm_detection: true
-    data_export: false                  # Enables scheduled export of experiment results, exposure logs,
-                                        # and metric events to customer data warehouses (S3, GCS, BigQuery).
-                                        # Enterprise only. Export runs as a daily cron job writing NDJSON
-                                        # to a customer-configured bucket.
+    data_export:
+      false # Enables scheduled export of experiment results, exposure logs,
+      # and metric events to customer data warehouses (S3, GCS, BigQuery).
+      # Enterprise only. Export runs as a daily cron job writing NDJSON
+      # to a customer-configured bucket.
     mcp_access: true
     audit_log_retention_days: 30
     custom_significance_threshold: true
     sequential_testing: false
-    durable_ingestion: false            # upgrade path at Premium+
-
+    durable_ingestion: false # upgrade path at Premium+
 
   premium:
     display_name: "Premium"
@@ -112,26 +113,26 @@ plans:
 
     analysis_frequency: "daily"
     results_retention_days: 180
-    results_final_archive_days: 1095   # 3 years
-    ae_retention_days: 180             # requires CF paid AE retention
+    results_final_archive_days: 1095 # 3 years
+    ae_retention_days: 180 # requires CF paid AE retention
 
     holdout_groups: true
     cuped_enabled: true
     srm_detection: true
-    data_export: false                  # Enables scheduled export of experiment results, exposure logs,
-                                        # and metric events to customer data warehouses (S3, GCS, BigQuery).
-                                        # Enterprise only. Export runs as a daily cron job writing NDJSON
-                                        # to a customer-configured bucket.
+    data_export:
+      false # Enables scheduled export of experiment results, exposure logs,
+      # and metric events to customer data warehouses (S3, GCS, BigQuery).
+      # Enterprise only. Export runs as a daily cron job writing NDJSON
+      # to a customer-configured bucket.
     mcp_access: true
     audit_log_retention_days: 90
     custom_significance_threshold: true
-    sequential_testing: true            # mSPRT: Lambda = sqrt(V/(V+τ²)) × exp(τ²δ̂²/(2V(V+τ²))), threshold=1/α
-    durable_ingestion: true             # COLLECT_QUEUE retry path enabled
-
+    sequential_testing: true # mSPRT: Lambda = sqrt(V/(V+τ²)) × exp(τ²δ̂²/(2V(V+τ²))), threshold=1/α
+    durable_ingestion: true # COLLECT_QUEUE retry path enabled
 
   enterprise:
     display_name: "Enterprise"
-    price_usd_per_month: -1            # custom pricing
+    price_usd_per_month: -1 # custom pricing
 
     poll_interval_seconds: 10
 
@@ -145,23 +146,24 @@ plans:
     max_sdk_keys: -1
     max_team_members: -1
 
-    max_events_per_day: -1             # unlimited (subject to AE platform ceiling)
+    max_events_per_day: -1 # unlimited (subject to AE platform ceiling)
     max_evaluate_per_day: -1
 
     analysis_frequency: "daily"
     results_retention_days: 365
-    results_final_archive_days: 1825   # 5 years
-    ae_retention_days: 540             # 18 months (CF paid AE retention)
+    results_final_archive_days: 1825 # 5 years
+    ae_retention_days: 540 # 18 months (CF paid AE retention)
 
     holdout_groups: true
     cuped_enabled: true
     srm_detection: true
-    data_export: true                  # Enables scheduled export of experiment results, exposure logs,
-                                        # and metric events to customer data warehouses (S3, GCS, BigQuery).
-                                        # Enterprise only. Export runs as a daily cron job writing NDJSON
-                                        # to a customer-configured bucket.
+    data_export:
+      true # Enables scheduled export of experiment results, exposure logs,
+      # and metric events to customer data warehouses (S3, GCS, BigQuery).
+      # Enterprise only. Export runs as a daily cron job writing NDJSON
+      # to a customer-configured bucket.
     mcp_access: true
     audit_log_retention_days: 365
     custom_significance_threshold: true
-    sequential_testing: true            # mSPRT: Lambda = sqrt(V/(V+τ²)) × exp(τ²δ̂²/(2V(V+τ²))), threshold=1/α
-    durable_ingestion: true             # COLLECT_QUEUE retry path enabled
+    sequential_testing: true # mSPRT: Lambda = sqrt(V/(V+τ²)) × exp(τ²δ̂²/(2V(V+τ²))), threshold=1/α
+    durable_ingestion: true # COLLECT_QUEUE retry path enabled

@@ -44,17 +44,17 @@ The CLI checks token expiry on every command invocation. If the token expires wi
 
 ```typescript
 // In api/client.ts constructor — check expiry on every command
-const creds = loadCredentials()
-if (!creds) throw new Error('Not logged in. Run: flaglab login')
+const creds = loadCredentials();
+if (!creds) throw new Error("Not logged in. Run: flaglab login");
 
 if (creds.expires_at) {
-  const daysLeft = (new Date(creds.expires_at).getTime() - Date.now()) / 86_400_000
+  const daysLeft = (new Date(creds.expires_at).getTime() - Date.now()) / 86_400_000;
   if (daysLeft <= 0) {
-    console.error('Session expired. Run: flaglab login')
-    process.exit(1)
+    console.error("Session expired. Run: flaglab login");
+    process.exit(1);
   }
   if (daysLeft <= 7) {
-    console.warn(`⚠ Session expires in ${Math.ceil(daysLeft)} days. Run: flaglab login`)
+    console.warn(`⚠ Session expires in ${Math.ceil(daysLeft)} days. Run: flaglab login`);
   }
 }
 ```
@@ -63,11 +63,11 @@ if (creds.expires_at) {
 
 The CLI PKCE device flow uses Worker endpoints (they need `CLI_TOKEN_KV` for one-time token delivery).
 
-| Route | Auth | Called by |
-|---|---|---|
-| `POST /auth/device/start` | none | CLI (creates pending session in D1) |
-| `POST /auth/device/complete` | `X-Service-Key: CLI_SERVICE_SECRET` | Next.js `/cli-auth/complete` relay after user login |
-| `GET /auth/device/poll?state=` | none (state is the credential) | CLI (polling with X-Code-Verifier header) |
+| Route                          | Auth                                | Called by                                           |
+| ------------------------------ | ----------------------------------- | --------------------------------------------------- |
+| `POST /auth/device/start`      | none                                | CLI (creates pending session in D1)                 |
+| `POST /auth/device/complete`   | `X-Service-Key: CLI_SERVICE_SECRET` | Next.js `/cli-auth/complete` relay after user login |
+| `GET /auth/device/poll?state=` | none (state is the credential)      | CLI (polling with X-Code-Verifier header)           |
 
 Worker implementation is in `packages/worker/src/auth/device.ts`. Key points: atomic
 `status='processing'` UPDATE prevents double-completion races; raw token is stored in
@@ -170,19 +170,23 @@ All commands accept `--json` (global flag) for machine-readable output and
 Uses `conf` for cross-platform config storage with proper file permissions and atomic writes (see `packages.md` § `packages/cli/package.json`):
 
 ```typescript
-import Conf from 'conf'
+import Conf from "conf";
 
 export interface Credentials {
-  token: string; project_id: string; api_url: string; saved_at: string; expires_at: string
+  token: string;
+  project_id: string;
+  api_url: string;
+  saved_at: string;
+  expires_at: string;
   // api_url points to Next.js: https://app.yourdomain.com/api
   // (was previously Worker: https://flags.yourdomain.com)
 }
 
-const store = new Conf<Credentials>({ projectName: 'flaglab' })
+const store = new Conf<Credentials>({ projectName: "flaglab" });
 
-export const saveCredentials  = (c: Credentials) => store.set(c)
-export const loadCredentials  = () => store.size > 0 ? store.store as Credentials : null
-export const clearCredentials = () => store.clear()
+export const saveCredentials = (c: Credentials) => store.set(c);
+export const loadCredentials = () => (store.size > 0 ? (store.store as Credentials) : null);
+export const clearCredentials = () => store.clear();
 // Stored at: ~/Library/Preferences/flaglab-nodejs/config.json (macOS)
 //            ~/.config/flaglab-nodejs/config.json (Linux)
 //            %APPDATA%\flaglab-nodejs\config.json (Windows)
@@ -191,43 +195,54 @@ export const clearCredentials = () => store.clear()
 ### src/auth/login.ts
 
 ```typescript
-export const loginCommand = new Command('login')
-  .description('Authenticate with FlagLab')
+export const loginCommand = new Command("login")
+  .description("Authenticate with FlagLab")
   .action(async () => {
-    const state         = randomUUID()
-    const codeVerifier  = base64url(randomBytes(32))  // 32 random bytes
-    const codeChallenge = base64url(createHash('sha256').update(codeVerifier).digest())
-    const authUrl       = `${APP_URL}/cli-auth?state=${state}&code_challenge=${encodeURIComponent(codeChallenge)}`
+    const state = randomUUID();
+    const codeVerifier = base64url(randomBytes(32)); // 32 random bytes
+    const codeChallenge = base64url(createHash("sha256").update(codeVerifier).digest());
+    const authUrl = `${APP_URL}/cli-auth?state=${state}&code_challenge=${encodeURIComponent(codeChallenge)}`;
 
-    console.log('Opening browser for authentication...')
-    console.log(`If it didn't open, visit:\n  ${authUrl}`)
-    await open(authUrl)
+    console.log("Opening browser for authentication...");
+    console.log(`If it didn't open, visit:\n  ${authUrl}`);
+    await open(authUrl);
 
-    const spin    = spinner('Waiting for authentication...')
-    const deadline = Date.now() + 300_000
-    spin.start()
+    const spin = spinner("Waiting for authentication...");
+    const deadline = Date.now() + 300_000;
+    spin.start();
 
     while (Date.now() < deadline) {
-      await sleep(2_000)
+      await sleep(2_000);
       // Include code_verifier in header — Worker re-verifies PKCE
       // Header avoids code_verifier appearing in server/proxy access logs
       const res = await fetch(`${API_URL}/auth/device/poll?state=${state}`, {
-        headers: { 'X-Code-Verifier': codeVerifier },
-      })
+        headers: { "X-Code-Verifier": codeVerifier },
+      });
 
-      if (res.status === 202) continue
-      if (res.status === 403) { spin.fail('PKCE verification failed — possible interception attempt'); process.exit(1) }
-      if (res.status === 410) { spin.fail('Session expired — run `flaglab login` again'); process.exit(1) }
+      if (res.status === 202) continue;
+      if (res.status === 403) {
+        spin.fail("PKCE verification failed — possible interception attempt");
+        process.exit(1);
+      }
+      if (res.status === 410) {
+        spin.fail("Session expired — run `flaglab login` again");
+        process.exit(1);
+      }
       if (res.status === 200) {
-        const { token, project_id } = await res.json()
-        saveCredentials({ token, project_id, api_url: API_URL, saved_at: new Date().toISOString() })
-        spin.succeed(`Logged in! Project: ${project_id}`)
-        return
+        const { token, project_id } = await res.json();
+        saveCredentials({
+          token,
+          project_id,
+          api_url: API_URL,
+          saved_at: new Date().toISOString(),
+        });
+        spin.succeed(`Logged in! Project: ${project_id}`);
+        return;
       }
     }
-    spin.fail('Authentication timed out')
-    process.exit(1)
-  })
+    spin.fail("Authentication timed out");
+    process.exit(1);
+  });
 ```
 
 ### src/api/client.ts
@@ -235,33 +250,39 @@ export const loginCommand = new Command('login')
 ```typescript
 export class ApiClient {
   constructor(private overrideProject?: string) {
-    const creds = loadCredentials()
-    if (!creds) throw new Error('Not logged in. Run: flaglab login')
-    this.baseUrl   = creds.api_url
-    this.token     = creds.token
-    this.projectId = overrideProject ?? creds.project_id
+    const creds = loadCredentials();
+    if (!creds) throw new Error("Not logged in. Run: flaglab login");
+    this.baseUrl = creds.api_url;
+    this.token = creds.token;
+    this.projectId = overrideProject ?? creds.project_id;
   }
 
   async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: {
-        'X-SDK-Key':    this.token,
-        'Content-Type': 'application/json',
-        'User-Agent':   `flaglab-cli/${PKG_VERSION}`,
+        "X-SDK-Key": this.token,
+        "Content-Type": "application/json",
+        "User-Agent": `flaglab-cli/${PKG_VERSION}`,
       },
       body: body ? JSON.stringify(body) : undefined,
-    })
-    if (res.status === 401) throw new ApiError('Not authenticated. Run: flaglab login', 401)
-    if (res.status === 403) throw new ApiError('Forbidden', 403)
-    if (!res.ok) throw new ApiError(`API error ${res.status}: ${await res.text()}`, res.status)
-    if (res.status === 204) return null as T
-    return res.json()
+    });
+    if (res.status === 401) throw new ApiError("Not authenticated. Run: flaglab login", 401);
+    if (res.status === 403) throw new ApiError("Forbidden", 403);
+    if (!res.ok) throw new ApiError(`API error ${res.status}: ${await res.text()}`, res.status);
+    if (res.status === 204) return null as T;
+    return res.json();
   }
 
-  get<T>(path: string)                  { return this.request<T>('GET', path) }
-  post<T>(path: string, body: unknown)  { return this.request<T>('POST', path, body) }
-  patch<T>(path: string, body: unknown) { return this.request<T>('PATCH', path, body) }
+  get<T>(path: string) {
+    return this.request<T>("GET", path);
+  }
+  post<T>(path: string, body: unknown) {
+    return this.request<T>("POST", path, body);
+  }
+  patch<T>(path: string, body: unknown) {
+    return this.request<T>("PATCH", path, body);
+  }
 }
 ```
 
@@ -287,12 +308,14 @@ Universe: checkout  Allocation: 10%  Started: 4/1/2026
 ## Distribution
 
 **npm (primary):**
+
 ```bash
 npm install -g @flaglab/cli
 flaglab login
 ```
 
 **Homebrew tap:**
+
 ```ruby
 # homebrew-flaglab/Formula/flaglab.rb
 class Flaglab < Formula

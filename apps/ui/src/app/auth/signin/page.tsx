@@ -11,7 +11,9 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <Link href="/" className="font-bold text-2xl">ShipEasy</Link>
+          <Link href="/" className="font-bold text-2xl">
+            ShipEasy
+          </Link>
         </div>
 
         <Card>

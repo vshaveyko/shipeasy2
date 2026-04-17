@@ -12,13 +12,27 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "test": "turbo test",
-    "type-check": "turbo type-check"
+    "type-check": "turbo type-check",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "prettier --write",
+      "eslint --fix --no-warn-ignored"
+    ],
+    "*.{json,md,mdx,yaml,yml,css}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
+    "@types/node": "^20.19.39",
+    "eslint": "^9.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.4.0",
     "turbo": "^2.3.0",
     "typescript": "^5.7.4",
-    "@types/node": "^20.19.39",
-    "prettier": "^3.4.0",
-    "eslint": "^9.0.0"
+    "typescript-eslint": "^8.58.2"
   }
 }

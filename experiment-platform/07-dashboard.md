@@ -69,6 +69,7 @@ Colors: green = CI entirely right of zero (improvement), red = entirely left (re
 ### VerdictBox
 
 Verdict semantics:
+
 - **ship** — ALL goal metrics significant and positive; no guardrail regressions. Intersection test (not union) — register only your single most important goal to maximize power.
 - **hold** — any guardrail metric significantly negative. Suppressed before `min_runtime_days` for Free/Pro plans (peeking inflates false positive rate).
 - **wait** — min runtime not reached, or not enough users, or goals partially significant.
@@ -97,35 +98,40 @@ export function VerdictBox({ verdict }: { verdict: VerdictOutput }) {
 ### TimeSeriesChart — read from D1 `experiment_results`
 
 Do NOT query AE directly for the time-series chart. Two reasons:
+
 1. AE SQL cannot produce a per-group breakdown of METRIC_EVENTS without joining EXPOSURES,
    and AE does not support cross-dataset JOINs.
 2. The `experiment_results` table already contains per-group, per-day values written by the
    analysis cron — use those; no second AE query needed.
 
 Route Handler `GET /api/admin/experiments/:id/timeseries`:
+
 ```typescript
 // Returns daily delta (test − control) per metric, pulled from experiment_results
-const db   = getDb(env.DB)
-const rows = await db.select({
-    ds:        experimentResults.ds,
-    metric:    experimentResults.metric,
+const db = getDb(env.DB);
+const rows = await db
+  .select({
+    ds: experimentResults.ds,
+    metric: experimentResults.metric,
     groupName: experimentResults.groupName,
-    mean:      experimentResults.mean,
-    delta:     experimentResults.delta,
-    pValue:    experimentResults.pValue,
+    mean: experimentResults.mean,
+    delta: experimentResults.delta,
+    pValue: experimentResults.pValue,
   })
   .from(experimentResults)
-  .where(and(
-    eq(experimentResults.projectId, projectId),
-    eq(experimentResults.experiment, experimentName),
-  ))
-  .orderBy(experimentResults.metric, experimentResults.groupName, experimentResults.ds)
+  .where(
+    and(
+      eq(experimentResults.projectId, projectId),
+      eq(experimentResults.experiment, experimentName),
+    ),
+  )
+  .orderBy(experimentResults.metric, experimentResults.groupName, experimentResults.ds);
 ```
 
 Frontend groups rows by `(metric, group_name)` and plots one line per group.
 `ds` is an ISO date string (`YYYY-MM-DD`), X axis is date, Y axis is `mean` per group.
 
-The cron already writes one row per `(project_id, experiment, metric, group_name, ds)` — 
+The cron already writes one row per `(project_id, experiment, metric, group_name, ds)` —
 this is exactly the shape the chart needs. No additional AE queries required.
 
 ## Experiment Creation UI — /app/experiments/new
@@ -136,13 +142,13 @@ Full HTML prototype: `experiment-lab/new-experiment.html`
 
 Pre-fill all fields for common experiment types:
 
-| Profile | Goal metric | Aggregation | Notes |
-|---|---|---|---|
-| Conversion | purchase / signup | count_users | Binary: did user do X? |
-| Revenue | purchase | sum | Total value per user |
-| Retention | session_start | retention_7d | Did user return on day 7? |
-| Performance | page_loaded | avg | Mean load time (lower = better) |
-| Onboarding | user_activated | count_users | Activation + D7 retention as secondary |
+| Profile     | Goal metric       | Aggregation  | Notes                                  |
+| ----------- | ----------------- | ------------ | -------------------------------------- |
+| Conversion  | purchase / signup | count_users  | Binary: did user do X?                 |
+| Revenue     | purchase          | sum          | Total value per user                   |
+| Retention   | session_start     | retention_7d | Did user return on day 7?              |
+| Performance | page_loaded       | avg          | Mean load time (lower = better)        |
+| Onboarding  | user_activated    | count_users  | Activation + D7 retention as secondary |
 
 ### Form Sections
 

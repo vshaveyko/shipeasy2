@@ -26,7 +26,7 @@ Allocation controls what fraction of your total eligible traffic enters the expe
 
 **When to start small.** For risky changes (new payment flows, major UI overhauls), start at 5–10%. Watch error rates and support tickets for 24 hours. If clean, scale to 50%+. You can increase allocation without restarting the experiment — users already in keep their assignments, new users join.
 
-**What you cannot do safely.** You cannot *decrease* allocation or change group weights (the control/test split) mid-experiment without invalidating results. Users who were previously in the experiment would drop out, and the remaining users would be a biased subset of the original cohort. If you need to do this, stop the experiment, record its state, and start a new one.
+**What you cannot do safely.** You cannot _decrease_ allocation or change group weights (the control/test split) mid-experiment without invalidating results. Users who were previously in the experiment would drop out, and the remaining users would be a biased subset of the original cohort. If you need to do this, stop the experiment, record its state, and start a new one.
 
 **Why not just run on 100% of traffic?** Because if something goes wrong (a bug in the test variant, a performance regression), you've affected everyone. Small allocations limit blast radius.
 
@@ -37,6 +37,7 @@ Allocation controls what fraction of your total eligible traffic enters the expe
 By default experiments are 50% control / 50% test. You can run multi-variant tests (A/B/C) by adding more groups with custom splits. All groups must add up to 100%.
 
 **Common configurations:**
+
 - 50/50: standard A/B test
 - 34/33/33: three-way test
 - 10/90: cautious rollout — 10% see the new experience, 90% stay on control
@@ -49,11 +50,12 @@ By default experiments are 50% control / 50% test. You can run multi-variant tes
 
 ## What "statistically significant" actually means
 
-A p-value is the probability of seeing a result at least this extreme *if the treatment had no real effect*. When p < 0.05 (our default threshold), we say the result is significant.
+A p-value is the probability of seeing a result at least this extreme _if the treatment had no real effect_. When p < 0.05 (our default threshold), we say the result is significant.
 
 **Plain English:** If the treatment does nothing, we'd see this big a difference by chance fewer than 5% of the time. That's low enough for us to believe the difference is real.
 
 **What it does NOT mean:**
+
 - It does not mean the effect is large or practically important (a 0.01% improvement can be statistically significant with enough users)
 - It does not mean there's a 95% chance the treatment is better (that's a common misreading)
 - It does not mean you should definitely ship — check the confidence interval width, the guardrail metrics, and whether the effect is meaningful for your business
@@ -66,13 +68,14 @@ A p-value is the probability of seeing a result at least this extreme *if the tr
 
 Before the minimum runtime is reached, you won't see a Ship or Hold verdict — only the raw numbers and a note that it's too early to conclude.
 
-**The problem this solves: peeking.** Checking results every day and stopping when p < 0.05 inflates your false positive rate dramatically. An experiment that does *nothing* will eventually show p < 0.05 by chance if you check it often enough and stop when it does. This is how teams end up shipping neutral changes and attributing imaginary lifts to their roadmap.
+**The problem this solves: peeking.** Checking results every day and stopping when p < 0.05 inflates your false positive rate dramatically. An experiment that does _nothing_ will eventually show p < 0.05 by chance if you check it often enough and stop when it does. This is how teams end up shipping neutral changes and attributing imaginary lifts to their roadmap.
 
 **Real example.** Day 3 of a 14-day experiment: conversion shows p = 0.03. Exciting! But by day 14, conversion is p = 0.4. What happened? It was noise. A lucky early cohort (maybe a specific timezone, or users who happened to visit in the first 3 days) skewed the early numbers. The minimum runtime prevents you from acting on this.
 
 **What minimum runtime does NOT do.** It does not make your experiment run for exactly that long. Once minimum runtime and minimum sample size are both met, the verdict engine evaluates daily. If results are significant on day 8 and your minimum was 7 days, you'll see a Ship verdict on day 8.
 
 **Recommended minimums:**
+
 - Conversion / engagement metrics: 7 days (covers day-of-week variation)
 - Revenue / purchase metrics: 14 days (high variance, needs more data)
 - Retention metrics (D7, D30): minimum runtime must be at least N+1 days
@@ -88,6 +91,7 @@ Even if your experiment has been running a week, you need enough users in each g
 **Common mistake.** Setting the minimum sample size to 100 and launching on 1% of traffic. Your experiment will take months to conclude because only 100 users per group enter per week.
 
 **Rule of thumb for sample size:**
+
 - Binary metrics (conversion, activation): N = 16 × (baseline_rate × (1 - baseline_rate)) / (MDE)²
 - Revenue metrics: need at least 2–3× more than binary metrics due to high variance
 
@@ -102,6 +106,7 @@ CUPED (Controlled-experiment Using Pre-Experiment Data) is a variance reduction 
 **Concrete example.** You're testing a new checkout flow. Your heavy buyers (who spend $500/month) are split between control and test. Whichever group got more heavy buyers by chance will look better — not because of your change, but because of who happened to land there. CUPED adjusts each user's outcome by their own history, so the heavy buyers in both groups contribute equally. The result: depending on how correlated users' histories are with their outcomes, you may need 20–40% fewer users than without CUPED.
 
 **When CUPED doesn't help:**
+
 - New users (no pre-experiment history) — CUPED only adjusts users it has baseline data for. If your experiment is primarily on new signups, CUPED has little data to work with and we'll automatically fall back to the standard analysis.
 - New metrics (no historical data for that event) — same situation.
 
@@ -127,9 +132,10 @@ Outliers can dominate revenue experiments. One user who spends $10,000 in a week
 
 SRM stands for Sample Ratio Mismatch. It means the number of users in each group is significantly different from what the group weights specified. When SRM is detected, the verdict is **Invalid** and results are not shown.
 
-**Why this matters.** If control should have 50% of users and test should have 50%, but you actually have 42% in control and 58% in test, *something went wrong with the randomization*. The test group isn't a random sample — it's self-selected in some way. Any measured difference between the groups could be caused by this selection bias, not your treatment. Showing results in this state would be misleading.
+**Why this matters.** If control should have 50% of users and test should have 50%, but you actually have 42% in control and 58% in test, _something went wrong with the randomization_. The test group isn't a random sample — it's self-selected in some way. Any measured difference between the groups could be caused by this selection bias, not your treatment. Showing results in this state would be misleading.
 
 **Common causes:**
+
 - The SDK or feature flag check is only in some code paths (users who hit the other path always get control)
 - A bot-blocking rule is filtering more aggressively in one group
 - A caching layer serves the same response to multiple users, breaking individual assignment
@@ -174,6 +180,7 @@ When creating an experiment, you choose metrics and assign them a role: **goal**
 Guardrail metrics are metrics you must not regress. If any guardrail shows a statistically significant negative movement, the verdict is **Hold** — even if all your goals improved.
 
 **Common guardrails:**
+
 - Page load time (don't slow the product down)
 - Error rate (don't introduce bugs)
 - Support ticket volume (don't confuse users)

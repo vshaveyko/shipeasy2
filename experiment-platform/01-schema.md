@@ -303,6 +303,7 @@ CREATE TABLE experiment_metrics (
 ```
 
 Roles:
+
 - `goal` — must improve significantly to ship
 - `guardrail` — must NOT regress; any regression blocks shipping
 - `secondary` — informational only, doesn't affect verdict
@@ -445,12 +446,12 @@ Generated TypeScript (from catalog):
 ```typescript
 // AUTO-GENERATED — run `flaglab attributes generate typescript` to update
 export interface FlaglabUser {
-  user_id:       string                                       // required
-  anonymous_id?: string
-  email?:        string
-  plan?:         'free' | 'pro' | 'premium' | 'enterprise'  // enum
-  country?:      string
-  company_size?: number
+  user_id: string; // required
+  anonymous_id?: string;
+  email?: string;
+  plan?: "free" | "pro" | "premium" | "enterprise"; // enum
+  country?: string;
+  company_size?: number;
 }
 ```
 

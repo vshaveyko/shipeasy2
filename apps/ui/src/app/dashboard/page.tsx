@@ -12,12 +12,13 @@ export default async function DashboardPage() {
     redirect("/auth/signin");
   }
 
-  const initials = session.user?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) ?? "?";
+  const initials =
+    session.user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) ?? "?";
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -49,7 +50,9 @@ export default async function DashboardPage() {
       <main className="container mx-auto px-6 py-10 space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {session.user?.name?.split(" ")[0]}!</p>
+          <p className="text-muted-foreground">
+            Welcome back, {session.user?.name?.split(" ")[0]}!
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -86,7 +89,12 @@ export default async function DashboardPage() {
               <CardDescription>Helpful resources</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start" render={<a href="/docs" />}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start"
+                render={<a href="/docs" />}
+              >
                 Documentation
               </Button>
             </CardContent>

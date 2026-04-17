@@ -79,6 +79,7 @@ The Pages project must declare bindings for D1, KV, and a Service Binding to `fl
 (retained only for CLI auth relay — `/cli-auth/complete` calls Worker's `/auth/device/complete`).
 
 Configure in the Cloudflare Pages project settings:
+
 - **D1 Database**: binding `DB`, database `flags-db`
 - **KV Namespace**: binding `FLAGS_KV`
 - **Service Binding**: name `FLAGS_WORKER`, service `flags-worker` (CLI auth relay only)
@@ -121,14 +122,14 @@ wrangler kv:namespace list  # confirm FLAGS_KV and CLI_TOKEN_KV IDs match wrangl
 
 **Global rules** (per-IP, per-SDK-key) must be configured in the Cloudflare dashboard before going to production. **Per-project rules** are provisioned automatically via the CF API during project creation (see `packages.md` § `provisionRateLimitRule()`). Critical global rules that must exist on day 1:
 
-| Priority | Rule | Why |
-|---|---|---|
-| 1 | `POST /collect` — 100 req/min per IP | Event injection defense |
-| 2 | `POST /collect` — 10,000 req/min per client SDK key | Compromised-key containment |
-| 3 | `GET /auth/device/poll` — 5 req/min per state UUID | State enumeration prevention |
-| 4 | `POST /admin/*` — 100 req/min per admin SDK key | D1 write protection |
-| 5 | `GET /sdk/experiments` — 1,000 req/min per server key | Same as `/sdk/flags` |
-| 6 | `POST /auth/device/start` — 10 req/min per IP | Session table flood prevention |
+| Priority | Rule                                                  | Why                            |
+| -------- | ----------------------------------------------------- | ------------------------------ |
+| 1        | `POST /collect` — 100 req/min per IP                  | Event injection defense        |
+| 2        | `POST /collect` — 10,000 req/min per client SDK key   | Compromised-key containment    |
+| 3        | `GET /auth/device/poll` — 5 req/min per state UUID    | State enumeration prevention   |
+| 4        | `POST /admin/*` — 100 req/min per admin SDK key       | D1 write protection            |
+| 5        | `GET /sdk/experiments` — 1,000 req/min per server key | Same as `/sdk/flags`           |
+| 6        | `POST /auth/device/start` — 10 req/min per IP         | Session table flood prevention |
 
 Per-project daily limits (`max_events_per_day`) are provisioned automatically by `provisionRateLimitRule()` in the Auth.js provisioning callback (see `packages.md`). Rules are also updated on plan changes via the billing flow.
 
@@ -139,56 +140,45 @@ Per-project daily limits (`max_events_per_day`) are provisioned automatically by
 3. `wrangler kv:namespace create CLI_TOKEN_KV`
 4. `wrangler queues create experiment-analysis`
 5. `wrangler queues create experiment-analysis-dlq`
-5a. `wrangler r2 bucket create flaglab-events`
+   5a. `wrangler r2 bucket create flaglab-events`
 6. Add custom domain `flags.yourdomain.com` to the Worker (required for CDN purge)
 7. `wrangler secret put CF_API_TOKEN` (Cache Purge scope on the zone)
 8. Configure rate limiting rules in Cloudflare dashboard (see Rate Limiting Setup above)
 9. `wrangler deploy`
-9. Deploy Next.js UI to CF Pages with D1, KV, Service Binding, and env vars (see below)
-10. First project is created automatically on first sign-in (Auth.js jwt callback provisions inline)
+10. Deploy Next.js UI to CF Pages with D1, KV, Service Binding, and env vars (see below)
+11. First project is created automatically on first sign-in (Auth.js jwt callback provisions inline)
 12. Verify rate limiting rules are active: attempt >100 req/min to `/collect` from a single IP and confirm 429 responses
 13. Verify:
-   - `curl -H "X-SDK-Key: k_server" https://flags.yourdomain.com/sdk/flags`
-     → `Cache-Control: public, max-age=300` (free plan), `X-Poll-Interval: 300`
-   - Change a gate → CDN purge fires → re-fetch shows updated ETag
-   - `curl -X POST -H "X-SDK-Key: k_client" .../sdk/evaluate -d '{"user":{"user_id":"u1"}}'`
-   - Send test events → `wrangler cron trigger flags-worker` → verify results in D1
+
+- `curl -H "X-SDK-Key: k_server" https://flags.yourdomain.com/sdk/flags`
+  → `Cache-Control: public, max-age=300` (free plan), `X-Poll-Interval: 300`
+- Change a gate → CDN purge fires → re-fetch shows updated ETag
+- `curl -X POST -H "X-SDK-Key: k_client" .../sdk/evaluate -d '{"user":{"user_id":"u1"}}'`
+- Send test events → `wrangler cron trigger flags-worker` → verify results in D1
 
 See `cost.md` for full pricing breakdown and tier estimates.
 
 ## Implementation Sequencing
 
 **Phase 1 — Shared core + infrastructure (2 days)**
+
 1. Create `packages/core/` with Drizzle schema, scopedDb, plans, KV helpers, eval logic, Zod schemas
 2. D1 schema migration + KV namespace + custom domain setup
 3. Worker: SDK key auth middleware + `/sdk/flags` + `/sdk/experiments` + `/sdk/evaluate` endpoints
 4. Next.js: Auth.js config with inline provisioning, `authenticateAdmin()`
 5. Next.js: Admin CRUD Server Actions + Route Handlers for gates/configs/experiments
 
-**Phase 2 — SDK (1 day)**
-6. Server SDK: `FlagsClient` with polling, `initOnce()` for serverless
-7. Client SDK: `FlagsClientBrowser` with `identify()` + bootstrap support
-8. EventBuffer + auto-exposure logging
+**Phase 2 — SDK (1 day)** 6. Server SDK: `FlagsClient` with polling, `initOnce()` for serverless 7. Client SDK: `FlagsClientBrowser` with `identify()` + bootstrap support 8. EventBuffer + auto-exposure logging
 
-**Phase 3 — Events pipeline (2 days)**
-9. Next.js: Event catalog CRUD (Server Actions + Route Handlers) + auto-discovery in Worker `/collect`
-10. Next.js: Metric library CRUD
-11. Next.js: Experiment ↔ metrics join (role selector in UI)
+**Phase 3 — Events pipeline (2 days)** 9. Next.js: Event catalog CRUD (Server Actions + Route Handlers) + auto-discovery in Worker `/collect` 10. Next.js: Metric library CRUD 11. Next.js: Experiment ↔ metrics join (role selector in UI)
 
-**Phase 4 — Analysis (2 days)**
-12. Worker: AE SQL query helper
-13. Worker: Analysis cron → Queue fan-out → per-project analysis (Welch t-test, CUPED)
-14. Worker: Baseline freeze job (CUPED prerequisite)
-    **Required before production:** migrate cron trigger to Queue-based dispatch
-    (`ANALYSIS_QUEUE`) so individual experiment analysis jobs can be retried
-    independently and failures are routed to `experiment-analysis-dlq` instead
-    of silently dropping results.
+**Phase 4 — Analysis (2 days)** 12. Worker: AE SQL query helper 13. Worker: Analysis cron → Queue fan-out → per-project analysis (Welch t-test, CUPED) 14. Worker: Baseline freeze job (CUPED prerequisite)
+**Required before production:** migrate cron trigger to Queue-based dispatch
+(`ANALYSIS_QUEUE`) so individual experiment analysis jobs can be retried
+independently and failures are routed to `experiment-analysis-dlq` instead
+of silently dropping results.
 
-**Phase 5 — Dashboard (3 days)**
-15. Next.js: Route Handlers for results + timeseries (read from experiment_results D1)
-16. Results page: CI chart, verdict box, time series, guardrail summary
-17. Experiment creation form with quick setup profiles
-18. Universe management + project settings pages
+**Phase 5 — Dashboard (3 days)** 15. Next.js: Route Handlers for results + timeseries (read from experiment_results D1) 16. Results page: CI chart, verdict box, time series, guardrail summary 17. Experiment creation form with quick setup profiles 18. Universe management + project settings pages
 
 ## DLQ Replay Runbook
 
@@ -213,33 +203,33 @@ wrangler d1 execute flags-db --command \
 
 ## Monitoring
 
-| Signal | Mechanism | Alert threshold |
-|---|---|---|
-| Cron ran successfully | `system_health` D1 table via `GET /api/admin/system/health` | `last_fired_at` > 26h ago |
+| Signal                          | Mechanism                                                        | Alert threshold                  |
+| ------------------------------- | ---------------------------------------------------------------- | -------------------------------- |
+| Cron ran successfully           | `system_health` D1 table via `GET /api/admin/system/health`      | `last_fired_at` > 26h ago        |
 | Analysis DLQ received a message | Email via Resend to `ALERT_EMAIL` + `analysis_failures` D1 table | Any unresolved entry in last 26h |
-| CDN purge failed | Structured CRITICAL log in `purgeCache()` | Any occurrence |
-| KV blob approaching limit | `GET /api/admin/projects/:id/storage` endpoint | >80% of 25MB |
-| Experiment results stale | Dashboard reads `analysis_failures` and last `ds` | No update in >26h |
+| CDN purge failed                | Structured CRITICAL log in `purgeCache()`                        | Any occurrence                   |
+| KV blob approaching limit       | `GET /api/admin/projects/:id/storage` endpoint                   | >80% of 25MB                     |
+| Experiment results stale        | Dashboard reads `analysis_failures` and last `ds`                | No update in >26h                |
 
 External dead man's switch (optional): set `CRONITOR_HEARTBEAT_URL` env var.
 The cron sends a check-in after successful fan-out; Cronitor alerts if absent for >2h.
 
 ## Remaining Limitations
 
-| Limitation | Accepted because |
-|---|---|
-| AE SQL eventually consistent (~1 min) | Fine for daily analysis batch; AE queries use `analysisFence = analysisStartTs - 2min` as stable read horizon |
-| KV global replication up to 60s; CDN purge acknowledgment ~150ms | Accepted — all use cases tolerate 10–60s propagation. No SSE. See `02-kv-cache.md` § "Propagation SLA". |
-| AE retention window (90–540 days per plan) | R2 archival cron (04:00 UTC) exports all AE events daily to `flaglab-events` R2 bucket. Analysis reads R2 for dates older than `ae_retention_days`. Experiments of any duration are safe. See `06-analysis.md` § "R2 Archival". |
-| CUPED baseline writes chunked at 100/batch | D1 batch limit is 100 statements; large projects require multiple batch calls |
-| CUPED overlap < 50% falls back to plain Welch | Logged with `cuped_overlap_pct`; CUPED on biased sample is worse than no CUPED |
-| expsCache 10s TTL (was 60s) | Narrower split-brain window after experiment stop; small KV read cost increase |
-| Retention metric uses elapsed-ms not calendar days | Documented in metric creation UI; consistent internal semantics |
-| Custom domain required for CDN purge | Standard practice for production Workers |
-| AE no cross-dataset JOINs | Fetch both datasets separately and join aggregated results in-memory in cron |
-| D1 write contention between analysis cron and admin mutations | Analysis runs at 02:00 UTC (low admin traffic); both Worker cron and Next.js Server Actions write to the same D1 — mid-day triggered analysis is rare |
-| AE fire-and-forget exposure writes (free/pro) | Detection via `ae_sample_drop_warning` (20% threshold). Accepted SLA for non-premium tiers. See Future Plans below. |
-| Client SDK key enables event injection | Rate limited (100 req/min/IP, 10K req/min/key). Documented as lower-integrity guarantee. See Security Notes below. |
+| Limitation                                                       | Accepted because                                                                                                                                                                                                                |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AE SQL eventually consistent (~1 min)                            | Fine for daily analysis batch; AE queries use `analysisFence = analysisStartTs - 2min` as stable read horizon                                                                                                                   |
+| KV global replication up to 60s; CDN purge acknowledgment ~150ms | Accepted — all use cases tolerate 10–60s propagation. No SSE. See `02-kv-cache.md` § "Propagation SLA".                                                                                                                         |
+| AE retention window (90–540 days per plan)                       | R2 archival cron (04:00 UTC) exports all AE events daily to `flaglab-events` R2 bucket. Analysis reads R2 for dates older than `ae_retention_days`. Experiments of any duration are safe. See `06-analysis.md` § "R2 Archival". |
+| CUPED baseline writes chunked at 100/batch                       | D1 batch limit is 100 statements; large projects require multiple batch calls                                                                                                                                                   |
+| CUPED overlap < 50% falls back to plain Welch                    | Logged with `cuped_overlap_pct`; CUPED on biased sample is worse than no CUPED                                                                                                                                                  |
+| expsCache 10s TTL (was 60s)                                      | Narrower split-brain window after experiment stop; small KV read cost increase                                                                                                                                                  |
+| Retention metric uses elapsed-ms not calendar days               | Documented in metric creation UI; consistent internal semantics                                                                                                                                                                 |
+| Custom domain required for CDN purge                             | Standard practice for production Workers                                                                                                                                                                                        |
+| AE no cross-dataset JOINs                                        | Fetch both datasets separately and join aggregated results in-memory in cron                                                                                                                                                    |
+| D1 write contention between analysis cron and admin mutations    | Analysis runs at 02:00 UTC (low admin traffic); both Worker cron and Next.js Server Actions write to the same D1 — mid-day triggered analysis is rare                                                                           |
+| AE fire-and-forget exposure writes (free/pro)                    | Detection via `ae_sample_drop_warning` (20% threshold). Accepted SLA for non-premium tiers. See Future Plans below.                                                                                                             |
+| Client SDK key enables event injection                           | Rate limited (100 req/min/IP, 10K req/min/key). Documented as lower-integrity guarantee. See Security Notes below.                                                                                                              |
 
 ## Future Plans
 
@@ -264,6 +254,7 @@ CUPED baselines are purged for projects with no running experiments (retention c
 ### Client SDK key integrity model
 
 Client SDK keys are embedded in browser JavaScript and are public. An attacker with a client key can:
+
 - Call `/collect` with valid event names and inflated values to bias `sum`/`avg` metrics
 - Fabricate fake `user_id` values to inflate group sizes asymmetrically
 - Replay valid `/collect` requests (no nonce or timestamp validation)

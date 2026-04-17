@@ -15,7 +15,10 @@
     "./client": "./dist/client/index.js",
     "./templates/*": "./templates/*.js"
   },
-  "files": ["dist/", "templates/"],
+  "files": [
+    "dist/",
+    "templates/"
+  ],
   "scripts": {
     "build": "tsup",
     "type-check": "tsc --noEmit",
@@ -34,6 +37,8 @@
     "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
-    "zod": { "optional": true }
+    "zod": {
+      "optional": true
+    }
   }
 }

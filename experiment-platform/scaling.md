@@ -9,14 +9,14 @@ Where the current Cloudflare-based design holds, where it breaks, and how to evo
 The Cloudflare stack works well up to approximately 50M daily active users.
 Above that, Analytics Engine becomes the binding constraint.
 
-| Scale | DAU | Status | Binding constraint |
-|---|---|---|---|
-| Startup | < 1M | ✅ Excellent | None |
-| SMB SaaS | 1M – 10M | ✅ Solid | None |
-| Mid-market | 10M – 50M | ✅ Works | AE approaching write limit |
-| Large SaaS | 50M – 100M | ⚠️ Straining | AE write ceiling (25M writes/day) |
-| Enterprise | 100M – 500M | ✗ Breaks | AE + D1 analysis both fail |
-| Instagram-scale | 500M+ | ✗ Fails at every layer | Everything |
+| Scale           | DAU         | Status                 | Binding constraint                |
+| --------------- | ----------- | ---------------------- | --------------------------------- |
+| Startup         | < 1M        | ✅ Excellent           | None                              |
+| SMB SaaS        | 1M – 10M    | ✅ Solid               | None                              |
+| Mid-market      | 10M – 50M   | ✅ Works               | AE approaching write limit        |
+| Large SaaS      | 50M – 100M  | ⚠️ Straining           | AE write ceiling (25M writes/day) |
+| Enterprise      | 100M – 500M | ✗ Breaks               | AE + D1 analysis both fail        |
+| Instagram-scale | 500M+       | ✗ Fails at every layer | Everything                        |
 
 ---
 
@@ -24,13 +24,13 @@ Above that, Analytics Engine becomes the binding constraint.
 
 Used throughout this document as a stress-test benchmark.
 
-| Metric | Value |
-|---|---|
-| Daily active users | ~500 million |
-| Events/day | ~100–500 billion |
-| Backend server instances | ~50,000–100,000 |
-| Concurrent experiments | ~1,000+ |
-| Engineers shipping flags/day | thousands |
+| Metric                       | Value            |
+| ---------------------------- | ---------------- |
+| Daily active users           | ~500 million     |
+| Events/day                   | ~100–500 billion |
+| Backend server instances     | ~50,000–100,000  |
+| Concurrent experiments       | ~1,000+          |
+| Engineers shipping flags/day | thousands        |
 
 ---
 
@@ -41,9 +41,11 @@ Used throughout this document as a stress-test benchmark.
 Cloudflare AE's documented limit is **25 million writes/day** on the paid plan.
 
 At Instagram scale:
+
 ```
 500M DAU × 20% in experiments × 15 events/user/day = 1.5 billion writes/day
 ```
+
 That is 60× the hard ceiling. Even if Cloudflare raised the limit, AE is a
 time-series observability store — not designed for petabyte-scale experiment data.
 
@@ -74,6 +76,7 @@ running continuously — at which point you have reinvented Apache Spark.
 ### D1 (SQLite) — breaks within weeks at experiment-heavy orgs
 
 Results table growth:
+
 ```
 1,000 experiments × 20 metrics × 3 groups × 365 days = 21.9M rows/year
 × ~200 bytes/row = 4.4GB
@@ -136,15 +139,15 @@ stale-CDN windows if the purge rate limit is hit during a mass deploy.
 
 Meta built purpose-specific infrastructure for each layer over many years.
 
-| Our layer | Meta equivalent | Reason |
-|---|---|---|
-| Analytics Engine | **Scribe → Scuba** (real-time) + **Hive** (batch) | Custom log-transport + petabyte columnar store |
-| D1 results table | **TAO** + sharded **MySQL** | Distributed graph DB for social graph; sharded MySQL for structured data |
-| KV rules cache | **Configerator** | Global distributed config with sub-second propagation to all servers |
-| Analysis cron | **Dataswarm** (internal Spark) | Hundreds of machines doing terabyte joins daily |
-| Workers evaluate | Dedicated **C++ evaluation services** | Microsecond latency at billions of evaluations/day |
-| Event ingestion | **Scribe** + **Hive pipeline** | Kafka-scale reliable log transport |
-| Result dashboards | **Deltoid** + **Scuba** | Custom experiment analysis UI on top of Scuba real-time queries |
+| Our layer         | Meta equivalent                                   | Reason                                                                   |
+| ----------------- | ------------------------------------------------- | ------------------------------------------------------------------------ |
+| Analytics Engine  | **Scribe → Scuba** (real-time) + **Hive** (batch) | Custom log-transport + petabyte columnar store                           |
+| D1 results table  | **TAO** + sharded **MySQL**                       | Distributed graph DB for social graph; sharded MySQL for structured data |
+| KV rules cache    | **Configerator**                                  | Global distributed config with sub-second propagation to all servers     |
+| Analysis cron     | **Dataswarm** (internal Spark)                    | Hundreds of machines doing terabyte joins daily                          |
+| Workers evaluate  | Dedicated **C++ evaluation services**             | Microsecond latency at billions of evaluations/day                       |
+| Event ingestion   | **Scribe** + **Hive pipeline**                    | Kafka-scale reliable log transport                                       |
+| Result dashboards | **Deltoid** + **Scuba**                           | Custom experiment analysis UI on top of Scuba real-time queries          |
 
 Meta's analysis pipeline for a large experiment takes dedicated Dataswarm clusters
 hours to run, producing results that flow into Scuba for real-time dashboards and
@@ -176,6 +179,7 @@ Cost: $5–$276/month depending on scale (see cost.md).
 exceeding ~100K allocated users per experiment.
 
 **Changes:**
+
 - Replace AE → **Kafka** → **BigQuery / Snowflake / Databricks**
 - Replace analysis cron → **scheduled Spark/dbt job** writing results back to D1
 - Keep D1 for config, catalog, analysis results (still low write volume)
@@ -203,6 +207,7 @@ Rough estimate: $500–$5,000/month depending on query frequency.
 gate count approaching KV blob limits, analysis taking hours even in Spark.
 
 **Changes:**
+
 - Replace D1 → **Postgres cluster** (RDS, Cloud SQL, or CockroachDB/Spanner for geo-distribution)
 - Replace KV → **dedicated config service** (Redis Cluster, or Configerator-like CDN-pushed config)
 - Replace Workers evaluate → **dedicated evaluation fleet** (Go/Rust services, co-located with app servers)

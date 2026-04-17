@@ -4,17 +4,17 @@ Cross-language SDK contracts, installation, initialization patterns, and require
 
 ## SDK Taxonomy
 
-| Package | Runtime | Auth | Receives rules? | Evaluates locally? |
-|---|---|---|---|---|
-| `sdk-server` | Node.js, Go, Python, Ruby, Java, PHP long-running | server key | Yes (polls `/sdk/flags` + `/sdk/experiments`) | Yes |
-| `sdk-client` | Browser (vanilla JS / React / Next.js) | client key | No (POSTs to `/sdk/evaluate`) | No |
-| `sdk-vue` | Vue 3 (thin wrapper over `sdk-client`) | client key | No | No |
-| `sdk-svelte` | Svelte / SvelteKit (thin wrapper over `sdk-client`) | client key | No | No |
-| `sdk-angular` | Angular 17+ (thin wrapper over `sdk-client`) | client key | No | No |
-| `sdk-react-native` | React Native (iOS + Android) | client key | No (POSTs to `/sdk/evaluate`) | No |
-| `sdk-ios` | Swift / SwiftUI / UIKit | client key | No (POSTs to `/sdk/evaluate`) | No |
-| `sdk-android` | Kotlin / Java (Android) | client key | No (POSTs to `/sdk/evaluate`) | No |
-| `sdk-edge` | CF Workers, Vercel Edge, Deno Deploy | server key | Yes (via `initOnce()`) | Yes |
+| Package            | Runtime                                             | Auth       | Receives rules?                               | Evaluates locally? |
+| ------------------ | --------------------------------------------------- | ---------- | --------------------------------------------- | ------------------ |
+| `sdk-server`       | Node.js, Go, Python, Ruby, Java, PHP long-running   | server key | Yes (polls `/sdk/flags` + `/sdk/experiments`) | Yes                |
+| `sdk-client`       | Browser (vanilla JS / React / Next.js)              | client key | No (POSTs to `/sdk/evaluate`)                 | No                 |
+| `sdk-vue`          | Vue 3 (thin wrapper over `sdk-client`)              | client key | No                                            | No                 |
+| `sdk-svelte`       | Svelte / SvelteKit (thin wrapper over `sdk-client`) | client key | No                                            | No                 |
+| `sdk-angular`      | Angular 17+ (thin wrapper over `sdk-client`)        | client key | No                                            | No                 |
+| `sdk-react-native` | React Native (iOS + Android)                        | client key | No (POSTs to `/sdk/evaluate`)                 | No                 |
+| `sdk-ios`          | Swift / SwiftUI / UIKit                             | client key | No (POSTs to `/sdk/evaluate`)                 | No                 |
+| `sdk-android`      | Kotlin / Java (Android)                             | client key | No (POSTs to `/sdk/evaluate`)                 | No                 |
+| `sdk-edge`         | CF Workers, Vercel Edge, Deno Deploy                | server key | Yes (via `initOnce()`)                        | Yes                |
 
 **Framework wrappers** (`sdk-vue`, `sdk-svelte`, `sdk-angular`) are thin layers over
 `sdk-client` — they do not re-implement networking or evaluation. They only add
@@ -66,102 +66,107 @@ npm install @flaglab/sdk
 #### Server SDK (Node.js / Bun / Deno)
 
 ```typescript
-import { FlagsClient } from '@flaglab/sdk/server'
+import { FlagsClient } from "@flaglab/sdk/server";
 
 // Long-running server (Express, Fastify, Hapi, NestJS, etc.)
 const client = new FlagsClient({
-  apiKey:  process.env.FLAGLAB_SERVER_KEY!,
-  baseUrl: process.env.FLAGLAB_BASE_URL ?? 'https://flags.yourdomain.com',
-})
-await client.init()   // fetch rules + start background poll (adjusts from X-Poll-Interval header)
+  apiKey: process.env.FLAGLAB_SERVER_KEY!,
+  baseUrl: process.env.FLAGLAB_BASE_URL ?? "https://flags.yourdomain.com",
+});
+await client.init(); // fetch rules + start background poll (adjusts from X-Poll-Interval header)
 
 // Per-request usage:
-const user = { user_id: req.user.id, plan: req.user.plan }
+const user = { user_id: req.user.id, plan: req.user.plan };
 
-const enabled = client.getFlag('new_checkout', user)
+const enabled = client.getFlag("new_checkout", user);
 
-const timeout = client.getConfig<number>('checkout_timeout_ms', (v) => {
-  const n = Number(v)
-  if (isNaN(n)) throw new Error('checkout_timeout_ms must be a number')
-  return n
-})
+const timeout = client.getConfig<number>("checkout_timeout_ms", (v) => {
+  const n = Number(v);
+  if (isNaN(n)) throw new Error("checkout_timeout_ms must be a number");
+  return n;
+});
 
 const { inExperiment, group, params } = client.getExperiment(
-  'checkout_button_color',
-  { color: 'gray' },          // defaultParams — returned when user is not in experiment
-  (raw) => {                  // decoder — validates server shape at runtime
-    const r = raw as Record<string, unknown>
-    return { color: typeof r.color === 'string' ? r.color : 'gray' }
-  }
-)
+  "checkout_button_color",
+  { color: "gray" }, // defaultParams — returned when user is not in experiment
+  (raw) => {
+    // decoder — validates server shape at runtime
+    const r = raw as Record<string, unknown>;
+    return { color: typeof r.color === "string" ? r.color : "gray" };
+  },
+);
 
 // Track a success event (fire-and-forget, does not await)
-client.track(req.user.id, 'purchase_completed', { value: order.total })
+client.track(req.user.id, "purchase_completed", { value: order.total });
 
 // Graceful shutdown:
-process.on('SIGTERM', () => { client.destroy(); process.exit(0) })
+process.on("SIGTERM", () => {
+  client.destroy();
+  process.exit(0);
+});
 ```
 
 #### Serverless / Edge (Lambda, Vercel, CF Workers, PHP-FPM)
 
 ```typescript
 // Use initOnce() — no background timers, rules valid for lifetime of the invocation
-const client = new FlagsClient({ apiKey: process.env.FLAGLAB_SERVER_KEY! })
-await client.initOnce()
+const client = new FlagsClient({ apiKey: process.env.FLAGLAB_SERVER_KEY! });
+await client.initOnce();
 ```
 
 #### Next.js — Server Components + Client SDK
 
 ```typescript
 // lib/flaglab.server.ts — server-side singleton
-import { FlagsClient } from '@flaglab/sdk/server'
+import { FlagsClient } from "@flaglab/sdk/server";
 
-let _client: FlagsClient | null = null
+let _client: FlagsClient | null = null;
 
 export function getServerClient(): FlagsClient {
   if (!_client) {
-    _client = new FlagsClient({ apiKey: process.env.FLAGLAB_SERVER_KEY! })
+    _client = new FlagsClient({ apiKey: process.env.FLAGLAB_SERVER_KEY! });
     // Don't await here — lazy init on first use via initOnce()
   }
-  return _client
+  return _client;
 }
 
 // In a Server Component or Route Handler:
-const client = getServerClient()
-await client.initOnce()
-const enabled = client.getFlag('new_checkout', { user_id: session.user.id })
+const client = getServerClient();
+await client.initOnce();
+const enabled = client.getFlag("new_checkout", { user_id: session.user.id });
 ```
 
 ```typescript
 // lib/flaglab.client.ts — browser singleton (NOT in a useEffect — React StrictMode safe)
-import { FlagsClientBrowser } from '@flaglab/sdk/client'
+import { FlagsClientBrowser } from "@flaglab/sdk/client";
 
-let _client: FlagsClientBrowser | null = null
+let _client: FlagsClientBrowser | null = null;
 
 export function getBrowserClient(): FlagsClientBrowser {
-  if (!_client) _client = new FlagsClientBrowser({
-    sdkKey:  process.env.NEXT_PUBLIC_FLAGLAB_CLIENT_KEY!,
-    baseUrl: process.env.NEXT_PUBLIC_FLAGLAB_BASE_URL ?? 'https://flags.yourdomain.com',
-  })
-  return _client
+  if (!_client)
+    _client = new FlagsClientBrowser({
+      sdkKey: process.env.NEXT_PUBLIC_FLAGLAB_CLIENT_KEY!,
+      baseUrl: process.env.NEXT_PUBLIC_FLAGLAB_BASE_URL ?? "https://flags.yourdomain.com",
+    });
+  return _client;
 }
 
 // In a component (after sign-in or on page load):
-const client = getBrowserClient()
-await client.identify({ user_id: session.user.id, plan: session.user.plan })
+const client = getBrowserClient();
+await client.identify({ user_id: session.user.id, plan: session.user.plan });
 
 // Gate check (returns false if identify() hasn't been called yet):
-const enabled = client.getFlag('new_checkout')
+const enabled = client.getFlag("new_checkout");
 
 // Experiment:
 const { inExperiment, params } = client.getExperiment(
-  'checkout_button_color',
-  { color: 'gray' },
-  (raw) => ({ color: typeof (raw as any).color === 'string' ? (raw as any).color : 'gray' })
-)
+  "checkout_button_color",
+  { color: "gray" },
+  (raw) => ({ color: typeof (raw as any).color === "string" ? (raw as any).color : "gray" }),
+);
 
 // Track:
-client.track('purchase_completed', { value: order.total })
+client.track("purchase_completed", { value: order.total });
 
 // SSR bootstrap (zero network round-trip on hydration):
 // In layout.tsx server-side:
@@ -175,8 +180,8 @@ client.track('purchase_completed', { value: order.total })
 
 ```typescript
 // hooks/useExperiment.ts
-import { useEffect, useState } from 'react'
-import { getBrowserClient } from '@/lib/flaglab.client'
+import { useEffect, useState } from "react";
+import { getBrowserClient } from "@/lib/flaglab.client";
 
 export function useExperiment<P extends Record<string, unknown>>(
   name: string,
@@ -184,23 +189,23 @@ export function useExperiment<P extends Record<string, unknown>>(
   decode: (raw: unknown) => P,
 ) {
   const [result, setResult] = useState(() =>
-    getBrowserClient().getExperiment(name, defaultParams, decode)
-  )
+    getBrowserClient().getExperiment(name, defaultParams, decode),
+  );
 
   useEffect(() => {
     // Re-evaluate when client updates (after identify())
-    setResult(getBrowserClient().getExperiment(name, defaultParams, decode))
-  }, [name])
+    setResult(getBrowserClient().getExperiment(name, defaultParams, decode));
+  }, [name]);
 
-  return result
+  return result;
 }
 
 // Usage:
 const { inExperiment, params } = useExperiment(
-  'checkout_button_color',
-  { color: 'gray' },
-  (raw) => ({ color: typeof (raw as any).color === 'string' ? (raw as any).color : 'gray' })
-)
+  "checkout_button_color",
+  { color: "gray" },
+  (raw) => ({ color: typeof (raw as any).color === "string" ? (raw as any).color : "gray" }),
+);
 ```
 
 ---
@@ -219,21 +224,21 @@ npm install @flaglab/sdk @flaglab/sdk-vue
 
 ```typescript
 // plugins/flaglab.ts
-import { createFlaglab } from '@flaglab/sdk-vue'
+import { createFlaglab } from "@flaglab/sdk-vue";
 
 export const flaglab = createFlaglab({
-  sdkKey:  import.meta.env.VITE_FLAGLAB_CLIENT_KEY,
-  baseUrl: import.meta.env.VITE_FLAGLAB_BASE_URL ?? 'https://flags.yourdomain.com',
-})
+  sdkKey: import.meta.env.VITE_FLAGLAB_CLIENT_KEY,
+  baseUrl: import.meta.env.VITE_FLAGLAB_BASE_URL ?? "https://flags.yourdomain.com",
+});
 
 // main.ts
-import { createApp } from 'vue'
-import { flaglab } from './plugins/flaglab'
-import App from './App.vue'
+import { createApp } from "vue";
+import { flaglab } from "./plugins/flaglab";
+import App from "./App.vue";
 
-const app = createApp(App)
-app.use(flaglab)  // installs provide() for useFlag / useExperiment / useFlaglab
-app.mount('#app')
+const app = createApp(App);
+app.use(flaglab); // installs provide() for useFlag / useExperiment / useFlaglab
+app.mount("#app");
 ```
 
 #### Composables
@@ -245,13 +250,13 @@ app.mount('#app')
 // 3. Provides composables that derive from that ref
 
 // composables/useFlag.ts (generated by the plugin)
-import { computed }   from 'vue'
-import { useFlaglab }  from '@flaglab/sdk-vue'
+import { computed } from "vue";
+import { useFlaglab } from "@flaglab/sdk-vue";
 
 export function useFlag(name: string) {
-  const { client } = useFlaglab()
+  const { client } = useFlaglab();
   // computed re-evaluates whenever the client's result ref updates
-  return computed(() => client.getFlag(name))
+  return computed(() => client.getFlag(name));
 }
 
 export function useExperiment<P extends Record<string, unknown>>(
@@ -259,15 +264,19 @@ export function useExperiment<P extends Record<string, unknown>>(
   defaultParams: P,
   decode: (raw: unknown) => P,
 ) {
-  const { client } = useFlaglab()
-  return computed(() => client.getExperiment(name, defaultParams, decode))
+  const { client } = useFlaglab();
+  return computed(() => client.getExperiment(name, defaultParams, decode));
 }
 
 export function useConfig<T>(name: string, decode: (raw: unknown) => T) {
-  const { client } = useFlaglab()
+  const { client } = useFlaglab();
   return computed(() => {
-    try { return client.getConfig(name, decode) } catch { return null }
-  })
+    try {
+      return client.getConfig(name, decode);
+    } catch {
+      return null;
+    }
+  });
 }
 ```
 
@@ -276,21 +285,19 @@ export function useConfig<T>(name: string, decode: (raw: unknown) => T) {
 ```vue
 <!-- CheckoutButton.vue -->
 <script setup lang="ts">
-import { useFlag, useExperiment } from '@flaglab/sdk-vue'
+import { useFlag, useExperiment } from "@flaglab/sdk-vue";
 
-const newCheckout = useFlag('new_checkout')
+const newCheckout = useFlag("new_checkout");
 
 const { inExperiment, params } = useExperiment(
-  'checkout_button_color',
-  { color: 'gray' },
-  (raw: any) => ({ color: typeof raw?.color === 'string' ? raw.color : 'gray' }),
-).value  // unwrap the computed ref inline, or use .value in the template
+  "checkout_button_color",
+  { color: "gray" },
+  (raw: any) => ({ color: typeof raw?.color === "string" ? raw.color : "gray" }),
+).value; // unwrap the computed ref inline, or use .value in the template
 </script>
 
 <template>
-  <button v-if="newCheckout" :style="{ background: params.color }">
-    Buy now
-  </button>
+  <button v-if="newCheckout" :style="{ background: params.color }">Buy now</button>
   <button v-else>Buy now (old)</button>
 </template>
 ```
@@ -299,10 +306,10 @@ const { inExperiment, params } = useExperiment(
 
 ```typescript
 // In a composable or router guard:
-import { useFlaglab } from '@flaglab/sdk-vue'
+import { useFlaglab } from "@flaglab/sdk-vue";
 
-const { client } = useFlaglab()
-await client.identify({ user_id: authStore.userId, plan: authStore.plan })
+const { client } = useFlaglab();
+await client.identify({ user_id: authStore.userId, plan: authStore.plan });
 // All useFlag / useExperiment computed refs automatically re-evaluate
 ```
 
@@ -310,18 +317,18 @@ await client.identify({ user_id: authStore.userId, plan: authStore.plan })
 
 ```typescript
 // server/plugins/flaglab.ts (Nuxt 3)
-import { createFlaglabServer } from '@flaglab/sdk/server'
+import { createFlaglabServer } from "@flaglab/sdk/server";
 
 export default defineNitroPlugin(async (nitro) => {
-  const serverClient = createFlaglabServer({ apiKey: process.env.FLAGLAB_SERVER_KEY! })
-  await serverClient.initOnce()
-  nitro.hooks.hook('request', (event) => {
-    event.context.flags = serverClient
-  })
-})
+  const serverClient = createFlaglabServer({ apiKey: process.env.FLAGLAB_SERVER_KEY! });
+  await serverClient.initOnce();
+  nitro.hooks.hook("request", (event) => {
+    event.context.flags = serverClient;
+  });
+});
 
 // In a page component (server-side evaluate for SSR bootstrap):
-const { data: flagsBootstrap } = await useFetch('/api/flags/bootstrap')
+const { data: flagsBootstrap } = await useFetch("/api/flags/bootstrap");
 // Inject into HTML for client hydration — same pattern as Next.js
 ```
 
@@ -341,25 +348,25 @@ npm install @flaglab/sdk @flaglab/sdk-svelte
 
 ```typescript
 // lib/flaglab.ts
-import { createFlaglabStore } from '@flaglab/sdk-svelte'
+import { createFlaglabStore } from "@flaglab/sdk-svelte";
 
 // createFlaglabStore returns { identify, flagStore, experimentStore, configStore, track }
 // flagStore is a Svelte readable<EvalResult | null> that updates after each identify()
 export const flaglab = createFlaglabStore({
-  sdkKey:  import.meta.env.PUBLIC_FLAGLAB_CLIENT_KEY,
-  baseUrl: import.meta.env.PUBLIC_FLAGLAB_BASE_URL ?? 'https://flags.yourdomain.com',
-})
+  sdkKey: import.meta.env.PUBLIC_FLAGLAB_CLIENT_KEY,
+  baseUrl: import.meta.env.PUBLIC_FLAGLAB_BASE_URL ?? "https://flags.yourdomain.com",
+});
 ```
 
 #### Derived stores
 
 ```typescript
 // lib/flaglab.ts (continued)
-import { derived } from 'svelte/store'
+import { derived } from "svelte/store";
 
 // Derive per-flag stores from the central result store
 export function flagStore(name: string) {
-  return derived(flaglab.resultStore, ($result) => $result?.flags[name] ?? false)
+  return derived(flaglab.resultStore, ($result) => $result?.flags[name] ?? false);
 }
 
 export function experimentStore<P extends Record<string, unknown>>(
@@ -368,15 +375,15 @@ export function experimentStore<P extends Record<string, unknown>>(
   decode: (raw: unknown) => P,
 ) {
   return derived(flaglab.resultStore, ($result) => {
-    if (!$result) return { inExperiment: false as const, group: 'control', params: defaultParams }
-    const exp = $result.experiments[name]
-    if (!exp) return { inExperiment: false as const, group: 'control', params: defaultParams }
+    if (!$result) return { inExperiment: false as const, group: "control", params: defaultParams };
+    const exp = $result.experiments[name];
+    if (!exp) return { inExperiment: false as const, group: "control", params: defaultParams };
     try {
-      return { inExperiment: true as const, group: exp.group, params: decode(exp.params) }
+      return { inExperiment: true as const, group: exp.group, params: decode(exp.params) };
     } catch {
-      return { inExperiment: false as const, group: 'control', params: defaultParams }
+      return { inExperiment: false as const, group: "control", params: defaultParams };
     }
-  })
+  });
 }
 ```
 
@@ -407,12 +414,12 @@ export function experimentStore<P extends Record<string, unknown>>(
 
 ```typescript
 // +page.ts or a layout load function
-import { flaglab } from '$lib/flaglab'
-import { browser } from '$app/environment'
+import { flaglab } from "$lib/flaglab";
+import { browser } from "$app/environment";
 
 export async function load({ data }) {
   if (browser && data.user) {
-    await flaglab.identify({ user_id: data.user.id, plan: data.user.plan })
+    await flaglab.identify({ user_id: data.user.id, plan: data.user.plan });
   }
 }
 ```
@@ -462,43 +469,43 @@ npm install @flaglab/sdk @flaglab/sdk-angular
 
 ```typescript
 // app.config.ts (Angular 17+ standalone)
-import { ApplicationConfig }  from '@angular/core'
-import { provideFlaglab }      from '@flaglab/sdk-angular'
+import { ApplicationConfig } from "@angular/core";
+import { provideFlaglab } from "@flaglab/sdk-angular";
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideFlaglab({
-      sdkKey:  import.meta.env['NG_APP_FLAGLAB_CLIENT_KEY'],
-      baseUrl: import.meta.env['NG_APP_FLAGLAB_BASE_URL'] ?? 'https://flags.yourdomain.com',
+      sdkKey: import.meta.env["NG_APP_FLAGLAB_CLIENT_KEY"],
+      baseUrl: import.meta.env["NG_APP_FLAGLAB_BASE_URL"] ?? "https://flags.yourdomain.com",
     }),
   ],
-}
+};
 ```
 
 #### FlaglabService
 
 ```typescript
 // Provided by @flaglab/sdk-angular — shown here for reference
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class FlaglabService implements OnDestroy {
-  private client: FlagsClientBrowser
-  private result$ = new BehaviorSubject<EvalResult | null>(null)
+  private client: FlagsClientBrowser;
+  private result$ = new BehaviorSubject<EvalResult | null>(null);
 
   constructor(@Inject(FLAGLAB_CONFIG) config: FlaglabConfig) {
-    this.client = getBrowserClient(config)  // singleton
+    this.client = getBrowserClient(config); // singleton
   }
 
   async identify(user: User): Promise<void> {
-    await this.client.identify(user)
+    await this.client.identify(user);
     // Emit new result — all subscribed components update via AsyncPipe
-    this.result$.next((this.client as any).result)
+    this.result$.next((this.client as any).result);
   }
 
   getFlag(name: string): Observable<boolean> {
     return this.result$.pipe(
-      map(r => r?.flags[name] ?? false),
+      map((r) => r?.flags[name] ?? false),
       distinctUntilChanged(),
-    )
+    );
   }
 
   getExperiment<P extends Record<string, unknown>>(
@@ -507,21 +514,26 @@ export class FlaglabService implements OnDestroy {
     decode: (raw: unknown) => P,
   ): Observable<ExperimentResult<P>> {
     return this.result$.pipe(
-      map(r => {
-        const exp = r?.experiments[name]
-        if (!exp) return { inExperiment: false as const, group: 'control', params: defaultParams }
-        try   { return { inExperiment: true as const, group: exp.group, params: decode(exp.params) } }
-        catch { return { inExperiment: false as const, group: 'control', params: defaultParams } }
+      map((r) => {
+        const exp = r?.experiments[name];
+        if (!exp) return { inExperiment: false as const, group: "control", params: defaultParams };
+        try {
+          return { inExperiment: true as const, group: exp.group, params: decode(exp.params) };
+        } catch {
+          return { inExperiment: false as const, group: "control", params: defaultParams };
+        }
       }),
       distinctUntilChanged((a, b) => a.group === b.group),
-    )
+    );
   }
 
   track(eventName: string, props?: Record<string, unknown>): void {
-    this.client.track(eventName, props)
+    this.client.track(eventName, props);
   }
 
-  ngOnDestroy() { this.client.flush() }
+  ngOnDestroy() {
+    this.client.flush();
+  }
 }
 ```
 
@@ -529,7 +541,7 @@ export class FlaglabService implements OnDestroy {
 
 ```typescript
 @Component({
-  selector: 'app-checkout-button',
+  selector: "app-checkout-button",
   standalone: true,
   imports: [AsyncPipe, NgIf, NgStyle],
   template: `
@@ -540,15 +552,13 @@ export class FlaglabService implements OnDestroy {
   `,
 })
 export class CheckoutButtonComponent {
-  newCheckout$ = inject(FlaglabService).getFlag('new_checkout')
+  newCheckout$ = inject(FlaglabService).getFlag("new_checkout");
 
   expParams$ = inject(FlaglabService)
-    .getExperiment(
-      'checkout_button_color',
-      { color: 'gray' },
-      (raw: any) => ({ color: typeof raw?.color === 'string' ? raw.color : 'gray' }),
-    )
-    .pipe(map(r => r.params))
+    .getExperiment("checkout_button_color", { color: "gray" }, (raw: any) => ({
+      color: typeof raw?.color === "string" ? raw.color : "gray",
+    }))
+    .pipe(map((r) => r.params));
 }
 ```
 
@@ -558,19 +568,19 @@ export class CheckoutButtonComponent {
 // Identify on app startup if user is already signed in
 export function initFlaglab(auth: AuthService, flaglab: FlaglabService): () => Promise<void> {
   return async () => {
-    const user = await auth.getCurrentUser()
-    if (user) await flaglab.identify({ user_id: user.id, plan: user.plan })
-  }
+    const user = await auth.getCurrentUser();
+    if (user) await flaglab.identify({ user_id: user.id, plan: user.plan });
+  };
 }
 
 // app.config.ts
 providers: [
   provideAppInitializer(() => {
-    const auth    = inject(AuthService)
-    const flaglab  = inject(FlaglabService)
-    return initFlaglab(auth, flaglab)()
+    const auth = inject(AuthService);
+    const flaglab = inject(FlaglabService);
+    return initFlaglab(auth, flaglab)();
   }),
-]
+];
 ```
 
 ---
@@ -585,30 +595,31 @@ Full implementation — not a wrapper over `sdk-client`. Replaces every browser 
 npm install @flaglab/sdk-react-native
 ```
 
-| Browser API | React Native replacement |
-|---|---|
-| `localStorage` (anon ID) | `@react-native-async-storage/async-storage` |
+| Browser API                       | React Native replacement                                |
+| --------------------------------- | ------------------------------------------------------- |
+| `localStorage` (anon ID)          | `@react-native-async-storage/async-storage`             |
 | `sessionStorage` (exposure dedup) | In-memory `Set` (acceptable — session ends on app kill) |
-| `navigator.sendBeacon` | `fetch` with `keepalive: false` + background task |
-| `visibilitychange` event | `AppState.addEventListener('change', ...)` |
-| `beforeunload` event | `AppState` → `background`/`inactive` transition |
-| `window` check | Not needed — RN always has a JS runtime |
+| `navigator.sendBeacon`            | `fetch` with `keepalive: false` + background task       |
+| `visibilitychange` event          | `AppState.addEventListener('change', ...)`              |
+| `beforeunload` event              | `AppState` → `background`/`inactive` transition         |
+| `window` check                    | Not needed — RN always has a JS runtime                 |
 
 #### Initialization
 
 ```typescript
 // lib/flaglab.ts
-import { FlagsClientRN } from '@flaglab/sdk-react-native'
+import { FlagsClientRN } from "@flaglab/sdk-react-native";
 
 // Module-level singleton — safe across React re-renders and navigation
-let _client: FlagsClientRN | null = null
+let _client: FlagsClientRN | null = null;
 
 export function getClient(): FlagsClientRN {
-  if (!_client) _client = new FlagsClientRN({
-    sdkKey:  process.env.EXPO_PUBLIC_FLAGLAB_CLIENT_KEY!,
-    baseUrl: process.env.EXPO_PUBLIC_FLAGLAB_BASE_URL ?? 'https://flags.yourdomain.com',
-  })
-  return _client
+  if (!_client)
+    _client = new FlagsClientRN({
+      sdkKey: process.env.EXPO_PUBLIC_FLAGLAB_CLIENT_KEY!,
+      baseUrl: process.env.EXPO_PUBLIC_FLAGLAB_BASE_URL ?? "https://flags.yourdomain.com",
+    });
+  return _client;
 }
 ```
 
@@ -616,16 +627,16 @@ export function getClient(): FlagsClientRN {
 
 ```typescript
 // lib/flaglab.ts (continued)
-import { AppState, AppStateStatus } from 'react-native'
+import { AppState, AppStateStatus } from "react-native";
 
 // Call once at app root — flushes event buffer when app goes to background
 export function registerFlaglabFlushHook(): () => void {
-  const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
-    if (state === 'background' || state === 'inactive') {
-      getClient().flush()  // best-effort; RN gives ~5s before JS engine suspends
+  const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+    if (state === "background" || state === "inactive") {
+      getClient().flush(); // best-effort; RN gives ~5s before JS engine suspends
     }
-  })
-  return () => sub.remove()
+  });
+  return () => sub.remove();
 }
 ```
 
@@ -657,19 +668,19 @@ export default function App() {
 
 ```typescript
 // hooks/useFlag.ts
-import { useEffect, useState } from 'react'
-import { getClient } from '@/lib/flaglab'
+import { useEffect, useState } from "react";
+import { getClient } from "@/lib/flaglab";
 
 export function useFlag(name: string): boolean {
-  const [value, setValue] = useState(() => getClient().getFlag(name))
+  const [value, setValue] = useState(() => getClient().getFlag(name));
 
   useEffect(() => {
     // Re-evaluate after identify() resolves — client emits an event
-    const unsub = getClient().onUpdate(() => setValue(getClient().getFlag(name)))
-    return unsub
-  }, [name])
+    const unsub = getClient().onUpdate(() => setValue(getClient().getFlag(name)));
+    return unsub;
+  }, [name]);
 
-  return value
+  return value;
 }
 
 export function useExperiment<P extends Record<string, unknown>>(
@@ -678,17 +689,17 @@ export function useExperiment<P extends Record<string, unknown>>(
   decode: (raw: unknown) => P,
 ) {
   const [result, setResult] = useState(() =>
-    getClient().getExperiment(name, defaultParams, decode)
-  )
+    getClient().getExperiment(name, defaultParams, decode),
+  );
 
   useEffect(() => {
     const unsub = getClient().onUpdate(() =>
-      setResult(getClient().getExperiment(name, defaultParams, decode))
-    )
-    return unsub
-  }, [name])
+      setResult(getClient().getExperiment(name, defaultParams, decode)),
+    );
+    return unsub;
+  }, [name]);
 
-  return result
+  return result;
 }
 ```
 
@@ -696,14 +707,14 @@ export function useExperiment<P extends Record<string, unknown>>(
 
 ```typescript
 // Inside FlagsClientRN constructor (implementation detail):
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 async function getOrCreateAnonId(): Promise<string> {
-  const stored = await AsyncStorage.getItem('@flaglab/anon_id')
-  if (stored) return stored
-  const id = crypto.randomUUID()  // available in RN 0.73+ / Hermes
-  await AsyncStorage.setItem('@flaglab/anon_id', id)
-  return id
+  const stored = await AsyncStorage.getItem("@flaglab/anon_id");
+  if (stored) return stored;
+  const id = crypto.randomUUID(); // available in RN 0.73+ / Hermes
+  await AsyncStorage.setItem("@flaglab/anon_id", id);
+  return id;
 }
 ```
 
@@ -713,18 +724,18 @@ For high-reliability event delivery when the app is killed before `flush()` runs
 
 ```typescript
 // Register a background task (Expo TaskManager or react-native-background-fetch)
-import * as TaskManager from 'expo-task-manager'
-import * as BackgroundFetch from 'expo-background-fetch'
+import * as TaskManager from "expo-task-manager";
+import * as BackgroundFetch from "expo-background-fetch";
 
-const TASK = 'flaglab-flush'
+const TASK = "flaglab-flush";
 
 TaskManager.defineTask(TASK, async () => {
-  await getClient().flush()
-  return BackgroundFetch.BackgroundFetchResult.NewData
-})
+  await getClient().flush();
+  return BackgroundFetch.BackgroundFetchResult.NewData;
+});
 
 // Register once at startup:
-await BackgroundFetch.registerTaskAsync(TASK, { minimumInterval: 60, stopOnTerminate: false })
+await BackgroundFetch.registerTaskAsync(TASK, { minimumInterval: 60, stopOnTerminate: false });
 ```
 
 ---
@@ -740,13 +751,13 @@ await BackgroundFetch.registerTaskAsync(TASK, { minimumInterval: 60, stopOnTermi
 
 #### Key API differences from browser SDK
 
-| Browser concept | iOS replacement |
-|---|---|
-| `localStorage` (anon ID) | `UserDefaults.standard` |
-| `sessionStorage` (dedup) | In-memory `Set<String>` |
-| `navigator.sendBeacon` | `URLSession.shared.dataTask` in `beginBackgroundTask` |
-| `visibilitychange` | `UIApplication.didEnterBackgroundNotification` |
-| `fetch` | `URLSession` with `URLRequest` |
+| Browser concept          | iOS replacement                                       |
+| ------------------------ | ----------------------------------------------------- |
+| `localStorage` (anon ID) | `UserDefaults.standard`                               |
+| `sessionStorage` (dedup) | In-memory `Set<String>`                               |
+| `navigator.sendBeacon`   | `URLSession.shared.dataTask` in `beginBackgroundTask` |
+| `visibilitychange`       | `UIApplication.didEnterBackgroundNotification`        |
+| `fetch`                  | `URLSession` with `URLRequest`                        |
 
 #### Initialization
 
@@ -856,13 +867,13 @@ implementation 'com.flaglab:sdk-android:1.0.0'
 
 #### Key API differences from browser SDK
 
-| Browser concept | Android replacement |
-|---|---|
-| `localStorage` (anon ID) | `SharedPreferences` |
-| `sessionStorage` (dedup) | In-memory `HashSet<String>` |
-| `navigator.sendBeacon` | `OkHttp` + `WorkManager` for reliable delivery |
-| `visibilitychange` | `ProcessLifecycleOwner` (app foreground/background) |
-| `fetch` | `OkHttp` or `Retrofit` |
+| Browser concept          | Android replacement                                 |
+| ------------------------ | --------------------------------------------------- |
+| `localStorage` (anon ID) | `SharedPreferences`                                 |
+| `sessionStorage` (dedup) | In-memory `HashSet<String>`                         |
+| `navigator.sendBeacon`   | `OkHttp` + `WorkManager` for reliable delivery      |
+| `visibilitychange`       | `ProcessLifecycleOwner` (app foreground/background) |
+| `fetch`                  | `OkHttp` or `Retrofit`                              |
 
 #### Initialization
 
@@ -1596,19 +1607,19 @@ emits a `template_warning` and the AI prompts the user to update.
 
 ## SDK Package Names
 
-| Language / Framework | Package name | Registry |
-|---|---|---|
-| TypeScript / JavaScript (browser + Node.js) | `@flaglab/sdk` | npm |
-| Vue 3 | `@flaglab/sdk-vue` | npm |
-| Svelte / SvelteKit | `@flaglab/sdk-svelte` | npm |
-| Angular 17+ | `@flaglab/sdk-angular` | npm |
-| React Native | `@flaglab/sdk-react-native` | npm |
-| Swift / iOS | `FlaglabSDK` | Swift Package Index |
-| Kotlin / Android | `com.flaglab:sdk-android` | Maven Central |
-| Python | `flaglab-sdk` | PyPI |
-| Ruby | `flaglab-sdk` | RubyGems |
-| Go | `github.com/flaglab/sdk-go` | pkg.go.dev |
-| Java | `com.flaglab:sdk` | Maven Central |
-| PHP | `flaglab/sdk` | Packagist |
+| Language / Framework                        | Package name                | Registry            |
+| ------------------------------------------- | --------------------------- | ------------------- |
+| TypeScript / JavaScript (browser + Node.js) | `@flaglab/sdk`              | npm                 |
+| Vue 3                                       | `@flaglab/sdk-vue`          | npm                 |
+| Svelte / SvelteKit                          | `@flaglab/sdk-svelte`       | npm                 |
+| Angular 17+                                 | `@flaglab/sdk-angular`      | npm                 |
+| React Native                                | `@flaglab/sdk-react-native` | npm                 |
+| Swift / iOS                                 | `FlaglabSDK`                | Swift Package Index |
+| Kotlin / Android                            | `com.flaglab:sdk-android`   | Maven Central       |
+| Python                                      | `flaglab-sdk`               | PyPI                |
+| Ruby                                        | `flaglab-sdk`               | RubyGems            |
+| Go                                          | `github.com/flaglab/sdk-go` | pkg.go.dev          |
+| Java                                        | `com.flaglab:sdk`           | Maven Central       |
+| PHP                                         | `flaglab/sdk`               | Packagist           |
 
 Monorepo structure and repo-split rationale are in `packages.md`.

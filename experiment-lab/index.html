@@ -1,927 +1,2188 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ExperimentLab Analytics</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --primary:#1565c0; --primary-light:#e3f2fd;
-      --success:#2e7d32; --success-light:#e8f5e9; --success-band:rgba(46,125,50,.18);
-      --error:#c62828;   --error-light:#ffebee;   --error-band:rgba(198,40,40,.18);
-      --neutral:#616161; --neutral-band:rgba(97,97,97,.12);
-      --warn:#e65100;    --warn-light:#fff3e0;
-      --bg:#f0f2f5; --surface:#fff; --border:#e0e0e0;
-      --text:#212121; --text2:#616161; --text3:#9e9e9e;
-      --radius:8px;
-      --shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
-      --shadow-md:0 3px 6px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.08);
-    }
-    body { font-family:'Roboto',sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.6; }
-    .navbar { background:var(--primary); color:white; padding:0 24px; display:flex; align-items:center; gap:16px; height:56px; box-shadow:var(--shadow-md); position:sticky; top:0; z-index:100; }
-    .navbar-brand { font-size:18px; font-weight:500; display:flex; align-items:center; gap:8px; margin-right:24px; }
-    .tab-nav { display:flex; gap:2px; background:rgba(255,255,255,.12); border-radius:6px; padding:3px; }
-    .tab-btn { background:none; border:none; color:rgba(255,255,255,.75); padding:6px 16px; border-radius:4px; cursor:pointer; font-size:13px; font-weight:500; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:6px; }
-    .tab-btn:hover { background:rgba(255,255,255,.1); color:white; }
-    .tab-btn.active { background:white; color:var(--primary); }
-    .tab-dot { width:8px; height:8px; border-radius:50%; }
-    .page { display:none; padding:24px; max-width:1300px; margin:0 auto; }
-    .page.active { display:block; }
-    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
-    .grid-auto { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
-    @media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr;}}
-    .card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:16px; }
-    .card-header { padding:16px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-    .card-title { font-size:15px; font-weight:500; flex:1; }
-    .card-body { padding:20px; }
-    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500; white-space:nowrap; }
-    .badge-success { background:var(--success-light); color:var(--success); }
-    .badge-error   { background:var(--error-light);   color:var(--error); }
-    .badge-neutral { background:#f5f5f5; color:var(--neutral); }
-    .badge-warn    { background:var(--warn-light);    color:var(--warn); }
-    .badge-info    { background:var(--primary-light); color:var(--primary); }
-    .badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
-    .callout { display:flex; gap:12px; padding:14px 16px; border-radius:var(--radius); font-size:13px; align-items:flex-start; margin-bottom:16px; line-height:1.6; }
-    .callout .material-icons { font-size:18px; margin-top:2px; flex-shrink:0; }
-    .callout-info  { background:var(--primary-light); color:#0d47a1; }
-    .callout-warn  { background:var(--warn-light);    color:var(--warn); }
-    .callout-error { background:var(--error-light);   color:var(--error); }
-    .callout-success { background:var(--success-light); color:var(--success); }
-    .story-card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden; }
-    .story-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); }
-    .story-exp-label { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.7px; color:var(--text3); margin-bottom:4px; }
-    .story-exp-name { font-size:18px; font-weight:500; font-family:monospace; color:var(--primary); margin-bottom:8px; }
-    .story-meta { display:flex; gap:16px; flex-wrap:wrap; }
-    .story-meta-item { font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; }
-    .story-meta-item .material-icons { font-size:14px; }
-    .story-steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); border-bottom:1px solid var(--border); }
-    .story-step { padding:20px 24px; border-right:1px solid var(--border); }
-    .story-step:last-child { border-right:none; }
-    .step-num { width:26px; height:26px; border-radius:50%; background:var(--primary); color:white; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
-    .step-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text3); margin-bottom:4px; }
-    .step-title { font-size:14px; font-weight:500; margin-bottom:8px; }
-    .step-body { font-size:13px; color:var(--text2); line-height:1.6; }
-    .split-diagram { display:flex; border-radius:6px; overflow:hidden; margin:10px 0; height:34px; }
-    .split-control { background:#e3f2fd; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:#1565c0; flex:1; padding:0 8px; text-align:center; }
-    .split-test    { background:#e8f5e9; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:#2e7d32; flex:1; padding:0 8px; text-align:center; }
-    .numbers-row { display:flex; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); margin:12px 0; }
-    .number-box { flex:1; padding:14px 16px; text-align:center; }
-    .number-box.ctrl { background:#f8f9ff; border-right:1px solid var(--border); }
-    .number-box.tst  { background:#f6fff6; border-right:1px solid var(--border); }
-    .number-box.diff { background:#fffde7; }
-    .number-box-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text3); margin-bottom:6px; }
-    .number-box-val { font-size:26px; font-weight:300; line-height:1; }
-    .number-box-sub { font-size:11px; color:var(--text2); margin-top:4px; }
-    .pos { color:var(--success); } .neg { color:var(--error); } .neu { color:var(--neutral); }
-    .verdict { border-radius:var(--radius); padding:20px 24px; }
-    .verdict-ship { background:linear-gradient(135deg,#e8f5e9,#f1f8e9); border:1.5px solid #a5d6a7; }
-    .verdict-hold { background:linear-gradient(135deg,#ffebee,#fce4ec); border:1.5px solid #ef9a9a; }
-    .verdict-wait { background:linear-gradient(135deg,#fff3e0,#fff8e1); border:1.5px solid #ffcc02; }
-    .verdict-title { font-size:18px; font-weight:500; display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-    .verdict-body { font-size:14px; line-height:1.8; color:var(--text); }
-    .ci-legend { display:flex; gap:16px; margin-bottom:14px; flex-wrap:wrap; }
-    .ci-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text2); }
-    .ci-legend-swatch { width:20px; height:8px; border-radius:2px; }
-    .ci-table { width:100%; border-collapse:collapse; }
-    .ci-table tr { border-bottom:1px solid var(--border); }
-    .ci-table tr:last-child { border-bottom:none; }
-    .ci-table td { padding:12px 0; vertical-align:middle; }
-    .ci-metric-name { width:200px; font-size:13px; font-weight:500; padding-right:16px; }
-    .ci-metric-role { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; display:inline-block; padding:1px 7px; border-radius:10px; margin-bottom:3px; }
-    .role-goal  { background:var(--primary-light); color:var(--primary); }
-    .role-guard { background:var(--warn-light); color:var(--warn); }
-    .role-sec   { background:#f5f5f5; color:var(--neutral); }
-    .ci-bar-cell { width:100%; padding-right:16px; }
-    .ci-bar-wrap { position:relative; height:44px; min-width:240px; }
-    .ci-zero  { position:absolute; top:0; bottom:8px; width:1.5px; background:#bdbdbd; z-index:2; }
-    .ci-band  { position:absolute; top:10px; height:16px; border-radius:3px; z-index:3; }
-    .ci-point { position:absolute; top:4px; width:3px; height:28px; border-radius:2px; background:#212121; z-index:4; transform:translateX(-1.5px); }
-    .ci-scale { position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:space-between; font-size:9px; color:var(--text3); }
-    .ci-stats-cell { width:190px; padding-left:8px; }
-    .ci-delta { font-size:16px; font-weight:500; }
-    .ci-delta.pos { color:var(--success); } .ci-delta.neg { color:var(--error); } .ci-delta.neu { color:var(--neutral); }
-    .ci-range { font-size:11px; color:var(--text2); margin-top:2px; }
-    .ci-pvalue { font-size:11px; color:var(--text3); }
-    .ci-plain { font-size:11px; color:var(--text2); margin-top:3px; line-height:1.4; font-style:italic; }
-    .ci-badge-cell { width:130px; padding-left:8px; }
-    .annotation { border-radius:var(--radius); padding:14px 18px; margin-top:12px; font-size:13px; line-height:1.6; }
-    .annotation-info    { background:#e3f2fd; border-left:3px solid var(--primary); }
-    .annotation-warn    { background:var(--warn-light); border-left:3px solid var(--warn); }
-    .annotation-error   { background:var(--error-light); border-left:3px solid var(--error); }
-    .annotation-success { background:var(--success-light); border-left:3px solid var(--success); }
-    .annotation-neutral { background:#f5f5f5; border-left:3px solid #bdbdbd; }
-    .annotation-title { font-weight:500; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
-    .annotation ul { margin:4px 0 0 16px; } .annotation li { margin-bottom:4px; }
-    .chart-wrap { position:relative; height:220px; margin-top:8px; }
-    .chart-wrap-sm { position:relative; height:160px; }
-    .chart-title { font-size:12px; font-weight:500; color:var(--text2); margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px; }
-    .section-header { display:flex; align-items:center; gap:8px; margin:24px 0 12px; font-size:16px; font-weight:500; }
-    .section-chip { font-size:11px; font-weight:500; padding:2px 8px; border-radius:10px; background:var(--primary-light); color:var(--primary); }
-    .exp-table { width:100%; border-collapse:collapse; }
-    .exp-table th { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.5px; color:var(--text3); text-align:left; padding:8px 12px; border-bottom:2px solid var(--border); }
-    .exp-table td { padding:11px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
-    .exp-table tr:last-child td { border-bottom:none; }
-    .exp-table tr:hover td { background:#fafafa; }
-    .result-bars { display:flex; gap:2px; align-items:center; }
-    .result-bar { height:16px; border-radius:2px; display:flex; align-items:center; justify-content:center; font-size:10px; color:white; font-weight:600; min-width:24px; padding:0 5px; }
-    .rb-green { background:var(--success); } .rb-gray { background:#bdbdbd; } .rb-red { background:var(--error); }
-    .inner-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; }
-    .inner-tab { padding:8px 18px; font-size:13px; font-weight:500; color:var(--text2); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; transition:all .15s; }
-    .inner-tab:hover { color:var(--primary); } .inner-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
-    .inner-panel { display:none; } .inner-panel.active { display:block; }
-    .exp-mini-card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; border-left:4px solid transparent; }
-    .exp-mini-card.winner { border-left-color:var(--success); } .exp-mini-card.risky { border-left-color:var(--error); }
-    .exp-mini-card.mixed  { border-left-color:#f9a825; }       .exp-mini-card.unclear{ border-left-color:var(--neutral); }
-    .exp-mini-name { font-size:13px; font-weight:500; font-family:monospace; color:var(--primary); margin-bottom:4px; }
-    .exp-mini-q    { font-size:12px; color:var(--text2); margin-bottom:8px; }
-    .exp-mini-bars { display:flex; gap:3px; height:8px; border-radius:3px; overflow:hidden; margin-bottom:6px; }
-    .exp-mini-bar  { height:100%; }
-    .exp-mini-meta { font-size:11px; color:var(--text3); }
-    .ccm-row { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:6px; margin-bottom:6px; border:1px solid var(--border); }
-    .ccm-row.ok   { background:var(--success-light); border-color:#a5d6a7; }
-    .ccm-row.fail { background:var(--error-light);   border-color:#ef9a9a; }
-    .ccm-row.gray { background:#fafafa; }
-    .ccm-name { font-size:12px; font-weight:500; flex:1; font-family:monospace; }
-    .ccm-val  { font-size:12px; font-weight:500; width:60px; text-align:right; }
-    .ccm-expl { font-size:11px; color:var(--text2); width:220px; }
-    .power-meter { background:var(--border); border-radius:4px; height:8px; overflow:hidden; margin-top:4px; }
-    .power-fill  { height:100%; border-radius:4px; }
-    .stat-row { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:16px; }
-    .stat-val { font-size:24px; font-weight:300; } .stat-lbl { font-size:11px; color:var(--text3); text-transform:uppercase; }
-    code { font-family:monospace; font-size:12px; background:#f5f5f5; padding:1px 5px; border-radius:3px; }
-    .daylight-demo { display:flex; flex-direction:column; gap:14px; padding:4px 0; }
-    .dl-row { display:flex; align-items:center; gap:12px; }
-    .dl-label { width:95px; font-size:12px; font-weight:500; color:var(--text2); }
-    .dl-bar-wrap { flex:1; position:relative; height:28px; }
-    .dl-zero  { position:absolute; left:50%; top:0; bottom:0; width:1px; background:#9e9e9e; }
-    .dl-band  { position:absolute; top:7px; height:14px; border-radius:3px; }
-    .dl-point { position:absolute; top:3px; width:3px; height:22px; background:#212121; border-radius:2px; transform:translateX(-1.5px); }
-    .dl-desc  { width:190px; font-size:11px; color:var(--text2); }
-  </style>
-</head>
-<body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ExperimentLab Analytics</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --primary: #1565c0;
+        --primary-light: #e3f2fd;
+        --success: #2e7d32;
+        --success-light: #e8f5e9;
+        --success-band: rgba(46, 125, 50, 0.18);
+        --error: #c62828;
+        --error-light: #ffebee;
+        --error-band: rgba(198, 40, 40, 0.18);
+        --neutral: #616161;
+        --neutral-band: rgba(97, 97, 97, 0.12);
+        --warn: #e65100;
+        --warn-light: #fff3e0;
+        --bg: #f0f2f5;
+        --surface: #fff;
+        --border: #e0e0e0;
+        --text: #212121;
+        --text2: #616161;
+        --text3: #9e9e9e;
+        --radius: 8px;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+        --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
+      }
+      body {
+        font-family: "Roboto", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .navbar {
+        background: var(--primary);
+        color: white;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 56px;
+        box-shadow: var(--shadow-md);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .navbar-brand {
+        font-size: 18px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-right: 24px;
+      }
+      .tab-nav {
+        display: flex;
+        gap: 2px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 3px;
+      }
+      .tab-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.75);
+        padding: 6px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: inherit;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tab-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+      .tab-btn.active {
+        background: white;
+        color: var(--primary);
+      }
+      .tab-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .page {
+        display: none;
+        padding: 24px;
+        max-width: 1300px;
+        margin: 0 auto;
+      }
+      .page.active {
+        display: block;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+      }
+      .grid-auto {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      @media (max-width: 900px) {
+        .grid-2,
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 16px;
+      }
+      .card-header {
+        padding: 16px 20px 12px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .card-title {
+        font-size: 15px;
+        font-weight: 500;
+        flex: 1;
+      }
+      .card-body {
+        padding: 20px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .badge-success {
+        background: var(--success-light);
+        color: var(--success);
+      }
+      .badge-error {
+        background: var(--error-light);
+        color: var(--error);
+      }
+      .badge-neutral {
+        background: #f5f5f5;
+        color: var(--neutral);
+      }
+      .badge-warn {
+        background: var(--warn-light);
+        color: var(--warn);
+      }
+      .badge-info {
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .callout {
+        display: flex;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: var(--radius);
+        font-size: 13px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        line-height: 1.6;
+      }
+      .callout .material-icons {
+        font-size: 18px;
+        margin-top: 2px;
+        flex-shrink: 0;
+      }
+      .callout-info {
+        background: var(--primary-light);
+        color: #0d47a1;
+      }
+      .callout-warn {
+        background: var(--warn-light);
+        color: var(--warn);
+      }
+      .callout-error {
+        background: var(--error-light);
+        color: var(--error);
+      }
+      .callout-success {
+        background: var(--success-light);
+        color: var(--success);
+      }
+      .story-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 16px;
+        overflow: hidden;
+      }
+      .story-header {
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .story-exp-label {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--text3);
+        margin-bottom: 4px;
+      }
+      .story-exp-name {
+        font-size: 18px;
+        font-weight: 500;
+        font-family: monospace;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
+      .story-meta {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .story-meta-item {
+        font-size: 12px;
+        color: var(--text2);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .story-meta-item .material-icons {
+        font-size: 14px;
+      }
+      .story-steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        border-bottom: 1px solid var(--border);
+      }
+      .story-step {
+        padding: 20px 24px;
+        border-right: 1px solid var(--border);
+      }
+      .story-step:last-child {
+        border-right: none;
+      }
+      .step-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
+      .step-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text3);
+        margin-bottom: 4px;
+      }
+      .step-title {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+      .step-body {
+        font-size: 13px;
+        color: var(--text2);
+        line-height: 1.6;
+      }
+      .split-diagram {
+        display: flex;
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 10px 0;
+        height: 34px;
+      }
+      .split-control {
+        background: #e3f2fd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 500;
+        color: #1565c0;
+        flex: 1;
+        padding: 0 8px;
+        text-align: center;
+      }
+      .split-test {
+        background: #e8f5e9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 500;
+        color: #2e7d32;
+        flex: 1;
+        padding: 0 8px;
+        text-align: center;
+      }
+      .numbers-row {
+        display: flex;
+        border-radius: var(--radius);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        margin: 12px 0;
+      }
+      .number-box {
+        flex: 1;
+        padding: 14px 16px;
+        text-align: center;
+      }
+      .number-box.ctrl {
+        background: #f8f9ff;
+        border-right: 1px solid var(--border);
+      }
+      .number-box.tst {
+        background: #f6fff6;
+        border-right: 1px solid var(--border);
+      }
+      .number-box.diff {
+        background: #fffde7;
+      }
+      .number-box-label {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text3);
+        margin-bottom: 6px;
+      }
+      .number-box-val {
+        font-size: 26px;
+        font-weight: 300;
+        line-height: 1;
+      }
+      .number-box-sub {
+        font-size: 11px;
+        color: var(--text2);
+        margin-top: 4px;
+      }
+      .pos {
+        color: var(--success);
+      }
+      .neg {
+        color: var(--error);
+      }
+      .neu {
+        color: var(--neutral);
+      }
+      .verdict {
+        border-radius: var(--radius);
+        padding: 20px 24px;
+      }
+      .verdict-ship {
+        background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+        border: 1.5px solid #a5d6a7;
+      }
+      .verdict-hold {
+        background: linear-gradient(135deg, #ffebee, #fce4ec);
+        border: 1.5px solid #ef9a9a;
+      }
+      .verdict-wait {
+        background: linear-gradient(135deg, #fff3e0, #fff8e1);
+        border: 1.5px solid #ffcc02;
+      }
+      .verdict-title {
+        font-size: 18px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .verdict-body {
+        font-size: 14px;
+        line-height: 1.8;
+        color: var(--text);
+      }
+      .ci-legend {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+      .ci-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--text2);
+      }
+      .ci-legend-swatch {
+        width: 20px;
+        height: 8px;
+        border-radius: 2px;
+      }
+      .ci-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .ci-table tr {
+        border-bottom: 1px solid var(--border);
+      }
+      .ci-table tr:last-child {
+        border-bottom: none;
+      }
+      .ci-table td {
+        padding: 12px 0;
+        vertical-align: middle;
+      }
+      .ci-metric-name {
+        width: 200px;
+        font-size: 13px;
+        font-weight: 500;
+        padding-right: 16px;
+      }
+      .ci-metric-role {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 10px;
+        margin-bottom: 3px;
+      }
+      .role-goal {
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+      .role-guard {
+        background: var(--warn-light);
+        color: var(--warn);
+      }
+      .role-sec {
+        background: #f5f5f5;
+        color: var(--neutral);
+      }
+      .ci-bar-cell {
+        width: 100%;
+        padding-right: 16px;
+      }
+      .ci-bar-wrap {
+        position: relative;
+        height: 44px;
+        min-width: 240px;
+      }
+      .ci-zero {
+        position: absolute;
+        top: 0;
+        bottom: 8px;
+        width: 1.5px;
+        background: #bdbdbd;
+        z-index: 2;
+      }
+      .ci-band {
+        position: absolute;
+        top: 10px;
+        height: 16px;
+        border-radius: 3px;
+        z-index: 3;
+      }
+      .ci-point {
+        position: absolute;
+        top: 4px;
+        width: 3px;
+        height: 28px;
+        border-radius: 2px;
+        background: #212121;
+        z-index: 4;
+        transform: translateX(-1.5px);
+      }
+      .ci-scale {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: var(--text3);
+      }
+      .ci-stats-cell {
+        width: 190px;
+        padding-left: 8px;
+      }
+      .ci-delta {
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .ci-delta.pos {
+        color: var(--success);
+      }
+      .ci-delta.neg {
+        color: var(--error);
+      }
+      .ci-delta.neu {
+        color: var(--neutral);
+      }
+      .ci-range {
+        font-size: 11px;
+        color: var(--text2);
+        margin-top: 2px;
+      }
+      .ci-pvalue {
+        font-size: 11px;
+        color: var(--text3);
+      }
+      .ci-plain {
+        font-size: 11px;
+        color: var(--text2);
+        margin-top: 3px;
+        line-height: 1.4;
+        font-style: italic;
+      }
+      .ci-badge-cell {
+        width: 130px;
+        padding-left: 8px;
+      }
+      .annotation {
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        margin-top: 12px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .annotation-info {
+        background: #e3f2fd;
+        border-left: 3px solid var(--primary);
+      }
+      .annotation-warn {
+        background: var(--warn-light);
+        border-left: 3px solid var(--warn);
+      }
+      .annotation-error {
+        background: var(--error-light);
+        border-left: 3px solid var(--error);
+      }
+      .annotation-success {
+        background: var(--success-light);
+        border-left: 3px solid var(--success);
+      }
+      .annotation-neutral {
+        background: #f5f5f5;
+        border-left: 3px solid #bdbdbd;
+      }
+      .annotation-title {
+        font-weight: 500;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .annotation ul {
+        margin: 4px 0 0 16px;
+      }
+      .annotation li {
+        margin-bottom: 4px;
+      }
+      .chart-wrap {
+        position: relative;
+        height: 220px;
+        margin-top: 8px;
+      }
+      .chart-wrap-sm {
+        position: relative;
+        height: 160px;
+      }
+      .chart-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text2);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 24px 0 12px;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .section-chip {
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+      .exp-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .exp-table th {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text3);
+        text-align: left;
+        padding: 8px 12px;
+        border-bottom: 2px solid var(--border);
+      }
+      .exp-table td {
+        padding: 11px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        vertical-align: middle;
+      }
+      .exp-table tr:last-child td {
+        border-bottom: none;
+      }
+      .exp-table tr:hover td {
+        background: #fafafa;
+      }
+      .result-bars {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+      }
+      .result-bar {
+        height: 16px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: white;
+        font-weight: 600;
+        min-width: 24px;
+        padding: 0 5px;
+      }
+      .rb-green {
+        background: var(--success);
+      }
+      .rb-gray {
+        background: #bdbdbd;
+      }
+      .rb-red {
+        background: var(--error);
+      }
+      .inner-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+        overflow-x: auto;
+      }
+      .inner-tab {
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text2);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        white-space: nowrap;
+        transition: all 0.15s;
+      }
+      .inner-tab:hover {
+        color: var(--primary);
+      }
+      .inner-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
+      .inner-panel {
+        display: none;
+      }
+      .inner-panel.active {
+        display: block;
+      }
+      .exp-mini-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 16px;
+        border-left: 4px solid transparent;
+      }
+      .exp-mini-card.winner {
+        border-left-color: var(--success);
+      }
+      .exp-mini-card.risky {
+        border-left-color: var(--error);
+      }
+      .exp-mini-card.mixed {
+        border-left-color: #f9a825;
+      }
+      .exp-mini-card.unclear {
+        border-left-color: var(--neutral);
+      }
+      .exp-mini-name {
+        font-size: 13px;
+        font-weight: 500;
+        font-family: monospace;
+        color: var(--primary);
+        margin-bottom: 4px;
+      }
+      .exp-mini-q {
+        font-size: 12px;
+        color: var(--text2);
+        margin-bottom: 8px;
+      }
+      .exp-mini-bars {
+        display: flex;
+        gap: 3px;
+        height: 8px;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 6px;
+      }
+      .exp-mini-bar {
+        height: 100%;
+      }
+      .exp-mini-meta {
+        font-size: 11px;
+        color: var(--text3);
+      }
+      .ccm-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 12px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        border: 1px solid var(--border);
+      }
+      .ccm-row.ok {
+        background: var(--success-light);
+        border-color: #a5d6a7;
+      }
+      .ccm-row.fail {
+        background: var(--error-light);
+        border-color: #ef9a9a;
+      }
+      .ccm-row.gray {
+        background: #fafafa;
+      }
+      .ccm-name {
+        font-size: 12px;
+        font-weight: 500;
+        flex: 1;
+        font-family: monospace;
+      }
+      .ccm-val {
+        font-size: 12px;
+        font-weight: 500;
+        width: 60px;
+        text-align: right;
+      }
+      .ccm-expl {
+        font-size: 11px;
+        color: var(--text2);
+        width: 220px;
+      }
+      .power-meter {
+        background: var(--border);
+        border-radius: 4px;
+        height: 8px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      .power-fill {
+        height: 100%;
+        border-radius: 4px;
+      }
+      .stat-row {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .stat-val {
+        font-size: 24px;
+        font-weight: 300;
+      }
+      .stat-lbl {
+        font-size: 11px;
+        color: var(--text3);
+        text-transform: uppercase;
+      }
+      code {
+        font-family: monospace;
+        font-size: 12px;
+        background: #f5f5f5;
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .daylight-demo {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 4px 0;
+      }
+      .dl-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .dl-label {
+        width: 95px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text2);
+      }
+      .dl-bar-wrap {
+        flex: 1;
+        position: relative;
+        height: 28px;
+      }
+      .dl-zero {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: #9e9e9e;
+      }
+      .dl-band {
+        position: absolute;
+        top: 7px;
+        height: 14px;
+        border-radius: 3px;
+      }
+      .dl-point {
+        position: absolute;
+        top: 3px;
+        width: 3px;
+        height: 22px;
+        background: #212121;
+        border-radius: 2px;
+        transform: translateX(-1.5px);
+      }
+      .dl-desc {
+        width: 190px;
+        font-size: 11px;
+        color: var(--text2);
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-brand"><span class="material-icons">science</span> ExperimentLab</div>
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="showTab('starter', this)">
+          <span class="tab-dot" style="background: #81c784"></span> Starter
+        </button>
+        <button class="tab-btn" onclick="showTab('growth', this)">
+          <span class="tab-dot" style="background: #ffb74d"></span> Growth
+        </button>
+        <button class="tab-btn" onclick="showTab('enterprise', this)">
+          <span class="tab-dot" style="background: #e57373"></span> Enterprise
+        </button>
+      </div>
+    </nav>
 
-<nav class="navbar">
-  <div class="navbar-brand"><span class="material-icons">science</span> ExperimentLab</div>
-  <div class="tab-nav">
-    <button class="tab-btn active" onclick="showTab('starter',this)"><span class="tab-dot" style="background:#81c784"></span> Starter</button>
-    <button class="tab-btn" onclick="showTab('growth',this)"><span class="tab-dot" style="background:#ffb74d"></span> Growth</button>
-    <button class="tab-btn" onclick="showTab('enterprise',this)"><span class="tab-dot" style="background:#e57373"></span> Enterprise</button>
-  </div>
-</nav>
-
-<!-- ══════════════════════ STARTER ══════════════════════ -->
-<div id="tab-starter" class="page active">
-
-  <div class="callout callout-info">
-    <span class="material-icons">storefront</span>
-    <div><strong>Scenario: Small e-commerce, first A/B test.</strong> The team wonders: does a green checkout button get more purchases than the current gray one? ~2,300 users/day, running for 14 days.</div>
-  </div>
-
-  <!-- HOW IT WORKS — one-time explainer -->
-  <div class="card">
-    <div class="card-header">
-      <span class="material-icons" style="color:var(--primary)">school</span>
-      <div class="card-title">How experiments work — read once, applies to everything below</div>
-    </div>
-    <div class="card-body">
-      <div class="story-steps" style="border:none">
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">1</div>
-          <div class="step-label">The split</div>
-          <div class="step-title">Random group assignment</div>
-          <div class="step-body">When a user arrives, we hash their user ID to assign them to a group — deterministically and permanently. 50% see the old version (<strong>control</strong>), 50% see the new one (<strong>test</strong>). The same user always sees the same version. Neither group knows they're in an experiment.</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">2</div>
-          <div class="step-label">The measurement</div>
-          <div class="step-title">Count successes per group</div>
-          <div class="step-body">We define one success event upfront — e.g. "completed a purchase." We count how many users in each group succeeded. The difference between those percentages is the <strong>effect</strong> we're trying to measure.</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">3</div>
-          <div class="step-label">The math check</div>
-          <div class="step-title">Is it real or luck?</div>
-          <div class="step-body">Any two groups differ slightly by random chance. A <strong>Welch's t-test</strong> calculates: "if there's truly no effect, how likely is it we'd see a gap this large by chance?" If that probability (the <strong>p-value</strong>) is below 5%, we call it statistically significant — it's probably real, not a fluke.</div>
-        </div>
-        <div class="story-step">
-          <div class="step-num">4</div>
-          <div class="step-label">The safety check</div>
-          <div class="step-title">Did we break anything?</div>
-          <div class="step-body">We also track <strong>guardrail metrics</strong> — things we never want to harm, like page load speed or refund rate. If any guardrail regresses significantly, the experiment is blocked from shipping even if the goal metric looks great.</div>
+    <!-- ══════════════════════ STARTER ══════════════════════ -->
+    <div id="tab-starter" class="page active">
+      <div class="callout callout-info">
+        <span class="material-icons">storefront</span>
+        <div>
+          <strong>Scenario: Small e-commerce, first A/B test.</strong> The team wonders: does a
+          green checkout button get more purchases than the current gray one? ~2,300 users/day,
+          running for 14 days.
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- EXPERIMENT -->
-  <div class="story-card">
-    <div class="story-header">
-      <div class="story-exp-label">Experiment</div>
-      <div class="story-exp-name">checkout_button_color</div>
-      <div class="story-meta">
-        <div class="story-meta-item"><span class="material-icons">help_outline</span> Question: Does a green button get more purchases than the gray one?</div>
-        <div class="story-meta-item"><span class="material-icons">check_circle_outline</span> Success = user completes a purchase</div>
-        <div class="story-meta-item"><span class="material-icons">schedule</span> Day 14 of 28</div>
-        <div class="story-meta-item"><span class="material-icons">people</span> 2,341 users per group</div>
-      </div>
-    </div>
-
-    <div class="story-steps">
-      <div class="story-step" style="border-right:1px solid var(--border)">
-        <div class="step-num">1</div>
-        <div class="step-label">The split</div>
-        <div class="step-title">How users were divided</div>
-        <div class="split-diagram">
-          <div class="split-control">🔘 Control: gray button · 2,341 users</div>
-          <div class="split-test">🟢 Test: green button · 2,341 users</div>
-        </div>
-        <div class="step-body">Users were assigned by hashing their user ID. Every user always sees the same button color. Assignment is random but stable.</div>
-      </div>
-      <div class="story-step" style="border-right:1px solid var(--border)">
-        <div class="step-num">2</div>
-        <div class="step-label">What happened</div>
-        <div class="step-title">The raw numbers</div>
-        <div class="numbers-row">
-          <div class="number-box ctrl">
-            <div class="number-box-label">Control (gray)</div>
-            <div class="number-box-val">3.1%</div>
-            <div class="number-box-sub">72 of 2,341 bought</div>
+      <!-- HOW IT WORKS — one-time explainer -->
+      <div class="card">
+        <div class="card-header">
+          <span class="material-icons" style="color: var(--primary)">school</span>
+          <div class="card-title">
+            How experiments work — read once, applies to everything below
           </div>
-          <div class="number-box tst">
-            <div class="number-box-label">Test (green)</div>
-            <div class="number-box-val">5.2%</div>
-            <div class="number-box-sub">122 of 2,341 bought</div>
-          </div>
-          <div class="number-box diff">
-            <div class="number-box-label">Difference</div>
-            <div class="number-box-val pos">+2.1pp</div>
-            <div class="number-box-sub">+68% relative lift</div>
-          </div>
         </div>
-        <div class="step-body">50 more purchases in the green button group. But could this be random?</div>
-      </div>
-      <div class="story-step">
-        <div class="step-num">3</div>
-        <div class="step-label">The confidence check</div>
-        <div class="step-title">Is +2.1pp real or luck?</div>
-        <div class="step-body" style="margin-top:6px">
-          We ran a Welch's t-test. If the button color had zero effect, a gap this large would happen by chance only <strong>2.1% of the time</strong> (p=0.021). Since that's below our 5% threshold, we call it <strong>statistically significant</strong>.
-          <br><br>
-          The <strong>95% confidence interval [+0.3%, +3.9%]</strong> means: we're 95% confident the true effect is somewhere in that range. Even in the worst plausible case, the green button still wins by at least +0.3%.
-        </div>
-      </div>
-    </div>
-
-    <div style="padding:20px;border-top:1px solid var(--border)">
-      <div style="font-size:13px;font-weight:500;margin-bottom:4px">Confidence Interval chart — visualising uncertainty</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Each bar = the range where the true effect probably lives. If the bar doesn't cross the "0 (no effect)" line → significant. Wider bar = more uncertain (need more users).</div>
-
-      <!-- DAYLIGHT EXPLAINER -->
-      <div class="card" style="margin-bottom:16px;box-shadow:none;border:1px solid var(--border)">
-        <div class="card-body" style="padding:16px">
-          <div style="font-size:12px;font-weight:500;margin-bottom:12px">How much to trust a significant result — "daylight"</div>
-          <div class="daylight-demo">
-            <div class="dl-row">
-              <div class="dl-label" style="color:var(--success)">Strong signal</div>
-              <div class="dl-bar-wrap"><div class="dl-zero"></div><div class="dl-band" style="left:60%;width:20%;background:var(--success-band);border:1.5px solid var(--success)"></div><div class="dl-point" style="left:71%"></div></div>
-              <div class="dl-desc">Large gap between CI edge and zero. Very confident. Trust it.</div>
+        <div class="card-body">
+          <div class="story-steps" style="border: none">
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">1</div>
+              <div class="step-label">The split</div>
+              <div class="step-title">Random group assignment</div>
+              <div class="step-body">
+                When a user arrives, we hash their user ID to assign them to a group —
+                deterministically and permanently. 50% see the old version
+                (<strong>control</strong>), 50% see the new one (<strong>test</strong>). The same
+                user always sees the same version. Neither group knows they're in an experiment.
+              </div>
             </div>
-            <div class="dl-row">
-              <div class="dl-label" style="color:var(--warn)">Marginal</div>
-              <div class="dl-bar-wrap"><div class="dl-zero"></div><div class="dl-band" style="left:51%;width:20%;background:var(--success-band);border:1.5px solid var(--success)"></div><div class="dl-point" style="left:62%"></div></div>
-              <div class="dl-desc">Barely clears zero. Technically significant but be cautious — run longer.</div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">2</div>
+              <div class="step-label">The measurement</div>
+              <div class="step-title">Count successes per group</div>
+              <div class="step-body">
+                We define one success event upfront — e.g. "completed a purchase." We count how many
+                users in each group succeeded. The difference between those percentages is the
+                <strong>effect</strong> we're trying to measure.
+              </div>
             </div>
-            <div class="dl-row">
-              <div class="dl-label" style="color:var(--neutral)">Inconclusive</div>
-              <div class="dl-bar-wrap"><div class="dl-zero"></div><div class="dl-band" style="left:40%;width:28%;background:var(--neutral-band);border:1.5px solid #9e9e9e"></div><div class="dl-point" style="left:56%"></div></div>
-              <div class="dl-desc">Crosses zero. May be a real effect — just not enough data to confirm yet.</div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">3</div>
+              <div class="step-label">The math check</div>
+              <div class="step-title">Is it real or luck?</div>
+              <div class="step-body">
+                Any two groups differ slightly by random chance. A
+                <strong>Welch's t-test</strong> calculates: "if there's truly no effect, how likely
+                is it we'd see a gap this large by chance?" If that probability (the
+                <strong>p-value</strong>) is below 5%, we call it statistically significant — it's
+                probably real, not a fluke.
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="ci-starter"></div>
-    </div>
-
-    <div style="padding:20px;border-top:1px solid var(--border)">
-      <div class="verdict verdict-ship">
-        <div class="verdict-title" style="color:var(--success)"><span class="material-icons" style="font-size:28px">rocket_launch</span> Verdict: Ship the green button</div>
-        <div class="verdict-body">
-          We changed the checkout button color from gray to green.
-          Users who saw the green button were <strong>2.1 percentage points (68%) more likely to complete a purchase</strong>.
-          If this had been pure luck, we'd see a gap this large only 2.1% of the time — well below our 5% threshold, so we call it real.
-          Even in the most pessimistic scenario, the green button still improves conversion by at least +0.3%.
-          <br><br>
-          <strong>We checked it doesn't break anything:</strong> average order value was unaffected (the gray bar crosses zero — neither helpful nor harmful). Cart abandonment was slightly lower but inconclusive — also not broken.
-          <br><br>
-          <strong>One caution:</strong> with only 2,341 users/group, the CI is wide [+0.3%, +3.9%]. We know the effect is positive but can't pin down the exact size. Run 2 more weeks (5,000+ users/group) to tighten this if the precise magnitude matters for revenue forecasting.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header"><span class="material-icons" style="color:var(--primary)">show_chart</span><div class="card-title">Conversion rate day-by-day</div></div>
-      <div class="card-body">
-        <div class="chart-wrap"><canvas id="chart-starter-ts"></canvas></div>
-        <div class="annotation annotation-info">
-          <div class="annotation-title">How to read this</div>
-          Both lines start close together (the groups are similar before the experiment). They diverge from Day 1 and stay separated — this stable gap is what we want to see. If the lines converged back together it would signal the effect is fading (see "novelty effect" in the Growth tab).
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="material-icons" style="color:var(--primary)">speed</span><div class="card-title">Can we detect small effects? (Statistical Power)</div></div>
-      <div class="card-body">
-        <div class="stat-row">
-          <div><div class="stat-val">2,341</div><div class="stat-lbl">Users / group</div></div>
-          <div><div class="stat-val" style="color:var(--warn)">~2%</div><div class="stat-lbl">Min detectable effect</div></div>
-          <div><div class="stat-val" style="color:var(--warn)">68%</div><div class="stat-lbl">Power (want ≥80%)</div></div>
-        </div>
-        <div style="margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Current statistical power</span><span style="color:var(--warn);font-weight:500">68% — slightly underpowered</span></div>
-          <div class="power-meter"><div class="power-fill" style="width:68%;background:var(--warn)"></div></div>
-        </div>
-        <div class="chart-wrap-sm"><canvas id="chart-starter-mde"></canvas></div>
-        <div class="annotation annotation-warn" style="margin-top:12px">
-          <div class="annotation-title">Why avg_order_value shows gray</div>
-          With 2,341 users/group, effects smaller than ~2% are invisible — they'll show gray even if they're real. avg_order_value might have a genuine $1.20 lift, but we can't confirm it with this sample size. We'd need 5,000+ users/group to detect a $1 change reliably.
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════ GROWTH ══════════════════════ -->
-<div id="tab-growth" class="page">
-  <div class="callout callout-info">
-    <span class="material-icons">trending_up</span>
-    <div><strong>Scenario: SaaS product, 4 concurrent experiments, ~15k users/group.</strong> At this scale experiments are reliable, but new problems appear: effects that look large early but fade over time (novelty), and features that interact in unexpected ways when shipped together.</div>
-  </div>
-
-  <div class="section-header">Running Now <span class="section-chip">4 experiments</span></div>
-  <div class="grid-auto" style="margin-bottom:20px">
-    <div class="exp-mini-card winner">
-      <div class="exp-mini-name">onboarding_flow_v2</div>
-      <div class="exp-mini-q">Does a 3-step onboarding activate more users than our 6-step flow?</div>
-      <div class="exp-mini-bars"><div class="exp-mini-bar rb-green" style="flex:4"></div><div class="exp-mini-bar rb-gray" style="flex:1"></div></div>
-      <div class="exp-mini-meta">4/5 metrics ✓ · 15,203 users · Day 21 · <strong style="color:var(--success)">Ship ✓</strong></div>
-    </div>
-    <div class="exp-mini-card mixed">
-      <div class="exp-mini-name">new_dashboard_layout</div>
-      <div class="exp-mini-q">Does reorganising the dashboard help users find features faster?</div>
-      <div class="exp-mini-bars"><div class="exp-mini-bar rb-green" style="flex:2"></div><div class="exp-mini-bar rb-gray" style="flex:2"></div></div>
-      <div class="exp-mini-meta">2/4 metrics ✓ · 14,890 users · Day 9 · <strong style="color:var(--warn)">Too early</strong></div>
-    </div>
-    <div class="exp-mini-card risky">
-      <div class="exp-mini-name">pricing_page_redesign</div>
-      <div class="exp-mini-q">Does a cleaner pricing page increase trial signups?</div>
-      <div class="exp-mini-bars"><div class="exp-mini-bar rb-gray" style="flex:2"></div><div class="exp-mini-bar rb-red" style="flex:1"></div></div>
-      <div class="exp-mini-meta">Guardrail regression · 16,102 users · Day 14 · <strong style="color:var(--error)">Do not ship ✗</strong></div>
-    </div>
-    <div class="exp-mini-card unclear">
-      <div class="exp-mini-name">email_notifications</div>
-      <div class="exp-mini-q">Do daily digest emails bring users back more often?</div>
-      <div class="exp-mini-bars"><div class="exp-mini-bar rb-green" style="flex:2"></div><div class="exp-mini-bar rb-gray" style="flex:2"></div></div>
-      <div class="exp-mini-meta">Novelty effect detected · 13,670 users · Day 7 · <strong style="color:var(--warn)">Wait</strong></div>
-    </div>
-  </div>
-
-  <div class="inner-tabs">
-    <div class="inner-tab active" onclick="showInner('g-onboarding',this)">✓ onboarding_flow_v2</div>
-    <div class="inner-tab" onclick="showInner('g-pricing',this)">✗ pricing_page_redesign</div>
-    <div class="inner-tab" onclick="showInner('g-novelty',this)">⚠ email_notifications (novelty)</div>
-    <div class="inner-tab" onclick="showInner('g-interaction',this)">⚠ Interaction effects</div>
-  </div>
-
-  <div id="g-onboarding" class="inner-panel active">
-    <div class="story-card">
-      <div class="story-header">
-        <div class="story-exp-label">Experiment — clear winner</div>
-        <div class="story-exp-name">onboarding_flow_v2</div>
-        <div class="story-meta">
-          <div class="story-meta-item"><span class="material-icons">help_outline</span> Question: Does a 3-step onboarding activate more users than the 6-step flow?</div>
-          <div class="story-meta-item"><span class="material-icons">check_circle_outline</span> Success = user completes setup and takes their first action</div>
-          <div class="story-meta-item"><span class="material-icons">people</span> 15,203 users/group · Day 21</div>
-        </div>
-      </div>
-      <div class="story-steps">
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">1</div>
-          <div class="step-label">The change</div>
-          <div class="split-diagram"><div class="split-control">📋 Control: 6-step onboarding</div><div class="split-test">✂️ Test: 3-step onboarding</div></div>
-          <div class="step-body">We removed 3 optional steps from onboarding — profile photo, team import, and tutorial video — deferring them to after the user's first action. Hypothesis: fewer steps = less friction = more users reach "aha moment."</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">2</div>
-          <div class="step-label">The numbers</div>
-          <div class="numbers-row">
-            <div class="number-box ctrl"><div class="number-box-label">Control (6 steps)</div><div class="number-box-val">42.0%</div><div class="number-box-sub">6,385 activated</div></div>
-            <div class="number-box tst"><div class="number-box-label">Test (3 steps)</div><div class="number-box-val">45.2%</div><div class="number-box-sub">6,872 activated</div></div>
-            <div class="number-box diff"><div class="number-box-label">Difference</div><div class="number-box-val pos">+3.2pp</div><div class="number-box-sub">487 more activated</div></div>
-          </div>
-          <div class="step-body">487 more users completed setup in the test group. p&lt;0.001 — less than 1-in-1000 chance this is random.</div>
-        </div>
-        <div class="story-step">
-          <div class="step-num">3</div>
-          <div class="step-label">The bonus</div>
-          <div class="step-title">Support tickets dropped too</div>
-          <div class="step-body" style="margin-top:6px">Simpler onboarding = fewer confused new users calling support. support_tickets dropped −5.1pp (p&lt;0.001). This wasn't a stated goal but it's a real cost saving. This is why we track guardrails even for positive outcomes — you often find unexpected wins.</div>
-        </div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div id="ci-growth-onboarding"></div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div class="verdict verdict-ship">
-          <div class="verdict-title" style="color:var(--success)"><span class="material-icons" style="font-size:28px">rocket_launch</span> Verdict: Ship the 3-step onboarding</div>
-          <div class="verdict-body">
-            We simplified onboarding from 6 steps to 3. Users who went through the shorter flow were <strong>3.2 percentage points more likely to activate</strong> (complete setup and take their first action). The probability this is random chance is less than 1-in-1,000.
-            <br><br>
-            <strong>We confirmed it doesn't break anything:</strong> 7-day retention improved (+1.1pp), revenue per user improved (+2.8pp), and support tickets actually dropped (−5.1pp — fewer confused new users). 30-day retention is inconclusive (gray) — we'll monitor this after launch.
-            <br><br>
-            Ship to 100%. At this rate: for every 15,000 new users, ~487 more complete setup compared to the old flow.
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="g-pricing" class="inner-panel">
-    <div class="story-card">
-      <div class="story-header">
-        <div class="story-exp-label">Experiment — guardrail regression, do not ship</div>
-        <div class="story-exp-name">pricing_page_redesign</div>
-        <div class="story-meta">
-          <div class="story-meta-item"><span class="material-icons">help_outline</span> Question: Does a cleaner 2-tier pricing page increase trial signups?</div>
-          <div class="story-meta-item"><span class="material-icons">check_circle_outline</span> Goal = trial_signup · Guardrail = demo_requests (enterprise pipeline)</div>
-          <div class="story-meta-item"><span class="material-icons">people</span> 16,102 users/group · Day 14</div>
-        </div>
-      </div>
-      <div class="story-steps">
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">1</div>
-          <div class="step-label">The change</div>
-          <div class="split-diagram"><div class="split-control">📊 Control: 4 pricing tiers, detailed</div><div class="split-test">✨ Test: 2 tiers, clean layout</div></div>
-          <div class="step-body">Design team simplified the pricing page: fewer tiers, more visual hierarchy, cleaner feature comparison. Hypothesis: simpler = more conversions.</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">2</div>
-          <div class="step-label">The problem</div>
-          <div class="numbers-row">
-            <div class="number-box ctrl"><div class="number-box-label">Demo requests (control)</div><div class="number-box-val">4.8%</div><div class="number-box-sub">of visitors</div></div>
-            <div class="number-box tst" style="background:#fff5f5"><div class="number-box-label">Demo requests (test)</div><div class="number-box-val neg">4.7%</div><div class="number-box-sub">↓ fewer demos</div></div>
-            <div class="number-box diff" style="background:#ffebee"><div class="number-box-label">Regression</div><div class="number-box-val neg">−2.3pp</div><div class="number-box-sub">p=0.003 significant</div></div>
-          </div>
-          <div class="step-body">Goal metric (trial_conversion) is gray — we can't confirm the new page helps. But the guardrail (demo_requests) is clearly red.</div>
-        </div>
-        <div class="story-step">
-          <div class="step-num">3</div>
-          <div class="step-label">Why it happened</div>
-          <div class="step-title">Two customer types, one page</div>
-          <div class="step-body" style="margin-top:6px">The simplified page works for self-serve SMB buyers. But enterprise buyers need detailed feature comparisons to justify requesting a demo. By reducing complexity, we helped SMB users but removed the information enterprise buyers need. Demo requests are worth 10–50x a self-serve trial.</div>
-        </div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div id="ci-growth-pricing"></div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div class="verdict verdict-hold">
-          <div class="verdict-title" style="color:var(--error)"><span class="material-icons" style="font-size:28px">block</span> Verdict: Do not ship</div>
-          <div class="verdict-body">
-            The redesigned pricing page was meant to increase trial signups. Result: trial signups are inconclusive (we can't confirm it works). But demo requests — a guardrail metric for enterprise pipeline — dropped by <strong>−2.3 percentage points</strong> (p=0.003, confident regression).
-            <br><br>
-            <strong>Why the guardrail blocks shipping:</strong> even if trials improved slightly, losing 2.3% of demo requests costs far more in revenue than any gain from cheaper self-serve conversions. Guardrails exist precisely for this — to stop local optimisation that harms higher-value outcomes.
-            <br><br>
-            <strong>Next step:</strong> show the simplified version to SMB visitors and the detailed version to enterprise visitors (detected by company size from firmographic data). This is a <em>personalised treatment</em> and avoids the tradeoff entirely.
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="g-novelty" class="inner-panel">
-    <div class="story-card">
-      <div class="story-header">
-        <div class="story-exp-label">Experiment — novelty effect trap</div>
-        <div class="story-exp-name">email_notifications</div>
-        <div class="story-meta">
-          <div class="story-meta-item"><span class="material-icons">help_outline</span> Question: Do daily digest emails bring users back to the app more often?</div>
-          <div class="story-meta-item"><span class="material-icons">check_circle_outline</span> Success = user opens the app within 24h of receiving the email</div>
-        </div>
-      </div>
-      <div class="story-steps">
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">⚠</div>
-          <div class="step-label">The trap</div>
-          <div class="step-title">Day 7 looked like a clear win</div>
-          <div class="step-body" style="margin-top:6px">At Day 7 the open rate delta was <strong>+8.7pp</strong> with p&lt;0.001. Most teams would have shipped immediately. The result looked massive and highly significant. But something suspicious was happening in the time series.</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">⚠</div>
-          <div class="step-label">What's actually happening</div>
-          <div class="step-title">The delta is shrinking every day</div>
-          <div class="step-body" style="margin-top:6px">By Day 14 the delta has fallen to <strong>+1.9pp</strong> and is still declining. Users opened the emails because they were new and curious. As novelty wore off, they stopped engaging. The "improvement" was curiosity, not genuine value.</div>
-        </div>
-        <div class="story-step">
-          <div class="step-num">⚠</div>
-          <div class="step-label">The pattern</div>
-          <div class="step-title">What novelty looks like</div>
-          <div class="step-body" style="margin-top:6px">Novelty: large delta early → steadily shrinks → approaches zero. Real effect: stable delta throughout. Always run for at least 2 full use cycles (for a daily feature, that's 14 days minimum) and check the time series before deciding.</div>
-        </div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div class="chart-title">Delta (test − control) by day — novelty wearing off vs. what a real effect looks like</div>
-        <div class="chart-wrap"><canvas id="chart-novelty"></canvas></div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div class="verdict verdict-wait">
-          <div class="verdict-title" style="color:var(--warn)"><span class="material-icons" style="font-size:28px">hourglass_empty</span> Verdict: Do not ship yet — novelty effect detected</div>
-          <div class="verdict-body">
-            Daily digest emails appeared to increase app opens by +8.7pp at Day 7. But by Day 14 that delta has shrunk to +1.9pp and is still declining. Users opened emails out of curiosity about a new feature, not because the emails are genuinely useful.
-            <br><br>
-            <strong>What to do:</strong> run until Day 28 or until the delta stabilises. If it stabilises above zero, the effect is real but smaller than initially measured — make a ship decision based on that stable number. If it reaches zero, the emails provide no long-term value and should not be shipped.
-            <br><br>
-            <strong>The lesson:</strong> stopping experiments early (called "peeking") is one of the most common sources of false positives. The time series chart is your best defence — always check it.
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="g-interaction" class="inner-panel">
-    <div class="card">
-      <div class="card-header">
-        <span class="material-icons" style="color:var(--warn)">merge_type</span>
-        <div class="card-title">Interaction effects — what happens when you ship two winners at once</div>
-        <span class="badge badge-warn">Advanced</span>
-      </div>
-      <div class="card-body">
-        <div class="callout callout-warn">
-          <span class="material-icons">info</span>
-          <div><strong>onboarding_flow_v2</strong> and <strong>new_dashboard_layout</strong> both look good individually. The team wants to ship both simultaneously. But users who were in both experiments show an unexpected result.</div>
-        </div>
-        <div class="chart-title">D7 Retention lift by group</div>
-        <div class="chart-wrap"><canvas id="chart-interaction"></canvas></div>
-        <div class="annotation annotation-warn">
-          <div class="annotation-title">What the chart shows</div>
-          <ul>
-            <li><strong>Onboarding only:</strong> +1.1pp D7 retention (what the experiment measured in isolation)</li>
-            <li><strong>Dashboard only:</strong> +0.8pp D7 retention (measured in isolation)</li>
-            <li><strong>Expected if additive:</strong> +1.9pp (just adding the two)</li>
-            <li><strong>Actual when both shipped:</strong> +2.6pp — more than the sum of parts. The features reinforce each other.</li>
-          </ul>
-        </div>
-        <div class="annotation annotation-info" style="margin-top:12px">
-          <div class="annotation-title">Why this matters and what to do</div>
-          <ul>
-            <li>If you shipped them separately, you'd attribute +1.1pp to onboarding and +0.8pp to dashboard. You'd miss the +0.7pp interaction bonus entirely — and wouldn't know it existed.</li>
-            <li>To measure this properly: set up a <strong>holdout group</strong> that sees neither change. After 4–6 weeks, the delta between the holdout and everyone else captures the true combined impact of everything shipped.</li>
-            <li>Interactions can also be negative (two changes cancelling each other out). A holdout group catches both.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════ ENTERPRISE ══════════════════════ -->
-<div id="tab-enterprise" class="page">
-  <div class="callout callout-info">
-    <span class="material-icons">domain</span>
-    <div><strong>Scenario: Large platform, 100k+ users/group, 15 concurrent experiments.</strong> At this scale even tiny effects (0.1%) are detectable. New problems: too many metrics creates accidental false positives, and every experiment must be checked against company-wide health metrics — not just product metrics.</div>
-  </div>
-
-  <div class="section-header">All Running Experiments <span class="section-chip">15 running</span></div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-body" style="padding:0;overflow:auto">
-      <table class="exp-table">
-        <thead>
-          <tr><th>Experiment</th><th>Question</th><th>Users/group</th><th>Days</th><th>Metric results</th><th>Company health</th><th>Decision</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>search_ranking_v4</code></td>
-            <td style="color:var(--text2);font-size:12px">Does ML ranking show more relevant results?</td>
-            <td>124,802</td><td>28</td>
-            <td><div class="result-bars"><div class="result-bar rb-green" style="min-width:36px">8 ✓</div><div class="result-bar rb-gray" style="min-width:28px">2 —</div></div></td>
-            <td><span class="badge badge-success">✓ All clear</span></td>
-            <td><span class="badge badge-success">Ship</span></td>
-          </tr>
-          <tr>
-            <td><code>feed_algorithm_v7</code></td>
-            <td style="color:var(--text2);font-size:12px">Do personalised feeds increase engagement?</td>
-            <td>98,340</td><td>21</td>
-            <td><div class="result-bars"><div class="result-bar rb-green" style="min-width:28px">5 ✓</div><div class="result-bar rb-gray" style="min-width:21px">3 —</div><div class="result-bar rb-red" style="min-width:14px">1 ✗</div></div></td>
-            <td><span class="badge badge-error">✗ DAU down</span></td>
-            <td><span class="badge badge-error">Blocked</span></td>
-          </tr>
-          <tr style="background:#fff8f8">
-            <td><code>sidebar_redesign_v2</code> <span style="color:var(--error);font-size:10px">⚠ false positive</span></td>
-            <td style="color:var(--text2);font-size:12px">Does reorganised sidebar help users find features?</td>
-            <td>112,004</td><td>21</td>
-            <td><div class="result-bars"><div class="result-bar rb-green" style="min-width:14px">1</div><div class="result-bar rb-gray" style="min-width:84px">28 —</div><div class="result-bar rb-red" style="min-width:14px">1 ✗</div></div></td>
-            <td><span class="badge badge-neutral">— Neutral</span></td>
-            <td><span class="badge badge-error">Do not ship</span></td>
-          </tr>
-          <tr>
-            <td><code>composer_shortcuts</code></td>
-            <td style="color:var(--text2);font-size:12px">Do keyboard shortcuts speed up creation?</td>
-            <td>76,543</td><td>28</td>
-            <td><div class="result-bars"><div class="result-bar rb-green" style="min-width:42px">7 ✓</div><div class="result-bar rb-gray" style="min-width:14px">2 —</div></div></td>
-            <td><span class="badge badge-success">✓ All clear</span></td>
-            <td><span class="badge badge-success">Ship</span></td>
-          </tr>
-          <tr>
-            <td><code>dark_mode_default</code></td>
-            <td style="color:var(--text2);font-size:12px">Does dark mode as default improve satisfaction?</td>
-            <td>201,003</td><td>14</td>
-            <td><div class="result-bars"><div class="result-bar rb-gray" style="min-width:70px">12 —</div></div></td>
-            <td><span class="badge badge-neutral">— Neutral</span></td>
-            <td><span class="badge badge-warn">Inconclusive</span></td>
-          </tr>
-          <tr><td style="color:var(--text3)">... 10 more experiments</td><td colspan="6" style="color:var(--text3);font-size:12px">Paginated in full product</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="inner-tabs">
-    <div class="inner-tab active" onclick="showInner('ent-winner',this)">✓ search_ranking_v4 — Ship</div>
-    <div class="inner-tab" onclick="showInner('ent-fp',this)">✗ sidebar_redesign — False positive</div>
-    <div class="inner-tab" onclick="showInner('ent-ccm',this)">⛔ feed_algorithm — Company metric blocked</div>
-  </div>
-
-  <!-- WINNER -->
-  <div id="ent-winner" class="inner-panel active">
-    <div class="story-card">
-      <div class="story-header">
-        <div class="story-exp-label">Experiment — very high confidence ship</div>
-        <div class="story-exp-name">search_ranking_v4</div>
-        <div class="story-meta">
-          <div class="story-meta-item"><span class="material-icons">help_outline</span> Question: Does ML ranking show more relevant results so users click more and retype less?</div>
-          <div class="story-meta-item"><span class="material-icons">check_circle_outline</span> Success = user clicks a search result (vs. ignoring results and retyping)</div>
-          <div class="story-meta-item"><span class="material-icons">people</span> 124,802 users/group · Day 28 · MDE: ±0.08%</div>
-        </div>
-      </div>
-      <div class="story-steps">
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">1</div>
-          <div class="step-label">Scale changes everything</div>
-          <div class="step-title">We can now detect tiny effects</div>
-          <div class="step-body" style="margin-top:6px">At 2,341 users (Starter), we could only detect effects &gt;2%. At 124,802 users, the minimum detectable effect drops to <strong>±0.08%</strong>. This means gray bars are genuinely null — there's no hidden real effect we're missing. And p-values are far more trustworthy.</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">2</div>
-          <div class="step-label">The numbers</div>
-          <div class="numbers-row">
-            <div class="number-box ctrl"><div class="number-box-label">Control (old ranking)</div><div class="number-box-val">61.3%</div><div class="number-box-sub">clicked a result</div></div>
-            <div class="number-box tst"><div class="number-box-label">Test (ML ranking)</div><div class="number-box-val">65.4%</div><div class="number-box-sub">clicked a result</div></div>
-            <div class="number-box diff"><div class="number-box-label">Difference</div><div class="number-box-val pos">+4.1pp</div><div class="number-box-sub">p &lt; 0.001</div></div>
-          </div>
-          <div class="step-body">Users find what they need more often. Query refinements also dropped (−1.9pp) — fewer people had to retype because the first results were wrong.</div>
-        </div>
-        <div class="story-step">
-          <div class="step-num">3</div>
-          <div class="step-label">The robustness check</div>
-          <div class="step-title">Still significant at 99.9% CI</div>
-          <div class="step-body" style="margin-top:6px">We raised the confidence threshold from 95% to 99.9% (much stricter — only 1-in-1000 false positive rate). All 6 primary metrics remain significant. The result doesn't depend on which threshold we pick — this is what <strong>large daylight</strong> looks like in practice.</div>
-        </div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div id="ci-ent-winner"></div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div class="verdict verdict-ship">
-          <div class="verdict-title" style="color:var(--success)"><span class="material-icons" style="font-size:28px">rocket_launch</span> Verdict: Ship — extremely high confidence</div>
-          <div class="verdict-body">
-            We replaced keyword-based search with an ML ranking model. Users are now <strong>4.1 percentage points more likely to click a search result</strong> (instead of retyping their query), and <strong>1.9pp less likely to reformulate their search</strong>.
-            The probability this is random chance is less than 1 in 1,000. At the strictest threshold (99.9% CI), all 6 primary metrics remain significant — the result is robust.
-            <br><br>
-            <strong>We confirmed it doesn't break anything:</strong> company-wide daily active users are up (+0.4%), revenue per user is up (+1.1%), page latency and error rates are unchanged. All company health metrics clear.
-            <br><br>
-            Ship to 100% immediately.
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- FALSE POSITIVE -->
-  <div id="ent-fp" class="inner-panel">
-    <div class="story-card">
-      <div class="story-header">
-        <div class="story-exp-label">Experiment — multiple testing false positive + real regression</div>
-        <div class="story-exp-name">sidebar_redesign_v2</div>
-        <div class="story-meta">
-          <div class="story-meta-item"><span class="material-icons">help_outline</span> Question: Does a reorganised sidebar help users navigate to features faster?</div>
-          <div class="story-meta-item"><span class="material-icons">functions</span> 30 metrics tracked · 112,004 users/group · Day 21</div>
-        </div>
-      </div>
-      <div class="story-steps">
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">⚠</div>
-          <div class="step-label">The math problem</div>
-          <div class="step-title">30 metrics = expected false positives</div>
-          <div class="step-body" style="margin-top:6px">At 95% CI, 5% of all tests show "significant" by pure chance — even when nothing is happening. With 30 metrics: <strong>30 × 5% = 1.5 expected random flukes</strong>. Seeing 1 green bar out of 30 is exactly what you'd expect from noise. It proves nothing.</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">⚠</div>
-          <div class="step-label">The suspicious green bar</div>
-          <div class="step-title">sidebar_click_rate +0.8pp</div>
-          <div class="step-body" style="margin-top:6px">p=0.04, barely significant. But: (1) not pre-registered as a goal metric, (2) the CI barely clears zero — tiny daylight, (3) at 99% CI this result disappears entirely. A genuine effect at 112k users would be robust to threshold changes.</div>
-        </div>
-        <div class="story-step">
-          <div class="step-num">!</div>
-          <div class="step-label">The real problem</div>
-          <div class="step-title">content_consumption −2.1pp</div>
-          <div class="step-body" style="margin-top:6px">This regression has <strong>large daylight</strong> and remains significant at 99.9% CI. Users in the redesigned sidebar are consuming less content. The navigation changes are making it harder to find things — the opposite of the goal.</div>
-        </div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div id="ci-ent-fp"></div>
-        <div class="grid-2" style="margin-top:12px;gap:12px">
-          <div>
-            <div class="chart-title" style="margin-top:8px">p-value distribution across all 30 metrics</div>
-            <div class="chart-wrap-sm"><canvas id="chart-fp-dist"></canvas></div>
-            <div class="annotation annotation-neutral" style="margin-top:8px;font-size:12px">
-              If the experiment truly had no effect, p-values would be <strong>uniformly spread</strong> across all buckets. This histogram shows most metrics at high p-values (gray bars), with just 2 outliers at p&lt;0.05. That's exactly what you'd expect from random noise — not a real effect.
+            <div class="story-step">
+              <div class="step-num">4</div>
+              <div class="step-label">The safety check</div>
+              <div class="step-title">Did we break anything?</div>
+              <div class="step-body">
+                We also track <strong>guardrail metrics</strong> — things we never want to harm,
+                like page load speed or refund rate. If any guardrail regresses significantly, the
+                experiment is blocked from shipping even if the goal metric looks great.
+              </div>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <div class="annotation annotation-error" style="margin-top:0">
-              <div class="annotation-title">How to detect false positives</div>
+        </div>
+      </div>
+
+      <!-- EXPERIMENT -->
+      <div class="story-card">
+        <div class="story-header">
+          <div class="story-exp-label">Experiment</div>
+          <div class="story-exp-name">checkout_button_color</div>
+          <div class="story-meta">
+            <div class="story-meta-item">
+              <span class="material-icons">help_outline</span> Question: Does a green button get
+              more purchases than the gray one?
+            </div>
+            <div class="story-meta-item">
+              <span class="material-icons">check_circle_outline</span> Success = user completes a
+              purchase
+            </div>
+            <div class="story-meta-item">
+              <span class="material-icons">schedule</span> Day 14 of 28
+            </div>
+            <div class="story-meta-item">
+              <span class="material-icons">people</span> 2,341 users per group
+            </div>
+          </div>
+        </div>
+
+        <div class="story-steps">
+          <div class="story-step" style="border-right: 1px solid var(--border)">
+            <div class="step-num">1</div>
+            <div class="step-label">The split</div>
+            <div class="step-title">How users were divided</div>
+            <div class="split-diagram">
+              <div class="split-control">🔘 Control: gray button · 2,341 users</div>
+              <div class="split-test">🟢 Test: green button · 2,341 users</div>
+            </div>
+            <div class="step-body">
+              Users were assigned by hashing their user ID. Every user always sees the same button
+              color. Assignment is random but stable.
+            </div>
+          </div>
+          <div class="story-step" style="border-right: 1px solid var(--border)">
+            <div class="step-num">2</div>
+            <div class="step-label">What happened</div>
+            <div class="step-title">The raw numbers</div>
+            <div class="numbers-row">
+              <div class="number-box ctrl">
+                <div class="number-box-label">Control (gray)</div>
+                <div class="number-box-val">3.1%</div>
+                <div class="number-box-sub">72 of 2,341 bought</div>
+              </div>
+              <div class="number-box tst">
+                <div class="number-box-label">Test (green)</div>
+                <div class="number-box-val">5.2%</div>
+                <div class="number-box-sub">122 of 2,341 bought</div>
+              </div>
+              <div class="number-box diff">
+                <div class="number-box-label">Difference</div>
+                <div class="number-box-val pos">+2.1pp</div>
+                <div class="number-box-sub">+68% relative lift</div>
+              </div>
+            </div>
+            <div class="step-body">
+              50 more purchases in the green button group. But could this be random?
+            </div>
+          </div>
+          <div class="story-step">
+            <div class="step-num">3</div>
+            <div class="step-label">The confidence check</div>
+            <div class="step-title">Is +2.1pp real or luck?</div>
+            <div class="step-body" style="margin-top: 6px">
+              We ran a Welch's t-test. If the button color had zero effect, a gap this large would
+              happen by chance only <strong>2.1% of the time</strong> (p=0.021). Since that's below
+              our 5% threshold, we call it <strong>statistically significant</strong>. <br /><br />
+              The <strong>95% confidence interval [+0.3%, +3.9%]</strong> means: we're 95% confident
+              the true effect is somewhere in that range. Even in the worst plausible case, the
+              green button still wins by at least +0.3%.
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 20px; border-top: 1px solid var(--border)">
+          <div style="font-size: 13px; font-weight: 500; margin-bottom: 4px">
+            Confidence Interval chart — visualising uncertainty
+          </div>
+          <div style="font-size: 12px; color: var(--text2); margin-bottom: 16px">
+            Each bar = the range where the true effect probably lives. If the bar doesn't cross the
+            "0 (no effect)" line → significant. Wider bar = more uncertain (need more users).
+          </div>
+
+          <!-- DAYLIGHT EXPLAINER -->
+          <div
+            class="card"
+            style="margin-bottom: 16px; box-shadow: none; border: 1px solid var(--border)"
+          >
+            <div class="card-body" style="padding: 16px">
+              <div style="font-size: 12px; font-weight: 500; margin-bottom: 12px">
+                How much to trust a significant result — "daylight"
+              </div>
+              <div class="daylight-demo">
+                <div class="dl-row">
+                  <div class="dl-label" style="color: var(--success)">Strong signal</div>
+                  <div class="dl-bar-wrap">
+                    <div class="dl-zero"></div>
+                    <div
+                      class="dl-band"
+                      style="
+                        left: 60%;
+                        width: 20%;
+                        background: var(--success-band);
+                        border: 1.5px solid var(--success);
+                      "
+                    ></div>
+                    <div class="dl-point" style="left: 71%"></div>
+                  </div>
+                  <div class="dl-desc">
+                    Large gap between CI edge and zero. Very confident. Trust it.
+                  </div>
+                </div>
+                <div class="dl-row">
+                  <div class="dl-label" style="color: var(--warn)">Marginal</div>
+                  <div class="dl-bar-wrap">
+                    <div class="dl-zero"></div>
+                    <div
+                      class="dl-band"
+                      style="
+                        left: 51%;
+                        width: 20%;
+                        background: var(--success-band);
+                        border: 1.5px solid var(--success);
+                      "
+                    ></div>
+                    <div class="dl-point" style="left: 62%"></div>
+                  </div>
+                  <div class="dl-desc">
+                    Barely clears zero. Technically significant but be cautious — run longer.
+                  </div>
+                </div>
+                <div class="dl-row">
+                  <div class="dl-label" style="color: var(--neutral)">Inconclusive</div>
+                  <div class="dl-bar-wrap">
+                    <div class="dl-zero"></div>
+                    <div
+                      class="dl-band"
+                      style="
+                        left: 40%;
+                        width: 28%;
+                        background: var(--neutral-band);
+                        border: 1.5px solid #9e9e9e;
+                      "
+                    ></div>
+                    <div class="dl-point" style="left: 56%"></div>
+                  </div>
+                  <div class="dl-desc">
+                    Crosses zero. May be a real effect — just not enough data to confirm yet.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ci-starter"></div>
+        </div>
+
+        <div style="padding: 20px; border-top: 1px solid var(--border)">
+          <div class="verdict verdict-ship">
+            <div class="verdict-title" style="color: var(--success)">
+              <span class="material-icons" style="font-size: 28px">rocket_launch</span> Verdict:
+              Ship the green button
+            </div>
+            <div class="verdict-body">
+              We changed the checkout button color from gray to green. Users who saw the green
+              button were
+              <strong>2.1 percentage points (68%) more likely to complete a purchase</strong>. If
+              this had been pure luck, we'd see a gap this large only 2.1% of the time — well below
+              our 5% threshold, so we call it real. Even in the most pessimistic scenario, the green
+              button still improves conversion by at least +0.3%. <br /><br />
+              <strong>We checked it doesn't break anything:</strong> average order value was
+              unaffected (the gray bar crosses zero — neither helpful nor harmful). Cart abandonment
+              was slightly lower but inconclusive — also not broken. <br /><br />
+              <strong>One caution:</strong> with only 2,341 users/group, the CI is wide [+0.3%,
+              +3.9%]. We know the effect is positive but can't pin down the exact size. Run 2 more
+              weeks (5,000+ users/group) to tighten this if the precise magnitude matters for
+              revenue forecasting.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="material-icons" style="color: var(--primary)">show_chart</span>
+            <div class="card-title">Conversion rate day-by-day</div>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chart-starter-ts"></canvas></div>
+            <div class="annotation annotation-info">
+              <div class="annotation-title">How to read this</div>
+              Both lines start close together (the groups are similar before the experiment). They
+              diverge from Day 1 and stay separated — this stable gap is what we want to see. If the
+              lines converged back together it would signal the effect is fading (see "novelty
+              effect" in the Growth tab).
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="material-icons" style="color: var(--primary)">speed</span>
+            <div class="card-title">Can we detect small effects? (Statistical Power)</div>
+          </div>
+          <div class="card-body">
+            <div class="stat-row">
+              <div>
+                <div class="stat-val">2,341</div>
+                <div class="stat-lbl">Users / group</div>
+              </div>
+              <div>
+                <div class="stat-val" style="color: var(--warn)">~2%</div>
+                <div class="stat-lbl">Min detectable effect</div>
+              </div>
+              <div>
+                <div class="stat-val" style="color: var(--warn)">68%</div>
+                <div class="stat-lbl">Power (want ≥80%)</div>
+              </div>
+            </div>
+            <div style="margin-bottom: 14px">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 12px;
+                  margin-bottom: 4px;
+                "
+              >
+                <span>Current statistical power</span
+                ><span style="color: var(--warn); font-weight: 500"
+                  >68% — slightly underpowered</span
+                >
+              </div>
+              <div class="power-meter">
+                <div class="power-fill" style="width: 68%; background: var(--warn)"></div>
+              </div>
+            </div>
+            <div class="chart-wrap-sm"><canvas id="chart-starter-mde"></canvas></div>
+            <div class="annotation annotation-warn" style="margin-top: 12px">
+              <div class="annotation-title">Why avg_order_value shows gray</div>
+              With 2,341 users/group, effects smaller than ~2% are invisible — they'll show gray
+              even if they're real. avg_order_value might have a genuine $1.20 lift, but we can't
+              confirm it with this sample size. We'd need 5,000+ users/group to detect a $1 change
+              reliably.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ GROWTH ══════════════════════ -->
+    <div id="tab-growth" class="page">
+      <div class="callout callout-info">
+        <span class="material-icons">trending_up</span>
+        <div>
+          <strong>Scenario: SaaS product, 4 concurrent experiments, ~15k users/group.</strong> At
+          this scale experiments are reliable, but new problems appear: effects that look large
+          early but fade over time (novelty), and features that interact in unexpected ways when
+          shipped together.
+        </div>
+      </div>
+
+      <div class="section-header">Running Now <span class="section-chip">4 experiments</span></div>
+      <div class="grid-auto" style="margin-bottom: 20px">
+        <div class="exp-mini-card winner">
+          <div class="exp-mini-name">onboarding_flow_v2</div>
+          <div class="exp-mini-q">
+            Does a 3-step onboarding activate more users than our 6-step flow?
+          </div>
+          <div class="exp-mini-bars">
+            <div class="exp-mini-bar rb-green" style="flex: 4"></div>
+            <div class="exp-mini-bar rb-gray" style="flex: 1"></div>
+          </div>
+          <div class="exp-mini-meta">
+            4/5 metrics ✓ · 15,203 users · Day 21 ·
+            <strong style="color: var(--success)">Ship ✓</strong>
+          </div>
+        </div>
+        <div class="exp-mini-card mixed">
+          <div class="exp-mini-name">new_dashboard_layout</div>
+          <div class="exp-mini-q">
+            Does reorganising the dashboard help users find features faster?
+          </div>
+          <div class="exp-mini-bars">
+            <div class="exp-mini-bar rb-green" style="flex: 2"></div>
+            <div class="exp-mini-bar rb-gray" style="flex: 2"></div>
+          </div>
+          <div class="exp-mini-meta">
+            2/4 metrics ✓ · 14,890 users · Day 9 ·
+            <strong style="color: var(--warn)">Too early</strong>
+          </div>
+        </div>
+        <div class="exp-mini-card risky">
+          <div class="exp-mini-name">pricing_page_redesign</div>
+          <div class="exp-mini-q">Does a cleaner pricing page increase trial signups?</div>
+          <div class="exp-mini-bars">
+            <div class="exp-mini-bar rb-gray" style="flex: 2"></div>
+            <div class="exp-mini-bar rb-red" style="flex: 1"></div>
+          </div>
+          <div class="exp-mini-meta">
+            Guardrail regression · 16,102 users · Day 14 ·
+            <strong style="color: var(--error)">Do not ship ✗</strong>
+          </div>
+        </div>
+        <div class="exp-mini-card unclear">
+          <div class="exp-mini-name">email_notifications</div>
+          <div class="exp-mini-q">Do daily digest emails bring users back more often?</div>
+          <div class="exp-mini-bars">
+            <div class="exp-mini-bar rb-green" style="flex: 2"></div>
+            <div class="exp-mini-bar rb-gray" style="flex: 2"></div>
+          </div>
+          <div class="exp-mini-meta">
+            Novelty effect detected · 13,670 users · Day 7 ·
+            <strong style="color: var(--warn)">Wait</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="inner-tabs">
+        <div class="inner-tab active" onclick="showInner('g-onboarding', this)">
+          ✓ onboarding_flow_v2
+        </div>
+        <div class="inner-tab" onclick="showInner('g-pricing', this)">✗ pricing_page_redesign</div>
+        <div class="inner-tab" onclick="showInner('g-novelty', this)">
+          ⚠ email_notifications (novelty)
+        </div>
+        <div class="inner-tab" onclick="showInner('g-interaction', this)">
+          ⚠ Interaction effects
+        </div>
+      </div>
+
+      <div id="g-onboarding" class="inner-panel active">
+        <div class="story-card">
+          <div class="story-header">
+            <div class="story-exp-label">Experiment — clear winner</div>
+            <div class="story-exp-name">onboarding_flow_v2</div>
+            <div class="story-meta">
+              <div class="story-meta-item">
+                <span class="material-icons">help_outline</span> Question: Does a 3-step onboarding
+                activate more users than the 6-step flow?
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">check_circle_outline</span> Success = user completes
+                setup and takes their first action
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">people</span> 15,203 users/group · Day 21
+              </div>
+            </div>
+          </div>
+          <div class="story-steps">
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">1</div>
+              <div class="step-label">The change</div>
+              <div class="split-diagram">
+                <div class="split-control">📋 Control: 6-step onboarding</div>
+                <div class="split-test">✂️ Test: 3-step onboarding</div>
+              </div>
+              <div class="step-body">
+                We removed 3 optional steps from onboarding — profile photo, team import, and
+                tutorial video — deferring them to after the user's first action. Hypothesis: fewer
+                steps = less friction = more users reach "aha moment."
+              </div>
+            </div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">2</div>
+              <div class="step-label">The numbers</div>
+              <div class="numbers-row">
+                <div class="number-box ctrl">
+                  <div class="number-box-label">Control (6 steps)</div>
+                  <div class="number-box-val">42.0%</div>
+                  <div class="number-box-sub">6,385 activated</div>
+                </div>
+                <div class="number-box tst">
+                  <div class="number-box-label">Test (3 steps)</div>
+                  <div class="number-box-val">45.2%</div>
+                  <div class="number-box-sub">6,872 activated</div>
+                </div>
+                <div class="number-box diff">
+                  <div class="number-box-label">Difference</div>
+                  <div class="number-box-val pos">+3.2pp</div>
+                  <div class="number-box-sub">487 more activated</div>
+                </div>
+              </div>
+              <div class="step-body">
+                487 more users completed setup in the test group. p&lt;0.001 — less than 1-in-1000
+                chance this is random.
+              </div>
+            </div>
+            <div class="story-step">
+              <div class="step-num">3</div>
+              <div class="step-label">The bonus</div>
+              <div class="step-title">Support tickets dropped too</div>
+              <div class="step-body" style="margin-top: 6px">
+                Simpler onboarding = fewer confused new users calling support. support_tickets
+                dropped −5.1pp (p&lt;0.001). This wasn't a stated goal but it's a real cost saving.
+                This is why we track guardrails even for positive outcomes — you often find
+                unexpected wins.
+              </div>
+            </div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div id="ci-growth-onboarding"></div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div class="verdict verdict-ship">
+              <div class="verdict-title" style="color: var(--success)">
+                <span class="material-icons" style="font-size: 28px">rocket_launch</span> Verdict:
+                Ship the 3-step onboarding
+              </div>
+              <div class="verdict-body">
+                We simplified onboarding from 6 steps to 3. Users who went through the shorter flow
+                were <strong>3.2 percentage points more likely to activate</strong> (complete setup
+                and take their first action). The probability this is random chance is less than
+                1-in-1,000. <br /><br />
+                <strong>We confirmed it doesn't break anything:</strong> 7-day retention improved
+                (+1.1pp), revenue per user improved (+2.8pp), and support tickets actually dropped
+                (−5.1pp — fewer confused new users). 30-day retention is inconclusive (gray) — we'll
+                monitor this after launch. <br /><br />
+                Ship to 100%. At this rate: for every 15,000 new users, ~487 more complete setup
+                compared to the old flow.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="g-pricing" class="inner-panel">
+        <div class="story-card">
+          <div class="story-header">
+            <div class="story-exp-label">Experiment — guardrail regression, do not ship</div>
+            <div class="story-exp-name">pricing_page_redesign</div>
+            <div class="story-meta">
+              <div class="story-meta-item">
+                <span class="material-icons">help_outline</span> Question: Does a cleaner 2-tier
+                pricing page increase trial signups?
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">check_circle_outline</span> Goal = trial_signup ·
+                Guardrail = demo_requests (enterprise pipeline)
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">people</span> 16,102 users/group · Day 14
+              </div>
+            </div>
+          </div>
+          <div class="story-steps">
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">1</div>
+              <div class="step-label">The change</div>
+              <div class="split-diagram">
+                <div class="split-control">📊 Control: 4 pricing tiers, detailed</div>
+                <div class="split-test">✨ Test: 2 tiers, clean layout</div>
+              </div>
+              <div class="step-body">
+                Design team simplified the pricing page: fewer tiers, more visual hierarchy, cleaner
+                feature comparison. Hypothesis: simpler = more conversions.
+              </div>
+            </div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">2</div>
+              <div class="step-label">The problem</div>
+              <div class="numbers-row">
+                <div class="number-box ctrl">
+                  <div class="number-box-label">Demo requests (control)</div>
+                  <div class="number-box-val">4.8%</div>
+                  <div class="number-box-sub">of visitors</div>
+                </div>
+                <div class="number-box tst" style="background: #fff5f5">
+                  <div class="number-box-label">Demo requests (test)</div>
+                  <div class="number-box-val neg">4.7%</div>
+                  <div class="number-box-sub">↓ fewer demos</div>
+                </div>
+                <div class="number-box diff" style="background: #ffebee">
+                  <div class="number-box-label">Regression</div>
+                  <div class="number-box-val neg">−2.3pp</div>
+                  <div class="number-box-sub">p=0.003 significant</div>
+                </div>
+              </div>
+              <div class="step-body">
+                Goal metric (trial_conversion) is gray — we can't confirm the new page helps. But
+                the guardrail (demo_requests) is clearly red.
+              </div>
+            </div>
+            <div class="story-step">
+              <div class="step-num">3</div>
+              <div class="step-label">Why it happened</div>
+              <div class="step-title">Two customer types, one page</div>
+              <div class="step-body" style="margin-top: 6px">
+                The simplified page works for self-serve SMB buyers. But enterprise buyers need
+                detailed feature comparisons to justify requesting a demo. By reducing complexity,
+                we helped SMB users but removed the information enterprise buyers need. Demo
+                requests are worth 10–50x a self-serve trial.
+              </div>
+            </div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div id="ci-growth-pricing"></div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div class="verdict verdict-hold">
+              <div class="verdict-title" style="color: var(--error)">
+                <span class="material-icons" style="font-size: 28px">block</span> Verdict: Do not
+                ship
+              </div>
+              <div class="verdict-body">
+                The redesigned pricing page was meant to increase trial signups. Result: trial
+                signups are inconclusive (we can't confirm it works). But demo requests — a
+                guardrail metric for enterprise pipeline — dropped by
+                <strong>−2.3 percentage points</strong> (p=0.003, confident regression).
+                <br /><br />
+                <strong>Why the guardrail blocks shipping:</strong> even if trials improved
+                slightly, losing 2.3% of demo requests costs far more in revenue than any gain from
+                cheaper self-serve conversions. Guardrails exist precisely for this — to stop local
+                optimisation that harms higher-value outcomes. <br /><br />
+                <strong>Next step:</strong> show the simplified version to SMB visitors and the
+                detailed version to enterprise visitors (detected by company size from firmographic
+                data). This is a <em>personalised treatment</em> and avoids the tradeoff entirely.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="g-novelty" class="inner-panel">
+        <div class="story-card">
+          <div class="story-header">
+            <div class="story-exp-label">Experiment — novelty effect trap</div>
+            <div class="story-exp-name">email_notifications</div>
+            <div class="story-meta">
+              <div class="story-meta-item">
+                <span class="material-icons">help_outline</span> Question: Do daily digest emails
+                bring users back to the app more often?
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">check_circle_outline</span> Success = user opens the
+                app within 24h of receiving the email
+              </div>
+            </div>
+          </div>
+          <div class="story-steps">
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">⚠</div>
+              <div class="step-label">The trap</div>
+              <div class="step-title">Day 7 looked like a clear win</div>
+              <div class="step-body" style="margin-top: 6px">
+                At Day 7 the open rate delta was <strong>+8.7pp</strong> with p&lt;0.001. Most teams
+                would have shipped immediately. The result looked massive and highly significant.
+                But something suspicious was happening in the time series.
+              </div>
+            </div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">⚠</div>
+              <div class="step-label">What's actually happening</div>
+              <div class="step-title">The delta is shrinking every day</div>
+              <div class="step-body" style="margin-top: 6px">
+                By Day 14 the delta has fallen to <strong>+1.9pp</strong> and is still declining.
+                Users opened the emails because they were new and curious. As novelty wore off, they
+                stopped engaging. The "improvement" was curiosity, not genuine value.
+              </div>
+            </div>
+            <div class="story-step">
+              <div class="step-num">⚠</div>
+              <div class="step-label">The pattern</div>
+              <div class="step-title">What novelty looks like</div>
+              <div class="step-body" style="margin-top: 6px">
+                Novelty: large delta early → steadily shrinks → approaches zero. Real effect: stable
+                delta throughout. Always run for at least 2 full use cycles (for a daily feature,
+                that's 14 days minimum) and check the time series before deciding.
+              </div>
+            </div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div class="chart-title">
+              Delta (test − control) by day — novelty wearing off vs. what a real effect looks like
+            </div>
+            <div class="chart-wrap"><canvas id="chart-novelty"></canvas></div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div class="verdict verdict-wait">
+              <div class="verdict-title" style="color: var(--warn)">
+                <span class="material-icons" style="font-size: 28px">hourglass_empty</span> Verdict:
+                Do not ship yet — novelty effect detected
+              </div>
+              <div class="verdict-body">
+                Daily digest emails appeared to increase app opens by +8.7pp at Day 7. But by Day 14
+                that delta has shrunk to +1.9pp and is still declining. Users opened emails out of
+                curiosity about a new feature, not because the emails are genuinely useful.
+                <br /><br />
+                <strong>What to do:</strong> run until Day 28 or until the delta stabilises. If it
+                stabilises above zero, the effect is real but smaller than initially measured — make
+                a ship decision based on that stable number. If it reaches zero, the emails provide
+                no long-term value and should not be shipped. <br /><br />
+                <strong>The lesson:</strong> stopping experiments early (called "peeking") is one of
+                the most common sources of false positives. The time series chart is your best
+                defence — always check it.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="g-interaction" class="inner-panel">
+        <div class="card">
+          <div class="card-header">
+            <span class="material-icons" style="color: var(--warn)">merge_type</span>
+            <div class="card-title">
+              Interaction effects — what happens when you ship two winners at once
+            </div>
+            <span class="badge badge-warn">Advanced</span>
+          </div>
+          <div class="card-body">
+            <div class="callout callout-warn">
+              <span class="material-icons">info</span>
+              <div>
+                <strong>onboarding_flow_v2</strong> and <strong>new_dashboard_layout</strong> both
+                look good individually. The team wants to ship both simultaneously. But users who
+                were in both experiments show an unexpected result.
+              </div>
+            </div>
+            <div class="chart-title">D7 Retention lift by group</div>
+            <div class="chart-wrap"><canvas id="chart-interaction"></canvas></div>
+            <div class="annotation annotation-warn">
+              <div class="annotation-title">What the chart shows</div>
               <ul>
-                <li><strong>Pre-register</strong> your primary metric before the experiment. Post-hoc hunting through 30 metrics is p-hacking.</li>
-                <li><strong>Check daylight:</strong> the green bar barely clears zero. At 112k users, a real effect would be obvious.</li>
-                <li><strong>Raise CI to 99%</strong> when reviewing many metrics. Apply <strong>Bonferroni correction</strong>: require p &lt; 0.05/30 = 0.0017 to trust any single result.</li>
-                <li>At 99% CI: the green bar vanishes. The red bar (regression) remains.</li>
+                <li>
+                  <strong>Onboarding only:</strong> +1.1pp D7 retention (what the experiment
+                  measured in isolation)
+                </li>
+                <li>
+                  <strong>Dashboard only:</strong> +0.8pp D7 retention (measured in isolation)
+                </li>
+                <li><strong>Expected if additive:</strong> +1.9pp (just adding the two)</li>
+                <li>
+                  <strong>Actual when both shipped:</strong> +2.6pp — more than the sum of parts.
+                  The features reinforce each other.
+                </li>
               </ul>
             </div>
-            <div class="verdict verdict-hold" style="margin-top:0">
-              <div class="verdict-title" style="color:var(--error);font-size:15px"><span class="material-icons">block</span> Do not ship</div>
-              <div class="verdict-body" style="font-size:13px">
-                1 green bar out of 30 = expected from chance. The only confirmed real signal is a <strong>regression in content consumption</strong>. The sidebar redesign is making navigation harder, not easier. The experiment has failed its goal.
+            <div class="annotation annotation-info" style="margin-top: 12px">
+              <div class="annotation-title">Why this matters and what to do</div>
+              <ul>
+                <li>
+                  If you shipped them separately, you'd attribute +1.1pp to onboarding and +0.8pp to
+                  dashboard. You'd miss the +0.7pp interaction bonus entirely — and wouldn't know it
+                  existed.
+                </li>
+                <li>
+                  To measure this properly: set up a <strong>holdout group</strong> that sees
+                  neither change. After 4–6 weeks, the delta between the holdout and everyone else
+                  captures the true combined impact of everything shipped.
+                </li>
+                <li>
+                  Interactions can also be negative (two changes cancelling each other out). A
+                  holdout group catches both.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ ENTERPRISE ══════════════════════ -->
+    <div id="tab-enterprise" class="page">
+      <div class="callout callout-info">
+        <span class="material-icons">domain</span>
+        <div>
+          <strong>Scenario: Large platform, 100k+ users/group, 15 concurrent experiments.</strong>
+          At this scale even tiny effects (0.1%) are detectable. New problems: too many metrics
+          creates accidental false positives, and every experiment must be checked against
+          company-wide health metrics — not just product metrics.
+        </div>
+      </div>
+
+      <div class="section-header">
+        All Running Experiments <span class="section-chip">15 running</span>
+      </div>
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-body" style="padding: 0; overflow: auto">
+          <table class="exp-table">
+            <thead>
+              <tr>
+                <th>Experiment</th>
+                <th>Question</th>
+                <th>Users/group</th>
+                <th>Days</th>
+                <th>Metric results</th>
+                <th>Company health</th>
+                <th>Decision</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>search_ranking_v4</code></td>
+                <td style="color: var(--text2); font-size: 12px">
+                  Does ML ranking show more relevant results?
+                </td>
+                <td>124,802</td>
+                <td>28</td>
+                <td>
+                  <div class="result-bars">
+                    <div class="result-bar rb-green" style="min-width: 36px">8 ✓</div>
+                    <div class="result-bar rb-gray" style="min-width: 28px">2 —</div>
+                  </div>
+                </td>
+                <td><span class="badge badge-success">✓ All clear</span></td>
+                <td><span class="badge badge-success">Ship</span></td>
+              </tr>
+              <tr>
+                <td><code>feed_algorithm_v7</code></td>
+                <td style="color: var(--text2); font-size: 12px">
+                  Do personalised feeds increase engagement?
+                </td>
+                <td>98,340</td>
+                <td>21</td>
+                <td>
+                  <div class="result-bars">
+                    <div class="result-bar rb-green" style="min-width: 28px">5 ✓</div>
+                    <div class="result-bar rb-gray" style="min-width: 21px">3 —</div>
+                    <div class="result-bar rb-red" style="min-width: 14px">1 ✗</div>
+                  </div>
+                </td>
+                <td><span class="badge badge-error">✗ DAU down</span></td>
+                <td><span class="badge badge-error">Blocked</span></td>
+              </tr>
+              <tr style="background: #fff8f8">
+                <td>
+                  <code>sidebar_redesign_v2</code>
+                  <span style="color: var(--error); font-size: 10px">⚠ false positive</span>
+                </td>
+                <td style="color: var(--text2); font-size: 12px">
+                  Does reorganised sidebar help users find features?
+                </td>
+                <td>112,004</td>
+                <td>21</td>
+                <td>
+                  <div class="result-bars">
+                    <div class="result-bar rb-green" style="min-width: 14px">1</div>
+                    <div class="result-bar rb-gray" style="min-width: 84px">28 —</div>
+                    <div class="result-bar rb-red" style="min-width: 14px">1 ✗</div>
+                  </div>
+                </td>
+                <td><span class="badge badge-neutral">— Neutral</span></td>
+                <td><span class="badge badge-error">Do not ship</span></td>
+              </tr>
+              <tr>
+                <td><code>composer_shortcuts</code></td>
+                <td style="color: var(--text2); font-size: 12px">
+                  Do keyboard shortcuts speed up creation?
+                </td>
+                <td>76,543</td>
+                <td>28</td>
+                <td>
+                  <div class="result-bars">
+                    <div class="result-bar rb-green" style="min-width: 42px">7 ✓</div>
+                    <div class="result-bar rb-gray" style="min-width: 14px">2 —</div>
+                  </div>
+                </td>
+                <td><span class="badge badge-success">✓ All clear</span></td>
+                <td><span class="badge badge-success">Ship</span></td>
+              </tr>
+              <tr>
+                <td><code>dark_mode_default</code></td>
+                <td style="color: var(--text2); font-size: 12px">
+                  Does dark mode as default improve satisfaction?
+                </td>
+                <td>201,003</td>
+                <td>14</td>
+                <td>
+                  <div class="result-bars">
+                    <div class="result-bar rb-gray" style="min-width: 70px">12 —</div>
+                  </div>
+                </td>
+                <td><span class="badge badge-neutral">— Neutral</span></td>
+                <td><span class="badge badge-warn">Inconclusive</span></td>
+              </tr>
+              <tr>
+                <td style="color: var(--text3)">... 10 more experiments</td>
+                <td colspan="6" style="color: var(--text3); font-size: 12px">
+                  Paginated in full product
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="inner-tabs">
+        <div class="inner-tab active" onclick="showInner('ent-winner', this)">
+          ✓ search_ranking_v4 — Ship
+        </div>
+        <div class="inner-tab" onclick="showInner('ent-fp', this)">
+          ✗ sidebar_redesign — False positive
+        </div>
+        <div class="inner-tab" onclick="showInner('ent-ccm', this)">
+          ⛔ feed_algorithm — Company metric blocked
+        </div>
+      </div>
+
+      <!-- WINNER -->
+      <div id="ent-winner" class="inner-panel active">
+        <div class="story-card">
+          <div class="story-header">
+            <div class="story-exp-label">Experiment — very high confidence ship</div>
+            <div class="story-exp-name">search_ranking_v4</div>
+            <div class="story-meta">
+              <div class="story-meta-item">
+                <span class="material-icons">help_outline</span> Question: Does ML ranking show more
+                relevant results so users click more and retype less?
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">check_circle_outline</span> Success = user clicks a
+                search result (vs. ignoring results and retyping)
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">people</span> 124,802 users/group · Day 28 · MDE:
+                ±0.08%
+              </div>
+            </div>
+          </div>
+          <div class="story-steps">
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">1</div>
+              <div class="step-label">Scale changes everything</div>
+              <div class="step-title">We can now detect tiny effects</div>
+              <div class="step-body" style="margin-top: 6px">
+                At 2,341 users (Starter), we could only detect effects &gt;2%. At 124,802 users, the
+                minimum detectable effect drops to <strong>±0.08%</strong>. This means gray bars are
+                genuinely null — there's no hidden real effect we're missing. And p-values are far
+                more trustworthy.
+              </div>
+            </div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">2</div>
+              <div class="step-label">The numbers</div>
+              <div class="numbers-row">
+                <div class="number-box ctrl">
+                  <div class="number-box-label">Control (old ranking)</div>
+                  <div class="number-box-val">61.3%</div>
+                  <div class="number-box-sub">clicked a result</div>
+                </div>
+                <div class="number-box tst">
+                  <div class="number-box-label">Test (ML ranking)</div>
+                  <div class="number-box-val">65.4%</div>
+                  <div class="number-box-sub">clicked a result</div>
+                </div>
+                <div class="number-box diff">
+                  <div class="number-box-label">Difference</div>
+                  <div class="number-box-val pos">+4.1pp</div>
+                  <div class="number-box-sub">p &lt; 0.001</div>
+                </div>
+              </div>
+              <div class="step-body">
+                Users find what they need more often. Query refinements also dropped (−1.9pp) —
+                fewer people had to retype because the first results were wrong.
+              </div>
+            </div>
+            <div class="story-step">
+              <div class="step-num">3</div>
+              <div class="step-label">The robustness check</div>
+              <div class="step-title">Still significant at 99.9% CI</div>
+              <div class="step-body" style="margin-top: 6px">
+                We raised the confidence threshold from 95% to 99.9% (much stricter — only 1-in-1000
+                false positive rate). All 6 primary metrics remain significant. The result doesn't
+                depend on which threshold we pick — this is what
+                <strong>large daylight</strong> looks like in practice.
+              </div>
+            </div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div id="ci-ent-winner"></div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div class="verdict verdict-ship">
+              <div class="verdict-title" style="color: var(--success)">
+                <span class="material-icons" style="font-size: 28px">rocket_launch</span> Verdict:
+                Ship — extremely high confidence
+              </div>
+              <div class="verdict-body">
+                We replaced keyword-based search with an ML ranking model. Users are now
+                <strong>4.1 percentage points more likely to click a search result</strong> (instead
+                of retyping their query), and
+                <strong>1.9pp less likely to reformulate their search</strong>. The probability this
+                is random chance is less than 1 in 1,000. At the strictest threshold (99.9% CI), all
+                6 primary metrics remain significant — the result is robust. <br /><br />
+                <strong>We confirmed it doesn't break anything:</strong> company-wide daily active
+                users are up (+0.4%), revenue per user is up (+1.1%), page latency and error rates
+                are unchanged. All company health metrics clear. <br /><br />
+                Ship to 100% immediately.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FALSE POSITIVE -->
+      <div id="ent-fp" class="inner-panel">
+        <div class="story-card">
+          <div class="story-header">
+            <div class="story-exp-label">
+              Experiment — multiple testing false positive + real regression
+            </div>
+            <div class="story-exp-name">sidebar_redesign_v2</div>
+            <div class="story-meta">
+              <div class="story-meta-item">
+                <span class="material-icons">help_outline</span> Question: Does a reorganised
+                sidebar help users navigate to features faster?
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">functions</span> 30 metrics tracked · 112,004
+                users/group · Day 21
+              </div>
+            </div>
+          </div>
+          <div class="story-steps">
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">⚠</div>
+              <div class="step-label">The math problem</div>
+              <div class="step-title">30 metrics = expected false positives</div>
+              <div class="step-body" style="margin-top: 6px">
+                At 95% CI, 5% of all tests show "significant" by pure chance — even when nothing is
+                happening. With 30 metrics: <strong>30 × 5% = 1.5 expected random flukes</strong>.
+                Seeing 1 green bar out of 30 is exactly what you'd expect from noise. It proves
+                nothing.
+              </div>
+            </div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">⚠</div>
+              <div class="step-label">The suspicious green bar</div>
+              <div class="step-title">sidebar_click_rate +0.8pp</div>
+              <div class="step-body" style="margin-top: 6px">
+                p=0.04, barely significant. But: (1) not pre-registered as a goal metric, (2) the CI
+                barely clears zero — tiny daylight, (3) at 99% CI this result disappears entirely. A
+                genuine effect at 112k users would be robust to threshold changes.
+              </div>
+            </div>
+            <div class="story-step">
+              <div class="step-num">!</div>
+              <div class="step-label">The real problem</div>
+              <div class="step-title">content_consumption −2.1pp</div>
+              <div class="step-body" style="margin-top: 6px">
+                This regression has <strong>large daylight</strong> and remains significant at 99.9%
+                CI. Users in the redesigned sidebar are consuming less content. The navigation
+                changes are making it harder to find things — the opposite of the goal.
+              </div>
+            </div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div id="ci-ent-fp"></div>
+            <div class="grid-2" style="margin-top: 12px; gap: 12px">
+              <div>
+                <div class="chart-title" style="margin-top: 8px">
+                  p-value distribution across all 30 metrics
+                </div>
+                <div class="chart-wrap-sm"><canvas id="chart-fp-dist"></canvas></div>
+                <div class="annotation annotation-neutral" style="margin-top: 8px; font-size: 12px">
+                  If the experiment truly had no effect, p-values would be
+                  <strong>uniformly spread</strong> across all buckets. This histogram shows most
+                  metrics at high p-values (gray bars), with just 2 outliers at p&lt;0.05. That's
+                  exactly what you'd expect from random noise — not a real effect.
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 12px">
+                <div class="annotation annotation-error" style="margin-top: 0">
+                  <div class="annotation-title">How to detect false positives</div>
+                  <ul>
+                    <li>
+                      <strong>Pre-register</strong> your primary metric before the experiment.
+                      Post-hoc hunting through 30 metrics is p-hacking.
+                    </li>
+                    <li>
+                      <strong>Check daylight:</strong> the green bar barely clears zero. At 112k
+                      users, a real effect would be obvious.
+                    </li>
+                    <li>
+                      <strong>Raise CI to 99%</strong> when reviewing many metrics. Apply
+                      <strong>Bonferroni correction</strong>: require p &lt; 0.05/30 = 0.0017 to
+                      trust any single result.
+                    </li>
+                    <li>At 99% CI: the green bar vanishes. The red bar (regression) remains.</li>
+                  </ul>
+                </div>
+                <div class="verdict verdict-hold" style="margin-top: 0">
+                  <div class="verdict-title" style="color: var(--error); font-size: 15px">
+                    <span class="material-icons">block</span> Do not ship
+                  </div>
+                  <div class="verdict-body" style="font-size: 13px">
+                    1 green bar out of 30 = expected from chance. The only confirmed real signal is
+                    a <strong>regression in content consumption</strong>. The sidebar redesign is
+                    making navigation harder, not easier. The experiment has failed its goal.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CCM BLOCKED -->
+      <div id="ent-ccm" class="inner-panel">
+        <div class="story-card">
+          <div class="story-header">
+            <div class="story-exp-label">Experiment — blocked by company health metric</div>
+            <div class="story-exp-name">feed_algorithm_v7</div>
+            <div class="story-meta">
+              <div class="story-meta-item">
+                <span class="material-icons">help_outline</span> Question: Do more personalised
+                feeds increase daily engagement and content creation?
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">warning</span> Company metric daily_active_users is
+                down −0.3% — blocks shipping
+              </div>
+              <div class="story-meta-item">
+                <span class="material-icons">people</span> 98,340 users/group · Day 21
+              </div>
+            </div>
+          </div>
+          <div class="story-steps">
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">!</div>
+              <div class="step-label">What are company metrics?</div>
+              <div class="step-title">The guardrails no one can skip</div>
+              <div class="step-body" style="margin-top: 6px">
+                Company Critical Metrics (CCMs) are checked against <em>every</em> experiment
+                automatically — regardless of what the experiment targets. If any CCM regresses, the
+                experiment is blocked from shipping. Individual teams cannot override this. Metric
+                owner sign-off is required for any exception.
+              </div>
+            </div>
+            <div class="story-step" style="border-right: 1px solid var(--border)">
+              <div class="step-num">!</div>
+              <div class="step-label">The product metrics</div>
+              <div class="step-title">Looks great at first glance</div>
+              <div class="step-body" style="margin-top: 6px">
+                content_clicks +4.2% ✓, likes +3.1% ✓, comments +2.7% ✓, time_in_feed +5.8% ✓. The
+                algorithm is clearly making users engage more during each session. The team is
+                excited to ship. But then the CCM check ran.
+              </div>
+            </div>
+            <div class="story-step">
+              <div class="step-num">!</div>
+              <div class="step-label">The company metric</div>
+              <div class="step-title">Daily active users −0.3%</div>
+              <div class="step-body" style="margin-top: 6px">
+                Fewer unique users are opening the app each day. The algorithm optimises
+                <em>within</em> a session — but makes the product less worth returning to. Users
+                feel "done" with their feed and don't come back. This is the classic local-vs-global
+                optimisation trap.
+              </div>
+            </div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div style="font-size: 13px; font-weight: 500; margin-bottom: 4px">
+              Company health metrics — checked automatically on every experiment
+            </div>
+            <div style="font-size: 12px; color: var(--text2); margin-bottom: 14px">
+              These metrics apply to the whole company. A regression here blocks shipping regardless
+              of your product metrics.
+            </div>
+            <div class="grid-2">
+              <div>
+                <div
+                  style="font-size: 12px; font-weight: 600; color: var(--error); margin-bottom: 8px"
+                >
+                  feed_algorithm_v7 — company health ✗
+                </div>
+                <div class="ccm-row fail">
+                  <span class="material-icons" style="font-size: 16px; color: var(--error)"
+                    >close</span
+                  >
+                  <div class="ccm-name">daily_active_users</div>
+                  <div class="ccm-val neg">−0.3%</div>
+                  <div class="ccm-expl">Fewer users opening the app each day → BLOCKS SHIPPING</div>
+                </div>
+                <div class="ccm-row ok">
+                  <span class="material-icons" style="font-size: 16px; color: var(--success)"
+                    >check</span
+                  >
+                  <div class="ccm-name">revenue_per_user</div>
+                  <div class="ccm-val pos">+0.2%</div>
+                  <div class="ccm-expl">Slightly more revenue per session ✓</div>
+                </div>
+                <div class="ccm-row gray">
+                  <span class="material-icons" style="font-size: 16px; color: var(--neutral)"
+                    >remove</span
+                  >
+                  <div class="ccm-name">p99_latency_ms</div>
+                  <div class="ccm-val neu">+0.3%</div>
+                  <div class="ccm-expl">Speed unchanged (within noise) ✓</div>
+                </div>
+                <div class="ccm-row gray">
+                  <span class="material-icons" style="font-size: 16px; color: var(--neutral)"
+                    >remove</span
+                  >
+                  <div class="ccm-name">error_rate</div>
+                  <div class="ccm-val neu">0.0%</div>
+                  <div class="ccm-expl">No increase in errors ✓</div>
+                </div>
+              </div>
+              <div>
+                <div class="annotation annotation-error" style="margin-top: 0">
+                  <div class="annotation-title">Why DAU matters more than engagement</div>
+                  <ul>
+                    <li>
+                      Engagement metrics (clicks, likes, time in feed) are all up — users engage
+                      more <em>when they open the app</em>.
+                    </li>
+                    <li>
+                      But users are opening the app <strong>less often</strong>. The personalised
+                      feed may be "too satisfying" — users feel done and have less reason to return.
+                    </li>
+                    <li>
+                      DAU is the company's most important leading indicator for revenue and growth.
+                      Losing 0.3% DAU at this scale affects hundreds of thousands of users daily.
+                    </li>
+                    <li>
+                      This is exactly why CCMs exist: to catch optimisations that look locally good
+                      but hurt the company overall.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 16px">
+              <div class="chart-title">
+                Company health across all 15 experiments — one is blocked
+              </div>
+              <div class="chart-wrap"><canvas id="chart-ccm-overview"></canvas></div>
+            </div>
+          </div>
+          <div style="padding: 20px; border-top: 1px solid var(--border)">
+            <div class="verdict verdict-hold">
+              <div class="verdict-title" style="color: var(--error)">
+                <span class="material-icons" style="font-size: 28px">block</span> Verdict: Blocked —
+                company health metric regression
+              </div>
+              <div class="verdict-body">
+                The personalised feed algorithm improves engagement within a session (clicks, likes,
+                time spent). However, <strong>daily active users dropped −0.3%</strong> — meaning
+                fewer users open the app each day. This is a company-level health metric and its
+                regression blocks shipping, even though all product metrics look positive.
+                <br /><br />
+                <strong>Why this rule is absolute:</strong> individual teams optimise for their own
+                metrics. Without company-level guardrails, a team could make their feature look
+                great while quietly eroding the platform's overall health. The DAU check prevents
+                this. <br /><br />
+                <strong>Root cause hypothesis:</strong> the algorithm suppresses low-engagement push
+                notifications (to avoid annoying users), but those notifications are what reminds
+                users to open the app. Fix the notification suppression logic, then re-run.
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- CCM BLOCKED -->
-  <div id="ent-ccm" class="inner-panel">
-    <div class="story-card">
-      <div class="story-header">
-        <div class="story-exp-label">Experiment — blocked by company health metric</div>
-        <div class="story-exp-name">feed_algorithm_v7</div>
-        <div class="story-meta">
-          <div class="story-meta-item"><span class="material-icons">help_outline</span> Question: Do more personalised feeds increase daily engagement and content creation?</div>
-          <div class="story-meta-item"><span class="material-icons">warning</span> Company metric daily_active_users is down −0.3% — blocks shipping</div>
-          <div class="story-meta-item"><span class="material-icons">people</span> 98,340 users/group · Day 21</div>
-        </div>
-      </div>
-      <div class="story-steps">
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">!</div>
-          <div class="step-label">What are company metrics?</div>
-          <div class="step-title">The guardrails no one can skip</div>
-          <div class="step-body" style="margin-top:6px">Company Critical Metrics (CCMs) are checked against <em>every</em> experiment automatically — regardless of what the experiment targets. If any CCM regresses, the experiment is blocked from shipping. Individual teams cannot override this. Metric owner sign-off is required for any exception.</div>
-        </div>
-        <div class="story-step" style="border-right:1px solid var(--border)">
-          <div class="step-num">!</div>
-          <div class="step-label">The product metrics</div>
-          <div class="step-title">Looks great at first glance</div>
-          <div class="step-body" style="margin-top:6px">content_clicks +4.2% ✓, likes +3.1% ✓, comments +2.7% ✓, time_in_feed +5.8% ✓. The algorithm is clearly making users engage more during each session. The team is excited to ship. But then the CCM check ran.</div>
-        </div>
-        <div class="story-step">
-          <div class="step-num">!</div>
-          <div class="step-label">The company metric</div>
-          <div class="step-title">Daily active users −0.3%</div>
-          <div class="step-body" style="margin-top:6px">Fewer unique users are opening the app each day. The algorithm optimises <em>within</em> a session — but makes the product less worth returning to. Users feel "done" with their feed and don't come back. This is the classic local-vs-global optimisation trap.</div>
-        </div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:500;margin-bottom:4px">Company health metrics — checked automatically on every experiment</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">These metrics apply to the whole company. A regression here blocks shipping regardless of your product metrics.</div>
-        <div class="grid-2">
-          <div>
-            <div style="font-size:12px;font-weight:600;color:var(--error);margin-bottom:8px">feed_algorithm_v7 — company health ✗</div>
-            <div class="ccm-row fail">
-              <span class="material-icons" style="font-size:16px;color:var(--error)">close</span>
-              <div class="ccm-name">daily_active_users</div>
-              <div class="ccm-val neg">−0.3%</div>
-              <div class="ccm-expl">Fewer users opening the app each day → BLOCKS SHIPPING</div>
-            </div>
-            <div class="ccm-row ok">
-              <span class="material-icons" style="font-size:16px;color:var(--success)">check</span>
-              <div class="ccm-name">revenue_per_user</div>
-              <div class="ccm-val pos">+0.2%</div>
-              <div class="ccm-expl">Slightly more revenue per session ✓</div>
-            </div>
-            <div class="ccm-row gray">
-              <span class="material-icons" style="font-size:16px;color:var(--neutral)">remove</span>
-              <div class="ccm-name">p99_latency_ms</div>
-              <div class="ccm-val neu">+0.3%</div>
-              <div class="ccm-expl">Speed unchanged (within noise) ✓</div>
-            </div>
-            <div class="ccm-row gray">
-              <span class="material-icons" style="font-size:16px;color:var(--neutral)">remove</span>
-              <div class="ccm-name">error_rate</div>
-              <div class="ccm-val neu">0.0%</div>
-              <div class="ccm-expl">No increase in errors ✓</div>
-            </div>
-          </div>
-          <div>
-            <div class="annotation annotation-error" style="margin-top:0">
-              <div class="annotation-title">Why DAU matters more than engagement</div>
-              <ul>
-                <li>Engagement metrics (clicks, likes, time in feed) are all up — users engage more <em>when they open the app</em>.</li>
-                <li>But users are opening the app <strong>less often</strong>. The personalised feed may be "too satisfying" — users feel done and have less reason to return.</li>
-                <li>DAU is the company's most important leading indicator for revenue and growth. Losing 0.3% DAU at this scale affects hundreds of thousands of users daily.</li>
-                <li>This is exactly why CCMs exist: to catch optimisations that look locally good but hurt the company overall.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:16px">
-          <div class="chart-title">Company health across all 15 experiments — one is blocked</div>
-          <div class="chart-wrap"><canvas id="chart-ccm-overview"></canvas></div>
-        </div>
-      </div>
-      <div style="padding:20px;border-top:1px solid var(--border)">
-        <div class="verdict verdict-hold">
-          <div class="verdict-title" style="color:var(--error)"><span class="material-icons" style="font-size:28px">block</span> Verdict: Blocked — company health metric regression</div>
-          <div class="verdict-body">
-            The personalised feed algorithm improves engagement within a session (clicks, likes, time spent). However, <strong>daily active users dropped −0.3%</strong> — meaning fewer users open the app each day. This is a company-level health metric and its regression blocks shipping, even though all product metrics look positive.
-            <br><br>
-            <strong>Why this rule is absolute:</strong> individual teams optimise for their own metrics. Without company-level guardrails, a team could make their feature look great while quietly eroding the platform's overall health. The DAU check prevents this.
-            <br><br>
-            <strong>Root cause hypothesis:</strong> the algorithm suppresses low-engagement push notifications (to avoid annoying users), but those notifications are what reminds users to open the app. Fix the notification suppression logic, then re-run.
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+    <script>
+      function showTab(id, btn) {
+        document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.getElementById("tab-" + id).classList.add("active");
+        btn.classList.add("active");
+      }
+      function showInner(id, tab) {
+        const page = tab.closest(".page");
+        page.querySelectorAll(".inner-panel").forEach((p) => p.classList.remove("active"));
+        tab
+          .closest(".inner-tabs")
+          .querySelectorAll(".inner-tab")
+          .forEach((t) => t.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        tab.classList.add("active");
+      }
 
-<script>
-function showTab(id, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
-  document.getElementById('tab-' + id).classList.add('active')
-  btn.classList.add('active')
-}
-function showInner(id, tab) {
-  const page = tab.closest('.page')
-  page.querySelectorAll('.inner-panel').forEach(p => p.classList.remove('active'))
-  tab.closest('.inner-tabs').querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'))
-  document.getElementById(id).classList.add('active')
-  tab.classList.add('active')
-}
-
-function renderCI(containerId, metrics) {
-  const allVals = metrics.flatMap(m => [m.ci_low, m.ci_high, m.delta])
-  const absMax  = Math.max(...allVals.map(v => Math.abs(v))) * 1.45
-  const range   = absMax * 2
-  const toLeft  = v => ((v + absMax) / range * 100).toFixed(2) + '%'
-  const toW     = (lo, hi) => ((hi - lo) / range * 100).toFixed(2) + '%'
-  function fmt(v, unit) {
-    const s = v > 0 ? '+' : ''
-    if (unit === '$')  return s + '$' + Math.abs(v).toFixed(2)
-    if (unit === 'ms') return s + v.toFixed(0) + 'ms'
-    return s + (v * 100).toFixed(1) + '%'
-  }
-  const sig   = m => m.ci_low > 0 || m.ci_high < 0
-  const isPos = m => m.ci_low > 0
-  const color = m => sig(m) ? (isPos(m) ? 'var(--success)' : 'var(--error)') : '#9e9e9e'
-  const band  = m => sig(m) ? (isPos(m) ? 'var(--success-band)' : 'var(--error-band)') : 'var(--neutral-band)'
-  const sigBadge = m => sig(m)
-    ? (isPos(m) ? '<span class="badge badge-success" style="font-size:10px">↑ Significant improvement</span>'
-                : '<span class="badge badge-error"   style="font-size:10px">↓ Significant regression</span>')
-    : '<span class="badge badge-neutral" style="font-size:10px">— Inconclusive (need more data)</span>'
-  const roleHtml = desc => {
-    if (!desc) return ''
-    if (desc.includes('Goal'))  return '<span class="ci-metric-role role-goal">Goal</span><br>'
-    if (desc.includes('Guard')) return '<span class="ci-metric-role role-guard">Guardrail</span><br>'
-    return `<span class="ci-metric-role role-sec">${desc}</span><br>`
-  }
-  const plain = m => {
-    if (sig(m) && isPos(m))  return `✓ Improved ${fmt(m.delta,m.unit)}. The true effect is almost certainly between ${fmt(m.ci_low,m.unit)} and ${fmt(m.ci_high,m.unit)}.`
-    if (sig(m) && !isPos(m)) return `✗ Regressed ${fmt(m.delta,m.unit)} — if this is a guardrail, it blocks shipping.`
-    return `No confirmed effect. Could be anywhere from ${fmt(m.ci_low,m.unit)} to ${fmt(m.ci_high,m.unit)}. Not enough data to confirm.`
-  }
-  document.getElementById(containerId).innerHTML = `
+      function renderCI(containerId, metrics) {
+        const allVals = metrics.flatMap((m) => [m.ci_low, m.ci_high, m.delta]);
+        const absMax = Math.max(...allVals.map((v) => Math.abs(v))) * 1.45;
+        const range = absMax * 2;
+        const toLeft = (v) => (((v + absMax) / range) * 100).toFixed(2) + "%";
+        const toW = (lo, hi) => (((hi - lo) / range) * 100).toFixed(2) + "%";
+        function fmt(v, unit) {
+          const s = v > 0 ? "+" : "";
+          if (unit === "$") return s + "$" + Math.abs(v).toFixed(2);
+          if (unit === "ms") return s + v.toFixed(0) + "ms";
+          return s + (v * 100).toFixed(1) + "%";
+        }
+        const sig = (m) => m.ci_low > 0 || m.ci_high < 0;
+        const isPos = (m) => m.ci_low > 0;
+        const color = (m) => (sig(m) ? (isPos(m) ? "var(--success)" : "var(--error)") : "#9e9e9e");
+        const band = (m) =>
+          sig(m) ? (isPos(m) ? "var(--success-band)" : "var(--error-band)") : "var(--neutral-band)";
+        const sigBadge = (m) =>
+          sig(m)
+            ? isPos(m)
+              ? '<span class="badge badge-success" style="font-size:10px">↑ Significant improvement</span>'
+              : '<span class="badge badge-error"   style="font-size:10px">↓ Significant regression</span>'
+            : '<span class="badge badge-neutral" style="font-size:10px">— Inconclusive (need more data)</span>';
+        const roleHtml = (desc) => {
+          if (!desc) return "";
+          if (desc.includes("Goal"))
+            return '<span class="ci-metric-role role-goal">Goal</span><br>';
+          if (desc.includes("Guard"))
+            return '<span class="ci-metric-role role-guard">Guardrail</span><br>';
+          return `<span class="ci-metric-role role-sec">${desc}</span><br>`;
+        };
+        const plain = (m) => {
+          if (sig(m) && isPos(m))
+            return `✓ Improved ${fmt(m.delta, m.unit)}. The true effect is almost certainly between ${fmt(m.ci_low, m.unit)} and ${fmt(m.ci_high, m.unit)}.`;
+          if (sig(m) && !isPos(m))
+            return `✗ Regressed ${fmt(m.delta, m.unit)} — if this is a guardrail, it blocks shipping.`;
+          return `No confirmed effect. Could be anywhere from ${fmt(m.ci_low, m.unit)} to ${fmt(m.ci_high, m.unit)}. Not enough data to confirm.`;
+        };
+        document.getElementById(containerId).innerHTML = `
     <div class="ci-legend">
       <div class="ci-legend-item"><div class="ci-legend-swatch" style="background:var(--success-band);border:1.5px solid var(--success)"></div> Bar right of zero → improvement</div>
       <div class="ci-legend-item"><div class="ci-legend-swatch" style="background:var(--neutral-band);border:1.5px solid #9e9e9e"></div> Bar crosses zero → inconclusive</div>
@@ -929,142 +2190,547 @@ function renderCI(containerId, metrics) {
       <div class="ci-legend-item"><div style="width:3px;height:12px;background:#212121;border-radius:2px;display:inline-block;vertical-align:middle"></div>&nbsp;Vertical line = the delta we actually measured</div>
     </div>
     <table class="ci-table">
-      ${metrics.map(m => `<tr>
+      ${metrics
+        .map(
+          (m) => `<tr>
         <td class="ci-metric-name">${roleHtml(m.desc)}${m.name}</td>
         <td class="ci-bar-cell">
           <div class="ci-bar-wrap">
             <div class="ci-zero" style="left:${toLeft(0)}"></div>
-            <div class="ci-band" style="left:${toLeft(m.ci_low)};width:${toW(m.ci_low,m.ci_high)};background:${band(m)};border:1.5px solid ${color(m)}"></div>
+            <div class="ci-band" style="left:${toLeft(m.ci_low)};width:${toW(m.ci_low, m.ci_high)};background:${band(m)};border:1.5px solid ${color(m)}"></div>
             <div class="ci-point" style="left:${toLeft(m.delta)}"></div>
-            <div class="ci-scale"><span>${fmt(-absMax,m.unit)}</span><span>0 = no effect</span><span>${fmt(absMax,m.unit)}</span></div>
+            <div class="ci-scale"><span>${fmt(-absMax, m.unit)}</span><span>0 = no effect</span><span>${fmt(absMax, m.unit)}</span></div>
           </div>
         </td>
         <td class="ci-stats-cell">
-          <div class="ci-delta ${sig(m)?(isPos(m)?'pos':'neg'):'neu'}">${fmt(m.delta,m.unit)}</div>
-          <div class="ci-range">95% CI: [${fmt(m.ci_low,m.unit)}, ${fmt(m.ci_high,m.unit)}]</div>
-          <div class="ci-pvalue">p = ${m.p<0.001?'<0.001':m.p.toFixed(3)} · ${m.p<0.05?'significant ✓':'not significant ✗'}</div>
+          <div class="ci-delta ${sig(m) ? (isPos(m) ? "pos" : "neg") : "neu"}">${fmt(m.delta, m.unit)}</div>
+          <div class="ci-range">95% CI: [${fmt(m.ci_low, m.unit)}, ${fmt(m.ci_high, m.unit)}]</div>
+          <div class="ci-pvalue">p = ${m.p < 0.001 ? "<0.001" : m.p.toFixed(3)} · ${m.p < 0.05 ? "significant ✓" : "not significant ✗"}</div>
           <div class="ci-plain">${plain(m)}</div>
         </td>
         <td class="ci-badge-cell">${sigBadge(m)}</td>
-      </tr>`).join('')}
-    </table>`
-}
+      </tr>`,
+        )
+        .join("")}
+    </table>`;
+      }
 
-renderCI('ci-starter', [
-  { name:'conversion_rate', desc:'Goal metric',  unit:'%', delta:0.021,  ci_low:0.003,  ci_high:0.039,  p:0.021 },
-  { name:'avg_order_value', desc:'Revenue',       unit:'$', delta:1.20,   ci_low:-2.50,  ci_high:4.90,   p:0.48  },
-  { name:'cart_abandonment',desc:'Guardrail',    unit:'%', delta:-0.018, ci_low:-0.042, ci_high:0.006,  p:0.14  },
-])
-renderCI('ci-growth-onboarding', [
-  { name:'activation_rate',  desc:'Goal metric', unit:'%', delta:0.032,  ci_low:0.024,  ci_high:0.040,  p:0.001 },
-  { name:'D7_retention',     desc:'Retention',   unit:'%', delta:0.011,  ci_low:0.005,  ci_high:0.017,  p:0.003 },
-  { name:'revenue_per_user', desc:'Revenue',     unit:'%', delta:0.028,  ci_low:0.018,  ci_high:0.038,  p:0.001 },
-  { name:'support_tickets',  desc:'Cost',        unit:'%', delta:-0.051, ci_low:-0.068, ci_high:-0.034, p:0.001 },
-  { name:'D30_retention',    desc:'Long-term',   unit:'%', delta:0.002,  ci_low:-0.006, ci_high:0.010,  p:0.61  },
-])
-renderCI('ci-growth-pricing', [
-  { name:'trial_conversion', desc:'Goal metric',  unit:'%', delta:0.012,  ci_low:-0.002, ci_high:0.026, p:0.10  },
-  { name:'demo_requests',    desc:'Guardrail',    unit:'%', delta:-0.023, ci_low:-0.038, ci_high:-0.008,p:0.003 },
-  { name:'checkout_rate',    desc:'Secondary',   unit:'%', delta:0.008,  ci_low:-0.003, ci_high:0.019, p:0.17  },
-])
-renderCI('ci-ent-winner', [
-  { name:'search_click_rate',   desc:'Goal metric', unit:'%', delta:0.041,  ci_low:0.036, ci_high:0.046, p:0.000 },
-  { name:'result_satisfaction', desc:'Quality',     unit:'%', delta:0.028,  ci_low:0.023, ci_high:0.033, p:0.000 },
-  { name:'query_refinements',   desc:'Efficiency',  unit:'%', delta:-0.019, ci_low:-0.024,ci_high:-0.014,p:0.000 },
-  { name:'time_to_click',       desc:'Speed',       unit:'%', delta:-0.031, ci_low:-0.037,ci_high:-0.025,p:0.000 },
-  { name:'D7_retention',        desc:'Retention',   unit:'%', delta:0.009,  ci_low:0.005, ci_high:0.013, p:0.001 },
-  { name:'revenue_per_session', desc:'Revenue',     unit:'%', delta:0.022,  ci_low:0.017, ci_high:0.027, p:0.000 },
-  { name:'session_depth',       desc:'Engagement',  unit:'%', delta:0.004,  ci_low:-0.001,ci_high:0.009, p:0.13  },
-  { name:'referral_rate',       desc:'Growth',      unit:'%', delta:0.003,  ci_low:-0.001,ci_high:0.007, p:0.18  },
-])
-renderCI('ci-ent-fp', [
-  { name:'sidebar_click_rate',  desc:'Secondary — only green, tiny daylight', unit:'%', delta:0.008,  ci_low:0.001, ci_high:0.015, p:0.04  },
-  { name:'content_consumption', desc:'Guardrail — clear regression',           unit:'%', delta:-0.021, ci_low:-0.027,ci_high:-0.015,p:0.000 },
-  { name:'feature_discovery',   desc:'Secondary',                              unit:'%', delta:0.005,  ci_low:-0.002,ci_high:0.012, p:0.21  },
-  { name:'session_duration',    desc:'Secondary',                              unit:'%', delta:0.003,  ci_low:-0.004,ci_high:0.010, p:0.41  },
-  { name:'... 26 more metrics', desc:'All inconclusive',                       unit:'%', delta:0.000,  ci_low:-0.005,ci_high:0.005, p:0.98  },
-])
+      renderCI("ci-starter", [
+        {
+          name: "conversion_rate",
+          desc: "Goal metric",
+          unit: "%",
+          delta: 0.021,
+          ci_low: 0.003,
+          ci_high: 0.039,
+          p: 0.021,
+        },
+        {
+          name: "avg_order_value",
+          desc: "Revenue",
+          unit: "$",
+          delta: 1.2,
+          ci_low: -2.5,
+          ci_high: 4.9,
+          p: 0.48,
+        },
+        {
+          name: "cart_abandonment",
+          desc: "Guardrail",
+          unit: "%",
+          delta: -0.018,
+          ci_low: -0.042,
+          ci_high: 0.006,
+          p: 0.14,
+        },
+      ]);
+      renderCI("ci-growth-onboarding", [
+        {
+          name: "activation_rate",
+          desc: "Goal metric",
+          unit: "%",
+          delta: 0.032,
+          ci_low: 0.024,
+          ci_high: 0.04,
+          p: 0.001,
+        },
+        {
+          name: "D7_retention",
+          desc: "Retention",
+          unit: "%",
+          delta: 0.011,
+          ci_low: 0.005,
+          ci_high: 0.017,
+          p: 0.003,
+        },
+        {
+          name: "revenue_per_user",
+          desc: "Revenue",
+          unit: "%",
+          delta: 0.028,
+          ci_low: 0.018,
+          ci_high: 0.038,
+          p: 0.001,
+        },
+        {
+          name: "support_tickets",
+          desc: "Cost",
+          unit: "%",
+          delta: -0.051,
+          ci_low: -0.068,
+          ci_high: -0.034,
+          p: 0.001,
+        },
+        {
+          name: "D30_retention",
+          desc: "Long-term",
+          unit: "%",
+          delta: 0.002,
+          ci_low: -0.006,
+          ci_high: 0.01,
+          p: 0.61,
+        },
+      ]);
+      renderCI("ci-growth-pricing", [
+        {
+          name: "trial_conversion",
+          desc: "Goal metric",
+          unit: "%",
+          delta: 0.012,
+          ci_low: -0.002,
+          ci_high: 0.026,
+          p: 0.1,
+        },
+        {
+          name: "demo_requests",
+          desc: "Guardrail",
+          unit: "%",
+          delta: -0.023,
+          ci_low: -0.038,
+          ci_high: -0.008,
+          p: 0.003,
+        },
+        {
+          name: "checkout_rate",
+          desc: "Secondary",
+          unit: "%",
+          delta: 0.008,
+          ci_low: -0.003,
+          ci_high: 0.019,
+          p: 0.17,
+        },
+      ]);
+      renderCI("ci-ent-winner", [
+        {
+          name: "search_click_rate",
+          desc: "Goal metric",
+          unit: "%",
+          delta: 0.041,
+          ci_low: 0.036,
+          ci_high: 0.046,
+          p: 0.0,
+        },
+        {
+          name: "result_satisfaction",
+          desc: "Quality",
+          unit: "%",
+          delta: 0.028,
+          ci_low: 0.023,
+          ci_high: 0.033,
+          p: 0.0,
+        },
+        {
+          name: "query_refinements",
+          desc: "Efficiency",
+          unit: "%",
+          delta: -0.019,
+          ci_low: -0.024,
+          ci_high: -0.014,
+          p: 0.0,
+        },
+        {
+          name: "time_to_click",
+          desc: "Speed",
+          unit: "%",
+          delta: -0.031,
+          ci_low: -0.037,
+          ci_high: -0.025,
+          p: 0.0,
+        },
+        {
+          name: "D7_retention",
+          desc: "Retention",
+          unit: "%",
+          delta: 0.009,
+          ci_low: 0.005,
+          ci_high: 0.013,
+          p: 0.001,
+        },
+        {
+          name: "revenue_per_session",
+          desc: "Revenue",
+          unit: "%",
+          delta: 0.022,
+          ci_low: 0.017,
+          ci_high: 0.027,
+          p: 0.0,
+        },
+        {
+          name: "session_depth",
+          desc: "Engagement",
+          unit: "%",
+          delta: 0.004,
+          ci_low: -0.001,
+          ci_high: 0.009,
+          p: 0.13,
+        },
+        {
+          name: "referral_rate",
+          desc: "Growth",
+          unit: "%",
+          delta: 0.003,
+          ci_low: -0.001,
+          ci_high: 0.007,
+          p: 0.18,
+        },
+      ]);
+      renderCI("ci-ent-fp", [
+        {
+          name: "sidebar_click_rate",
+          desc: "Secondary — only green, tiny daylight",
+          unit: "%",
+          delta: 0.008,
+          ci_low: 0.001,
+          ci_high: 0.015,
+          p: 0.04,
+        },
+        {
+          name: "content_consumption",
+          desc: "Guardrail — clear regression",
+          unit: "%",
+          delta: -0.021,
+          ci_low: -0.027,
+          ci_high: -0.015,
+          p: 0.0,
+        },
+        {
+          name: "feature_discovery",
+          desc: "Secondary",
+          unit: "%",
+          delta: 0.005,
+          ci_low: -0.002,
+          ci_high: 0.012,
+          p: 0.21,
+        },
+        {
+          name: "session_duration",
+          desc: "Secondary",
+          unit: "%",
+          delta: 0.003,
+          ci_low: -0.004,
+          ci_high: 0.01,
+          p: 0.41,
+        },
+        {
+          name: "... 26 more metrics",
+          desc: "All inconclusive",
+          unit: "%",
+          delta: 0.0,
+          ci_low: -0.005,
+          ci_high: 0.005,
+          p: 0.98,
+        },
+      ]);
 
-const base = {
-  responsive:true, maintainAspectRatio:false,
-  plugins:{ legend:{ labels:{ font:{family:'Roboto',size:11}, boxWidth:12, padding:12 } } },
-  scales:{
-    x:{ grid:{color:'#f0f0f0'}, ticks:{font:{family:'Roboto',size:10}} },
-    y:{ grid:{color:'#f0f0f0'}, ticks:{font:{family:'Roboto',size:10}} }
-  }
-}
+      const base = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { font: { family: "Roboto", size: 11 }, boxWidth: 12, padding: 12 } },
+        },
+        scales: {
+          x: { grid: { color: "#f0f0f0" }, ticks: { font: { family: "Roboto", size: 10 } } },
+          y: { grid: { color: "#f0f0f0" }, ticks: { font: { family: "Roboto", size: 10 } } },
+        },
+      };
 
-new Chart(document.getElementById('chart-starter-ts'), {
-  type:'line',
-  data:{ labels:Array.from({length:14},(_,i)=>`Day ${i+1}`), datasets:[
-    { label:'Control (gray button)', data:[3.1,3.0,3.2,3.1,3.0,3.1,3.2,3.1,3.0,3.1,3.2,3.1,3.0,3.1], borderColor:'#1976d2', borderWidth:2, borderDash:[5,3], backgroundColor:'transparent', pointRadius:3, tension:.3 },
-    { label:'Test (green button)',    data:[3.2,3.3,3.5,3.4,3.5,3.6,3.5,3.6,3.7,3.6,3.5,3.6,3.7,3.6], borderColor:'#2e7d32', borderWidth:2, backgroundColor:'rgba(46,125,50,.06)', fill:true, pointRadius:3, tension:.3 }
-  ]},
-  options:{...base, scales:{...base.scales, y:{...base.scales.y, title:{display:true,text:'% of users who completed a purchase',font:{size:10,family:'Roboto'}}}}}
-})
+      new Chart(document.getElementById("chart-starter-ts"), {
+        type: "line",
+        data: {
+          labels: Array.from({ length: 14 }, (_, i) => `Day ${i + 1}`),
+          datasets: [
+            {
+              label: "Control (gray button)",
+              data: [3.1, 3.0, 3.2, 3.1, 3.0, 3.1, 3.2, 3.1, 3.0, 3.1, 3.2, 3.1, 3.0, 3.1],
+              borderColor: "#1976d2",
+              borderWidth: 2,
+              borderDash: [5, 3],
+              backgroundColor: "transparent",
+              pointRadius: 3,
+              tension: 0.3,
+            },
+            {
+              label: "Test (green button)",
+              data: [3.2, 3.3, 3.5, 3.4, 3.5, 3.6, 3.5, 3.6, 3.7, 3.6, 3.5, 3.6, 3.7, 3.6],
+              borderColor: "#2e7d32",
+              borderWidth: 2,
+              backgroundColor: "rgba(46,125,50,.06)",
+              fill: true,
+              pointRadius: 3,
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          ...base,
+          scales: {
+            ...base.scales,
+            y: {
+              ...base.scales.y,
+              title: {
+                display: true,
+                text: "% of users who completed a purchase",
+                font: { size: 10, family: "Roboto" },
+              },
+            },
+          },
+        },
+      });
 
-new Chart(document.getElementById('chart-starter-mde'), {
-  type:'line',
-  data:{ labels:['0.5%','1.0%','1.5%','2.0%','2.5%','3.0%','4.0%','5.0%'], datasets:[{
-    label:'Probability of detecting a real effect (power) at n=2,341',
-    data:[15,28,48,68,82,91,98,99],
-    borderColor:'#1976d2', borderWidth:2, fill:true, backgroundColor:'rgba(25,118,210,.08)', tension:.4, pointRadius:3
-  }]},
-  options:{...base, scales:{...base.scales,
-    x:{...base.scales.x, title:{display:true,text:'Size of effect we want to detect',font:{size:10,family:'Roboto'}}},
-    y:{...base.scales.y, min:0, max:100, title:{display:true,text:'Power — % chance we detect it (%)',font:{size:10,family:'Roboto'}}, ticks:{...base.scales.y.ticks, callback:v=>v+'%'}}
-  }}
-})
+      new Chart(document.getElementById("chart-starter-mde"), {
+        type: "line",
+        data: {
+          labels: ["0.5%", "1.0%", "1.5%", "2.0%", "2.5%", "3.0%", "4.0%", "5.0%"],
+          datasets: [
+            {
+              label: "Probability of detecting a real effect (power) at n=2,341",
+              data: [15, 28, 48, 68, 82, 91, 98, 99],
+              borderColor: "#1976d2",
+              borderWidth: 2,
+              fill: true,
+              backgroundColor: "rgba(25,118,210,.08)",
+              tension: 0.4,
+              pointRadius: 3,
+            },
+          ],
+        },
+        options: {
+          ...base,
+          scales: {
+            ...base.scales,
+            x: {
+              ...base.scales.x,
+              title: {
+                display: true,
+                text: "Size of effect we want to detect",
+                font: { size: 10, family: "Roboto" },
+              },
+            },
+            y: {
+              ...base.scales.y,
+              min: 0,
+              max: 100,
+              title: {
+                display: true,
+                text: "Power — % chance we detect it (%)",
+                font: { size: 10, family: "Roboto" },
+              },
+              ticks: { ...base.scales.y.ticks, callback: (v) => v + "%" },
+            },
+          },
+        },
+      });
 
-new Chart(document.getElementById('chart-novelty'), {
-  type:'line',
-  data:{ labels:Array.from({length:14},(_,i)=>`Day ${i+1}`), datasets:[
-    { label:'Actual delta (test − control)', data:[9.2,8.7,7.8,6.4,5.2,4.3,3.5,3.1,2.8,2.6,2.3,2.1,2.0,1.9], borderColor:'#f9a825', borderWidth:2, fill:true, backgroundColor:'rgba(249,168,37,.08)', tension:.4, pointRadius:3 },
-    { label:'What a stable real effect looks like', data:[4,4,4,4,4,4,4,4,4,4,4,4,4,4], borderColor:'#2e7d32', borderWidth:1.5, borderDash:[4,4], backgroundColor:'transparent', pointRadius:0 }
-  ]},
-  options:{...base, scales:{...base.scales, y:{...base.scales.y, title:{display:true,text:'Difference test − control (pp)',font:{size:10,family:'Roboto'}}, ticks:{...base.scales.y.ticks, callback:v=>'+'+v+'pp'}}}}
-})
+      new Chart(document.getElementById("chart-novelty"), {
+        type: "line",
+        data: {
+          labels: Array.from({ length: 14 }, (_, i) => `Day ${i + 1}`),
+          datasets: [
+            {
+              label: "Actual delta (test − control)",
+              data: [9.2, 8.7, 7.8, 6.4, 5.2, 4.3, 3.5, 3.1, 2.8, 2.6, 2.3, 2.1, 2.0, 1.9],
+              borderColor: "#f9a825",
+              borderWidth: 2,
+              fill: true,
+              backgroundColor: "rgba(249,168,37,.08)",
+              tension: 0.4,
+              pointRadius: 3,
+            },
+            {
+              label: "What a stable real effect looks like",
+              data: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+              borderColor: "#2e7d32",
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              backgroundColor: "transparent",
+              pointRadius: 0,
+            },
+          ],
+        },
+        options: {
+          ...base,
+          scales: {
+            ...base.scales,
+            y: {
+              ...base.scales.y,
+              title: {
+                display: true,
+                text: "Difference test − control (pp)",
+                font: { size: 10, family: "Roboto" },
+              },
+              ticks: { ...base.scales.y.ticks, callback: (v) => "+" + v + "pp" },
+            },
+          },
+        },
+      });
 
-new Chart(document.getElementById('chart-interaction'), {
-  type:'bar',
-  data:{ labels:['Onboarding only\n(isolated experiment)','Dashboard only\n(isolated experiment)','Both together\n(actual measured)','Expected if additive\n(1.1 + 0.8)'],
-    datasets:[{ label:'D7 Retention lift above control (pp)', data:[1.1,0.8,2.6,1.9],
-      backgroundColor:['rgba(46,125,50,.7)','rgba(46,125,50,.7)','rgba(21,101,192,.8)','rgba(97,97,97,.4)'], borderRadius:4 }]
-  },
-  options:{...base, plugins:{...base.plugins, legend:{display:false}},
-    scales:{...base.scales, y:{...base.scales.y, title:{display:true,text:'D7 Retention lift (pp)',font:{size:10,family:'Roboto'}}, ticks:{...base.scales.y.ticks, callback:v=>'+'+v+'pp'}}}}
-})
+      new Chart(document.getElementById("chart-interaction"), {
+        type: "bar",
+        data: {
+          labels: [
+            "Onboarding only\n(isolated experiment)",
+            "Dashboard only\n(isolated experiment)",
+            "Both together\n(actual measured)",
+            "Expected if additive\n(1.1 + 0.8)",
+          ],
+          datasets: [
+            {
+              label: "D7 Retention lift above control (pp)",
+              data: [1.1, 0.8, 2.6, 1.9],
+              backgroundColor: [
+                "rgba(46,125,50,.7)",
+                "rgba(46,125,50,.7)",
+                "rgba(21,101,192,.8)",
+                "rgba(97,97,97,.4)",
+              ],
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          ...base,
+          plugins: { ...base.plugins, legend: { display: false } },
+          scales: {
+            ...base.scales,
+            y: {
+              ...base.scales.y,
+              title: {
+                display: true,
+                text: "D7 Retention lift (pp)",
+                font: { size: 10, family: "Roboto" },
+              },
+              ticks: { ...base.scales.y.ticks, callback: (v) => "+" + v + "pp" },
+            },
+          },
+        },
+      });
 
-new Chart(document.getElementById('chart-fp-dist'), {
-  type:'bar',
-  data:{ labels:['p<0.05\n(significant)','0.05–0.1','0.1–0.2','0.2–0.4','0.4–0.6','0.6–0.8','0.8–1.0'],
-    datasets:[{ label:'# of metrics', data:[2,3,4,7,6,5,3],
-      backgroundColor:['rgba(198,40,40,.75)',...Array(6).fill('rgba(97,97,97,.35)')], borderRadius:4 }]
-  },
-  options:{...base, plugins:{...base.plugins, legend:{display:false}},
-    scales:{...base.scales,
-      x:{...base.scales.x, title:{display:true,text:'p-value range',font:{size:10,family:'Roboto'}}},
-      y:{...base.scales.y, title:{display:true,text:'Number of metrics',font:{size:10,family:'Roboto'}}}
-    }}
-})
+      new Chart(document.getElementById("chart-fp-dist"), {
+        type: "bar",
+        data: {
+          labels: [
+            "p<0.05\n(significant)",
+            "0.05–0.1",
+            "0.1–0.2",
+            "0.2–0.4",
+            "0.4–0.6",
+            "0.6–0.8",
+            "0.8–1.0",
+          ],
+          datasets: [
+            {
+              label: "# of metrics",
+              data: [2, 3, 4, 7, 6, 5, 3],
+              backgroundColor: ["rgba(198,40,40,.75)", ...Array(6).fill("rgba(97,97,97,.35)")],
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          ...base,
+          plugins: { ...base.plugins, legend: { display: false } },
+          scales: {
+            ...base.scales,
+            x: {
+              ...base.scales.x,
+              title: { display: true, text: "p-value range", font: { size: 10, family: "Roboto" } },
+            },
+            y: {
+              ...base.scales.y,
+              title: {
+                display: true,
+                text: "Number of metrics",
+                font: { size: 10, family: "Roboto" },
+              },
+            },
+          },
+        },
+      });
 
-new Chart(document.getElementById('chart-ccm-overview'), {
-  type:'bar',
-  data:{
-    labels:['search_rank','feed_algo','notif','sidebar','composer','onboard','dark_mode','pricing','editor','media','profile','search2','comments','reactions','stories'],
-    datasets:[
-      { label:'Company health ✓ Clear',   data:[4,3,4,3,4,4,4,4,4,4,4,4,4,4,4], backgroundColor:'rgba(46,125,50,.7)', borderRadius:2 },
-      { label:'Company health — Neutral', data:[0,0,0,1,0,0,0,0,0,0,0,0,0,0,0], backgroundColor:'rgba(97,97,97,.35)', borderRadius:2 },
-      { label:'Company health ✗ Blocked', data:[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor:'rgba(198,40,40,.75)', borderRadius:2 },
-    ]
-  },
-  options:{...base, plugins:{...base.plugins, tooltip:{mode:'index',intersect:false}},
-    scales:{
-      x:{...base.scales.x, stacked:true, ticks:{...base.scales.x.ticks, maxRotation:45}},
-      y:{...base.scales.y, stacked:true, max:5, title:{display:true,text:'Company metric count',font:{size:10,family:'Roboto'}}}
-    }}
-})
-</script>
-</body>
+      new Chart(document.getElementById("chart-ccm-overview"), {
+        type: "bar",
+        data: {
+          labels: [
+            "search_rank",
+            "feed_algo",
+            "notif",
+            "sidebar",
+            "composer",
+            "onboard",
+            "dark_mode",
+            "pricing",
+            "editor",
+            "media",
+            "profile",
+            "search2",
+            "comments",
+            "reactions",
+            "stories",
+          ],
+          datasets: [
+            {
+              label: "Company health ✓ Clear",
+              data: [4, 3, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+              backgroundColor: "rgba(46,125,50,.7)",
+              borderRadius: 2,
+            },
+            {
+              label: "Company health — Neutral",
+              data: [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              backgroundColor: "rgba(97,97,97,.35)",
+              borderRadius: 2,
+            },
+            {
+              label: "Company health ✗ Blocked",
+              data: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              backgroundColor: "rgba(198,40,40,.75)",
+              borderRadius: 2,
+            },
+          ],
+        },
+        options: {
+          ...base,
+          plugins: { ...base.plugins, tooltip: { mode: "index", intersect: false } },
+          scales: {
+            x: {
+              ...base.scales.x,
+              stacked: true,
+              ticks: { ...base.scales.x.ticks, maxRotation: 45 },
+            },
+            y: {
+              ...base.scales.y,
+              stacked: true,
+              max: 5,
+              title: {
+                display: true,
+                text: "Company metric count",
+                font: { size: 10, family: "Roboto" },
+              },
+            },
+          },
+        },
+      });
+    </script>
+  </body>
 </html>
 <!-- this marker won't be reached; using separate file -->

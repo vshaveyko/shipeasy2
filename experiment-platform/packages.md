@@ -46,124 +46,153 @@ export default async function CliAuthPage({ searchParams }) {
 
 ```typescript
 // apps/ui/app/cli-auth/complete/route.ts — API route called by CliAuthComplete component
-import { auth } from '@/auth'
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
-  const session = await auth()
+  const session = await auth();
   if (!session?.user?.project_id)
-    return Response.json({ error: 'Not authenticated' }, { status: 401 })
+    return Response.json({ error: "Not authenticated" }, { status: 401 });
 
-  const { state, code_verifier } = await req.json()
+  const { state, code_verifier } = await req.json();
 
   const res = await fetch(`${process.env.WORKER_URL}/auth/device/complete`, {
-    method:  'POST',
-    headers: { 'X-Service-Key': process.env.CLI_SERVICE_SECRET! },
-    body:    JSON.stringify({
+    method: "POST",
+    headers: { "X-Service-Key": process.env.CLI_SERVICE_SECRET! },
+    body: JSON.stringify({
       state,
-      project_id:    session.user.project_id,
+      project_id: session.user.project_id,
       code_verifier,
     }),
-  })
+  });
 
-  return Response.json(await res.json(), { status: res.status })
+  return Response.json(await res.json(), { status: res.status });
 }
 ```
 
 ```typescript
 // apps/ui/lib/auth.ts — Auth.js config
-import NextAuth from 'next-auth'
-import GitHub  from 'next-auth/providers/github'
-import Google  from 'next-auth/providers/google'
-import Resend  from 'next-auth/providers/resend'  // email magic link
-import { getDb } from '@flaglab/core'
-import { projects, sdkKeys } from '@flaglab/core/db/schema'
-import { sha256, rebuildFlags, rebuildExperiments } from '@flaglab/core'
-import { eq } from 'drizzle-orm'
-import { getCloudflareContext } from '@cloudflare/next-on-pages'
+import NextAuth from "next-auth";
+import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
+import Resend from "next-auth/providers/resend"; // email magic link
+import { getDb } from "@flaglab/core";
+import { projects, sdkKeys } from "@flaglab/core/db/schema";
+import { sha256, rebuildFlags, rebuildExperiments } from "@flaglab/core";
+import { eq } from "drizzle-orm";
+import { getCloudflareContext } from "@cloudflare/next-on-pages";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub,
     Google,
-    Resend({ from: 'noreply@yourdomain.com' }),  // magic link fallback
+    Resend({ from: "noreply@yourdomain.com" }), // magic link fallback
   ],
   session: {
-    strategy: 'jwt',   // JWT — no database session, works on CF Pages edge
-    maxAge: 15 * 60,   // 15 minutes — stateless, short-lived
+    strategy: "jwt", // JWT — no database session, works on CF Pages edge
+    maxAge: 15 * 60, // 15 minutes — stateless, short-lived
   },
   callbacks: {
     async jwt({ token, user }) {
       // First sign-in: provision project directly in D1 (no Worker call)
       if (user?.email && !token.project_id) {
-        const env = getCloudflareContext().env
-        const db  = getDb(env.DB)
+        const env = getCloudflareContext().env;
+        const db = getDb(env.DB);
 
-        const existing = await db.select({ id: projects.id })
-          .from(projects).where(eq(projects.ownerEmail, user.email)).get()
+        const existing = await db
+          .select({ id: projects.id })
+          .from(projects)
+          .where(eq(projects.ownerEmail, user.email))
+          .get();
 
         if (existing) {
-          token.project_id = existing.id
+          token.project_id = existing.id;
         } else {
-          const projectId = crypto.randomUUID()
-          const now       = new Date().toISOString()
-          const serverKey = `sdk_server_${crypto.randomUUID().replace(/-/g,'')}`
-          const clientKey = `sdk_client_${crypto.randomUUID().replace(/-/g,'')}`
-          const [serverHash, clientHash] = await Promise.all([sha256(serverKey), sha256(clientKey)])
+          const projectId = crypto.randomUUID();
+          const now = new Date().toISOString();
+          const serverKey = `sdk_server_${crypto.randomUUID().replace(/-/g, "")}`;
+          const clientKey = `sdk_client_${crypto.randomUUID().replace(/-/g, "")}`;
+          const [serverHash, clientHash] = await Promise.all([
+            sha256(serverKey),
+            sha256(clientKey),
+          ]);
 
           await db.batch([
-            db.insert(projects).values({ id: projectId, name: user.name ?? user.email!.split('@')[0], ownerEmail: user.email!, plan: 'free', status: 'active', createdAt: now, updatedAt: now }),
-            db.insert(sdkKeys).values({ id: crypto.randomUUID(), projectId, keyHash: serverHash, type: 'server', createdAt: now }),
-            db.insert(sdkKeys).values({ id: crypto.randomUUID(), projectId, keyHash: clientHash, type: 'client', createdAt: now }),
-          ])
+            db.insert(projects).values({
+              id: projectId,
+              name: user.name ?? user.email!.split("@")[0],
+              ownerEmail: user.email!,
+              plan: "free",
+              status: "active",
+              createdAt: now,
+              updatedAt: now,
+            }),
+            db.insert(sdkKeys).values({
+              id: crypto.randomUUID(),
+              projectId,
+              keyHash: serverHash,
+              type: "server",
+              createdAt: now,
+            }),
+            db.insert(sdkKeys).values({
+              id: crypto.randomUUID(),
+              projectId,
+              keyHash: clientHash,
+              type: "client",
+              createdAt: now,
+            }),
+          ]);
 
-          await rebuildFlags(env, projectId, 'free')
-          await rebuildExperiments(env, projectId)
+          await rebuildFlags(env, projectId, "free");
+          await rebuildExperiments(env, projectId);
 
           // Provision per-project rate limiting rules via CF API.
           // Without this, the project has no daily event limit until manually configured.
-          await provisionRateLimitRule(env, projectId, 'free')
+          await provisionRateLimitRule(env, projectId, "free");
 
-          token.project_id = projectId
+          token.project_id = projectId;
         }
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
-      session.user.project_id = token.project_id as string
-      return session
+      session.user.project_id = token.project_id as string;
+      return session;
     },
   },
-})
+});
 ```
 
 ```typescript
 // apps/ui/lib/rate-limit.ts — provision per-project rate limiting rule via CF API
 // Called once during project provisioning and on plan changes.
 // Creates a CF Rate Limiting rule keyed on project_id for /collect daily budget.
-export async function provisionRateLimitRule(env: Env, projectId: string, planName: string): Promise<void> {
-  const plan = getPlan(planName)
-  if (plan.max_events_per_day === -1) return  // enterprise unlimited — no rule needed
+export async function provisionRateLimitRule(
+  env: Env,
+  projectId: string,
+  planName: string,
+): Promise<void> {
+  const plan = getPlan(planName);
+  if (plan.max_events_per_day === -1) return; // enterprise unlimited — no rule needed
 
-  const reqPerMin = Math.ceil(plan.max_events_per_day / 1440)  // daily budget ÷ minutes/day
+  const reqPerMin = Math.ceil(plan.max_events_per_day / 1440); // daily budget ÷ minutes/day
   try {
-    await fetch(
-      `https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/rate_limits`,
-      {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${env.CF_API_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match: { request: { url: `*${env.FLAGS_DOMAIN}/collect*`, methods: ['POST'] } },
-          threshold: reqPerMin,
-          period: 60,
-          action: { mode: 'simulate', timeout: 60 },  // start in simulate mode; switch to 'ban' after verification
-          description: `[FlagLab] Daily event limit for project ${projectId}`,
-        }),
-      }
-    )
+    await fetch(`https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/rate_limits`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.CF_API_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        match: { request: { url: `*${env.FLAGS_DOMAIN}/collect*`, methods: ["POST"] } },
+        threshold: reqPerMin,
+        period: 60,
+        action: { mode: "simulate", timeout: 60 }, // start in simulate mode; switch to 'ban' after verification
+        description: `[FlagLab] Daily event limit for project ${projectId}`,
+      }),
+    });
   } catch (err) {
     // Non-fatal: global per-IP and per-key limits still apply.
     // Log for operator follow-up.
-    console.error(JSON.stringify({ event: 'rate_limit_provision_failed', projectId, error: String(err) }))
+    console.error(
+      JSON.stringify({ event: "rate_limit_provision_failed", projectId, error: String(err) }),
+    );
   }
 }
 ```
@@ -189,18 +218,18 @@ provisioning is an inline D1 write, not a service-to-service call.
   "engines": { "node": ">=20", "pnpm": ">=9" },
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "build":   "turbo build",
-    "dev":     "turbo dev",
-    "lint":    "turbo lint",
-    "test":    "turbo test",
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
     "type-check": "turbo type-check"
   },
   "devDependencies": {
-    "turbo":      "^2.0.0",
+    "turbo": "^2.0.0",
     "typescript": "^5.5.0",
     "@types/node": "^20.0.0",
-    "prettier":   "^3.0.0",
-    "eslint":     "^9.0.0"
+    "prettier": "^3.0.0",
+    "eslint": "^9.0.0"
   }
 }
 ```
@@ -209,8 +238,8 @@ provisioning is an inline D1 write, not a service-to-service call.
 
 ```yaml
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - "apps/*"
+  - "packages/*"
 ```
 
 ### `turbo.json`
@@ -219,11 +248,11 @@ packages:
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build":      { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**"] },
-    "dev":        { "persistent": true, "cache": false },
-    "lint":       {},
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**"] },
+    "dev": { "persistent": true, "cache": false },
+    "lint": {},
     "type-check": { "dependsOn": ["^build"] },
-    "test":       { "dependsOn": ["^build"] }
+    "test": { "dependsOn": ["^build"] }
   }
 }
 ```
@@ -238,51 +267,52 @@ packages:
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev":        "next dev",
-    "build":      "next build",
-    "start":      "next start",
-    "lint":       "next lint",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@flaglab/core": "workspace:*",
 
-    "next":    "15.x",
-    "react":   "^19.0.0",
+    "next": "15.x",
+    "react": "^19.0.0",
     "react-dom": "^19.0.0",
 
     "next-auth": "^5.0.0",
     "@auth/core": "^0.35.0",
 
-    "@mui/material":       "^7.0.0",
+    "@mui/material": "^7.0.0",
     "@mui/icons-material": "^7.0.0",
-    "@emotion/react":      "^11.0.0",
-    "@emotion/styled":     "^11.0.0",
+    "@emotion/react": "^11.0.0",
+    "@emotion/styled": "^11.0.0",
 
-    "apexcharts":       "^3.0.0",
+    "apexcharts": "^3.0.0",
     "react-apexcharts": "^1.0.0",
 
-    "swr":  "^2.0.0",
-    "zod":  "^3.0.0",
+    "swr": "^2.0.0",
+    "zod": "^3.0.0",
 
     "@conform-to/react": "^1.0.0",
-    "@conform-to/zod":   "^1.0.0",
+    "@conform-to/zod": "^1.0.0",
 
     "date-fns": "^4.0.0"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.0.0",
-    "wrangler":                  "^3.0.0",
-    "typescript":                "^5.5.0",
-    "@types/react":              "^19.0.0",
-    "@types/react-dom":          "^19.0.0",
-    "eslint":                    "^9.0.0",
-    "eslint-config-next":        "15.x"
+    "wrangler": "^3.0.0",
+    "typescript": "^5.5.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "15.x"
   }
 }
 ```
 
 **Key library choices:**
+
 - `next-auth@5` (Auth.js v5) — OAuth + JWT sessions, Edge Runtime compatible
 - `@conform-to/react` + `@conform-to/zod` — progressive-enhancement forms with Zod validation, works with Next.js Server Actions
 - `swr` — data fetching; simpler than React Query for this use case (mostly admin reads)
@@ -299,18 +329,18 @@ packages:
   "version": "1.0.0",
   "private": true,
   "exports": {
-    ".":               "./src/index.ts",
-    "./db/schema":     "./src/db/schema.ts",
-    "./db/scoped":     "./src/db/scoped.ts",
-    "./schemas/*":     "./src/schemas/*.ts",
-    "./config/plans":  "./src/config/plans.ts"
+    ".": "./src/index.ts",
+    "./db/schema": "./src/db/schema.ts",
+    "./db/scoped": "./src/db/scoped.ts",
+    "./schemas/*": "./src/schemas/*.ts",
+    "./config/plans": "./src/config/plans.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "drizzle-orm": "^0.30.0",
-    "zod":         "^3.0.0"
+    "zod": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.5.0"
@@ -319,6 +349,7 @@ packages:
 ```
 
 **What lives here:**
+
 - Drizzle schema (`db/schema.ts`) — single source of truth for all D1 tables
 - `scopedDb()` — project-scoped query builder, used by Next.js and Worker
 - KV helpers (`kv/rebuild.ts`, `kv/cache.ts`, `kv/purge.ts`) — rebuildFlags, rebuildExperiments, purgeCache
@@ -338,28 +369,29 @@ packages:
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev":        "wrangler dev",
-    "deploy":     "wrangler deploy",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "type-check": "tsc --noEmit",
-    "test":       "vitest"
+    "test": "vitest"
   },
   "dependencies": {
-    "@flaglab/core":     "workspace:*",
-    "hono":              "^4.0.0",
-    "murmurhash-js":     "^1.0.0"
+    "@flaglab/core": "workspace:*",
+    "hono": "^4.0.0",
+    "murmurhash-js": "^1.0.0"
   },
   "devDependencies": {
-    "wrangler":                        "^3.0.0",
-    "@cloudflare/workers-types":       "^4.0.0",
-    "typescript":                      "^5.5.0",
-    "vitest":                          "^2.0.0",
+    "wrangler": "^3.0.0",
+    "@cloudflare/workers-types": "^4.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
     "@cloudflare/vitest-pool-workers": "^0.5.0",
-    "drizzle-kit":                     "^0.20.0"
+    "drizzle-kit": "^0.20.0"
   }
 }
 ```
 
 **Key library choices:**
+
 - `hono` — ultralight (~14KB) router built for Cloudflare Workers. TypeScript-first, Zod middleware, RPC mode for type-safe client. Replaces the manual router in index.ts.
 - `drizzle-orm` — type-safe ORM with native D1 support. No binary dependencies, tiny bundle, edge-compatible. Replaces all raw `env.DB.prepare().bind().run()` calls with typed query builder. Schema defined in TypeScript; `drizzle-kit` generates SQL migrations from it.
 - `drizzle-kit` (dev) — generates migration files from schema changes. Run `drizzle-kit generate` then `wrangler d1 migrations apply`.
@@ -370,24 +402,28 @@ packages:
 
 ```typescript
 // Instead of the manual switch(pathname) router:
-import { Hono } from 'hono'
-import { zValidator } from '@hono/zod-validator'
-import { z } from 'zod'
+import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
-const app = new Hono<{ Bindings: Env }>()
+const app = new Hono<{ Bindings: Env }>();
 
-app.post('/admin/gates',
-  zValidator('json', z.object({
-    name:        z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/),
-    rollout_pct: z.number().int().min(0).max(10000),  // basis points: 5000 = 50%
-    rules:       z.array(ruleSchema).default([]),
-    killswitch:  z.boolean().default(false),
-  })),
-  authMiddleware('admin'),
+app.post(
+  "/admin/gates",
+  zValidator(
+    "json",
+    z.object({
+      name: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/),
+      rollout_pct: z.number().int().min(0).max(10000), // basis points: 5000 = 50%
+      rules: z.array(ruleSchema).default([]),
+      killswitch: z.boolean().default(false),
+    }),
+  ),
+  authMiddleware("admin"),
   createGate,
-)
+);
 
-export default app
+export default app;
 ```
 
 Hono handles routing, middleware chaining, Zod validation, and JSON serialization.
@@ -402,12 +438,12 @@ The `zValidator` middleware auto-returns 422 with structured errors on invalid i
   "name": "@flaglab/sdk",
   "version": "1.0.0",
   "description": "Feature flag and experimentation SDK",
-  "main":    "./dist/server/index.js",
-  "module":  "./dist/server/index.mjs",
+  "main": "./dist/server/index.js",
+  "module": "./dist/server/index.mjs",
   "browser": "./dist/client/index.js",
   "exports": {
-    ".":        {
-      "node":    "./dist/server/index.js",
+    ".": {
+      "node": "./dist/server/index.js",
       "browser": "./dist/client/index.js",
       "default": "./dist/server/index.js"
     },
@@ -417,17 +453,17 @@ The `zValidator` middleware auto-returns 422 with structured errors on invalid i
   },
   "files": ["dist/", "templates/"],
   "scripts": {
-    "build":      "tsup",
+    "build": "tsup",
     "type-check": "tsc --noEmit",
-    "test":       "vitest"
+    "test": "vitest"
   },
   "dependencies": {
     "murmurhash-js": "^1.0.0"
   },
   "devDependencies": {
-    "tsup":       "^8.0.0",
+    "tsup": "^8.0.0",
     "typescript": "^5.5.0",
-    "vitest":     "^2.0.0"
+    "vitest": "^2.0.0"
   },
   "peerDependencies": {
     "zod": "^3.0.0"
@@ -439,6 +475,7 @@ The `zValidator` middleware auto-returns 422 with structured errors on invalid i
 ```
 
 **Key decisions:**
+
 - `tsup` — bundles both ESM and CJS from one source in one command. Also bundles the `browser` conditional export (client SDK) separately.
 - Conditional exports: `./server` for Node/Go/Python server SDKs, `./client` for browser, `./templates/*` for MCP server to import language templates at the installed SDK version.
 - Zod as optional peer dep — used for `getConfig()` decoder pattern; not required if customer uses their own validator.
@@ -457,24 +494,24 @@ The `zValidator` middleware auto-returns 422 with structured errors on invalid i
   "bin": { "flaglab": "./bin/flaglab.js" },
   "files": ["dist/", "bin/"],
   "scripts": {
-    "build":      "tsup src/index.ts --format cjs --dts",
-    "dev":        "ts-node src/index.ts",
+    "build": "tsup src/index.ts --format cjs --dts",
+    "dev": "ts-node src/index.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "commander":    "^12.0.0",
-    "cli-table3":   "^0.6.0",
-    "ora":          "^8.0.0",
-    "chalk":        "^5.0.0",
-    "open":         "^10.0.0",
-    "conf":         "^13.0.0",
-    "zod":          "^3.0.0"
+    "commander": "^12.0.0",
+    "cli-table3": "^0.6.0",
+    "ora": "^8.0.0",
+    "chalk": "^5.0.0",
+    "open": "^10.0.0",
+    "conf": "^13.0.0",
+    "zod": "^3.0.0"
   },
   "devDependencies": {
-    "tsup":       "^8.0.0",
+    "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "@types/node": "^20.0.0",
-    "ts-node":    "^10.0.0"
+    "ts-node": "^10.0.0"
   },
   "engines": { "node": ">=18" }
 }
@@ -495,19 +532,19 @@ The `zValidator` middleware auto-returns 422 with structured errors on invalid i
   "files": ["dist/", "bin/"],
   "type": "module",
   "scripts": {
-    "build":      "tsup src/index.ts --format esm",
+    "build": "tsup src/index.ts --format esm",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@flaglab/sdk":              "workspace:*",
-    "zod":                       "^3.0.0",
-    "semver":                    "^7.0.0"
+    "@flaglab/sdk": "workspace:*",
+    "zod": "^3.0.0",
+    "semver": "^7.0.0"
   },
   "devDependencies": {
-    "tsup":         "^8.0.0",
-    "typescript":   "^5.5.0",
-    "@types/node":  "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "@types/node": "^20.0.0",
     "@types/semver": "^7.0.0"
   },
   "engines": { "node": ">=20" }
@@ -529,9 +566,11 @@ Both changes prevent the "type lie" where TypeScript types didn't match runtime 
 response shapes, causing silent `undefined` access bugs.
 
 **Migration codemod (jscodeshift):**
+
 ```bash
 npx jscodeshift -t @flaglab/codemod/v2 src/
 ```
+
 Transforms `getConfig<T>(name)` → `getConfig(name, v => v as T)` as a safe intermediate
 (still unsafe at runtime but builds pass; teams can add proper decoders incrementally).
 
@@ -541,20 +580,20 @@ get advance notice without a breaking build.
 
 ## Library Decision Summary
 
-| Need | Library | Why not X |
-|---|---|---|
-| Web app auth | `next-auth@5` | Building from scratch wastes weeks; Auth.js covers OAuth, sessions, CSRF, token rotation |
-| Worker routing | `hono` | itty-router lacks Zod middleware and TS inference; express doesn't run on Workers |
-| D1 ORM (shared) | `drizzle-orm` (in `@flaglab/core`) | Prisma requires a query engine binary incompatible with Workers; Kysely is query-builder only (no schema/migrations); Drizzle is native D1, typed, edge-compatible. Shared between Next.js and Worker. |
-| Form validation | `@conform-to/zod` | react-hook-form doesn't work with Server Actions; conform does |
-| CLI arg parsing | `commander` | yargs is heavier; oclif is overkill for this scope |
-| CLI config storage | `conf` | Manual JSON file misses platform-specific paths, atomic writes, permissions |
-| Data fetching (UI) | `swr` | React Query is more powerful but overkill for an admin dashboard |
-| Monorepo build | `turbo` | nx is heavier; turbo's caching is good enough and simpler to configure |
-| SDK bundler | `tsup` | rollup is manual; tsup wraps esbuild with sensible defaults for library output |
-| Worker testing | `@cloudflare/vitest-pool-workers` | Regular Vitest can't test D1/KV/AE bindings; this one runs inside the actual runtime |
-| Hashing | `murmurhash-js` | Need identical murmur3 across JS/TS; other impls have different seeds |
-| MCP protocol | `@modelcontextprotocol/sdk` | It's the official SDK, no alternative |
+| Need               | Library                            | Why not X                                                                                                                                                                                              |
+| ------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Web app auth       | `next-auth@5`                      | Building from scratch wastes weeks; Auth.js covers OAuth, sessions, CSRF, token rotation                                                                                                               |
+| Worker routing     | `hono`                             | itty-router lacks Zod middleware and TS inference; express doesn't run on Workers                                                                                                                      |
+| D1 ORM (shared)    | `drizzle-orm` (in `@flaglab/core`) | Prisma requires a query engine binary incompatible with Workers; Kysely is query-builder only (no schema/migrations); Drizzle is native D1, typed, edge-compatible. Shared between Next.js and Worker. |
+| Form validation    | `@conform-to/zod`                  | react-hook-form doesn't work with Server Actions; conform does                                                                                                                                         |
+| CLI arg parsing    | `commander`                        | yargs is heavier; oclif is overkill for this scope                                                                                                                                                     |
+| CLI config storage | `conf`                             | Manual JSON file misses platform-specific paths, atomic writes, permissions                                                                                                                            |
+| Data fetching (UI) | `swr`                              | React Query is more powerful but overkill for an admin dashboard                                                                                                                                       |
+| Monorepo build     | `turbo`                            | nx is heavier; turbo's caching is good enough and simpler to configure                                                                                                                                 |
+| SDK bundler        | `tsup`                             | rollup is manual; tsup wraps esbuild with sensible defaults for library output                                                                                                                         |
+| Worker testing     | `@cloudflare/vitest-pool-workers`  | Regular Vitest can't test D1/KV/AE bindings; this one runs inside the actual runtime                                                                                                                   |
+| Hashing            | `murmurhash-js`                    | Need identical murmur3 across JS/TS; other impls have different seeds                                                                                                                                  |
+| MCP protocol       | `@modelcontextprotocol/sdk`        | It's the official SDK, no alternative                                                                                                                                                                  |
 
 ---
 

@@ -28,24 +28,31 @@ or `detect_project` reveals SDK not installed/configured on first run of any oth
 You are setting up the FlagLab feature flag and experimentation platform in this repository.
 
 ## Step 1 — Check auth
+
 Call `auth_check`. If not authenticated, call `auth_login` and wait for it to complete.
 
 ## Step 2 — Detect project
+
 Call `detect_project`. Note the language, framework, and package manager.
 
 ## Step 3 — Install SDK (if not installed)
+
 Based on detected language, provide the install command from `get_sdk_snippet`.
 Use the Edit tool to add the dependency, then run the install command.
 
 ## Step 4 — Add env vars
+
 Tell the user they need two keys from https://app.yourdomain.com/settings/keys:
+
 - `FLAGLAB_SERVER_KEY` — for backend/server-side evaluation
 - `FLAGLAB_CLIENT_KEY` — for browser/mobile client-side evaluation (public, safe to expose)
-Add them to .env (and .env.example without values). Never commit the actual keys.
+  Add them to .env (and .env.example without values). Never commit the actual keys.
 
 ## Step 5 — Add initialization code
+
 Based on detected language + framework, generate the init snippet from `get_sdk_snippet`
 and add it to the appropriate file:
+
 - Next.js: `lib/flaglab.ts` + import in `app/layout.tsx`
 - Rails: `config/initializers/flaglab.rb`
 - Django: `settings.py` or `apps.py`
@@ -53,6 +60,7 @@ and add it to the appropriate file:
 - Go: package-level var with `init()` function
 
 ## Step 6 — Verify
+
 Run the project's existing test command to confirm nothing broke.
 Report: SDK installed ✓, env vars added ✓, init code added ✓.
 ```
@@ -62,6 +70,7 @@ Report: SDK installed ✓, env vars added ✓, init code added ✓.
 ## Skill 2: `experiment-platform:experiment`
 
 **Trigger:** Any of:
+
 - "set up experiment to check X"
 - "try different X for Y"
 - "A/B test [anything]"
@@ -85,17 +94,21 @@ C) **Config change** — setting a global value, no targeting needed
 ### For (C) Config: skip to Step 4c.
 
 ### For (B) Brainstorm:
+
 1. Call `detect_project` to understand the codebase
 2. Ask the user: "What's the metric you want to improve? (e.g. signups, revenue, retention, engagement)"
 3. Read relevant source files to understand the current implementation
 4. Generate 5–8 experiment ideas in this format:
-   ```
-   ## Idea 1: [Title]
-   Hypothesis: If we [change], then [metric] will improve because [reason].
-   What to test: [specific UI/code change]
-   Measure: [event to track] using [aggregation]
-   Effort: Low/Medium/High
-   ```
+```
+
+## Idea 1: [Title]
+
+Hypothesis: If we [change], then [metric] will improve because [reason].
+What to test: [specific UI/code change]
+Measure: [event to track] using [aggregation]
+Effort: Low/Medium/High
+
+```
 5. Ask which ideas to implement (user can pick multiple)
 6. Proceed with the chosen ideas as separate experiments (run Step 1–4 for each)
 
@@ -168,6 +181,7 @@ Then:
 
 For experiments with params, replace hardcoded values with the param:
 ```
+
 // Before:
 <Button color="gray">Buy Now</Button>
 
@@ -177,6 +191,7 @@ const exp = flags.getExperiment('checkout_button_color_test')
 
 // On button click:
 flags.track('button_clicked')
+
 ```
 
 ## Step 6 — Start experiment (ask first)
@@ -191,7 +206,7 @@ If yes: run `flaglab experiments start <name>` via the MCP server.
 Report:
 - ✓ Experiment `<name>` created and started
 - Control: [what users see]
-- Test: [what users see]  
+- Test: [what users see]
 - Success event: `<event>` tracked on [where]
 - Results available: daily at 02:00 UTC — check with `flaglab experiments status <name>`
 ```
@@ -201,6 +216,7 @@ Report:
 ## Skill 3: `experiment-platform:analyze`
 
 **Trigger:** Any of:
+
 - "how is the experiment going"
 - "should I ship [feature/experiment]"
 - "what are the results"
@@ -211,29 +227,37 @@ Report:
 # experiment-platform:analyze
 
 ## Step 1 — Get results
+
 Call `experiment_status` with the experiment name (ask if unclear).
 
 ## Step 2 — Interpret results
 
 ### If verdict = 'ship':
+
 State clearly: "✅ Ship it."
+
 - Primary metric improved by X% (p=Y, significant)
 - Guardrails all clear: [list]
 - Recommended action: merge the test variant as the default, remove the experiment flag
 
 ### If verdict = 'hold':
+
 State clearly: "🚫 Do not ship."
+
 - Which guardrail regressed and by how much
 - Explain why this blocks shipping (what the guardrail protects)
 - Suggest investigation path
 
 ### If verdict = 'wait':
+
 State clearly: "⏳ Inconclusive — need more data."
+
 - How many users are enrolled so far
 - Estimated days until significance (if derivable)
 - Whether allocation could be increased to speed it up
 
 ### If no results yet:
+
 "Analysis runs daily at 02:00 UTC. If the experiment just started, results will appear tomorrow morning."
 
 ## Step 3 — Offer next action
@@ -253,23 +277,27 @@ Wait: "Want me to increase allocation to collect data faster?"
 # experiment-platform:cleanup
 
 ## Step 1 — Confirm the decision
+
 Ask: "Which variant are we keeping as the permanent default — control or test?"
 If verdict was already established, state it and confirm.
 
 ## Step 2 — Stop the experiment
+
 Run: `flaglab experiments stop <name>`
 
 ## Step 3 — Update the code
+
 Find all occurrences of `flags.getExperiment('<name>')` and `flags.getFlag('<name>')`.
 Replace with the winning variant's hardcoded values:
-
 ```
+
 // Before:
 const exp = flags.getExperiment('checkout_button_color_test')
 <Button color={exp?.params.color ?? 'gray'}>
 
 // After (if 'green' won):
 <Button color="green">
+
 ```
 
 Remove the tracking call if the event was experiment-specific.
@@ -283,22 +311,22 @@ Summarize changes and offer to create a commit.
 
 ## Trigger Coverage Matrix
 
-| User says | Skill triggered |
-|---|---|
-| "set up experiments in this repo" | setup |
-| "install feature flags" | setup |
-| "try different colors for this button" | experiment |
-| "A/B test the checkout flow" | experiment |
-| "add a feature flag for the new dashboard" | experiment |
-| "roll out the new search to 10% of users" | experiment |
-| "generate ideas to improve signups" | experiment (brainstorm) |
-| "what experiments could help retention?" | experiment (brainstorm) |
-| "test if removing the banner increases sales" | experiment |
-| "set the timeout globally to 5 seconds" | experiment (config) |
-| "how is the button color experiment going?" | analyze |
-| "should I ship the new checkout?" | analyze |
-| "the experiment is done, ship the winner" | cleanup |
-| "remove the experiment code" | cleanup |
+| User says                                     | Skill triggered         |
+| --------------------------------------------- | ----------------------- |
+| "set up experiments in this repo"             | setup                   |
+| "install feature flags"                       | setup                   |
+| "try different colors for this button"        | experiment              |
+| "A/B test the checkout flow"                  | experiment              |
+| "add a feature flag for the new dashboard"    | experiment              |
+| "roll out the new search to 10% of users"     | experiment              |
+| "generate ideas to improve signups"           | experiment (brainstorm) |
+| "what experiments could help retention?"      | experiment (brainstorm) |
+| "test if removing the banner increases sales" | experiment              |
+| "set the timeout globally to 5 seconds"       | experiment (config)     |
+| "how is the button color experiment going?"   | analyze                 |
+| "should I ship the new checkout?"             | analyze                 |
+| "the experiment is done, ship the winner"     | cleanup                 |
+| "remove the experiment code"                  | cleanup                 |
 
 ---
 
@@ -306,12 +334,12 @@ Summarize changes and offer to create a commit.
 
 Skills are plain markdown — they work identically on:
 
-| Platform | How skills load |
-|---|---|
-| **Claude Code** | `~/.claude/skills/experiment-platform/` |
-| **Cursor** | `.cursor/rules/` (adapt skill as a rule file) |
-| **GitHub Copilot** | Custom instructions (paste key sections) |
-| **Windsurf** | `.windsurfrules` |
+| Platform           | How skills load                                             |
+| ------------------ | ----------------------------------------------------------- |
+| **Claude Code**    | `~/.claude/skills/experiment-platform/`                     |
+| **Cursor**         | `.cursor/rules/` (adapt skill as a rule file)               |
+| **GitHub Copilot** | Custom instructions (paste key sections)                    |
+| **Windsurf**       | `.windsurfrules`                                            |
 | **Any MCP client** | MCP `prompts` capability (server exposes skills as prompts) |
 
 The MCP server is the cross-platform foundation. The skills guide AI behavior
@@ -362,7 +390,7 @@ AI reads skill: experiment-platform:experiment
     ✓ Experiment started — 10% of pricing page visitors will see "Start free trial"
     ✓ Signup completion events tracked
     ✓ Results available tomorrow at 02:00 UTC
-    
+
     Check results anytime: "how is the pricing CTA experiment going?"
 ```
 

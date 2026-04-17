@@ -8,14 +8,14 @@ Automatically tracking browser performance and error signals as guardrail metric
 
 Five metrics collected automatically from a ~0.5KB custom PerformanceObserver block (no npm dependency):
 
-| Metric | Source | Browser coverage | Fires when |
-|---|---|---|---|
-| `__auto_lcp` | PerformanceObserver `largest-contentful-paint` | Chrome/Edge only (~70% of users) | User leaves page (`visibilitychange`) |
-| `__auto_inp` | PerformanceObserver `event` (worst interaction per route) | Chrome/Edge only | Each SPA route change + page leave |
-| `__auto_cls_binary` | PerformanceObserver `layout-shift`, thresholded | Chrome/Edge only | Each SPA route change + page leave |
-| `__auto_js_error` | `window.onerror` + `unhandledrejection` | All browsers | First unhandled error on this page-load |
-| `__auto_network_error` | `window.fetch` wrapper | All browsers | First 5xx or network failure on this page-load |
-| `__auto_abandoned` | LCP not fired at `visibilitychange` | Chrome/Edge only | User left before page painted (LCP = 0) |
+| Metric                 | Source                                                    | Browser coverage                 | Fires when                                     |
+| ---------------------- | --------------------------------------------------------- | -------------------------------- | ---------------------------------------------- |
+| `__auto_lcp`           | PerformanceObserver `largest-contentful-paint`            | Chrome/Edge only (~70% of users) | User leaves page (`visibilitychange`)          |
+| `__auto_inp`           | PerformanceObserver `event` (worst interaction per route) | Chrome/Edge only                 | Each SPA route change + page leave             |
+| `__auto_cls_binary`    | PerformanceObserver `layout-shift`, thresholded           | Chrome/Edge only                 | Each SPA route change + page leave             |
+| `__auto_js_error`      | `window.onerror` + `unhandledrejection`                   | All browsers                     | First unhandled error on this page-load        |
+| `__auto_network_error` | `window.fetch` wrapper                                    | All browsers                     | First 5xx or network failure on this page-load |
+| `__auto_abandoned`     | LCP not fired at `visibilitychange`                       | Chrome/Edge only                 | User left before page painted (LCP = 0)        |
 
 Firefox and Safari users contribute JS error and network error data but no Web Vitals. Measurements are therefore biased toward Chrome/Edge users — surface this caveat in any analysis that references these guardrails.
 
@@ -39,7 +39,7 @@ Firefox and Safari users contribute JS error and network error data but no Web V
 
 **This is the most important caveat in the entire system.**
 
-LCP only fires after the page loads. If the test variant makes pages slower, some users will abandon before LCP fires. The measured LCP in the slow variant is the LCP of the *patient subset* — it can appear *faster* than control because the slow-loading users already left.
+LCP only fires after the page loads. If the test variant makes pages slower, some users will abandon before LCP fires. The measured LCP in the slow variant is the LCP of the _patient subset_ — it can appear _faster_ than control because the slow-loading users already left.
 
 **A slow variant can pass the LCP guardrail precisely because it failed users.**
 
@@ -63,6 +63,7 @@ These are leading indicators. If LCP is up 300ms and the experiment ran for 7 da
 ### Tier 2 — Auto-attached, soft hold (requires 1-click override)
 
 JS error rate only, when:
+
 - Delta exceeds **+0.5 percentage points absolute** (MDE threshold — ignores 2ms-equivalent noise)
 - p < **0.01** (tighter than standard α=0.05 to reduce false holds from day-level noise)
 - Holm-Bonferroni correction applied if multiple Tier 2 metrics fire simultaneously
@@ -88,13 +89,13 @@ Hard blocks require manager approval to override. Holm-Bonferroni correction acr
 
 All auto-metrics use **per-user aggregation** before the t-test. Raw page-load observations are never fed directly into the t-test — that would violate the independence assumption (10 page-loads from one user are correlated).
 
-| Metric | Aggregation | Why |
-|---|---|---|
-| LCP | `avg` per user across their page-loads | Mean per-user LCP; Welch t-test on per-user means |
-| INP | `avg` per user (worst interaction per page-load, then mean across page-loads) | Same |
-| CLS binary | `count_users` (1 if any page-load had CLS > 0.1) | Binary metric, standard proportion |
-| JS error | `count_users` (1 if any page-load had an unhandled error) | Binary metric |
-| Network error | `count_users` (1 if any page-load had a 5xx/failure) | Binary metric |
+| Metric        | Aggregation                                                                   | Why                                               |
+| ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------- |
+| LCP           | `avg` per user across their page-loads                                        | Mean per-user LCP; Welch t-test on per-user means |
+| INP           | `avg` per user (worst interaction per page-load, then mean across page-loads) | Same                                              |
+| CLS binary    | `count_users` (1 if any page-load had CLS > 0.1)                              | Binary metric, standard proportion                |
+| JS error      | `count_users` (1 if any page-load had an unhandled error)                     | Binary metric                                     |
+| Network error | `count_users` (1 if any page-load had a 5xx/failure)                          | Binary metric                                     |
 
 **Why not p75?** Google recommends measuring Web Vitals at the 75th percentile across all page-loads. That is a site health grading metric, not an experiment analysis technique. Comparing group-level p75 values is not compatible with Welch's t-test (it collapses N users into one number per group). The correct approach is: compute each user's mean (or 75th percentile) LCP across their page-loads, then compare per-user means with Welch. The `avg` aggregation does this. The group-level 75th percentile of these per-user means is then available as a display statistic in the dashboard without affecting the p-value calculation.
 
@@ -110,13 +111,13 @@ For the performance cluster (LCP, INP, CLS), we additionally apply a **2-of-3 ru
 
 Guardrails never fire below these effect sizes, even if statistically significant. The CI lower bound must exceed the threshold:
 
-| Metric | MDE threshold | Rationale |
-|---|---|---|
-| LCP | 150ms absolute | Human perception threshold ~100ms; 150ms gives headroom |
-| INP | 100ms absolute | Web Vitals "needs improvement" threshold increment |
-| CLS binary | +2pp in proportion | Operationally meaningful shift in layout stability |
-| JS error rate | +0.5pp absolute | Half a percentage point is the smallest actionable signal |
-| Network error rate | +1pp absolute | Network errors are noisy; smaller deltas are infrastructure noise |
+| Metric             | MDE threshold      | Rationale                                                         |
+| ------------------ | ------------------ | ----------------------------------------------------------------- |
+| LCP                | 150ms absolute     | Human perception threshold ~100ms; 150ms gives headroom           |
+| INP                | 100ms absolute     | Web Vitals "needs improvement" threshold increment                |
+| CLS binary         | +2pp in proportion | Operationally meaningful shift in layout stability                |
+| JS error rate      | +0.5pp absolute    | Half a percentage point is the smallest actionable signal         |
+| Network error rate | +1pp absolute      | Network errors are noisy; smaller deltas are infrastructure noise |
 
 A 5ms LCP regression at 500K users will have p < 0.001 but never triggers a hold — the CI is [3ms, 7ms], which does not exceed 150ms.
 
@@ -144,17 +145,17 @@ function flushWebVitals(buffer: EventBuffer): void {
   // before LCP fires, which can happen before identify() resolves on slow connections.
   // We buffer the abandoned event unconditionally; the analysis cron's post-exposure filter
   // correctly excludes pre-exposure events if the user was not in any experiment.
-  const inExperiment = buffer.exposureSeen.size > 0
+  const inExperiment = buffer.exposureSeen.size > 0;
 
   if (lastLcp === 0) {
     // User left before LCP fired — emit regardless of experiment participation
-    buffer.pushMetric('__auto_abandoned', 1)
+    buffer.pushMetric("__auto_abandoned", 1);
   } else if (inExperiment) {
-    buffer.pushMetric('__auto_lcp', lastLcp)
+    buffer.pushMetric("__auto_lcp", lastLcp);
   }
   if (inExperiment) {
-    buffer.pushMetric('__auto_cls_binary', clsSum > 0.1 ? 1 : 0)
-    if (worstInp > 0) buffer.pushMetric('__auto_inp', worstInp)
+    buffer.pushMetric("__auto_cls_binary", clsSum > 0.1 ? 1 : 0);
+    if (worstInp > 0) buffer.pushMetric("__auto_inp", worstInp);
   }
 }
 ```
@@ -170,13 +171,56 @@ Seed 6 auto-events into every project's event catalog at creation time:
 ```typescript
 // added to the D1 batch in handleProvision()
 db.insert(events).values([
-  { id: uuid(), projectId, name: '__auto_lcp',           description: 'Largest Contentful Paint (ms) per page-load — auto-collected by SDK', pending: 0, createdAt: now },
-  { id: uuid(), projectId, name: '__auto_inp',           description: 'Interaction to Next Paint worst-case (ms) — auto-collected', pending: 0, createdAt: now },
-  { id: uuid(), projectId, name: '__auto_cls_binary',    description: 'Layout shift exceeded 0.1 threshold on this page-load (0 or 1) — auto-collected', pending: 0, createdAt: now },
-  { id: uuid(), projectId, name: '__auto_js_error',      description: 'Unhandled JS error occurred on this page-load (0 or 1) — auto-collected', pending: 0, createdAt: now },
-  { id: uuid(), projectId, name: '__auto_network_error', description: 'Fetch 5xx or network failure on this page-load (0 or 1) — auto-collected', pending: 0, createdAt: now },
-  { id: uuid(), projectId, name: '__auto_abandoned',     description: 'User left before LCP fired — possible slow-load abandonment (0 or 1) — auto-collected', pending: 0, createdAt: now },
-])
+  {
+    id: uuid(),
+    projectId,
+    name: "__auto_lcp",
+    description: "Largest Contentful Paint (ms) per page-load — auto-collected by SDK",
+    pending: 0,
+    createdAt: now,
+  },
+  {
+    id: uuid(),
+    projectId,
+    name: "__auto_inp",
+    description: "Interaction to Next Paint worst-case (ms) — auto-collected",
+    pending: 0,
+    createdAt: now,
+  },
+  {
+    id: uuid(),
+    projectId,
+    name: "__auto_cls_binary",
+    description: "Layout shift exceeded 0.1 threshold on this page-load (0 or 1) — auto-collected",
+    pending: 0,
+    createdAt: now,
+  },
+  {
+    id: uuid(),
+    projectId,
+    name: "__auto_js_error",
+    description: "Unhandled JS error occurred on this page-load (0 or 1) — auto-collected",
+    pending: 0,
+    createdAt: now,
+  },
+  {
+    id: uuid(),
+    projectId,
+    name: "__auto_network_error",
+    description: "Fetch 5xx or network failure on this page-load (0 or 1) — auto-collected",
+    pending: 0,
+    createdAt: now,
+  },
+  {
+    id: uuid(),
+    projectId,
+    name: "__auto_abandoned",
+    description:
+      "User left before LCP fired — possible slow-load abandonment (0 or 1) — auto-collected",
+    pending: 0,
+    createdAt: now,
+  },
+]);
 ```
 
 Also add all 6 `__auto_*` names to the KV catalog (`{project_id}:catalog`) at provisioning so `/collect` validation passes on the first page-load, before any admin UI interaction.
@@ -201,11 +245,11 @@ One addition: the verdict display should surface the browser coverage caveat whe
 
 With gating to experiment participants:
 
-| Tier | DAU | Added cost |
-|---|---|---|
-| Starter | 10K | ~$0 |
-| Growth | 100K | ~$2/month |
-| Scale | 1M | ~$165/month (+60% of base) |
+| Tier    | DAU  | Added cost                 |
+| ------- | ---- | -------------------------- |
+| Starter | 10K  | ~$0                        |
+| Growth  | 100K | ~$2/month                  |
+| Scale   | 1M   | ~$165/month (+60% of base) |
 
 Without gating: ~10× more at Scale (~$1,550/month extra). The gating check is mandatory, not optional.
 
@@ -234,11 +278,11 @@ Full cost model in `cost.md` § "Auto-Guardrail Metrics Cost Impact".
 // __auto_abandoned fires unconditionally — do NOT gate on exposureSeen.size > 0.
 // The user may leave before identify() resolves; the analysis cron's post-exposure
 // filter handles correct attribution. Gating would drop the most important signal.
-const inExperiment = buffer.exposureSeen.size > 0
+const inExperiment = buffer.exposureSeen.size > 0;
 if (lastLcp === 0) {
-  buffer.pushMetric('__auto_abandoned', 1)  // unconditional — see above
+  buffer.pushMetric("__auto_abandoned", 1); // unconditional — see above
 } else if (inExperiment) {
-  buffer.pushMetric('__auto_lcp', lastLcp)
+  buffer.pushMetric("__auto_lcp", lastLcp);
 }
 ```
 
@@ -253,45 +297,49 @@ if (lastLcp === 0) {
 For React/Next.js SPAs, `history.pushState` monkey-patching handles route transitions:
 
 ```typescript
-const orig = history.pushState.bind(history)
-history.pushState = function(...args) {
+const orig = history.pushState.bind(history);
+history.pushState = function (...args) {
   // Guard against prefetch navigations that call pushState without a real path change.
   // Next.js App Router prefetches routes and may call pushState during hover/intent.
-  const nextUrl = args[2] ? new URL(String(args[2]), location.href) : null
-  const pathChanged = nextUrl ? nextUrl.pathname !== location.pathname : false
+  const nextUrl = args[2] ? new URL(String(args[2]), location.href) : null;
+  const pathChanged = nextUrl ? nextUrl.pathname !== location.pathname : false;
 
   if (pathChanged && buffer.exposureSeen.size > 0) {
     // Flush CLS and INP for the page being left — each route gets its own measurement
-    buffer.pushMetric('__auto_cls_binary', clsSum > 0.1 ? 1 : 0)
-    if (worstInp > 0) buffer.pushMetric('__auto_inp', worstInp)
+    buffer.pushMetric("__auto_cls_binary", clsSum > 0.1 ? 1 : 0);
+    if (worstInp > 0) buffer.pushMetric("__auto_inp", worstInp);
   }
   if (pathChanged) {
     // Reset accumulators for the next route
-    clsSum = 0; worstInp = 0
+    clsSum = 0;
+    worstInp = 0;
     // Clear lastLcp so the stale initial value is not re-sent on the next visibilitychange
-    lastLcp = 0
+    lastLcp = 0;
   }
-  return orig(...args)
-}
+  return orig(...args);
+};
 
 // back/forward navigation (popstate) — flush and reset just like pushState
-window.addEventListener('popstate', () => {
+window.addEventListener("popstate", () => {
   if (buffer.exposureSeen.size > 0) {
-    buffer.pushMetric('__auto_cls_binary', clsSum > 0.1 ? 1 : 0)
-    if (worstInp > 0) buffer.pushMetric('__auto_inp', worstInp)
+    buffer.pushMetric("__auto_cls_binary", clsSum > 0.1 ? 1 : 0);
+    if (worstInp > 0) buffer.pushMetric("__auto_inp", worstInp);
   }
-  clsSum = 0; worstInp = 0; lastLcp = 0
-})
+  clsSum = 0;
+  worstInp = 0;
+  lastLcp = 0;
+});
 
 // hash-only navigation — flush and reset CLS/INP; LCP does not reset
-window.addEventListener('hashchange', () => {
+window.addEventListener("hashchange", () => {
   if (buffer.exposureSeen.size > 0) {
-    buffer.pushMetric('__auto_cls_binary', clsSum > 0.1 ? 1 : 0)
-    if (worstInp > 0) buffer.pushMetric('__auto_inp', worstInp)
+    buffer.pushMetric("__auto_cls_binary", clsSum > 0.1 ? 1 : 0);
+    if (worstInp > 0) buffer.pushMetric("__auto_inp", worstInp);
   }
-  clsSum = 0; worstInp = 0
+  clsSum = 0;
+  worstInp = 0;
   // do NOT reset lastLcp — hash changes are in-page; LCP is still from initial load
-})
+});
 ```
 
 **bfcache false positive mitigation:** When the user navigates away and then returns via the browser back-button, the browser may restore the page from the back/forward cache (bfcache). On the preceding `pushState` (navigating away), `lastLcp` was reset to `0`. When the restored page receives `visibilitychange`, `lastLcp === 0` would incorrectly emit `__auto_abandoned`. To prevent this:
@@ -301,15 +349,16 @@ window.addEventListener('hashchange', () => {
 // lastLcp was reset to 0 on the preceding pushState (navigating away), so the
 // restored page has lastLcp === 0. Without this guard, returning via back-button
 // emits a false __auto_abandoned event.
-window.addEventListener('pageshow', (e) => {
+window.addEventListener("pageshow", (e) => {
   if (e.persisted) {
     // Page restored from bfcache — reset to sentinel; LCP won't re-fire
-    lastLcp = -1  // -1 = bfcache restore: do not emit abandoned
+    lastLcp = -1; // -1 = bfcache restore: do not emit abandoned
   }
-})
+});
 ```
 
 The abandonment emit check therefore has three meaningful states:
+
 ```typescript
 // In visibilitychange handler:
 // lastLcp === 0:  page never painted (true abandonment candidate)
@@ -319,7 +368,7 @@ The abandonment emit check therefore has three meaningful states:
 
 The `flushWebVitals` function already handles this correctly: `if (lastLcp === 0)` only fires for true initial-load abandonments, and `-1` falls through to the `else if (inExperiment)` branch which also skips LCP emission (since `-1 > 0` is false). No additional code change is needed beyond adding the `pageshow` listener.
 
-**LCP behavior on SPAs:** LCP only fires on hard navigation (initial page load). After a client-side route change, no new LCP event is emitted by the browser. This is correct — if an experiment doesn't affect the landing page, its LCP shouldn't change. The dashboard shows a note when `__auto_lcp` is attached to an experiment: *"LCP measured on initial page load only. Client-side route changes are not reflected."*
+**LCP behavior on SPAs:** LCP only fires on hard navigation (initial page load). After a client-side route change, no new LCP event is emitted by the browser. This is correct — if an experiment doesn't affect the landing page, its LCP shouldn't change. The dashboard shows a note when `__auto_lcp` is attached to an experiment: _"LCP measured on initial page load only. Client-side route changes are not reflected."_
 
 **CLS and INP** reset per route — each route accumulates its own layout shift and interaction latency independently. This is the right behavior for experiments that change specific pages in an SPA.
 
@@ -331,10 +380,10 @@ The current peeking suppression skips guardrail checks entirely before `min_runt
 
 **Two-threshold design:**
 
-| Threshold | Condition | Fires |
-|---|---|---|
-| **Immediate hold** | Delta > 3× MDE AND p < 0.001 | Any time, any plan — "obviously broken" |
-| **Standard hold** | Delta > MDE AND p < 0.01 | After `min_runtime_days` on Free/Pro; any time on `sequential_testing` plans |
+| Threshold          | Condition                    | Fires                                                                        |
+| ------------------ | ---------------------------- | ---------------------------------------------------------------------------- |
+| **Immediate hold** | Delta > 3× MDE AND p < 0.001 | Any time, any plan — "obviously broken"                                      |
+| **Standard hold**  | Delta > MDE AND p < 0.01     | After `min_runtime_days` on Free/Pro; any time on `sequential_testing` plans |
 
 The immediate threshold is structurally sound even before min_runtime: a 3× MDE effect at p < 0.001 has a false positive rate below 0.1% regardless of when you check. Waiting for runtime to confirm something that obvious causes more harm than acting.
 

@@ -36,8 +36,8 @@ export default async function LandingPage() {
           Ship faster with the tools you need
         </h1>
         <p className="text-xl text-muted-foreground max-w-lg">
-          ShipEasy gives you auth, docs, and a polished UI out of the box so you
-          can focus on building your product.
+          ShipEasy gives you auth, docs, and a polished UI out of the box so you can focus on
+          building your product.
         </p>
         <div className="flex gap-3 mt-2">
           <Button render={<Link href="/auth/signin" />} size="lg">

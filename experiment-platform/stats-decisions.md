@@ -7,6 +7,7 @@ Every statistical choice in the analysis pipeline — what it solves, what it ri
 ## 1. Bucketing — MurmurHash3 with two independent hashes
 
 **What it is.** Each user is assigned to an experiment via two separate hash calls:
+
 - `murmur3(salt:alloc:uid) % 10000` — decides if the user is in the experiment at all
 - `murmur3(salt:group:uid) % 10000` — decides which variant they see
 
@@ -29,10 +30,11 @@ MurmurHash3 is the industry-standard choice for experiment bucketing (used by St
 **What it is.** All bucketing parameters are stored as integers on a 0–10000 scale (basis points). Group weights must sum to exactly 10000. `rolloutPct = 5000` means 50%. `allocationPct = 1000` means 10%. `weight = 3333` means 33.33%.
 
 Evaluations are pure integer comparisons:
+
 ```typescript
-segment < gate.rolloutPct          // no float multiply
-allocHash >= exp.allocationPct     // no float multiply
-cumulative += group.weight         // integer addition, exact
+segment < gate.rolloutPct; // no float multiply
+allocHash >= exp.allocationPct; // no float multiply
+cumulative += group.weight; // integer addition, exact
 ```
 
 **What problem it solves.** Float arithmetic makes `0.33 + 0.33 + 0.34 = 0.9999...998` on some hardware. Users whose hash falls in the gap match no group and are silently excluded from analysis. At 1M users this can be ~100 people missing — enough to trigger SRM detection.
@@ -176,6 +178,7 @@ cumulative += group.weight         // integer addition, exact
 **Real-world example (problem it solves).** Control mean: $12.00. Test mean: $13.20. Standard Welch: p = 0.08 (not significant). With CUPED adjusting for each user's 14-day average spend before the experiment: adjusted p = 0.03 (significant). The same data, the same real effect — CUPED just removed enough noise to see it.
 
 **What problem it could cause.**
+
 - **New users:** Users with no pre-experiment history (new signups during the experiment window) have no baseline and are excluded from CUPED adjustment. If the experiment attracts disproportionately many new users to the test arm, CUPED operates on a biased subsample. We check `overlap_pct` (fraction of users with baselines) — if below 50%, fall back to plain Welch.
 - **Baseline window overlaps experiment:** If baselines are computed from a rolling window that overlaps the experiment period, CUPED's independence assumption is violated. Baselines are frozen once at experiment start and never updated.
 - **Zero variance baseline:** All users have identical pre-experiment behavior (e.g. a new feature with no historical signal). CUPED provides no benefit and is skipped.
@@ -193,6 +196,7 @@ cumulative += group.weight         // integer addition, exact
 **Real-world example (problem it solves).** Control mean: $12, test mean: $14. Looks like +17% lift. But one test user spent $8,000. Exclude them: control $12, test $11.80. The apparent lift was entirely one whale. Winsorization caps the $8,000 at the 99th percentile of control (~$85), so the whale still contributes but doesn't dominate.
 
 **What problem it could cause.**
+
 - **Reverse-risk:** Cap is computed from control only. If control has the heavier tail (e.g. a paywall treatment removes high spenders from the test arm), the control-derived cap is higher than a combined cap — test values that would otherwise not be clipped get clipped. This under-estimates test performance. Log the cap and per-group clip rate per run; warn if any group's clip rate differs from control's by > 5pp.
 - **Masks genuine large effects:** If the treatment genuinely helps high-value users (the goal), winsorization reduces the measured effect size. This is intentional — you want to measure the median-user effect, not the whale effect.
 
@@ -336,25 +340,25 @@ Significant when Lambda > 1/α (e.g. at α=0.05, threshold = 20).
 
 ## Quick reference — defaults
 
-| Parameter | Default | Configurable |
-|---|---|---|
-| Hash function | MurmurHash3_x86_32, seed 0, UTF-8 | No |
-| Allocation | 1000 (= 10%, basis points 0–10000) | Yes, per experiment |
-| Group weights | User-defined integers summing to exactly 10000 | Yes |
-| Significance threshold (α) | 0.05 | Yes (Pro+) |
-| Min runtime | 0 days | Yes |
-| Min sample size | 100 per group | Yes |
-| Verdict goal logic | ALL goals must win (intersection) | No |
-| Guardrail logic | ANY regression blocks ship | No |
-| Winsorization | 99th percentile, control-only cap | Yes per metric |
-| CUPED | Disabled (Free), enabled (Pro+) | Plan-gated |
-| CUPED baseline window | 14 days pre-experiment, frozen at start | No |
-| CUPED overlap threshold | 50% fallback to Welch | No |
-| SRM detection | Enabled, p < 0.01 | No — always on |
-| SRM threshold | p < 0.01 | No |
-| Retention semantics | Elapsed-ms from exposure timestamp | No |
-| Sequential testing | mSPRT (lambda > 1/α), τ from MDE | Plan-gated (Premium+) |
-| Peeking suppression | Enforced for Free/Pro | Plan-gated |
-| Identity stitching | Always on | No |
-| AE read horizon | Snapshot at analysis start | No |
-| D1 batch size (CUPED) | 100 statements | No |
+| Parameter                  | Default                                        | Configurable          |
+| -------------------------- | ---------------------------------------------- | --------------------- |
+| Hash function              | MurmurHash3_x86_32, seed 0, UTF-8              | No                    |
+| Allocation                 | 1000 (= 10%, basis points 0–10000)             | Yes, per experiment   |
+| Group weights              | User-defined integers summing to exactly 10000 | Yes                   |
+| Significance threshold (α) | 0.05                                           | Yes (Pro+)            |
+| Min runtime                | 0 days                                         | Yes                   |
+| Min sample size            | 100 per group                                  | Yes                   |
+| Verdict goal logic         | ALL goals must win (intersection)              | No                    |
+| Guardrail logic            | ANY regression blocks ship                     | No                    |
+| Winsorization              | 99th percentile, control-only cap              | Yes per metric        |
+| CUPED                      | Disabled (Free), enabled (Pro+)                | Plan-gated            |
+| CUPED baseline window      | 14 days pre-experiment, frozen at start        | No                    |
+| CUPED overlap threshold    | 50% fallback to Welch                          | No                    |
+| SRM detection              | Enabled, p < 0.01                              | No — always on        |
+| SRM threshold              | p < 0.01                                       | No                    |
+| Retention semantics        | Elapsed-ms from exposure timestamp             | No                    |
+| Sequential testing         | mSPRT (lambda > 1/α), τ from MDE               | Plan-gated (Premium+) |
+| Peeking suppression        | Enforced for Free/Pro                          | Plan-gated            |
+| Identity stitching         | Always on                                      | No                    |
+| AE read horizon            | Snapshot at analysis start                     | No                    |
+| D1 batch size (CUPED)      | 100 statements                                 | No                    |

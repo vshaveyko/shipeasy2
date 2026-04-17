@@ -66,17 +66,17 @@ go directly from Next.js to D1/KV — no Service Binding needed.
 
 ### What it owns
 
-| Responsibility | Implementation | Notes |
-|---|---|---|
-| User session | Auth.js v5 JWT (Google, GitHub, magic link), 15-min expiry | JWT stored in cookie, no D1 session table |
-| Project provisioning | `auth.ts` JWT callback writes directly to D1 | Happens once per new user; creates project + SDK keys inline |
-| All admin CRUD | Server Actions (browser) + Route Handlers (CLI) | D1 write → KV rebuild → CDN purge |
-| Admin UI pages | Next.js Server + Client Components | Gates, experiments, results, settings |
-| Results rendering | Server Component reads from D1 via Route Handler | Reads `experiment_results` table directly |
-| CLI auth relay | `/cli-auth` page + `/cli-auth/complete` API route | Bridges Auth.js session → Worker device flow |
-| Input validation | `@conform-to/zod` + Zod schemas from `@flaglab/core` | Full validation, not just pre-validation |
-| CLI admin auth | `authenticateAdmin()` validates SDK key via KV | Same KV lookup as Worker uses for SDK hot path |
-| Static assets | Cloudflare Pages CDN | No Worker involvement |
+| Responsibility       | Implementation                                             | Notes                                                        |
+| -------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| User session         | Auth.js v5 JWT (Google, GitHub, magic link), 15-min expiry | JWT stored in cookie, no D1 session table                    |
+| Project provisioning | `auth.ts` JWT callback writes directly to D1               | Happens once per new user; creates project + SDK keys inline |
+| All admin CRUD       | Server Actions (browser) + Route Handlers (CLI)            | D1 write → KV rebuild → CDN purge                            |
+| Admin UI pages       | Next.js Server + Client Components                         | Gates, experiments, results, settings                        |
+| Results rendering    | Server Component reads from D1 via Route Handler           | Reads `experiment_results` table directly                    |
+| CLI auth relay       | `/cli-auth` page + `/cli-auth/complete` API route          | Bridges Auth.js session → Worker device flow                 |
+| Input validation     | `@conform-to/zod` + Zod schemas from `@flaglab/core`       | Full validation, not just pre-validation                     |
+| CLI admin auth       | `authenticateAdmin()` validates SDK key via KV             | Same KV lookup as Worker uses for SDK hot path               |
+| Static assets        | Cloudflare Pages CDN                                       | No Worker involvement                                        |
 
 ### Admin mutation pattern
 
@@ -96,7 +96,8 @@ Dashboard re-renders with updated data (SWR revalidate or server rerender)
 ```
 
 See `03-worker-endpoints.md` § Admin request authorization (Next.js) for the full `authenticateAdmin()` implementation.
-```
+
+````
 
 ### Auth.js scope
 
@@ -127,7 +128,7 @@ export default auth((req) => {
 export const config = {
   matcher: ['/app/:path*'],
 }
-```
+````
 
 Middleware only gates UI page access. API routes (`/api/admin/*`) authenticate
 via `authenticateAdmin()` in each handler — middleware does not run for them.
@@ -146,13 +147,13 @@ These endpoints are called by customer SDKs in production. They are on the
 critical path for customer applications. Latency target: < 5ms Worker CPU time.
 CDN absorbs > 95% of requests at scale.
 
-| Endpoint | Auth | Primary storage | CDN cached? |
-|---|---|---|---|
-| `GET /sdk/flags/:projectId` | server SDK key | KV `:flags` blob | Yes — infinite TTL, purge on change |
-| `GET /sdk/experiments/:projectId` | server SDK key | KV `:experiments` blob | Yes — infinite TTL, purge on change |
-| `POST /sdk/evaluate` | client SDK key | KV (both blobs) | No — user-specific response |
-| `POST /collect` | client SDK key | Analytics Engine (write-only) | No |
-| `GET /sdk/bootstrap` | server SDK key | KV (both blobs) | No — user-specific |
+| Endpoint                          | Auth           | Primary storage               | CDN cached?                         |
+| --------------------------------- | -------------- | ----------------------------- | ----------------------------------- |
+| `GET /sdk/flags/:projectId`       | server SDK key | KV `:flags` blob              | Yes — infinite TTL, purge on change |
+| `GET /sdk/experiments/:projectId` | server SDK key | KV `:experiments` blob        | Yes — infinite TTL, purge on change |
+| `POST /sdk/evaluate`              | client SDK key | KV (both blobs)               | No — user-specific response         |
+| `POST /collect`                   | client SDK key | Analytics Engine (write-only) | No                                  |
+| `GET /sdk/bootstrap`              | server SDK key | KV (both blobs)               | No — user-specific                  |
 
 **Rules for hot-path endpoints:**
 
@@ -326,16 +327,16 @@ all per-experiment errors are caught so one bad experiment doesn't abort the res
 
 ## Data Ownership by Storage Layer
 
-| Storage | Owner | Notes |
-|---|---|---|
-| **D1** | Shared (Dashboard + Worker) | Dashboard writes admin mutations; Worker writes analysis results + CUPED baselines |
-| **KV** (FLAGS_KV) | Shared (Dashboard + Worker) | Dashboard writes KV blobs on admin mutations; Worker reads for SDK hot path |
-| **KV** (CLI_TOKEN_KV) | Worker exclusively | Single-use token delivery for CLI auth |
-| **Analytics Engine** | Worker exclusively (writes + reads) | `/collect` writes; analysis cron reads via AE SQL |
-| **ANALYSIS_QUEUE** | Worker cron writes, Worker consumer reads | Next.js enqueues via Service Binding for stop/reanalyze |
-| **Auth.js JWT** | Dashboard exclusively | Worker never reads or verifies JWTs |
-| **Cloudflare Pages env vars** | Dashboard process | AUTH_SECRET, CLI_SERVICE_SECRET, CF_API_TOKEN, OAuth secrets |
-| **Worker secrets** | Worker process | CF_API_TOKEN, CLI_SERVICE_SECRET, RESEND_API_KEY |
+| Storage                       | Owner                                     | Notes                                                                              |
+| ----------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| **D1**                        | Shared (Dashboard + Worker)               | Dashboard writes admin mutations; Worker writes analysis results + CUPED baselines |
+| **KV** (FLAGS_KV)             | Shared (Dashboard + Worker)               | Dashboard writes KV blobs on admin mutations; Worker reads for SDK hot path        |
+| **KV** (CLI_TOKEN_KV)         | Worker exclusively                        | Single-use token delivery for CLI auth                                             |
+| **Analytics Engine**          | Worker exclusively (writes + reads)       | `/collect` writes; analysis cron reads via AE SQL                                  |
+| **ANALYSIS_QUEUE**            | Worker cron writes, Worker consumer reads | Next.js enqueues via Service Binding for stop/reanalyze                            |
+| **Auth.js JWT**               | Dashboard exclusively                     | Worker never reads or verifies JWTs                                                |
+| **Cloudflare Pages env vars** | Dashboard process                         | AUTH_SECRET, CLI_SERVICE_SECRET, CF_API_TOKEN, OAuth secrets                       |
+| **Worker secrets**            | Worker process                            | CF_API_TOKEN, CLI_SERVICE_SECRET, RESEND_API_KEY                                   |
 
 ---
 
@@ -461,6 +462,7 @@ Background (seconds to minutes later, depending on queue scheduling):
 ## What Belongs Where — Decision Rules
 
 **Put it in the Dashboard (Next.js) if:**
+
 - It renders HTML or JSON for a human user
 - It needs the Auth.js session (user email, project_id from JWT)
 - It is admin CRUD (create, read, update, disable) for gates/configs/experiments/etc.
@@ -469,6 +471,7 @@ Background (seconds to minutes later, depending on queue scheduling):
 - It rebuilds KV blobs or purges CDN after an admin mutation
 
 **Put it in the Worker if:**
+
 - It is called by customer SDKs (not by the Dashboard or CLI)
 - It must complete with zero D1 reads in the warm case
 - It has a CDN caching opportunity
@@ -478,10 +481,12 @@ Background (seconds to minutes later, depending on queue scheduling):
 - It handles CLI device auth (needs CLI_TOKEN_KV)
 
 **Put it in @flaglab/core if:**
+
 - It is shared between Dashboard and Worker (DB schema, KV rebuild, eval logic, plans, limits, Zod schemas)
 - It should be a single source of truth used by both runtimes
 
 **Put it in background jobs (Worker) if:**
+
 - It is triggered by time (daily analysis, retention purge, AE archival)
 - It is triggered by an event that doesn't need a synchronous response (experiment stop → final analysis)
 - It accesses Analytics Engine SQL (AE SQL is only available from a Worker context)
@@ -494,15 +499,15 @@ Background (seconds to minutes later, depending on queue scheduling):
 Dashboard and Worker deploy independently. Neither deployment requires the other
 to restart.
 
-| Change | Deploy | Effect |
-|---|---|---|
-| UI page change | `apps/ui` deploy (CF Pages) | Immediate; Worker unchanged |
-| New admin endpoint | `packages/worker` deploy | `wrangler deploy`; Dashboard picks up new endpoint automatically |
-| Plan limit change | `packages/worker` deploy (plans.yaml edit) | All plan checks update; no D1 migration |
-| Schema migration | `wrangler d1 migrations apply` then Worker deploy | Run migration before deploying Worker that needs new columns |
-| SDK key rotation | Worker endpoint call (PATCH /admin/keys/:id/revoke) | KV revocation set updated; 60s module cache drain |
+| Change               | Deploy                                                    | Effect                                                           |
+| -------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |
+| UI page change       | `apps/ui` deploy (CF Pages)                               | Immediate; Worker unchanged                                      |
+| New admin endpoint   | `packages/worker` deploy                                  | `wrangler deploy`; Dashboard picks up new endpoint automatically |
+| Plan limit change    | `packages/worker` deploy (plans.yaml edit)                | All plan checks update; no D1 migration                          |
+| Schema migration     | `wrangler d1 migrations apply` then Worker deploy         | Run migration before deploying Worker that needs new columns     |
+| SDK key rotation     | Worker endpoint call (PATCH /admin/keys/:id/revoke)       | KV revocation set updated; 60s module cache drain                |
 | AUTH_SECRET rotation | Pages env update only (Worker no longer uses AUTH_SECRET) | All active Auth.js sessions invalidated; all users must re-login |
-| Cron schedule change | `wrangler.toml` + Worker deploy | Cloudflare updates trigger schedule |
+| Cron schedule change | `wrangler.toml` + Worker deploy                           | Cloudflare updates trigger schedule                              |
 
 **Never deploy in this order:** Worker first, then Dashboard, when a breaking
 API change removes an endpoint that the current Dashboard version depends on.
@@ -562,15 +567,15 @@ Raw SDK keys              — generated in Next.js, delivered once, never stored
 
 ## Anti-Patterns to Avoid
 
-| Anti-pattern | Why it's wrong | Correct approach |
-|---|---|---|
-| Admin CRUD in Worker | Worker should only handle SDK hot path + background jobs; admin CRUD adds latency and complexity | Admin CRUD in Next.js Server Actions + Route Handlers |
-| Worker verifies Auth.js JWTs | Worker has no admin endpoints; JWT verification is unnecessary overhead | Only Next.js verifies JWTs; Worker validates SDK keys only |
-| D1 writes without scopedDb() | Missing `WHERE project_id` exposes cross-tenant data | Always use `scopedDb()` from `@flaglab/core` — in both Next.js and Worker |
-| Worker renders HTML | Workers are not designed for SSR; Pages has better caching and asset handling | Worker returns JSON; Dashboard renders |
-| Evaluation logic in Dashboard | evalGate/evalExperiment must stay in Worker (and SDK) — rule parity requires co-location with the data | Evaluation only in Worker + `@flaglab/core` |
-| Dashboard polls AE SQL for dashboards | AE SQL is only for the Worker/cron context; latency and auth are wrong for UI | Cron writes results to D1; Dashboard reads from D1 directly |
-| Worker calls Next.js | Worker doesn't know about the Dashboard; callbacks go through shared storage (KV, D1, queues) | One-way dependency: Dashboard calls Worker (only for CLI auth relay) |
-| Raw SDK keys in env vars | Pages env vars are visible in CF dashboard to CF account members; SDK keys are secrets | Keys generated in Next.js, hashed immediately, raw key shown once in UI |
-| Plan limits in UI only | UI can be bypassed; limits must be enforced at write time | `checkLimit()` from `@flaglab/core` before every INSERT — in Server Actions and Route Handlers |
-| Skipping checkLimit because "it's just Next.js" | Next.js Route Handlers are the CLI's admin surface — same enforcement as browser | Every mutation path calls `checkLimit()` regardless of caller |
+| Anti-pattern                                    | Why it's wrong                                                                                         | Correct approach                                                                               |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Admin CRUD in Worker                            | Worker should only handle SDK hot path + background jobs; admin CRUD adds latency and complexity       | Admin CRUD in Next.js Server Actions + Route Handlers                                          |
+| Worker verifies Auth.js JWTs                    | Worker has no admin endpoints; JWT verification is unnecessary overhead                                | Only Next.js verifies JWTs; Worker validates SDK keys only                                     |
+| D1 writes without scopedDb()                    | Missing `WHERE project_id` exposes cross-tenant data                                                   | Always use `scopedDb()` from `@flaglab/core` — in both Next.js and Worker                      |
+| Worker renders HTML                             | Workers are not designed for SSR; Pages has better caching and asset handling                          | Worker returns JSON; Dashboard renders                                                         |
+| Evaluation logic in Dashboard                   | evalGate/evalExperiment must stay in Worker (and SDK) — rule parity requires co-location with the data | Evaluation only in Worker + `@flaglab/core`                                                    |
+| Dashboard polls AE SQL for dashboards           | AE SQL is only for the Worker/cron context; latency and auth are wrong for UI                          | Cron writes results to D1; Dashboard reads from D1 directly                                    |
+| Worker calls Next.js                            | Worker doesn't know about the Dashboard; callbacks go through shared storage (KV, D1, queues)          | One-way dependency: Dashboard calls Worker (only for CLI auth relay)                           |
+| Raw SDK keys in env vars                        | Pages env vars are visible in CF dashboard to CF account members; SDK keys are secrets                 | Keys generated in Next.js, hashed immediately, raw key shown once in UI                        |
+| Plan limits in UI only                          | UI can be bypassed; limits must be enforced at write time                                              | `checkLimit()` from `@flaglab/core` before every INSERT — in Server Actions and Route Handlers |
+| Skipping checkLimit because "it's just Next.js" | Next.js Route Handlers are the CLI's admin surface — same enforcement as browser                       | Every mutation path calls `checkLimit()` regardless of caller                                  |

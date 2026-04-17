@@ -145,34 +145,43 @@ is not relevant. Only the Worker's SDK and auth endpoints need CORS.
 
 ```typescript
 // packages/worker/src/index.ts — Hono router setup (MUST be first middleware, before auth)
-import { Hono }            from 'hono'
-import { cors }            from 'hono/middleware'
+import { Hono } from "hono";
+import { cors } from "hono/middleware";
 
-const app = new Hono<{ Bindings: Env }>()
+const app = new Hono<{ Bindings: Env }>();
 
 // SDK routes: called from arbitrary customer origins (browser, mobile webviews)
 // Authorization and X-SDK-Key are non-simple headers — they trigger a CORS preflight.
 // text/plain sendBeacon does NOT trigger preflight (intentional — see 05-events-sdk.md).
-app.use('/sdk/*', cors({
-  origin:         '*',
-  allowHeaders:   ['X-SDK-Key', 'Authorization', 'Content-Type'],
-  allowMethods:   ['GET', 'POST', 'OPTIONS'],
-  maxAge:         86400,  // cache preflight for 24h — reduces preflight requests
-}))
-app.use('/collect', cors({
-  origin:         '*',
-  allowHeaders:   ['X-SDK-Key', 'Authorization', 'Content-Type'],
-  allowMethods:   ['POST', 'OPTIONS'],
-  maxAge:         86400,
-}))
+app.use(
+  "/sdk/*",
+  cors({
+    origin: "*",
+    allowHeaders: ["X-SDK-Key", "Authorization", "Content-Type"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
+    maxAge: 86400, // cache preflight for 24h — reduces preflight requests
+  }),
+);
+app.use(
+  "/collect",
+  cors({
+    origin: "*",
+    allowHeaders: ["X-SDK-Key", "Authorization", "Content-Type"],
+    allowMethods: ["POST", "OPTIONS"],
+    maxAge: 86400,
+  }),
+);
 
 // CLI device auth: called by the CLI from arbitrary machines
-app.use('/auth/*', cors({
-  origin:         '*',
-  allowHeaders:   ['X-SDK-Key', 'X-Code-Verifier', 'X-Service-Key', 'Content-Type'],
-  allowMethods:   ['POST', 'GET', 'OPTIONS'],
-  maxAge:         3600,
-}))
+app.use(
+  "/auth/*",
+  cors({
+    origin: "*",
+    allowHeaders: ["X-SDK-Key", "X-Code-Verifier", "X-Service-Key", "Content-Type"],
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    maxAge: 3600,
+  }),
+);
 ```
 
 **CDN-cached SDK endpoints and CORS:** `GET /sdk/flags` and `GET /sdk/experiments` are
@@ -190,20 +199,23 @@ configuration is needed for these endpoints.
 //   - SELECT FROM projects WHERE owner_email = ? (ownership lookup)
 //   - SELECT FROM system_health (no project_id column)
 
-import { eq, and, type SQL } from 'drizzle-orm'
-import type { DrizzleD1Database } from 'drizzle-orm/d1'
+import { eq, and, type SQL } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 
 export function scopedDb(db: DrizzleD1Database, projectId: string) {
   return {
     // Scoped select: always adds eq(table.projectId, projectId) to the WHERE
     select: <T extends { projectId: ReturnType<typeof text> }>(table: T) =>
-      db.select().from(table).where(eq((table as any).projectId, projectId)),
+      db
+        .select()
+        .from(table)
+        .where(eq((table as any).projectId, projectId)),
 
     // Scoped insert: enforces projectId on the inserted row
     insert: <T extends { projectId: ReturnType<typeof text> }>(table: T) => ({
       values: (row: Record<string, unknown>) => {
-        if (row.projectId !== projectId) throw new Error('Cross-project insert rejected')
-        return db.insert(table).values(row)
+        if (row.projectId !== projectId) throw new Error("Cross-project insert rejected");
+        return db.insert(table).values(row);
       },
     }),
 
@@ -211,7 +223,10 @@ export function scopedDb(db: DrizzleD1Database, projectId: string) {
     update: <T extends { projectId: ReturnType<typeof text> }>(table: T) => ({
       set: (values: Record<string, unknown>) => ({
         where: (condition: SQL) =>
-          db.update(table).set(values).where(and(eq((table as any).projectId, projectId), condition)),
+          db
+            .update(table)
+            .set(values)
+            .where(and(eq((table as any).projectId, projectId), condition)),
       }),
     }),
 
@@ -220,7 +235,7 @@ export function scopedDb(db: DrizzleD1Database, projectId: string) {
       where: (condition: SQL) =>
         db.delete(table).where(and(eq((table as any).projectId, projectId), condition)),
     }),
-  }
+  };
 }
 
 // Usage in every Server Action and Route Handler:
@@ -240,233 +255,316 @@ export function scopedDb(db: DrizzleD1Database, projectId: string) {
 
 ```typescript
 // src/db/schema.ts — all tables. Drizzle generates SQL migrations from this via drizzle-kit.
-import { sqliteTable, text, real, integer, uniqueIndex, index, primaryKey } from 'drizzle-orm/sqlite-core'
+import {
+  sqliteTable,
+  text,
+  real,
+  integer,
+  uniqueIndex,
+  index,
+  primaryKey,
+} from "drizzle-orm/sqlite-core";
 
 // ── Shared types for JSON columns ────────────────────────────────────────────
 // JSON columns use mode: 'json' so Drizzle auto-parses on read and auto-serializes on write.
 // .$type<T>() narrows the TypeScript type — field mismatches are caught at compile time.
 
-export type GateRule = { type: string; op: string; value: unknown }
+export type GateRule = { type: string; op: string; value: unknown };
 
 export type ExperimentGroup = {
-  name:   string
-  weight: number                         // integer 0–10000, all groups must sum to exactly 10000
-  params: Record<string, unknown>        // variant-specific param values
-}
+  name: string;
+  weight: number; // integer 0–10000, all groups must sum to exactly 10000
+  params: Record<string, unknown>; // variant-specific param values
+};
 
-export type ParamSchema = Record<string, 'string' | 'bool' | 'number'>
+export type ParamSchema = Record<string, "string" | "bool" | "number">;
 
 export type EventProperty = {
-  name:        string
-  type:        'string' | 'number' | 'boolean'
-  required:    boolean
-  description: string
-}
+  name: string;
+  type: "string" | "number" | "boolean";
+  required: boolean;
+  description: string;
+};
 
-export const projects = sqliteTable('projects', {
-  id:         text('id').primaryKey(),
-  name:       text('name').notNull(),
-  ownerEmail: text('owner_email').notNull().unique(),
-  plan:       text('plan', { enum: ['free','pro','premium','enterprise'] }).notNull().default('free'),
-  status:     text('status', { enum: ['active','inactive'] }).notNull().default('active'),
-  createdAt:  text('created_at').notNull(),
-  updatedAt:  text('updated_at').notNull(),
-})
+export const projects = sqliteTable("projects", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  ownerEmail: text("owner_email").notNull().unique(),
+  plan: text("plan", { enum: ["free", "pro", "premium", "enterprise"] })
+    .notNull()
+    .default("free"),
+  status: text("status", { enum: ["active", "inactive"] })
+    .notNull()
+    .default("active"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
 
-export const sdkKeys = sqliteTable('sdk_keys', {
-  id:         text('id').primaryKey(),
-  projectId:  text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
-  keyHash:    text('key_hash').unique().notNull(),
-  type:       text('type', { enum: ['server','client','admin'] }).notNull(),
-  createdAt:  text('created_at').notNull(),
-  revokedAt:  text('revoked_at'),
-  expiresAt:  text('expires_at'),  // NULL = no expiry; admin keys get 90-day expiry
-}, t => ({ hashIdx: index('sdk_keys_hash').on(t.keyHash) }))
+export const sdkKeys = sqliteTable(
+  "sdk_keys",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    keyHash: text("key_hash").unique().notNull(),
+    type: text("type", { enum: ["server", "client", "admin"] }).notNull(),
+    createdAt: text("created_at").notNull(),
+    revokedAt: text("revoked_at"),
+    expiresAt: text("expires_at"), // NULL = no expiry; admin keys get 90-day expiry
+  },
+  (t) => ({ hashIdx: index("sdk_keys_hash").on(t.keyHash) }),
+);
 
-export const cliAuthSessions = sqliteTable('cli_auth_sessions', {
-  state:          text('state').primaryKey(),
-  codeChallenge:  text('code_challenge').notNull(),
-  projectId:      text('project_id').references(() => projects.id),
-  tokenHash:      text('token_hash'),
-  status:         text('status', { enum: ['pending','complete','expired'] }).notNull().default('pending'),
-  createdAt:      text('created_at').notNull(),
-  expiresAt:      text('expires_at').notNull(),
-  completedAt:    text('completed_at'),
-}, t => ({ expiresIdx: index('cli_auth_sessions_expires').on(t.expiresAt) }))
+export const cliAuthSessions = sqliteTable(
+  "cli_auth_sessions",
+  {
+    state: text("state").primaryKey(),
+    codeChallenge: text("code_challenge").notNull(),
+    projectId: text("project_id").references(() => projects.id),
+    tokenHash: text("token_hash"),
+    status: text("status", { enum: ["pending", "complete", "expired"] })
+      .notNull()
+      .default("pending"),
+    createdAt: text("created_at").notNull(),
+    expiresAt: text("expires_at").notNull(),
+    completedAt: text("completed_at"),
+  },
+  (t) => ({ expiresIdx: index("cli_auth_sessions_expires").on(t.expiresAt) }),
+);
 
-export const analysisFailures = sqliteTable('analysis_failures', {
-  projectId:   text('project_id').primaryKey().references(() => projects.id),
-  failedAt:    text('failed_at').notNull(),
-  retryCount:  integer('retry_count').notNull().default(3),
-  messageBody: text('message_body'),
-  resolvedAt:  text('resolved_at'),
-})
+export const analysisFailures = sqliteTable("analysis_failures", {
+  projectId: text("project_id")
+    .primaryKey()
+    .references(() => projects.id),
+  failedAt: text("failed_at").notNull(),
+  retryCount: integer("retry_count").notNull().default(3),
+  messageBody: text("message_body"),
+  resolvedAt: text("resolved_at"),
+});
 
-export const systemHealth = sqliteTable('system_health', {
-  key:               text('key').primaryKey(),
-  lastFiredAt:       text('last_fired_at').notNull(),
-  projectsEnqueued:  integer('projects_enqueued'),
-})
+export const systemHealth = sqliteTable("system_health", {
+  key: text("key").primaryKey(),
+  lastFiredAt: text("last_fired_at").notNull(),
+  projectsEnqueued: integer("projects_enqueued"),
+});
 
-export const gates = sqliteTable('gates', {
-  id:         text('id').primaryKey(),
-  projectId:  text('project_id').notNull(),
-  name:       text('name').notNull(),
-  rules:      text('rules', { mode: 'json' }).$type<GateRule[]>().notNull(),
-  rolloutPct: integer('rollout_pct').notNull().default(0),  // 0–10000 (basis points); 5000 = 50%
-  salt:       text('salt').notNull(),
-  enabled:    integer('enabled').notNull().default(1),
-  killswitch: integer('killswitch').notNull().default(0),
-  updatedAt:  text('updated_at').notNull(),
-}, t => ({
-  projectIdx:      index('gates_project').on(t.projectId),
-  projectNameUniq: uniqueIndex('gates_project_name').on(t.projectId, t.name),
-}))
+export const gates = sqliteTable(
+  "gates",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").notNull(),
+    name: text("name").notNull(),
+    rules: text("rules", { mode: "json" }).$type<GateRule[]>().notNull(),
+    rolloutPct: integer("rollout_pct").notNull().default(0), // 0–10000 (basis points); 5000 = 50%
+    salt: text("salt").notNull(),
+    enabled: integer("enabled").notNull().default(1),
+    killswitch: integer("killswitch").notNull().default(0),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("gates_project").on(t.projectId),
+    projectNameUniq: uniqueIndex("gates_project_name").on(t.projectId, t.name),
+  }),
+);
 
-export const configs = sqliteTable('configs', {
-  id:         text('id').primaryKey(),
-  projectId:  text('project_id').notNull(),
-  name:       text('name').notNull(),
-  valueJson:  text('value_json', { mode: 'json' }).$type<unknown>().notNull(),
-  updatedAt:  text('updated_at').notNull(),
-}, t => ({ uniq: uniqueIndex('configs_project_name').on(t.projectId, t.name) }))
+export const configs = sqliteTable(
+  "configs",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").notNull(),
+    name: text("name").notNull(),
+    valueJson: text("value_json", { mode: "json" }).$type<unknown>().notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex("configs_project_name").on(t.projectId, t.name) }),
+);
 
-export const universes = sqliteTable('universes', {
-  id:           text('id').primaryKey(),
-  projectId:    text('project_id').notNull(),
-  name:         text('name').notNull(),
-  unitType:     text('unit_type').notNull().default('user_id'),
-  holdoutRange: text('holdout_range', { mode: 'json' }).$type<[number, number] | null>(),
-  createdAt:    text('created_at').notNull(),
-}, t => ({
-  projectIdx:  index('universes_project').on(t.projectId),
-  projectUniq: uniqueIndex('universes_project_name').on(t.projectId, t.name),
-}))
+export const universes = sqliteTable(
+  "universes",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").notNull(),
+    name: text("name").notNull(),
+    unitType: text("unit_type").notNull().default("user_id"),
+    holdoutRange: text("holdout_range", { mode: "json" }).$type<[number, number] | null>(),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("universes_project").on(t.projectId),
+    projectUniq: uniqueIndex("universes_project_name").on(t.projectId, t.name),
+  }),
+);
 
-export const experiments = sqliteTable('experiments', {
-  id:                   text('id').primaryKey(),
-  projectId:            text('project_id').notNull(),
-  name:                 text('name').notNull(),
-  universe:             text('universe').notNull(),
-  targetingGate:        text('targeting_gate'),
-  allocationPct:        integer('allocation_pct').notNull().default(0),  // 0–10000 (basis points); 1000 = 10%
-  salt:                 text('salt').notNull(),
-  params:               text('params', { mode: 'json' }).$type<ParamSchema>().notNull(),
-  groups:               text('groups', { mode: 'json' }).$type<ExperimentGroup[]>().notNull(),
-  status:               text('status', { enum: ['draft','running','stopped','archived'] }).notNull().default('draft'),
-  startedAt:            text('started_at'),
-  stoppedAt:            text('stopped_at'),   // set once when status transitions to 'stopped'; never overwritten
-  significanceThreshold: real('significance_threshold').notNull().default(0.05),
-  minRuntimeDays:       integer('min_runtime_days').notNull().default(0),
-  minSampleSize:        integer('min_sample_size').notNull().default(100),
-  cupedFrozenAt:        text('cuped_frozen_at'),
-  sequentialTesting:    integer('sequential_testing', { mode: 'boolean' }).notNull().default(false),
-  updatedAt:            text('updated_at').notNull(),
-}, t => ({
-  projectIdx:  index('experiments_project').on(t.projectId),
-  projectUniq: uniqueIndex('experiments_project_name').on(t.projectId, t.name),
-}))
+export const experiments = sqliteTable(
+  "experiments",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").notNull(),
+    name: text("name").notNull(),
+    universe: text("universe").notNull(),
+    targetingGate: text("targeting_gate"),
+    allocationPct: integer("allocation_pct").notNull().default(0), // 0–10000 (basis points); 1000 = 10%
+    salt: text("salt").notNull(),
+    params: text("params", { mode: "json" }).$type<ParamSchema>().notNull(),
+    groups: text("groups", { mode: "json" }).$type<ExperimentGroup[]>().notNull(),
+    status: text("status", { enum: ["draft", "running", "stopped", "archived"] })
+      .notNull()
+      .default("draft"),
+    startedAt: text("started_at"),
+    stoppedAt: text("stopped_at"), // set once when status transitions to 'stopped'; never overwritten
+    significanceThreshold: real("significance_threshold").notNull().default(0.05),
+    minRuntimeDays: integer("min_runtime_days").notNull().default(0),
+    minSampleSize: integer("min_sample_size").notNull().default(100),
+    cupedFrozenAt: text("cuped_frozen_at"),
+    sequentialTesting: integer("sequential_testing", { mode: "boolean" }).notNull().default(false),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("experiments_project").on(t.projectId),
+    projectUniq: uniqueIndex("experiments_project_name").on(t.projectId, t.name),
+  }),
+);
 
-export const events = sqliteTable('events', {
-  id:          text('id').primaryKey(),
-  projectId:   text('project_id').notNull(),
-  name:        text('name').notNull(),
-  description: text('description'),
-  properties:  text('properties', { mode: 'json' }).$type<EventProperty[]>().notNull().default('[]'),
-  pending:     integer('pending').notNull().default(0),
-  createdAt:   text('created_at').notNull(),
-}, t => ({
-  projectIdx:  index('events_project').on(t.projectId),
-  projectUniq: uniqueIndex('events_project_name').on(t.projectId, t.name),
-}))
+export const events = sqliteTable(
+  "events",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    properties: text("properties", { mode: "json" })
+      .$type<EventProperty[]>()
+      .notNull()
+      .default("[]"),
+    pending: integer("pending").notNull().default(0),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("events_project").on(t.projectId),
+    projectUniq: uniqueIndex("events_project_name").on(t.projectId, t.name),
+  }),
+);
 
-export const metrics = sqliteTable('metrics', {
-  id:           text('id').primaryKey(),
-  projectId:    text('project_id').notNull(),
-  name:         text('name').notNull(),
-  eventName:    text('event_name').notNull(),
-  valuePath:    text('value_path'),
-  aggregation:          text('aggregation', { enum: ['count_users','count_events','sum','avg','retention_Nd'] }).notNull().default('count_users'),
-  winsoризePct:         integer('winsorize_pct').notNull().default(99),  // integer percentile 1–99
-  minDetectableEffect:  real('min_detectable_effect'),  // NULL = no threshold; guardrail never fires below this absolute delta
-  updatedAt:            text('updated_at').notNull(),
-}, t => ({ uniq: uniqueIndex('metrics_project_name').on(t.projectId, t.name) }))
+export const metrics = sqliteTable(
+  "metrics",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").notNull(),
+    name: text("name").notNull(),
+    eventName: text("event_name").notNull(),
+    valuePath: text("value_path"),
+    aggregation: text("aggregation", {
+      enum: ["count_users", "count_events", "sum", "avg", "retention_Nd"],
+    })
+      .notNull()
+      .default("count_users"),
+    winsoризePct: integer("winsorize_pct").notNull().default(99), // integer percentile 1–99
+    minDetectableEffect: real("min_detectable_effect"), // NULL = no threshold; guardrail never fires below this absolute delta
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex("metrics_project_name").on(t.projectId, t.name) }),
+);
 
-export const experimentMetrics = sqliteTable('experiment_metrics', {
-  id:           text('id').primaryKey(),
-  experimentId: text('experiment_id').notNull().references(() => experiments.id, { onDelete: 'cascade' }),
-  metricId:     text('metric_id').notNull().references(() => metrics.id, { onDelete: 'cascade' }),
-  role:         text('role', { enum: ['goal','guardrail','secondary'] }).notNull(),
-  createdAt:    integer('created_at').notNull(),
-}, t => ({ uniq: uniqueIndex('exp_metrics_uniq').on(t.experimentId, t.metricId) }))
+export const experimentMetrics = sqliteTable(
+  "experiment_metrics",
+  {
+    id: text("id").primaryKey(),
+    experimentId: text("experiment_id")
+      .notNull()
+      .references(() => experiments.id, { onDelete: "cascade" }),
+    metricId: text("metric_id")
+      .notNull()
+      .references(() => metrics.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["goal", "guardrail", "secondary"] }).notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex("exp_metrics_uniq").on(t.experimentId, t.metricId) }),
+);
 
-export const experimentResults = sqliteTable('experiment_results', {
-  projectId:    text('project_id').notNull(),
-  experiment:   text('experiment').notNull(),
-  metric:       text('metric').notNull(),
-  groupName:    text('group_name').notNull(),
-  ds:           text('ds').notNull(),
-  n:            integer('n'),
-  mean:         real('mean'),
-  variance:     real('variance'),
-  delta:        real('delta'),
-  deltaPct:     real('delta_pct'),
-  ci95Low:      real('ci_95_low'),
-  ci95High:     real('ci_95_high'),
-  ci99Low:      real('ci_99_low'),
-  ci99High:     real('ci_99_high'),
-  pValue:       real('p_value'),
-  expectedN:    integer('expected_n'),
-  srmPValue:    real('srm_p_value'),
-  srmDetected:  integer('srm_detected').notNull().default(0),
-  isFinal:      integer('is_final').notNull().default(0),
-  peekWarning:  integer('peek_warning').notNull().default(0),
-}, t => ({
-  pk:    primaryKey({ columns: [t.projectId, t.experiment, t.metric, t.groupName, t.ds] }),
-  dsIdx: index('experiment_results_ds').on(t.projectId, t.ds),
-}))
+export const experimentResults = sqliteTable(
+  "experiment_results",
+  {
+    projectId: text("project_id").notNull(),
+    experiment: text("experiment").notNull(),
+    metric: text("metric").notNull(),
+    groupName: text("group_name").notNull(),
+    ds: text("ds").notNull(),
+    n: integer("n"),
+    mean: real("mean"),
+    variance: real("variance"),
+    delta: real("delta"),
+    deltaPct: real("delta_pct"),
+    ci95Low: real("ci_95_low"),
+    ci95High: real("ci_95_high"),
+    ci99Low: real("ci_99_low"),
+    ci99High: real("ci_99_high"),
+    pValue: real("p_value"),
+    expectedN: integer("expected_n"),
+    srmPValue: real("srm_p_value"),
+    srmDetected: integer("srm_detected").notNull().default(0),
+    isFinal: integer("is_final").notNull().default(0),
+    peekWarning: integer("peek_warning").notNull().default(0),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.projectId, t.experiment, t.metric, t.groupName, t.ds] }),
+    dsIdx: index("experiment_results_ds").on(t.projectId, t.ds),
+  }),
+);
 
-export const userMetricBaseline = sqliteTable('user_metric_baseline', {
-  projectId:  text('project_id').notNull(),
-  userId:     text('user_id').notNull(),
-  metricName: text('metric_name').notNull(),
-  avgValue:   real('avg_value').notNull(),
-  updatedDs:  text('updated_ds').notNull(),
-}, t => ({ pk: primaryKey({ columns: [t.projectId, t.userId, t.metricName] }) }))
+export const userMetricBaseline = sqliteTable(
+  "user_metric_baseline",
+  {
+    projectId: text("project_id").notNull(),
+    userId: text("user_id").notNull(),
+    metricName: text("metric_name").notNull(),
+    avgValue: real("avg_value").notNull(),
+    updatedDs: text("updated_ds").notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.projectId, t.userId, t.metricName] }) }),
+);
 
-export const userAliases = sqliteTable('user_aliases', {
-  projectId:   text('project_id').notNull(),
-  anonymousId: text('anonymous_id').notNull(),
-  userId:      text('user_id').notNull(),
-  createdAt:   text('created_at').notNull(),
-}, t => ({
-  pk:      primaryKey({ columns: [t.projectId, t.anonymousId] }),
-  userIdx: index('user_aliases_user').on(t.projectId, t.userId),
-}))
+export const userAliases = sqliteTable(
+  "user_aliases",
+  {
+    projectId: text("project_id").notNull(),
+    anonymousId: text("anonymous_id").notNull(),
+    userId: text("user_id").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.projectId, t.anonymousId] }),
+    userIdx: index("user_aliases_user").on(t.projectId, t.userId),
+  }),
+);
 
-export const userAttributes = sqliteTable('user_attributes', {
-  id:          text('id').primaryKey(),
-  projectId:   text('project_id').notNull(),
-  name:        text('name').notNull(),
-  type:        text('type', { enum: ['string','number','boolean','enum','date'] }).notNull(),
-  enumValues:  text('enum_values', { mode: 'json' }).$type<string[] | null>(),
-  required:    integer('required').notNull().default(0),
-  description: text('description'),
-  sdkPath:     text('sdk_path'),
-  createdAt:   text('created_at').notNull(),
-}, t => ({
-  projectIdx:  index('user_attributes_project').on(t.projectId),
-  projectUniq: uniqueIndex('user_attributes_project_name').on(t.projectId, t.name),
-}))
+export const userAttributes = sqliteTable(
+  "user_attributes",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").notNull(),
+    name: text("name").notNull(),
+    type: text("type", { enum: ["string", "number", "boolean", "enum", "date"] }).notNull(),
+    enumValues: text("enum_values", { mode: "json" }).$type<string[] | null>(),
+    required: integer("required").notNull().default(0),
+    description: text("description"),
+    sdkPath: text("sdk_path"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("user_attributes_project").on(t.projectId),
+    projectUniq: uniqueIndex("user_attributes_project_name").on(t.projectId, t.name),
+  }),
+);
 ```
 
 ```typescript
 // src/db/index.ts
-import { drizzle }    from 'drizzle-orm/d1'
-import * as schema    from './schema'
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "./schema";
 
 export function getDb(d1: D1Database) {
-  return drizzle(d1, { schema })
+  return drizzle(d1, { schema });
 }
 ```
 
@@ -497,6 +595,7 @@ await db.batch([
 ```
 
 **Schema changes → migration workflow:**
+
 ```bash
 # 1. Edit src/db/schema.ts
 # 2. Generate migration
@@ -509,13 +608,13 @@ wrangler deploy
 
 ```typescript
 // drizzle.config.ts
-import { defineConfig } from 'drizzle-kit'
+import { defineConfig } from "drizzle-kit";
 export default defineConfig({
-  schema:    '../core/src/db/schema.ts',  // — points at @flaglab/core
-  out:       './migrations',
-  dialect:   'sqlite',
-  driver:    'd1-http',
-})
+  schema: "../core/src/db/schema.ts", // — points at @flaglab/core
+  out: "./migrations",
+  dialect: "sqlite",
+  driver: "d1-http",
+});
 ```
 
 ## Auth Middleware
@@ -537,53 +636,55 @@ The same `validateSdkKey()` function from `@flaglab/core` is used by both the Wo
 
 // Module-scope cache: { project_id, type } per key hash, 60s TTL
 // Cold miss → KV read (not D1). Warm → zero network calls.
-const keyCache = new Map<string, { project_id: string; type: string; expiry: number }>()
+const keyCache = new Map<string, { project_id: string; type: string; expiry: number }>();
 
 // Constant-time secret comparison — prevents timing oracle attacks on shared secrets.
 // JS string !== short-circuits at first differing byte, leaking timing information.
 async function safeCompare(a: string, b: string): Promise<boolean> {
-  const enc = new TextEncoder()
-  const ab  = enc.encode(a)
-  const bb  = enc.encode(b)
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
   if (ab.length !== bb.length) {
     // Still run a dummy comparison to avoid length-based timing leak
-    await crypto.subtle.timingSafeEqual(ab, ab)
-    return false
+    await crypto.subtle.timingSafeEqual(ab, ab);
+    return false;
   }
-  return crypto.subtle.timingSafeEqual(ab, bb)
+  return crypto.subtle.timingSafeEqual(ab, bb);
 }
 
-async function authMiddleware(req: Request, env: Env, keyType: 'server'|'client'|'admin') {
-  const raw  = req.headers.get('X-SDK-Key') ?? req.headers.get('Authorization')?.slice(7)
-  if (!raw) return new Response('Unauthorized', { status: 401 })
+async function authMiddleware(req: Request, env: Env, keyType: "server" | "client" | "admin") {
+  const raw = req.headers.get("X-SDK-Key") ?? req.headers.get("Authorization")?.slice(7);
+  if (!raw) return new Response("Unauthorized", { status: 401 });
 
-  const hash = await sha256(raw)
+  const hash = await sha256(raw);
 
   // 1. Module-scope cache
-  const cached = keyCache.get(hash)
+  const cached = keyCache.get(hash);
   if (cached && Date.now() < cached.expiry) {
-    if (cached.type !== keyType && cached.type !== 'admin')
-      return new Response('Forbidden', { status: 403 })
-    return cached
+    if (cached.type !== keyType && cached.type !== "admin")
+      return new Response("Forbidden", { status: 403 });
+    return cached;
   }
 
   // 2. KV lookup — replaces D1 query, globally distributed, unaffected by D1 write contention
-  const raw_meta = await env.FLAGS_KV.get(`sdk_key:${hash}`)
-  if (!raw_meta) return new Response('Unauthorized', { status: 401 })
+  const raw_meta = await env.FLAGS_KV.get(`sdk_key:${hash}`);
+  if (!raw_meta) return new Response("Unauthorized", { status: 401 });
 
-  const meta = JSON.parse(raw_meta) as { project_id: string; type: string; expires_at?: string }
+  const meta = JSON.parse(raw_meta) as { project_id: string; type: string; expires_at?: string };
   if (meta.expires_at && new Date(meta.expires_at) < new Date()) {
     // Expired key — treat as invalid; KV entry will be cleaned up by retention cron
-    return new Response('Unauthorized — key expired. Run `flaglab login` to re-authenticate.', { status: 401 })
+    return new Response("Unauthorized — key expired. Run `flaglab login` to re-authenticate.", {
+      status: 401,
+    });
   }
-  if (meta.type !== keyType && meta.type !== 'admin')
-    return new Response('Forbidden', { status: 403 })
+  if (meta.type !== keyType && meta.type !== "admin")
+    return new Response("Forbidden", { status: 403 });
 
   // Admin keys use 5s TTL — shorter window ensures revoked CLI/dashboard keys are cut off quickly.
   // Server/client keys use 60s — hot path keys change rarely; extra KV reads not worth it.
-  const ttl = meta.type === 'admin' ? 5_000 : 60_000
-  keyCache.set(hash, { ...meta, expiry: Date.now() + ttl })
-  return meta  // caller uses .project_id
+  const ttl = meta.type === "admin" ? 5_000 : 60_000;
+  keyCache.set(hash, { ...meta, expiry: Date.now() + ttl });
+  return meta; // caller uses .project_id
 }
 ```
 
@@ -591,27 +692,35 @@ Key creation and revocation must keep KV in sync with D1 (handled by Next.js Ser
 
 ```typescript
 // apps/ui/actions/keys.ts — on key creation
-const rawKey  = `sdk_${type}_${crypto.randomUUID().replace(/-/g, '')}`
-const hash    = await sha256(rawKey)
-const meta    = JSON.stringify({ project_id: key.project_id, type })
+const rawKey = `sdk_${type}_${crypto.randomUUID().replace(/-/g, "")}`;
+const hash = await sha256(rawKey);
+const meta = JSON.stringify({ project_id: key.project_id, type });
 
 // Admin keys (CLI) get a 90-day expiry — permanent credentials are a security risk.
 // Server/client keys do not expire by default (operational keys need explicit rotation).
-const expiresAt = type === 'admin'
-  ? new Date(Date.now() + 90 * 86_400_000).toISOString()
-  : null
+const expiresAt = type === "admin" ? new Date(Date.now() + 90 * 86_400_000).toISOString() : null;
 
-await db.insert(sdkKeys).values({ id: crypto.randomUUID(), projectId: key.project_id, keyHash: hash, type, createdAt: now, expiresAt })
+await db.insert(sdkKeys).values({
+  id: crypto.randomUUID(),
+  projectId: key.project_id,
+  keyHash: hash,
+  type,
+  createdAt: now,
+  expiresAt,
+});
 
-await env.FLAGS_KV.put(`sdk_key:${hash}`, JSON.stringify({ ...JSON.parse(meta), expires_at: expiresAt }))
+await env.FLAGS_KV.put(
+  `sdk_key:${hash}`,
+  JSON.stringify({ ...JSON.parse(meta), expires_at: expiresAt }),
+);
 
 // Return raw key to caller once — never stored in plaintext anywhere
-return Response.json({ key: rawKey }, { status: 201 })
+return Response.json({ key: rawKey }, { status: 201 });
 
 // on revocation
-await db.update(sdkKeys).set({ revokedAt: new Date().toISOString() }).where(eq(sdkKeys.id, id))
+await db.update(sdkKeys).set({ revokedAt: new Date().toISOString() }).where(eq(sdkKeys.id, id));
 // Also delete from KV:
-await env.FLAGS_KV.delete(`sdk_key:${hash}`)  // immediate effect on next KV read
+await env.FLAGS_KV.delete(`sdk_key:${hash}`); // immediate effect on next KV read
 ```
 
 ### Admin request authorization (Next.js)
@@ -626,31 +735,31 @@ Two caller types:
 
 ```typescript
 // apps/ui/lib/admin-auth.ts
-import { auth } from './auth'
-import { validateSdkKey } from '@flaglab/core'
-import { getCloudflareContext } from '@cloudflare/next-on-pages'
+import { auth } from "./auth";
+import { validateSdkKey } from "@flaglab/core";
+import { getCloudflareContext } from "@cloudflare/next-on-pages";
 
-type AdminIdentity = { projectId: string; source: 'jwt' | 'sdk_key' }
+type AdminIdentity = { projectId: string; source: "jwt" | "sdk_key" };
 
 export async function authenticateAdmin(req?: Request): Promise<AdminIdentity> {
   // Path 1: Auth.js session (browser — Server Actions and page loads)
-  const session = await auth()
+  const session = await auth();
   if (session?.user?.project_id) {
-    return { projectId: session.user.project_id, source: 'jwt' }
+    return { projectId: session.user.project_id, source: "jwt" };
   }
 
   // Path 2: SDK key (CLI — Route Handler requests)
   if (req) {
-    const sdkKeyHeader = req.headers.get('X-SDK-Key')
+    const sdkKeyHeader = req.headers.get("X-SDK-Key");
     if (sdkKeyHeader) {
-      const env = getCloudflareContext().env
-      const keyMeta = await validateSdkKey(sdkKeyHeader, 'admin', env.FLAGS_KV)
-      if (!keyMeta) throw new Error('Invalid or expired SDK key')
-      return { projectId: keyMeta.project_id, source: 'sdk_key' }
+      const env = getCloudflareContext().env;
+      const keyMeta = await validateSdkKey(sdkKeyHeader, "admin", env.FLAGS_KV);
+      if (!keyMeta) throw new Error("Invalid or expired SDK key");
+      return { projectId: keyMeta.project_id, source: "sdk_key" };
     }
   }
 
-  throw new Error('Not authenticated')
+  throw new Error("Not authenticated");
 }
 
 // Usage in every Server Action and Route Handler:
@@ -679,15 +788,16 @@ Customer-facing: name and plan. Plan is updated when a customer upgrades/downgra
 
 // PATCH /api/admin/projects/:id — rename only (Route Handler for CLI)
 async function updateProject(req, env) {
-  const { projectId } = await authenticateAdmin(req)
-  const body = await req.json() as { name?: string }
+  const { projectId } = await authenticateAdmin(req);
+  const body = (await req.json()) as { name?: string };
 
-  await db.update(projects)
+  await db
+    .update(projects)
     .set({ name: body.name ?? undefined, updatedAt: new Date().toISOString() })
-    .where(eq(projects.id, projectId))
+    .where(eq(projects.id, projectId));
 
-  await rebuildFlags(env, projectId)  // plan name might not change but version must update
-  return Response.json(await db.select().from(projects).where(eq(projects.id, projectId)).get())
+  await rebuildFlags(env, projectId); // plan name might not change but version must update
+  return Response.json(await db.select().from(projects).where(eq(projects.id, projectId)).get());
 }
 ```
 
@@ -698,11 +808,11 @@ The UI reads plans directly from the import to display limits; operators edit `p
 
 ```typescript
 // apps/ui/app/api/admin/plans/route.ts — read-only
-import { PLANS } from '@flaglab/core/config/plans'
+import { PLANS } from "@flaglab/core/config/plans";
 
 // GET /api/admin/plans — returns all plans for the UI plan selector
 export async function GET() {
-  return Response.json(PLANS)  // compiled from plans.yaml at build time
+  return Response.json(PLANS); // compiled from plans.yaml at build time
 }
 ```
 
@@ -717,49 +827,59 @@ All follow the same pattern: authenticate → validate → checkLimit → D1 wri
 // apps/ui/actions/gates.ts (Server Action for browser) or
 // apps/ui/app/api/admin/gates/route.ts (Route Handler for CLI)
 async function createGate(req, env) {
-  const { projectId } = await authenticateAdmin(req)
-  const gate = await req.json()
+  const { projectId } = await authenticateAdmin(req);
+  const gate = await req.json();
 
-  await checkLimit(env, projectId, 'flags')
+  await checkLimit(env, projectId, "flags");
 
   await db.insert(gates).values({
-    id: crypto.randomUUID(), projectId,
-    name: gate.name, rules: JSON.stringify(gate.rules),
-    rolloutPct: gate.rollout_pct, salt: gate.salt,
-    enabled: 1, killswitch: gate.killswitch ? 1 : 0,
+    id: crypto.randomUUID(),
+    projectId,
+    name: gate.name,
+    rules: JSON.stringify(gate.rules),
+    rolloutPct: gate.rollout_pct,
+    salt: gate.salt,
+    enabled: 1,
+    killswitch: gate.killswitch ? 1 : 0,
     updatedAt: new Date().toISOString(),
-  })
+  });
 
-  let cdnWarning: string | null = null
+  let cdnWarning: string | null = null;
   try {
-    await rebuildFlags(env, projectId)  // KV write + CDN purge (~150ms)
+    await rebuildFlags(env, projectId); // KV write + CDN purge (~150ms)
   } catch (err: any) {
-    if (err.message?.includes('CDN purge failed')) {
-      cdnWarning = err.message
+    if (err.message?.includes("CDN purge failed")) {
+      cdnWarning = err.message;
     } else {
-      throw err  // KV write failure — this IS a hard error
+      throw err; // KV write failure — this IS a hard error
     }
   }
 
-  return Response.json({
-    ok:         true,
-    cdnPurged:  cdnWarning === null,
-    ...(cdnWarning ? { warning: cdnWarning } : {}),
-  }, { status: 201 })
+  return Response.json(
+    {
+      ok: true,
+      cdnPurged: cdnWarning === null,
+      ...(cdnWarning ? { warning: cdnWarning } : {}),
+    },
+    { status: 201 },
+  );
 }
 
 // apps/ui/actions/experiments.ts — calls rebuildExperiments(), not rebuildFlags()
 
 // PATCH /api/admin/experiments/:id — guard against mutations that corrupt running experiments
 async function updateExperiment(req, env) {
-  const { projectId } = await authenticateAdmin(req)
-  const body = await req.json() as Record<string, unknown>
+  const { projectId } = await authenticateAdmin(req);
+  const body = (await req.json()) as Record<string, unknown>;
 
-  const exp = await db.select({ status: experiments.status })
-    .from(experiments).where(eq(experiments.id, id)).get()
-  if (!exp) return new Response('Not found', { status: 404 })
+  const exp = await db
+    .select({ status: experiments.status })
+    .from(experiments)
+    .where(eq(experiments.id, id))
+    .get();
+  if (!exp) return new Response("Not found", { status: 404 });
 
-  if (exp.status === 'running') {
+  if (exp.status === "running") {
     // These fields cannot change on a running experiment without corrupting results:
     //
     // - allocation_pct: mid-run increase creates a mixed population with different baseline
@@ -769,29 +889,44 @@ async function updateExperiment(req, env) {
     // - universe: changes holdout semantics for all users.
     // - hash_version: bumping this mid-run reassigns all users (same as changing salt).
     //   Rule: bump only on bug fix; in-flight experiments MUST keep their original version.
-    const IMMUTABLE_WHILE_RUNNING = ['allocation_pct', 'groups', 'salt', 'universe', 'hash_version']
-    const attempted = IMMUTABLE_WHILE_RUNNING.filter(f => f in body)
+    const IMMUTABLE_WHILE_RUNNING = [
+      "allocation_pct",
+      "groups",
+      "salt",
+      "universe",
+      "hash_version",
+    ];
+    const attempted = IMMUTABLE_WHILE_RUNNING.filter((f) => f in body);
     if (attempted.length > 0) {
-      return new Response(JSON.stringify({
-        error: `Cannot modify [${attempted.join(', ')}] on a running experiment. Stop the experiment first, then edit.`,
-        code:  'EXPERIMENT_RUNNING',
-      }), { status: 409 })
+      return new Response(
+        JSON.stringify({
+          error: `Cannot modify [${attempted.join(", ")}] on a running experiment. Stop the experiment first, then edit.`,
+          code: "EXPERIMENT_RUNNING",
+        }),
+        { status: 409 },
+      );
     }
   }
 
   // Safe to update: name, targeting_gate, significance_threshold, min_runtime_days,
   // min_sample_size, sequential_testing, params schema (does not affect bucketing).
-  await db.update(experiments).set({ ...body, updatedAt: new Date().toISOString() })
-    .where(and(eq(experiments.id, id), eq(experiments.projectId, projectId)))
-  await rebuildExperiments(env, projectId)
-  return Response.json({ ok: true })
+  await db
+    .update(experiments)
+    .set({ ...body, updatedAt: new Date().toISOString() })
+    .where(and(eq(experiments.id, id), eq(experiments.projectId, projectId)));
+  await rebuildExperiments(env, projectId);
+  return Response.json({ ok: true });
 }
 
 async function startExperiment(req, env) {
-  const { projectId } = await authenticateAdmin(req)
-  const startedAt = new Date().toISOString()
-  const project = await db.select({ plan: projects.plan }).from(projects).where(eq(projects.id, projectId)).get()
-  const plan = getPlan(project!.plan)
+  const { projectId } = await authenticateAdmin(req);
+  const startedAt = new Date().toISOString();
+  const project = await db
+    .select({ plan: projects.plan })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .get();
+  const plan = getPlan(project!.plan);
 
   // ORDERING INVARIANT: freeze CUPED baselines BEFORE setting status='running'.
   // If the freeze fails (AE unavailable, D1 contention), the experiment stays in draft
@@ -801,19 +936,20 @@ async function startExperiment(req, env) {
   //
   // The 06-analysis.md startExperiment() is the canonical implementation reference;
   // this handler calls it or mirrors it exactly. Do not reverse this order.
-  let cupedFrozenAt: string | null = null
+  let cupedFrozenAt: string | null = null;
   if (plan.cuped_enabled) {
     // freezeCupedBaselines() throws on failure — propagates as 500, experiment stays draft
-    await freezeCupedBaselines(env, projectId, id, startedAt)
-    cupedFrozenAt = new Date().toISOString()
+    await freezeCupedBaselines(env, projectId, id, startedAt);
+    cupedFrozenAt = new Date().toISOString();
   }
 
   // Only after baselines are fully written: mark running. Both fields set atomically.
-  await db.update(experiments)
-    .set({ status: 'running', startedAt, cupedFrozenAt })
-    .where(and(eq(experiments.id, id), eq(experiments.projectId, projectId)))
+  await db
+    .update(experiments)
+    .set({ status: "running", startedAt, cupedFrozenAt })
+    .where(and(eq(experiments.id, id), eq(experiments.projectId, projectId)));
 
-  await rebuildExperiments(env, projectId)
+  await rebuildExperiments(env, projectId);
 }
 ```
 
@@ -823,69 +959,70 @@ Before any create operation in admin Server Actions/Route Handlers, check plan l
 
 ```typescript
 // packages/core/src/limits.ts
-import { getPlan, type Plan } from './config/plans'
+import { getPlan, type Plan } from "./config/plans";
 
 // plan is pre-fetched by the caller — no D1 query here.
 export async function checkLimit(
   env: Env,
   projectId: string,
-  resource: 'flags' | 'configs' | 'experiments_running' | 'universes' | 'metrics' | 'sdk_keys',
+  resource: "flags" | "configs" | "experiments_running" | "universes" | "metrics" | "sdk_keys",
   plan: Plan,
 ): Promise<void> {
-
   const LIMITS: Record<string, number> = {
-    flags:               plan.max_flags,
-    configs:             plan.max_configs,
+    flags: plan.max_flags,
+    configs: plan.max_configs,
     experiments_running: plan.max_experiments_running,
-    universes:           plan.max_universes,
-    metrics:             plan.max_metrics,
-    sdk_keys:            plan.max_sdk_keys,
-  }
+    universes: plan.max_universes,
+    metrics: plan.max_metrics,
+    sdk_keys: plan.max_sdk_keys,
+  };
 
   const PLATFORM_LIMITS: Record<string, number> = {
-    flags:               40_000,  // ~500 bytes/gate × 40K = ~20MB KV blob
-    configs:             10_000,
+    flags: 40_000, // ~500 bytes/gate × 40K = ~20MB KV blob
+    configs: 10_000,
     experiments_running: 1_000,
-    universes:           500,
-    metrics:             5_000,
-    sdk_keys:            1_000,
-  }
+    universes: 500,
+    metrics: 5_000,
+    sdk_keys: 1_000,
+  };
 
-  const planLimit      = LIMITS[resource]
-  const effectiveLimit = planLimit === -1
-    ? (PLATFORM_LIMITS[resource] ?? Infinity)
-    : planLimit
+  const planLimit = LIMITS[resource];
+  const effectiveLimit = planLimit === -1 ? (PLATFORM_LIMITS[resource] ?? Infinity) : planLimit;
 
-  const db = getDb(env.DB)
+  const db = getDb(env.DB);
 
   const tableMap = {
-    flags:               gates,
-    configs:             configs,
+    flags: gates,
+    configs: configs,
     experiments_running: experiments,
-    universes:           universes,
-    metrics:             metrics,
-    sdk_keys:            sdkKeys,
-  } as const
+    universes: universes,
+    metrics: metrics,
+    sdk_keys: sdkKeys,
+  } as const;
 
   const whereMap = {
-    flags:               eq(gates.projectId, projectId),
-    configs:             eq(configs.projectId, projectId),
-    experiments_running: and(eq(experiments.projectId, projectId), eq(experiments.status, 'running')),
-    universes:           eq(universes.projectId, projectId),
-    metrics:             eq(metrics.projectId, projectId),
-    sdk_keys:            and(eq(sdkKeys.projectId, projectId), isNull(sdkKeys.revokedAt)),
-  }
+    flags: eq(gates.projectId, projectId),
+    configs: eq(configs.projectId, projectId),
+    experiments_running: and(
+      eq(experiments.projectId, projectId),
+      eq(experiments.status, "running"),
+    ),
+    universes: eq(universes.projectId, projectId),
+    metrics: eq(metrics.projectId, projectId),
+    sdk_keys: and(eq(sdkKeys.projectId, projectId), isNull(sdkKeys.revokedAt)),
+  };
 
-  const result = await db.select({ n: count() })
+  const result = await db
+    .select({ n: count() })
     .from(tableMap[resource])
     .where(whereMap[resource])
-    .get()
-  const n = result?.n ?? 0
+    .get();
+  const n = result?.n ?? 0;
   if (n >= effectiveLimit) {
     throw new ApiError(
-      `${resource} limit reached (${effectiveLimit}${planLimit === -1 ? ' — platform ceiling' : ` on ${project.plan} plan`}). Contact support.`,
-      429
-    )
+      `${resource} limit reached (${effectiveLimit}${planLimit === -1 ? " — platform ceiling" : ` on ${project.plan} plan`}). Contact support.`,
+      429,
+    );
   }
 }
 ```
@@ -900,28 +1037,28 @@ zero D1 in warm case, customer-facing SLA. Admin CRUD does not belong here.
 ```typescript
 // packages/worker/src/sdk/flags.ts
 async function handleFlags(req, env) {
-  const key = await authMiddleware(req, env, 'server')
-  const flags = await getFlags(env, key.project_id)
-  const plan  = getPlan(flags.plan)
+  const key = await authMiddleware(req, env, "server");
+  const flags = await getFlags(env, key.project_id);
+  const plan = getPlan(flags.plan);
 
-  const interval = plan.poll_interval ?? 30
-  const etag     = `"${flags.version}"`
+  const interval = plan.poll_interval ?? 30;
+  const etag = `"${flags.version}"`;
 
-  if (req.headers.get('If-None-Match') === etag) {
+  if (req.headers.get("If-None-Match") === etag) {
     return new Response(null, {
       status: 304,
-      headers: { 'X-Poll-Interval': String(interval) },
-    })
+      headers: { "X-Poll-Interval": String(interval) },
+    });
   }
 
   return new Response(JSON.stringify(flags), {
     headers: {
-      'Content-Type':    'application/json',
-      'Cache-Control':   `public, max-age=31536000`,  // infinite — purge on change
-      'ETag':             etag,
-      'X-Poll-Interval': String(interval),
-    }
-  })
+      "Content-Type": "application/json",
+      "Cache-Control": `public, max-age=31536000`, // infinite — purge on change
+      ETag: etag,
+      "X-Poll-Interval": String(interval),
+    },
+  });
 }
 ```
 
@@ -930,20 +1067,19 @@ async function handleFlags(req, env) {
 ```typescript
 // packages/worker/src/sdk/experiments.ts
 async function handleExperiments(req, env) {
-  const key  = await authMiddleware(req, env, 'server')
-  const exps = await getExperiments(env, key.project_id)
-  const etag = `"${exps.version}"`
+  const key = await authMiddleware(req, env, "server");
+  const exps = await getExperiments(env, key.project_id);
+  const etag = `"${exps.version}"`;
 
-  if (req.headers.get('If-None-Match') === etag)
-    return new Response(null, { status: 304 })
+  if (req.headers.get("If-None-Match") === etag) return new Response(null, { status: 304 });
 
   return new Response(JSON.stringify(exps), {
     headers: {
-      'Content-Type':  'application/json',
-      'Cache-Control': 'public, max-age=31536000',
-      'ETag':           etag,
-    }
-  })
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=31536000",
+      ETag: etag,
+    },
+  });
 }
 ```
 
@@ -955,36 +1091,34 @@ Rules never reach the client.
 ```typescript
 // packages/worker/src/sdk/evaluate.ts
 async function evaluate(req, env) {
-  const key          = await authMiddleware(req, env, 'client')
-  const { user }     = await req.json()
+  const key = await authMiddleware(req, env, "client");
+  const { user } = await req.json();
   const [flagsBlob, expsBlob] = await Promise.all([
     getFlags(env, key.project_id),
     getExperiments(env, key.project_id),
-  ])
+  ]);
 
-  const flags: Record<string, boolean> = {}
-  for (const [name, gate] of Object.entries(flagsBlob.gates))
-    flags[name] = evalGate(gate, user)
+  const flags: Record<string, boolean> = {};
+  for (const [name, gate] of Object.entries(flagsBlob.gates)) flags[name] = evalGate(gate, user);
 
-  const configs: Record<string, unknown> = {}
-  for (const [name, config] of Object.entries(flagsBlob.configs))
-    configs[name] = config.value
+  const configs: Record<string, unknown> = {};
+  for (const [name, config] of Object.entries(flagsBlob.configs)) configs[name] = config.value;
 
-  const experiments: Record<string, ExperimentResult> = {}
+  const experiments: Record<string, ExperimentResult> = {};
   for (const [name, exp] of Object.entries(expsBlob.experiments)) {
-    if (exp.status !== 'running') continue
-    const universe = expsBlob.universes[exp.universe]
-    const result   = evalExperiment(exp, user, flags, universe?.holdout_range ?? null)
-    if (result) experiments[name] = result
+    if (exp.status !== "running") continue;
+    const universe = expsBlob.universes[exp.universe];
+    const result = evalExperiment(exp, user, flags, universe?.holdout_range ?? null);
+    if (result) experiments[name] = result;
   }
 
   // Build attribute warnings — attributes used in rules but absent from user context
-  const attrWarnings: Record<string, string[]> = {}
+  const attrWarnings: Record<string, string[]> = {};
   for (const [name, gate] of Object.entries(flagsBlob.gates)) {
     const missing = gate.rules
       .map((r: any) => r.attr)
-      .filter((attr: string) => user[attr] === undefined || user[attr] === null)
-    if (missing.length > 0) attrWarnings[name] = missing
+      .filter((attr: string) => user[attr] === undefined || user[attr] === null);
+    if (missing.length > 0) attrWarnings[name] = missing;
   }
 
   return Response.json({
@@ -992,7 +1126,7 @@ async function evaluate(req, env) {
     configs,
     experiments,
     ...(Object.keys(attrWarnings).length > 0 ? { _attribute_warnings: attrWarnings } : {}),
-  })
+  });
 }
 ```
 
@@ -1001,91 +1135,124 @@ async function evaluate(req, env) {
 ```typescript
 // packages/worker/src/sdk/collect.ts
 async function collect(req: Request, env: Env) {
-  const key      = await authMiddleware(req, env, 'client')
+  const key = await authMiddleware(req, env, "client");
   // Use request.text() (not .json()) to handle both application/json and text/plain.
   // sendBeacon() sends text/plain to avoid CORS preflight on mobile Safari — the
   // payload is still valid JSON. application/json would fail on beacon flushes.
-  const { events } = JSON.parse(await req.text()) as { events: RawEvent[] }
+  const { events } = JSON.parse(await req.text()) as { events: RawEvent[] };
 
   // Validate experiment names against KV blob — no D1 query, module-scope cached
-  const experimentNames = [...new Set(events.filter(e => e.type === 'exposure').map(e => e.experiment))]
+  const experimentNames = [
+    ...new Set(events.filter((e) => e.type === "exposure").map((e) => e.experiment)),
+  ];
 
   if (experimentNames.length > 0) {
-    const expsBlob = await getExperiments(env, key.project_id)  // KV, 10s module-scope cache
-    const validSet = new Set(Object.keys(expsBlob.experiments))
-    const invalid  = experimentNames.filter(n => !validSet.has(n))
+    const expsBlob = await getExperiments(env, key.project_id); // KV, 10s module-scope cache
+    const validSet = new Set(Object.keys(expsBlob.experiments));
+    const invalid = experimentNames.filter((n) => !validSet.has(n));
     if (invalid.length > 0)
-      return new Response(JSON.stringify({ error: 'Unknown experiments', invalid }), { status: 422 })
+      return new Response(JSON.stringify({ error: "Unknown experiments", invalid }), {
+        status: 422,
+      });
   }
 
   // Validate metric event_names against the events catalog cached in KV.
   // Client keys are public (embedded in browser JS), so unvalidated /collect allows analysis poisoning.
   // The catalog is cached via getCatalog() — module-scope cache, reloaded every 60s from KV.
-  const metricNames = [...new Set(events.filter(e => e.type === 'metric').map(e => e.event_name))]
+  const metricNames = [
+    ...new Set(events.filter((e) => e.type === "metric").map((e) => e.event_name)),
+  ];
   if (metricNames.length > 0) {
-    const catalog = await getCatalog(env, key.project_id)  // KV-cached, no D1
-    const invalidEvents = metricNames.filter(n => !catalog.has(n))
+    const catalog = await getCatalog(env, key.project_id); // KV-cached, no D1
+    const invalidEvents = metricNames.filter((n) => !catalog.has(n));
     if (invalidEvents.length > 0) {
       // Auto-discover: add pending=1 row to events catalog for admin review; still reject this batch
       // so unregistered events don't silently flow into analysis.
       for (const name of invalidEvents) {
-        await db.insert(events_table).values({
-          id: crypto.randomUUID(), projectId: key.project_id, name,
-          description: null, properties: '[]', pending: 1, createdAt: new Date().toISOString()
-        }).onConflictDoNothing()
+        await db
+          .insert(events_table)
+          .values({
+            id: crypto.randomUUID(),
+            projectId: key.project_id,
+            name,
+            description: null,
+            properties: "[]",
+            pending: 1,
+            createdAt: new Date().toISOString(),
+          })
+          .onConflictDoNothing();
       }
-      return new Response(JSON.stringify({
-        error: 'Unregistered event names. Register them in the event catalog first.',
-        unregistered: invalidEvents,
-      }), { status: 422 })
+      return new Response(
+        JSON.stringify({
+          error: "Unregistered event names. Register them in the event catalog first.",
+          unregistered: invalidEvents,
+        }),
+        { status: 422 },
+      );
     }
   }
 
   // Validate event payloads before writing to AE.
   // AE has a fixed schema: 3 blobs, 5 indexes, 2 doubles per dataset.
   // Excess properties are silently dropped by AE — validate here to surface errors.
-  const AE_MAX_PROPERTIES = 3  // blob slots available for user-supplied properties
+  const AE_MAX_PROPERTIES = 3; // blob slots available for user-supplied properties
   for (const e of events) {
-    if (e.type === 'metric') {
+    if (e.type === "metric") {
       // Validate numeric value — AE double1 must be a finite float.
       // NaN/Infinity produce wrong analysis results with no error signal.
       if (e.value !== undefined && !Number.isFinite(Number(e.value))) {
-        return new Response(JSON.stringify({
-          error: `Event '${e.event_name}': value must be a finite number, got ${JSON.stringify(e.value)}`,
-        }), { status: 422 })
+        return new Response(
+          JSON.stringify({
+            error: `Event '${e.event_name}': value must be a finite number, got ${JSON.stringify(e.value)}`,
+          }),
+          { status: 422 },
+        );
       }
       // Validate property count — reserved slots: user_id (blob1), anonymous_id (blob2).
       // User properties beyond blob3 are silently dropped.
-      const userProps = Object.keys(e.properties ?? {})
+      const userProps = Object.keys(e.properties ?? {});
       if (userProps.length > AE_MAX_PROPERTIES) {
-        return new Response(JSON.stringify({
-          error: `Event '${e.event_name}': max ${AE_MAX_PROPERTIES} properties allowed, got ${userProps.length}. ` +
-                 `AE schema is fixed — excess properties are silently dropped. Reduce properties or split into multiple events.`,
-        }), { status: 422 })
+        return new Response(
+          JSON.stringify({
+            error:
+              `Event '${e.event_name}': max ${AE_MAX_PROPERTIES} properties allowed, got ${userProps.length}. ` +
+              `AE schema is fixed — excess properties are silently dropped. Reduce properties or split into multiple events.`,
+          }),
+          { status: 422 },
+        );
       }
     }
   }
 
   for (const e of events) {
-    if (e.type === 'exposure') {
+    if (e.type === "exposure") {
       env.EXPOSURES.writeDataPoint({
-        blobs:   [e.group, e.user_id, e.anonymous_id ?? ''],
+        blobs: [e.group, e.user_id, e.anonymous_id ?? ""],
         doubles: [e.ts],
-        indexes: [key.project_id, e.experiment, 'exposure'],
-      })
-    } else if (e.type === 'metric') {
+        indexes: [key.project_id, e.experiment, "exposure"],
+      });
+    } else if (e.type === "metric") {
       env.METRIC_EVENTS.writeDataPoint({
-        blobs:   [e.user_id, e.anonymous_id ?? ''],
+        blobs: [e.user_id, e.anonymous_id ?? ""],
         doubles: [Number(e.value ?? 0), e.ts],
-        indexes: [key.project_id, e.event_name, 'metric'],
-      })
-    } else if (e.type === 'identify' && e.user_id && e.anonymous_id) {
-      await db.insert(userAliases)
-        .values({ projectId: key.project_id, anonymousId: e.anonymous_id, userId: e.user_id, createdAt: new Date().toISOString() })
-        .onConflictDoUpdate({ target: [userAliases.projectId, userAliases.anonymousId], set: { userId: e.user_id } })
+        indexes: [key.project_id, e.event_name, "metric"],
+      });
+    } else if (e.type === "identify" && e.user_id && e.anonymous_id) {
+      await db
+        .insert(userAliases)
+        .values({
+          projectId: key.project_id,
+          anonymousId: e.anonymous_id,
+          userId: e.user_id,
+          createdAt: new Date().toISOString(),
+        })
+        .onConflictDoUpdate({
+          target: [userAliases.projectId, userAliases.anonymousId],
+          set: { userId: e.user_id },
+        });
     }
   }
-  return new Response(null, { status: 202 })
+  return new Response(null, { status: 202 });
 }
 ```
 
@@ -1102,24 +1269,30 @@ today's `n` against yesterday's `n` and emit a warning on large drops:
 
 ```typescript
 // In analyzeExperiment — after computing totalControlN from canonicalExposures:
-const prevDayN = await db.select({ n: experimentResults.n })
+const prevDayN = await db
+  .select({ n: experimentResults.n })
   .from(experimentResults)
-  .where(and(
-    eq(experimentResults.projectId, projectId),
-    eq(experimentResults.experiment, exp.name),
-    eq(experimentResults.groupName, 'control'),
-    eq(experimentResults.ds, previousDs),
-  )).get()
+  .where(
+    and(
+      eq(experimentResults.projectId, projectId),
+      eq(experimentResults.experiment, exp.name),
+      eq(experimentResults.groupName, "control"),
+      eq(experimentResults.ds, previousDs),
+    ),
+  )
+  .get();
 
 if (prevDayN?.n && totalControlN < prevDayN.n * 0.8) {
-  console.warn(JSON.stringify({
-    event:       'ae_sample_drop_warning',
-    project_id:  projectId,
-    experiment:  exp.name,
-    today_n:     totalControlN,
-    yesterday_n: prevDayN.n,
-    drop_pct:    ((1 - totalControlN / prevDayN.n) * 100).toFixed(1) + '%',
-  }))
+  console.warn(
+    JSON.stringify({
+      event: "ae_sample_drop_warning",
+      project_id: projectId,
+      experiment: exp.name,
+      today_n: totalControlN,
+      yesterday_n: prevDayN.n,
+      drop_pct: ((1 - totalControlN / prevDayN.n) * 100).toFixed(1) + "%",
+    }),
+  );
   // Surface this in the dashboard results banner: "Sample size dropped >20% vs prior day —
   // possible AE ingestion issue. Check system health."
 }
@@ -1146,11 +1319,13 @@ dead_letter_queue = "event-ingestion-dlq"
 if (plan.durable_ingestion) {
   // Premium/Enterprise: queue-backed, retriable
   await env.COLLECT_QUEUE.sendBatch(
-    validatedEvents.map(e => ({ body: { project_id: key.project_id, event: e } }))
-  )
+    validatedEvents.map((e) => ({ body: { project_id: key.project_id, event: e } })),
+  );
 } else {
   // Free/Pro: direct AE write (fire-and-forget, accepted SLA)
-  for (const e of validatedEvents) { /* writeDataPoint calls as above */ }
+  for (const e of validatedEvents) {
+    /* writeDataPoint calls as above */
+  }
 }
 ```
 
@@ -1176,16 +1351,16 @@ Called server-side during SSR to avoid client-side identify() round-trip.
 ```typescript
 // packages/worker/src/sdk/bootstrap.ts
 async function bootstrap(req, env) {
-  const key        = await authMiddleware(req, env, 'server')
-  const userHeader = req.headers.get('X-User-Context')
-  if (!userHeader) return new Response('Missing X-User-Context', { status: 400 })
+  const key = await authMiddleware(req, env, "server");
+  const userHeader = req.headers.get("X-User-Context");
+  if (!userHeader) return new Response("Missing X-User-Context", { status: 400 });
 
-  const user = JSON.parse(atob(userHeader)) as User
+  const user = JSON.parse(atob(userHeader)) as User;
   const [flagsBlob, expsBlob] = await Promise.all([
     getFlags(env, key.project_id),
     getExperiments(env, key.project_id),
-  ])
-  return evaluate({ user, flagsBlob, expsBlob })
+  ]);
+  return evaluate({ user, flagsBlob, expsBlob });
 }
 
 // Usage in Next.js server component:
