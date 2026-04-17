@@ -29,6 +29,42 @@
       "service": "shipeasy",
     },
   ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shipeasy-db",
+      "database_id": "e151fb96-2d60-4de3-aed6-8ff51730caae",
+    },
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "FLAGS_KV",
+      "id": "e0ddf5c86029435880897410ca270488",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "LABELS_R2",
+      "bucket_name": "i18n-labels",
+    },
+    {
+      "binding": "EVENTS_R2",
+      "bucket_name": "shipeasy-events",
+    },
+  ],
+  "routes": [
+    { "pattern": "shipeasy.ai", "custom_domain": true },
+    { "pattern": "www.shipeasy.ai", "custom_domain": true },
+  ],
+  "vars": {
+    "AUTH_TRUST_HOST": "true",
+    "NEXTAUTH_URL": "https://shipeasy.ai",
+    "CF_ZONE_ID": "327bf22a5c585b1a72387bea588bf212",
+    "CF_ACCOUNT_ID": "b3b935b0b2a42ae7ec5029cd3de2f0e8",
+    "FLAGS_DOMAIN": "cdn.shipeasy.ai",
+    "LABELS_DOMAIN": "labels.shipeasy.ai",
+    "WORKER_URL": "https://cdn.shipeasy.ai",
+  },
   "observability": {
     "enabled": true,
   },

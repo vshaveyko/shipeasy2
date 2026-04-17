@@ -1,106 +1,53 @@
-import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
-import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+
+import { auth } from "@/auth";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { StatCard } from "@/components/dashboard/stat-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { LinkButton } from "@/components/ui/link-button";
+import { PRODUCTS } from "@/lib/products";
 
-export default async function DashboardPage() {
+export default async function OverviewPage() {
   const session = await auth();
-
-  if (!session) {
-    redirect("/auth/signin");
-  }
-
-  const initials =
-    session.user?.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) ?? "?";
+  const firstName = session?.user?.name?.split(" ")[0];
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Top bar */}
-      <header className="bg-background border-b">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="font-bold text-lg">ShipEasy</span>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={session.user?.image ?? undefined} alt={session.user?.name ?? ""} />
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium hidden sm:block">{session.user?.name}</span>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <Button variant="ghost" size="sm" type="submit">
-                Sign out
-              </Button>
-            </form>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-8">
+      <PageHeader
+        title={firstName ? `Welcome back, ${firstName}` : "Overview"}
+        description="Pick a product to work in, or keep tabs on everything at a glance."
+      />
 
-      {/* Content */}
-      <main className="container mx-auto px-6 py-10 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {session.user?.name?.split(" ")[0]}!
-          </p>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Gates + configs" value="0" hint="Across environments" />
+        <StatCard label="Running experiments" value="0" hint="Live with traffic" />
+        <StatCard label="Published locales" value="0" hint="String profiles live" />
+        <StatCard label="Plan" value="Free" hint="Upgrade for more limits" />
+      </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Account</CardTitle>
-              <CardDescription>Your profile information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Email</span>
-                <span>{session.user?.email}</span>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {PRODUCTS.map((p) => (
+          <Card key={p.id}>
+            <CardHeader className="border-b pb-4">
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded bg-muted">
+                  <p.icon className="size-4" />
+                </span>
+                <div className="flex flex-col">
+                  <CardTitle>{p.name}</CardTitle>
+                  <CardDescription>{p.tagline}</CardDescription>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Status</span>
-                <Badge variant="secondary">Active</Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Projects</CardTitle>
-              <CardDescription>Your active projects</CardDescription>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              No projects yet. Create one to get started.
+            <CardContent className="pt-4">
+              <LinkButton variant="outline" size="sm" href={p.rootHref}>
+                Open {p.name}
+                <ArrowRight className="size-3.5" />
+              </LinkButton>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Quick links</CardTitle>
-              <CardDescription>Helpful resources</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                render={<a href="/docs" />}
-              >
-                Documentation
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+        ))}
+      </div>
     </div>
   );
 }

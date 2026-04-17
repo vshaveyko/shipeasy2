@@ -3,6 +3,10 @@
     "shadcn": {
       "command": "npx",
       "args": ["shadcn@latest", "mcp"]
+    },
+    "shipeasy": {
+      "command": "node",
+      "args": ["packages/mcp/bin/mcp.js"]
     }
   }
 }

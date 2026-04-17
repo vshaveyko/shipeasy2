@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipEasy — A manifesto for AI that measures what it ships</title>
+    <link rel="stylesheet" href="_shared/reset.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #f3efe7;
+        --paper-2: #ece6d8;
+        --ink: #171511;
+        --ink-2: #4a453e;
+        --ink-3: #7e786c;
+        --line: #d8d1c0;
+        --ink-hl: #e2431d;
+        --accent: #1d4ed8;
+        --ochre: #b58a1c;
+      }
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Fraunces", "Times New Roman", serif;
+        font-size: 17px;
+        line-height: 1.55;
+        font-variation-settings: "opsz" 14;
+      }
+      .sans { font-family: "Inter", sans-serif; }
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+
+      /* Nav */
+      .nav {
+        display: flex; align-items: center;
+        height: 72px; border-bottom: 1px solid var(--ink);
+      }
+      .brand {
+        display: flex; align-items: baseline; gap: 10px;
+        font-weight: 900; font-size: 24px; letter-spacing: -0.02em;
+        font-variation-settings: "opsz" 24;
+      }
+      .brand .meta {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 400; font-size: 11px; color: var(--ink-3);
+        text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      .nav-links {
+        margin-left: auto; display: flex; gap: 30px;
+        font-family: "Inter", sans-serif; font-size: 13px;
+        text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500;
+      }
+      .nav-links a:hover { color: var(--ink-hl); }
+
+      /* Masthead */
+      .masthead {
+        padding: 10px 0 24px;
+        border-bottom: 1px solid var(--ink);
+        display: flex; align-items: center; gap: 28px;
+        flex-wrap: wrap;
+      }
+      .issue {
+        font-family: "JetBrains Mono", monospace; font-size: 11px;
+        text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3);
+      }
+      .kicker {
+        font-family: "Inter", sans-serif; font-size: 13px;
+        letter-spacing: 0.03em; color: var(--ink-2); margin-left: auto;
+      }
+      .kicker b { color: var(--ink-hl); text-transform: uppercase; margin-right: 6px; font-weight: 600; }
+
+      /* Hero — asymmetric editorial */
+      .hero {
+        padding: 56px 0 40px;
+        border-bottom: 4px double var(--ink);
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: 48px; align-items: end;
+      }
+      @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+      .headline {
+        font-weight: 900; font-size: clamp(48px, 7.2vw, 120px);
+        line-height: 0.92; letter-spacing: -0.045em;
+        font-variation-settings: "opsz" 144;
+      }
+      .headline .it { font-style: italic; color: var(--ink-hl); font-weight: 700; }
+      .headline .u { position: relative; display: inline-block; }
+      .headline .u::after {
+        content: ""; position: absolute; left: 0; right: 0; bottom: 0.1em; height: 0.15em;
+        background: var(--ochre); z-index: -1;
+      }
+
+      .lede {
+        font-family: "Inter", sans-serif;
+        font-size: 18px; line-height: 1.55; color: var(--ink-2);
+        border-left: 2px solid var(--ink); padding-left: 20px;
+      }
+      .lede strong { color: var(--ink); }
+      .byline {
+        margin-top: 18px; display: flex; gap: 16px; align-items: center;
+        font-family: "JetBrains Mono", monospace; font-size: 11px;
+        text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3);
+      }
+
+      /* CTA row */
+      .cta-row {
+        margin-top: 32px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 14px 22px; border: 1.5px solid var(--ink); border-radius: 2px;
+        font-family: "Inter", sans-serif; font-size: 14px; font-weight: 600;
+        letter-spacing: 0.01em; transition: 0.15s;
+      }
+      .btn-primary { background: var(--ink); color: var(--paper); }
+      .btn-primary:hover { background: var(--ink-hl); border-color: var(--ink-hl); }
+      .btn-outline:hover { background: var(--ink); color: var(--paper); }
+      .btn .arrow { transition: transform 0.15s; }
+      .btn:hover .arrow { transform: translateX(3px); }
+
+      /* Drop-cap article */
+      .article {
+        padding: 64px 0;
+        border-bottom: 1px solid var(--ink);
+        column-count: 3; column-gap: 40px; column-rule: 1px solid var(--line);
+      }
+      @media (max-width: 900px) { .article { column-count: 1; } }
+      .article p { margin-bottom: 16px; font-size: 15.5px; }
+      .article p:first-of-type::first-letter {
+        font-family: "Fraunces", serif; font-weight: 900; font-size: 72px;
+        line-height: 0.85; float: left; margin: 4px 10px 0 0;
+        color: var(--ink-hl); font-variation-settings: "opsz" 144;
+      }
+
+      /* Three principles */
+      .tenets {
+        padding: 72px 0;
+        border-bottom: 1px solid var(--ink);
+      }
+      .tenets-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 40px; }
+      .tenets-h2 { font-size: clamp(32px, 4vw, 52px); font-weight: 900; letter-spacing: -0.03em; line-height: 1.02; font-variation-settings: "opsz" 96; }
+      .tenets-hint { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
+      .tenets-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--ink); }
+      @media (max-width: 820px) { .tenets-grid { grid-template-columns: 1fr; } }
+      .tenet { background: var(--paper); padding: 32px 28px; }
+      .tenet-num { font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--ink-hl); margin-bottom: 14px; letter-spacing: 0.1em; }
+      .tenet h3 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 12px; font-style: italic; }
+      .tenet p { font-family: "Inter", sans-serif; font-size: 14.5px; color: var(--ink-2); line-height: 1.55; }
+
+      /* Pull quote */
+      .pull {
+        padding: 88px 0;
+        border-bottom: 1px solid var(--ink);
+        text-align: center;
+      }
+      .pull q {
+        font-size: clamp(28px, 4vw, 56px); font-weight: 500;
+        letter-spacing: -0.02em; line-height: 1.15; max-width: 1000px;
+        display: block; margin: 0 auto; font-style: italic;
+        quotes: "\201C" "\201D";
+      }
+      .pull q::before { content: open-quote; color: var(--ink-hl); }
+      .pull q::after { content: close-quote; color: var(--ink-hl); }
+      .pull cite {
+        display: block; margin-top: 24px; font-style: normal;
+        font-family: "Inter", sans-serif; font-size: 13px;
+        text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3);
+      }
+
+      /* Capabilities matrix */
+      .caps { padding: 72px 0; border-bottom: 1px solid var(--ink); }
+      .caps h2 { font-size: clamp(32px, 4vw, 52px); font-weight: 900; letter-spacing: -0.03em; font-variation-settings: "opsz" 96; margin-bottom: 4px; }
+      .caps .sub { font-family: "Inter", sans-serif; font-size: 16px; color: var(--ink-2); margin-bottom: 32px; }
+      .caps-list { border-top: 1px solid var(--ink); }
+      .cap {
+        display: grid; grid-template-columns: 60px 1fr auto;
+        gap: 32px; align-items: baseline;
+        padding: 20px 0; border-bottom: 1px solid var(--line);
+        transition: background 0.15s;
+      }
+      .cap:hover { background: var(--paper-2); }
+      .cap-n { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-3); }
+      .cap-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+      .cap-desc { font-family: "Inter", sans-serif; font-size: 14.5px; color: var(--ink-2); margin-top: 4px; }
+      .cap-tag { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+
+      /* i18n showcase */
+      .i18n-block { padding: 72px 0; border-bottom: 1px solid var(--ink); display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+      @media (max-width: 900px) { .i18n-block { grid-template-columns: 1fr; } }
+      .i18n-block h2 { font-size: clamp(28px, 3.5vw, 44px); font-weight: 900; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 14px; font-variation-settings: "opsz" 80; }
+      .i18n-block p { font-family: "Inter", sans-serif; color: var(--ink-2); font-size: 15.5px; margin-bottom: 14px; }
+      .yaml {
+        font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 1.8;
+        background: var(--ink); color: var(--paper); padding: 24px; border-radius: 4px;
+        overflow-x: auto;
+      }
+      .yaml .k { color: #c1e07a; }
+      .yaml .s { color: #ffd27e; }
+      .yaml .c { color: #7e786c; }
+
+      /* CTA */
+      .finale {
+        padding: 120px 0; text-align: center;
+      }
+      .finale h2 {
+        font-size: clamp(48px, 8vw, 140px); font-weight: 900;
+        letter-spacing: -0.045em; line-height: 0.92;
+        font-variation-settings: "opsz" 144;
+      }
+      .finale h2 .it { font-style: italic; font-weight: 700; color: var(--ink-hl); }
+      .finale p { font-family: "Inter", sans-serif; color: var(--ink-2); font-size: 17px; margin: 24px auto 40px; max-width: 540px; }
+
+      footer {
+        border-top: 4px double var(--ink);
+        padding: 28px 0; display: flex; justify-content: space-between;
+        flex-wrap: wrap; gap: 16px; font-family: "JetBrains Mono", monospace;
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3);
+      }
+      .locale-picker button { color: var(--ink-3); }
+      .locale-picker button.is-active { color: var(--ink-hl); border: 1px solid var(--ink-hl); }
+    </style>
+  </head>
+  <body>
+    <script>
+      window.CONCEPT_TRANSLATIONS = {
+        en: {
+          nav: { product: "Product", manifesto: "Manifesto", stats: "Statistics", pricing: "Pricing", signin: "Sign in" },
+          mast: { issue: "Vol. I · Issue 01 · Spring 2026", kicker_b: "Editorial", kicker: "On AI that ships — and the engineers who still measure." },
+          hero: {
+            p1: "Let AI ",
+            p2: "measure",
+            p3: " what it ships.",
+            lede: "Your agent can write the code in minutes. It cannot yet prove the code worked. ShipEasy gives Claude, Cursor, and the `shipeasy` CLI the MCP tools to create flags, launch experiments, roll out translations — and the statistical engine to answer, honestly, whether the ship was worth making.",
+            byline: ["By the ShipEasy team", "For the agent-assisted era · 2026"],
+            cta_primary: "Install the MCP",
+            cta_secondary: "Read the manifesto",
+          },
+          article: {
+            p1: "For two decades, product teams confused motion with progress. With agents in the loop, motion has multiplied — and so has the deficit between what we ship and what we can defend. A feature takes a morning. A feature that provably worked takes the rest of the week, if it is measured at all.",
+            p2: "Every feature flag is a hypothesis. Every experiment is a wager. In the agent era, the question is no longer whether a human can ship — an agent can ship at rates a human could not. The question is whether the ship was worth making, and whether the system had any way to tell. Too often, it did not.",
+            p3: "An agent that writes code without measuring the result is a very fast intern. An agent with an experimentation backend is a colleague. ShipEasy exists to close that loop. The MCP server exposes the nine tools your agent actually needs. The twelve bundled Claude skills teach it the workflow. The math refuses to lie.",
+            p4: "Copy is a feature, too. An AI that A/B-tests a button but not the words on the button is half-measuring. The string manager is therefore a first-class primitive — versionable, targetable, testable — so a translation change rolls out (and rolls back) on the same rails as a feature change.",
+          },
+          tenets: {
+            h: "Three tenets we will not break.",
+            hint: "— the foundation",
+            t1: { n: "01", title: "AI-first, agent-first, loop-first", body: "Every capability ships as an MCP tool, a Claude skill, and a CLI command before it ships as a dashboard button. Humans can still click. Agents don't have to." },
+            t2: { n: "02", title: "Statistics that refuse to lie", body: "Welch's t-test, CUPED variance reduction, sequential correction, universe-level holdouts — default, visible, honest. When an agent asks whether it worked, the answer is defensible." },
+            t3: { n: "03", title: "Edge-native, open-priced, open-sourced", body: "SDK eval in five milliseconds, globally. A free forever tier that does not cripple you. A source-available SDK for the meticulous. A self-host option for the paranoid." },
+          },
+          pull: {
+            q: "An agent that writes code without measuring the result is a very fast intern. An agent with an experimentation backend is a colleague.",
+            cite: "— ShipEasy Manifesto, §4",
+          },
+          caps: {
+            h: "Everything the agent (and you) needs.",
+            sub: "The surface area your Claude or Cursor agent can actually drive — plus the statistical engine behind it.",
+            rows: [
+              { t: "MCP server · 9 tools", d: "create_flag, create_experiment, start_rollout, read_verdict, update_translation, halt_experiment, and three more.", tag: "Agent" },
+              { t: "Claude Code skills · 12", d: "/ship-experiment, /rollout-feature, /analyze-launch, /translate-copy. Drop-in, scoped per project.", tag: "Agent" },
+              { t: "shipeasy CLI · deterministic JSON", d: "Every command returns structured output your agent can chain. No HTML scraping.", tag: "Agent" },
+              { t: "Experiments with defensible math", d: "Universe holdouts, stratified randomization, CUPED, sequential correction, guardrail halts.", tag: "Stats" },
+              { t: "Copy / i18n as flags", d: "Translations are versioned flags. Ship locale variants as experiments, roll back per-locale.", tag: "Unique" },
+              { t: "Privacy · audit · self-host", d: "IDs hashed, PII never leaves region, agent actions logged, self-host on your Cloudflare.", tag: "Trust" },
+            ],
+          },
+          i18n: {
+            h: "The agent can translate. We measure the translation.",
+            p1: "Most platforms bolt i18n on later. We shipped it first — and exposed it to your agent. A single MCP call updates a string, ramps it by locale, and opens a copy experiment. The string manager returns a typed key, so the SDK, the Claude skill, and the CLI speak the same language.",
+            p2: "Here is what a copy experiment looks like after your agent calls `update_translation` and `create_experiment`. No special plugin, no separate dashboard — a flag whose value happens to be a localized string, measured with the same t-test as any feature flag.",
+            yaml_title: "flags/checkout.confirm.yml — created by @claude-agent",
+          },
+          finale: {
+            h1: "Ship ",
+            h2: "the verdict.",
+            p: "A single command installs the MCP server, registers twelve Claude skills, and prints a CLI ready for your agent to run its first experiment — tonight.",
+            primary: "Install the MCP",
+            secondary: "View on GitHub",
+          },
+          foot: { rights: "© 2026 ShipEasy · No Durable Objects were used in making this", status: "Set in Fraunces & Inter" },
+        },
+        es: {
+          nav: { product: "Producto", manifesto: "Manifiesto", stats: "Estadística", pricing: "Precio", signin: "Entrar" },
+          mast: { issue: "Vol. I · Número 01 · Primavera 2026", kicker_b: "Editorial", kicker: "Sobre la IA que envía — y los ingenieros que aún miden." },
+          hero: {
+            p1: "Deja que la IA ",
+            p2: "mida",
+            p3: " lo que envía.",
+            lede: "Tu agente escribe código en minutos. Aún no puede probar que funcionó. ShipEasy le da a Claude, Cursor y la CLI `shipeasy` las tools MCP para crear flags, lanzar experimentos, desplegar traducciones — y el motor estadístico que responde, sin adornos, si el envío valió la pena.",
+            byline: ["Por el equipo ShipEasy", "Para la era asistida por agentes · 2026"],
+            cta_primary: "Instalar el MCP",
+            cta_secondary: "Leer el manifiesto",
+          },
+          article: {
+            p1: "Durante dos décadas, los equipos de producto confundimos movimiento con progreso. Con agentes en el bucle, el movimiento se multiplicó — y también la distancia entre lo que enviamos y lo que podemos defender. Un feature se hace en una mañana. Un feature demostradamente efectivo se hace en el resto de la semana, si alguien lo mide.",
+            p2: "Cada flag es una hipótesis. Cada experimento es una apuesta. En la era del agente, la pregunta ya no es si un humano puede enviar — un agente envía a un ritmo que un humano no podría. La pregunta es si el envío valió la pena, y si el sistema tiene cómo saberlo. Con demasiada frecuencia, no lo tenía.",
+            p3: "Un agente que escribe código sin medir el resultado es un becario muy rápido. Un agente con backend de experimentación es un colega. ShipEasy existe para cerrar ese bucle. El servidor MCP expone las nueve tools que tu agente realmente necesita. Las doce skills de Claude incluidas le enseñan el flujo. La matemática se niega a mentir.",
+            p4: "La copy también es un feature. Una IA que hace A/B del botón pero no de las palabras del botón mide a medias. Por eso el gestor de strings es una primitiva de primera clase — versionable, segmentable, testeable — para que un cambio de traducción se despliegue (y se revierta) sobre los mismos rieles que un cambio de feature.",
+          },
+          tenets: {
+            h: "Tres normas que no rompemos.",
+            hint: "— la base",
+            t1: { n: "01", title: "AI-first, agent-first, loop-first", body: "Cada capacidad nace como tool MCP, skill Claude y comando CLI antes que como botón en un dashboard. Los humanos pueden seguir haciendo clic. Los agentes no tienen por qué." },
+            t2: { n: "02", title: "Estadística que no miente", body: "Welch, CUPED, corrección secuencial, holdouts por universo — por defecto, visibles, honestos. Cuando el agente pregunta si funcionó, la respuesta es defendible." },
+            t3: { n: "03", title: "Edge-nativo, precio abierto, código abierto", body: "SDK en 5ms, global. Plan gratuito real. SDK open-source para los meticulosos. Self-host para los paranoicos." },
+          },
+          pull: {
+            q: "Un agente que escribe código sin medir el resultado es un becario muy rápido. Un agente con backend de experimentación es un colega.",
+            cite: "— Manifiesto ShipEasy, §4",
+          },
+          caps: {
+            h: "Todo lo que el agente (y tú) necesita.",
+            sub: "La superficie que tu agente Claude o Cursor puede operar — más el motor estadístico detrás.",
+            rows: [
+              { t: "MCP · 9 tools", d: "create_flag, create_experiment, start_rollout, read_verdict, update_translation, halt_experiment y tres más.", tag: "Agente" },
+              { t: "Skills Claude Code · 12", d: "/ship-experiment, /rollout-feature, /analyze-launch, /translate-copy. Drop-in, con scope por proyecto.", tag: "Agente" },
+              { t: "CLI shipeasy · JSON determinista", d: "Cada comando devuelve salida estructurada que tu agente puede encadenar. Sin scraping.", tag: "Agente" },
+              { t: "Experimentos con matemática defendible", d: "Holdouts por universo, aleatorización estratificada, CUPED, corrección secuencial, guardrails.", tag: "Stats" },
+              { t: "Copy / i18n como flags", d: "Las traducciones son flags versionadas. Experimentos por locale, rollback por idioma.", tag: "Único" },
+              { t: "Privacidad · auditoría · self-host", d: "IDs hasheados, PII se queda en región, acciones del agente auditadas, self-host en tu Cloudflare.", tag: "Confianza" },
+            ],
+          },
+          i18n: {
+            h: "El agente traduce. Nosotros medimos la traducción.",
+            p1: "La mayoría añaden i18n después. Nosotros lo pusimos primero — y lo expusimos al agente. Una sola llamada MCP actualiza un string, lo rampea por locale y abre un experimento de copy. El gestor de strings devuelve una clave tipada, así el SDK, la skill y el CLI hablan el mismo idioma.",
+            p2: "Así se ve un experimento de copy tras `update_translation` y `create_experiment`. Sin plugin, sin dashboard aparte — un flag cuyo valor es un string localizado, medido con el mismo t-test que cualquier flag de feature.",
+            yaml_title: "flags/checkout.confirm.yml — creado por @claude-agent",
+          },
+          finale: {
+            h1: "Envía ",
+            h2: "el veredicto.",
+            p: "Un solo comando instala el MCP, registra doce skills de Claude e imprime un CLI listo para que tu agente lance su primer experimento — esta noche.",
+            primary: "Instalar el MCP",
+            secondary: "Ver en GitHub",
+          },
+          foot: { rights: "© 2026 ShipEasy · Sin Durable Objects", status: "En Fraunces & Inter" },
+        },
+        de: {
+          nav: { product: "Produkt", manifesto: "Manifest", stats: "Statistik", pricing: "Preis", signin: "Anmelden" },
+          mast: { issue: "Band I · Ausgabe 01 · Frühjahr 2026", kicker_b: "Editorial", kicker: "Über KI, die shippt — und Engineers, die weiterhin messen." },
+          hero: {
+            p1: "Lass KI ",
+            p2: "messen,",
+            p3: " was sie shippt.",
+            lede: "Dein Agent schreibt Code in Minuten. Er kann noch nicht beweisen, dass der Code wirkt. ShipEasy gibt Claude, Cursor und der `shipeasy`-CLI die MCP-Tools für Flags, Experimente und Übersetzungen — und die Statistik-Engine, die ehrlich antwortet, ob das Shippen sich gelohnt hat.",
+            byline: ["Vom ShipEasy-Team", "Für das Agenten-Zeitalter · 2026"],
+            cta_primary: "MCP installieren",
+            cta_secondary: "Manifest lesen",
+          },
+          article: {
+            p1: "Zwei Jahrzehnte lang haben Produktteams Bewegung mit Fortschritt verwechselt. Mit Agenten im Loop hat sich die Bewegung vervielfacht — und mit ihr die Lücke zwischen dem, was wir shippen, und dem, was wir verteidigen können. Ein Feature dauert einen Vormittag. Ein Feature, das nachweislich wirkte, dauert den Rest der Woche, wenn es überhaupt gemessen wird.",
+            p2: "Jedes Flag ist eine Hypothese. Jedes Experiment eine Wette. Im Agenten-Zeitalter ist die Frage nicht mehr, ob ein Mensch shippen kann — ein Agent shippt in Raten, die Menschen nicht erreichen. Die Frage ist, ob das Shippen sich gelohnt hat und ob das System eine Möglichkeit hatte, es zu wissen. Viel zu oft hatte es das nicht.",
+            p3: "Ein Agent, der Code schreibt, ohne das Ergebnis zu messen, ist ein sehr schneller Praktikant. Ein Agent mit Experimentier-Backend ist ein Kollege. ShipEasy existiert, um diesen Loop zu schließen. Der MCP-Server bietet die neun Tools, die dein Agent wirklich braucht. Die zwölf mitgelieferten Claude-Skills bringen ihm den Workflow bei. Die Mathe weigert sich zu lügen.",
+            p4: "Copy ist auch ein Feature. Eine KI, die einen Button A/B-testet, aber nicht die Worte auf dem Button, misst halbherzig. Der String-Manager ist deshalb eine Primitive erster Klasse — versionierbar, zielbar, testbar — damit eine Übersetzungsänderung auf denselben Schienen rollt (und zurückrollt) wie eine Feature-Änderung.",
+          },
+          tenets: {
+            h: "Drei Grundsätze, an die wir uns halten.",
+            hint: "— das Fundament",
+            t1: { n: "01", title: "AI-first, Agent-first, Loop-first", body: "Jede Fähigkeit shippt als MCP-Tool, Claude-Skill und CLI-Befehl, bevor sie als Dashboard-Button shippt. Menschen dürfen klicken. Agenten müssen nicht." },
+            t2: { n: "02", title: "Statistik, die nicht lügt", body: "Welch, CUPED, sequentielle Korrektur, Universum-Holdouts — default, sichtbar, ehrlich. Wenn der Agent fragt, ob es gewirkt hat, ist die Antwort verteidigbar." },
+            t3: { n: "03", title: "Edge-nativ, offener Preis, offener Code", body: "SDK-Eval in fünf Millisekunden, global. Dauerhaft kostenlos. Quelloffenes SDK für Gründliche. Self-Host für Paranoide." },
+          },
+          pull: {
+            q: "Ein Agent, der Code schreibt, ohne das Ergebnis zu messen, ist ein sehr schneller Praktikant. Ein Agent mit Experimentier-Backend ist ein Kollege.",
+            cite: "— ShipEasy Manifest, §4",
+          },
+          caps: {
+            h: "Alles, was der Agent (und du) braucht.",
+            sub: "Die Fläche, die dein Claude- oder Cursor-Agent fahren kann — plus die Statistik dahinter.",
+            rows: [
+              { t: "MCP-Server · 9 Tools", d: "create_flag, create_experiment, start_rollout, read_verdict, update_translation, halt_experiment und drei weitere.", tag: "Agent" },
+              { t: "Claude-Code-Skills · 12", d: "/ship-experiment, /rollout-feature, /analyze-launch, /translate-copy. Drop-in, projektgescopt.", tag: "Agent" },
+              { t: "shipeasy-CLI · deterministisches JSON", d: "Jeder Befehl liefert strukturierte Ausgabe, die dein Agent verketten kann. Kein Scraping.", tag: "Agent" },
+              { t: "Experimente mit verteidigbarer Mathe", d: "Universum-Holdouts, geschichtete Randomisierung, CUPED, sequentielle Korrektur, Guardrail-Halts.", tag: "Stats" },
+              { t: "Copy / i18n als Flags", d: "Übersetzungen sind versionierte Flags. Locale-Varianten als Experiment, Rollback pro Sprache.", tag: "Unique" },
+              { t: "Privacy · Audit · Self-host", d: "IDs gehasht, PII in Region, Agentenaktionen geloggt, Self-host auf deinem Cloudflare.", tag: "Trust" },
+            ],
+          },
+          i18n: {
+            h: "Der Agent übersetzt. Wir messen die Übersetzung.",
+            p1: "Die meisten Plattformen hängen i18n hinten an. Wir haben es zuerst gebaut — und deinem Agenten zugänglich gemacht. Ein einziger MCP-Call aktualisiert einen String, rampt ihn nach Locale und öffnet ein Copy-Experiment. Der String-Manager gibt einen typisierten Key zurück — SDK, Skill und CLI sprechen dieselbe Sprache.",
+            p2: "So sieht ein Copy-Experiment aus, nachdem dein Agent `update_translation` und `create_experiment` aufgerufen hat. Kein Plugin, kein separates Dashboard — ein Flag, dessen Wert ein lokalisierter String ist, gemessen mit demselben t-Test wie jedes Feature-Flag.",
+            yaml_title: "flags/checkout.confirm.yml — erstellt von @claude-agent",
+          },
+          finale: {
+            h1: "Ship ",
+            h2: "das Urteil.",
+            p: "Ein Befehl installiert den MCP-Server, registriert zwölf Claude-Skills und druckt eine CLI, bereit für das erste Experiment deines Agenten — heute Abend.",
+            primary: "MCP installieren",
+            secondary: "Auf GitHub ansehen",
+          },
+          foot: { rights: "© 2026 ShipEasy · Ohne Durable Objects", status: "Gesetzt in Fraunces & Inter" },
+        },
+        ja: {
+          nav: { product: "プロダクト", manifesto: "マニフェスト", stats: "統計", pricing: "料金", signin: "ログイン" },
+          mast: { issue: "第 1 巻 · 第 01 号 · 2026 春", kicker_b: "社説", kicker: "出荷する AI と、今なお測定するエンジニアについて。" },
+          hero: {
+            p1: "AI に、",
+            p2: "測定",
+            p3: " まで出荷させる。",
+            lede: "あなたのエージェントは数分でコードを書けます。しかし、それが効いたかはまだ証明できません。ShipEasy は Claude、Cursor、`shipeasy` CLI にフラグ作成・実験開始・翻訳展開の MCP ツールを与え、その出荷が価値あるものだったかを統計的に誠実に答えるエンジンを提供します。",
+            byline: ["ShipEasy チーム", "エージェント支援時代のために · 2026"],
+            cta_primary: "MCP をインストール",
+            cta_secondary: "マニフェストを読む",
+          },
+          article: {
+            p1: "この 20 年、プロダクトチームは「動くこと」と「進むこと」を混同してきました。エージェントがループに入り、動きは何倍にもなった — そして、出荷するものと守れるものの差もまた広がりました。機能は午前中に仕上がる。効いたと証明できる機能は、測定されれば週末までかかる。",
+            p2: "すべてのフラグは仮説です。すべての実験は賭けです。エージェント時代、もはや「人間が出荷できるか」は問いではありません。エージェントは人間には不可能なペースで出荷する。問いは「その出荷は価値あったか」、そして「システムにそれを知る手立てがあったか」です。多くの場合、答えは No でした。",
+            p3: "結果を測らずにコードを書くエージェントは、とても速いインターンです。実験バックエンドを持つエージェントは、同僚です。ShipEasy はそのループを閉じるために存在します。MCP サーバーは、エージェントが実際に必要とする 9 つのツールを公開します。同梱の 12 の Claude スキルが、そのワークフローを教えます。数学は嘘を拒否します。",
+            p4: "コピーもまた機能です。ボタンを A/B しながら、ボタンの文字を A/B しない AI は、半分しか測っていない。だから文字列マネージャは一級プリミティブです — バージョン管理、ターゲティング、テストが可能 — 翻訳の変更が機能の変更と同じレールで出荷（そしてロールバック）されるように。",
+          },
+          tenets: {
+            h: "譲れない三つの原則。",
+            hint: "— 土台",
+            t1: { n: "01", title: "AI-first、agent-first、loop-first", body: "すべての機能は、ダッシュボードのボタンになる前に、MCP ツール、Claude スキル、CLI コマンドとして出荷される。人間はクリックしていい。エージェントはしなくていい。" },
+            t2: { n: "02", title: "嘘をつかない統計", body: "Welch、CUPED、逐次補正、Universe 単位ホールドアウト — デフォルトで可視、誠実。エージェントが「効いた？」と聞けば、守れる答えが返る。" },
+            t3: { n: "03", title: "Edge ネイティブ・開かれた価格・開かれたコード", body: "SDK 評価は世界中で 5 ミリ秒。永久無料プラン。細部まで確認したい人のためのソース公開 SDK。疑い深い人のためのセルフホスト。" },
+          },
+          pull: {
+            q: "結果を測らずにコードを書くエージェントは、とても速いインターン。実験バックエンドを持つエージェントは、同僚です。",
+            cite: "— ShipEasy マニフェスト §4",
+          },
+          caps: {
+            h: "エージェント（そしてあなた）に必要なすべて。",
+            sub: "Claude や Cursor のエージェントが実際に動かせる面 — そしてその背後の統計エンジン。",
+            rows: [
+              { t: "MCP サーバー · 9 ツール", d: "create_flag、create_experiment、start_rollout、read_verdict、update_translation、halt_experiment、他 3 つ。", tag: "エージェント" },
+              { t: "Claude Code スキル · 12", d: "/ship-experiment、/rollout-feature、/analyze-launch、/translate-copy。ドロップイン、プロジェクト単位のスコープ。", tag: "エージェント" },
+              { t: "shipeasy CLI · 決定的 JSON", d: "全コマンドが構造化出力を返す。エージェントが連結可能。HTML スクレイピング不要。", tag: "エージェント" },
+              { t: "守れる数学のある実験", d: "Universe ホールドアウト、層別ランダム化、CUPED、逐次補正、ガードレールによる停止。", tag: "統計" },
+              { t: "コピー/ i18n をフラグ扱い", d: "翻訳はバージョン付きフラグ。ロケール別に実験として出荷・ロールバック。", tag: "独自" },
+              { t: "プライバシー · 監査 · セルフホスト", d: "ID はハッシュ保存、PII はリージョン外へ出ない、エージェント行動は監査、自分の Cloudflare にセルフホスト可。", tag: "信頼" },
+            ],
+          },
+          i18n: {
+            h: "エージェントが翻訳し、私たちが翻訳を測定する。",
+            p1: "多くのプラットフォームは i18n を後付けにします。私たちは最初に組み込み、そしてそれをエージェントに公開しました。MCP 1 コールで文字列を更新し、ロケール別にランプアップし、コピー実験を開始できます。文字列マネージャは型付きキーを返すので、SDK、スキル、CLI が同じ言語を話します。",
+            p2: "これが `update_translation` と `create_experiment` をエージェントが呼んだ後のコピー実験の姿です。プラグインも別ダッシュボードも不要 — 値がローカライズされた文字列であるフラグ、他のフラグと同じ t 検定で測定。",
+            yaml_title: "flags/checkout.confirm.yml — @claude-agent が作成",
+          },
+          finale: {
+            h1: "判定を ",
+            h2: "出荷する。",
+            p: "ワンコマンドで MCP サーバーをインストール、12 の Claude スキルを登録、エージェントが最初の実験を走らせる準備の CLI を表示 — 今夜に。",
+            primary: "MCP をインストール",
+            secondary: "GitHub を見る",
+          },
+          foot: { rights: "© 2026 ShipEasy · Durable Objects 不使用", status: "Fraunces & Inter で組版" },
+        },
+      };
+    </script>
+
+    <div class="container">
+      <!-- Nav -->
+      <nav class="nav">
+        <a href="index.html" class="brand">
+          ShipEasy
+          <span class="meta mono">— Feature flags for the skeptic</span>
+        </a>
+        <div class="nav-links">
+          <a href="#" data-i18n="nav.product"></a>
+          <a href="#" data-i18n="nav.manifesto"></a>
+          <a href="#" data-i18n="nav.stats"></a>
+          <a href="#" data-i18n="nav.pricing"></a>
+          <a href="#" data-i18n="nav.signin"></a>
+          <div class="locale-picker" style="margin-left: 10px">
+            <button data-locale-switch="en">EN</button>
+            <button data-locale-switch="es">ES</button>
+            <button data-locale-switch="de">DE</button>
+            <button data-locale-switch="ja">JA</button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Masthead -->
+      <div class="masthead">
+        <span class="issue" data-i18n="mast.issue"></span>
+        <span class="kicker">
+          <b data-i18n="mast.kicker_b"></b>
+          <span data-i18n="mast.kicker"></span>
+        </span>
+      </div>
+
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-grid">
+          <h1 class="headline">
+            <span data-i18n="hero.p1"></span><span class="it u" data-i18n="hero.p2"></span><span data-i18n="hero.p3"></span>
+          </h1>
+          <div>
+            <p class="lede" data-i18n="hero.lede" data-i18n-html="true"></p>
+            <div class="byline">
+              <span data-i18n="hero.byline.0"></span>
+              <span>·</span>
+              <span data-i18n="hero.byline.1"></span>
+            </div>
+            <div class="cta-row">
+              <a href="#" class="btn btn-primary">
+                <span data-i18n="hero.cta_primary"></span>
+                <span class="arrow">→</span>
+              </a>
+              <a href="#" class="btn btn-outline" data-i18n="hero.cta_secondary"></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Article -->
+      <article class="article">
+        <p data-i18n="article.p1"></p>
+        <p data-i18n="article.p2"></p>
+        <p data-i18n="article.p3"></p>
+        <p data-i18n="article.p4"></p>
+      </article>
+
+      <!-- Tenets -->
+      <section class="tenets">
+        <div class="tenets-head">
+          <h2 class="tenets-h2" data-i18n="tenets.h"></h2>
+          <span class="tenets-hint" data-i18n="tenets.hint"></span>
+        </div>
+        <div class="tenets-grid">
+          <div class="tenet">
+            <div class="tenet-num mono" data-i18n="tenets.t1.n"></div>
+            <h3 data-i18n="tenets.t1.title"></h3>
+            <p data-i18n="tenets.t1.body"></p>
+          </div>
+          <div class="tenet">
+            <div class="tenet-num mono" data-i18n="tenets.t2.n"></div>
+            <h3 data-i18n="tenets.t2.title"></h3>
+            <p data-i18n="tenets.t2.body"></p>
+          </div>
+          <div class="tenet">
+            <div class="tenet-num mono" data-i18n="tenets.t3.n"></div>
+            <h3 data-i18n="tenets.t3.title"></h3>
+            <p data-i18n="tenets.t3.body"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pull quote -->
+      <section class="pull">
+        <q data-i18n="pull.q"></q>
+        <cite data-i18n="pull.cite"></cite>
+      </section>
+
+      <!-- Capabilities -->
+      <section class="caps">
+        <h2 data-i18n="caps.h"></h2>
+        <p class="sub" data-i18n="caps.sub"></p>
+        <div class="caps-list">
+          <div class="cap">
+            <span class="cap-n">01</span>
+            <div>
+              <div class="cap-title" data-i18n="caps.rows.0.t"></div>
+              <div class="cap-desc" data-i18n="caps.rows.0.d"></div>
+            </div>
+            <span class="cap-tag" data-i18n="caps.rows.0.tag"></span>
+          </div>
+          <div class="cap">
+            <span class="cap-n">02</span>
+            <div>
+              <div class="cap-title" data-i18n="caps.rows.1.t"></div>
+              <div class="cap-desc" data-i18n="caps.rows.1.d"></div>
+            </div>
+            <span class="cap-tag" data-i18n="caps.rows.1.tag"></span>
+          </div>
+          <div class="cap">
+            <span class="cap-n">03</span>
+            <div>
+              <div class="cap-title" data-i18n="caps.rows.2.t"></div>
+              <div class="cap-desc" data-i18n="caps.rows.2.d"></div>
+            </div>
+            <span class="cap-tag" data-i18n="caps.rows.2.tag"></span>
+          </div>
+          <div class="cap">
+            <span class="cap-n">04</span>
+            <div>
+              <div class="cap-title" data-i18n="caps.rows.3.t"></div>
+              <div class="cap-desc" data-i18n="caps.rows.3.d"></div>
+            </div>
+            <span class="cap-tag" data-i18n="caps.rows.3.tag"></span>
+          </div>
+          <div class="cap">
+            <span class="cap-n">05</span>
+            <div>
+              <div class="cap-title" data-i18n="caps.rows.4.t"></div>
+              <div class="cap-desc" data-i18n="caps.rows.4.d"></div>
+            </div>
+            <span class="cap-tag" data-i18n="caps.rows.4.tag"></span>
+          </div>
+          <div class="cap">
+            <span class="cap-n">06</span>
+            <div>
+              <div class="cap-title" data-i18n="caps.rows.5.t"></div>
+              <div class="cap-desc" data-i18n="caps.rows.5.d"></div>
+            </div>
+            <span class="cap-tag" data-i18n="caps.rows.5.tag"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- i18n -->
+      <section class="i18n-block">
+        <div>
+          <h2 data-i18n="i18n.h"></h2>
+          <p data-i18n="i18n.p1"></p>
+          <p data-i18n="i18n.p2"></p>
+        </div>
+        <div>
+          <div
+            class="mono"
+            style="font-size: 11px; color: var(--ink-3); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em"
+            data-i18n="i18n.yaml_title"
+          ></div>
+          <pre class="yaml"><span class="c"># created by @claude-agent via MCP.update_translation + create_experiment</span>
+<span class="k">key:</span>       <span class="s">"checkout.confirm.label"</span>
+<span class="k">type:</span>      <span class="s">"i18n_string"</span>
+<span class="k">universe:</span>  <span class="s">"web"</span>
+<span class="k">author:</span>    <span class="s">"agent:claude-code@u_42"</span>
+<span class="k">experiments:</span>
+  - <span class="k">id:</span>         <span class="s">"exp_confirm_copy"</span>
+    <span class="k">hypothesis:</span> <span class="s">"Stronger verb lifts CR — suggested by agent"</span>
+    <span class="k">variants:</span>
+      <span class="k">control:</span>   <span class="s">"checkout.confirm.label.v1"</span>   <span class="c"># "Confirm order"</span>
+      <span class="k">treatment:</span> <span class="s">"checkout.confirm.label.v2"</span>   <span class="c"># "Complete purchase"</span>
+    <span class="k">guardrails:</span> [<span class="s">"lcp_p75"</span>, <span class="s">"refund_rate"</span>]
+    <span class="k">auto_ship:</span>  <span class="s">"after_guardrails_pass"</span></pre>
+        </div>
+      </section>
+
+      <!-- Finale -->
+      <section class="finale">
+        <h2>
+          <span data-i18n="finale.h1"></span><span class="it" data-i18n="finale.h2"></span>
+        </h2>
+        <p data-i18n="finale.p"></p>
+        <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap">
+          <a href="#" class="btn btn-primary">
+            <span data-i18n="finale.primary"></span><span class="arrow">→</span>
+          </a>
+          <a href="#" class="btn btn-outline" data-i18n="finale.secondary"></a>
+        </div>
+      </section>
+
+      <footer>
+        <span data-i18n="foot.rights"></span>
+        <span data-i18n="foot.status"></span>
+      </footer>
+    </div>
+
+    <script src="_shared/i18n.js"></script>
+  </body>
+</html>

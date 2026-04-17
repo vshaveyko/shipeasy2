@@ -1,0 +1,98 @@
+import { eq } from "drizzle-orm";
+import { checkLimit, rebuildCatalog, ApiError, getPlan } from "@shipeasy/core";
+import { events } from "@shipeasy/core/db/schema";
+import {
+  eventCreateSchema,
+  eventUpdateSchema,
+  eventApproveSchema,
+} from "@shipeasy/core/schemas/events";
+import { scopedDb } from "../db";
+import { getEnv } from "../env";
+import { loadProject } from "../project";
+import { writeAudit } from "../audit";
+import type { AdminIdentity } from "../admin-auth";
+
+export async function listEvents(identity: AdminIdentity) {
+  return scopedDb(identity.projectId).select(events);
+}
+
+export async function getEvent(identity: AdminIdentity, id: string) {
+  const s = scopedDb(identity.projectId);
+  const rows = await s.selectWhere(events, eq(events.id, id));
+  if (rows.length === 0) throw new ApiError("Event not found", 404);
+  return rows[0];
+}
+
+export async function createEvent(identity: AdminIdentity, input: unknown) {
+  const parsed = eventCreateSchema.parse(input);
+  const project = await loadProject(identity.projectId);
+  const plan = getPlan(project.plan);
+  const env = getEnv();
+
+  await checkLimit(env.DB, identity.projectId, "events_catalog", plan);
+
+  const id = crypto.randomUUID();
+  const s = scopedDb(identity.projectId);
+  try {
+    await s.insert(events).values({
+      id,
+      name: parsed.name,
+      description: parsed.description ?? null,
+      properties: parsed.properties,
+      pending: 0,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    if (String(err).includes("UNIQUE")) throw new ApiError(`Event '${parsed.name}' exists`, 409);
+    throw err;
+  }
+
+  await rebuildCatalog(env, identity.projectId);
+  await writeAudit(identity, "event.create", "event", id, parsed);
+  return { id, name: parsed.name };
+}
+
+export async function updateEvent(identity: AdminIdentity, id: string, input: unknown) {
+  const parsed = eventUpdateSchema.parse(input);
+  const env = getEnv();
+  const s = scopedDb(identity.projectId);
+  const rows = await s.selectWhere(events, eq(events.id, id));
+  if (rows.length === 0) throw new ApiError("Event not found", 404);
+
+  const patch: Record<string, unknown> = {};
+  if (parsed.description !== undefined) patch.description = parsed.description;
+  if (parsed.properties !== undefined) patch.properties = parsed.properties;
+
+  await s.update(events).set(patch).where(eq(events.id, id));
+  await rebuildCatalog(env, identity.projectId);
+  await writeAudit(identity, "event.update", "event", id, parsed);
+  return { id };
+}
+
+export async function approveEvent(identity: AdminIdentity, id: string, input: unknown) {
+  const parsed = eventApproveSchema.parse(input ?? {});
+  const env = getEnv();
+  const s = scopedDb(identity.projectId);
+  const rows = await s.selectWhere(events, eq(events.id, id));
+  if (rows.length === 0) throw new ApiError("Event not found", 404);
+
+  const patch: Record<string, unknown> = { pending: 0 };
+  if (parsed.description !== undefined) patch.description = parsed.description;
+  if (parsed.properties !== undefined) patch.properties = parsed.properties;
+
+  await s.update(events).set(patch).where(eq(events.id, id));
+  await rebuildCatalog(env, identity.projectId);
+  await writeAudit(identity, "event.approve", "event", id, parsed);
+  return { id, pending: 0 };
+}
+
+export async function deleteEvent(identity: AdminIdentity, id: string) {
+  const env = getEnv();
+  const s = scopedDb(identity.projectId);
+  const rows = await s.selectWhere(events, eq(events.id, id));
+  if (rows.length === 0) throw new ApiError("Event not found", 404);
+  await s.delete(events).where(eq(events.id, id));
+  await rebuildCatalog(env, identity.projectId);
+  await writeAudit(identity, "event.delete", "event", id);
+  return { ok: true };
+}

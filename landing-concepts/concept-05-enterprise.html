@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipEasy — Governed experimentation for AI-driven engineering</title>
+    <link rel="stylesheet" href="_shared/reset.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b1220;
+        --bg-2: #101a2e;
+        --surface: #142140;
+        --line: rgba(148, 163, 184, 0.14);
+        --line-2: rgba(148, 163, 184, 0.22);
+        --fg: #e2e8f0;
+        --fg-2: #94a3b8;
+        --fg-3: #64748b;
+        --accent: #38bdf8;
+        --accent-2: #0ea5e9;
+        --gold: #fbbf24;
+        --green: #34d399;
+        --red: #f87171;
+      }
+      body {
+        background:
+          radial-gradient(ellipse at top, rgba(56, 189, 248, 0.08), transparent 50%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+        background-attachment: fixed;
+        color: var(--fg);
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .mono { font-family: "IBM Plex Mono", monospace; }
+      .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+
+      /* Top bar */
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        font-size: 12px; color: var(--fg-2);
+        background: rgba(11, 18, 32, 0.6);
+      }
+      .topbar-inner {
+        height: 36px; display: flex; align-items: center; gap: 22px;
+      }
+      .topbar-inner a { color: var(--fg-2); }
+      .topbar-inner a:hover { color: var(--fg); }
+      .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+      .status { display: flex; align-items: center; gap: 7px; color: var(--green); }
+      .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+
+      /* Main nav */
+      .nav {
+        border-bottom: 1px solid var(--line);
+        background: rgba(11, 18, 32, 0.8);
+        backdrop-filter: blur(14px);
+        position: sticky; top: 0; z-index: 40;
+      }
+      .nav-inner { display: flex; align-items: center; gap: 36px; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+      .brand .mark {
+        width: 28px; height: 28px; border-radius: 6px;
+        background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+        position: relative;
+      }
+      .brand .mark::after {
+        content: ""; position: absolute; inset: 7px;
+        border: 2px solid white; border-radius: 2px;
+      }
+      .nav-links { display: flex; gap: 26px; font-size: 14px; color: var(--fg-2); font-weight: 500; }
+      .nav-links a:hover { color: var(--fg); }
+      .nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 10px 18px; border-radius: 6px;
+        font-size: 14px; font-weight: 500; transition: 0.15s;
+        border: 1px solid transparent;
+      }
+      .btn-primary { background: var(--accent); color: #0a1224; font-weight: 600; }
+      .btn-primary:hover { background: #6ecffc; }
+      .btn-outline { border-color: var(--line-2); color: var(--fg); }
+      .btn-outline:hover { border-color: var(--fg-2); background: rgba(148, 163, 184, 0.06); }
+      .btn-ghost { color: var(--fg-2); }
+      .btn-ghost:hover { color: var(--fg); }
+
+      /* Hero */
+      .hero { padding: 80px 0 56px; }
+      .hero-grid {
+        display: grid; grid-template-columns: 1.2fr 1fr; gap: 64px; align-items: center;
+      }
+      @media (max-width: 1000px) { .hero-grid { grid-template-columns: 1fr; } }
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 6px 12px 6px 6px;
+        background: rgba(56, 189, 248, 0.08);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 100px; font-size: 12px;
+      }
+      .eyebrow .chip {
+        padding: 2px 8px; background: var(--accent); color: #0a1224;
+        border-radius: 100px; font-weight: 700;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px; letter-spacing: 0.06em;
+      }
+      .headline {
+        margin: 24px 0 18px; font-size: clamp(40px, 5.4vw, 68px);
+        font-weight: 700; letter-spacing: -0.035em; line-height: 1.02;
+      }
+      .headline .em {
+        background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .sub {
+        color: var(--fg-2); font-size: 19px; max-width: 580px; line-height: 1.5;
+      }
+      .cta-row { display: flex; gap: 12px; margin-top: 32px; align-items: center; flex-wrap: wrap; }
+      .cta-meta { color: var(--fg-3); font-size: 13px; }
+
+      /* Arch panel */
+      .arch-card {
+        background: var(--surface);
+        border: 1px solid var(--line-2);
+        border-radius: 14px; padding: 24px;
+        box-shadow: 0 24px 60px -16px rgba(0, 0, 0, 0.5);
+      }
+      .arch-title {
+        font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+        color: var(--fg-3); margin-bottom: 16px;
+      }
+      .arch-svg { width: 100%; }
+      .arch-legend {
+        display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px;
+        font-size: 12px; color: var(--fg-2);
+      }
+      .arch-legend span { display: flex; align-items: center; gap: 6px; }
+      .arch-legend span::before { content: ""; width: 10px; height: 10px; border-radius: 2px; }
+      .leg-1::before { background: var(--accent); }
+      .leg-2::before { background: var(--gold); }
+      .leg-3::before { background: var(--green); }
+
+      /* Trust logos */
+      .trust {
+        padding: 56px 0 32px;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+      .trust-head {
+        display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 12px;
+      }
+      .trust-label {
+        font-family: "IBM Plex Mono", monospace; font-size: 11px;
+        letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3);
+      }
+      .trust-meta { font-size: 13px; color: var(--fg-2); }
+      .trust-meta strong { color: var(--fg); }
+      .logos {
+        display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px;
+      }
+      @media (max-width: 820px) { .logos { grid-template-columns: repeat(3, 1fr); } }
+      .logo-box {
+        padding: 18px; text-align: center; border: 1px solid var(--line);
+        border-radius: 8px; font-weight: 600; letter-spacing: -0.01em;
+        color: var(--fg-2); background: rgba(255, 255, 255, 0.015);
+      }
+
+      /* Core section */
+      .core { padding: 96px 0; }
+      .sec-head { max-width: 720px; margin-bottom: 56px; }
+      .sec-eyebrow {
+        color: var(--accent); font-family: "IBM Plex Mono", monospace;
+        font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px;
+      }
+      .sec-title { font-size: 40px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 14px; }
+      .sec-sub { color: var(--fg-2); font-size: 17px; }
+
+      .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      @media (max-width: 820px) { .pillars { grid-template-columns: 1fr; } }
+      .pillar {
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: 14px; padding: 28px; position: relative; overflow: hidden;
+      }
+      .pillar::before {
+        content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        opacity: 0.4;
+      }
+      .pillar-icon {
+        width: 44px; height: 44px; border-radius: 10px;
+        background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2);
+        color: var(--accent); display: flex; align-items: center; justify-content: center;
+        font-size: 20px; margin-bottom: 20px;
+      }
+      .pillar h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; }
+      .pillar p { color: var(--fg-2); font-size: 14.5px; line-height: 1.6; margin-bottom: 20px; }
+      .pillar-list { display: flex; flex-direction: column; gap: 8px; }
+      .pillar-list li {
+        list-style: none; font-size: 13px; color: var(--fg-2);
+        display: flex; gap: 10px; align-items: flex-start;
+      }
+      .pillar-list li::before {
+        content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0;
+      }
+
+      /* Compliance band */
+      .compliance {
+        background: var(--surface);
+        border: 1px solid var(--line-2);
+        border-radius: 16px; padding: 40px;
+      }
+      .comp-grid {
+        display: grid; grid-template-columns: 1.2fr 2fr; gap: 48px; align-items: center;
+      }
+      @media (max-width: 820px) { .comp-grid { grid-template-columns: 1fr; } }
+      .comp-head h3 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 10px; }
+      .comp-head p { color: var(--fg-2); font-size: 15px; }
+      .comp-badges {
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+      }
+      @media (max-width: 820px) { .comp-badges { grid-template-columns: repeat(3, 1fr); } }
+      .badge-card {
+        padding: 18px 10px; text-align: center; border-radius: 10px;
+        background: rgba(11, 18, 32, 0.5); border: 1px solid var(--line);
+      }
+      .badge-card .circ {
+        width: 38px; height: 38px; border-radius: 50%; margin: 0 auto 10px;
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.2));
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--accent); font-weight: 700;
+      }
+      .badge-card .name { font-size: 12px; font-weight: 600; }
+      .badge-card .desc { font-size: 10px; color: var(--fg-3); margin-top: 2px; letter-spacing: 0.02em; }
+
+      /* Quote wall */
+      .quotes { padding: 96px 0 64px; }
+      .qwall { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+      @media (max-width: 820px) { .qwall { grid-template-columns: 1fr; } }
+      .qcard {
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: 12px; padding: 24px;
+      }
+      .qcard .mark { color: var(--accent); font-size: 32px; line-height: 0.2; font-weight: 800; }
+      .qcard .q { color: var(--fg); font-size: 15px; line-height: 1.55; margin: 8px 0 20px; }
+      .qcard .who { display: flex; gap: 12px; align-items: center; }
+      .qcard .avatar {
+        width: 36px; height: 36px; border-radius: 50%; background: var(--line-2);
+        color: var(--fg); font-weight: 700; font-size: 13px;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .qcard .who-name { font-weight: 600; font-size: 14px; }
+      .qcard .who-role { color: var(--fg-3); font-size: 12px; }
+      .qcard .stat {
+        margin-top: 18px; padding: 12px; background: rgba(56, 189, 248, 0.06);
+        border-left: 3px solid var(--accent); border-radius: 4px;
+        font-size: 12px; color: var(--fg-2);
+      }
+      .qcard .stat strong { color: var(--fg); font-size: 20px; letter-spacing: -0.02em; margin-right: 6px; font-weight: 700; }
+
+      /* SLA grid */
+      .sla-grid {
+        margin-top: 64px; display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 1px; background: var(--line-2);
+        border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden;
+      }
+      @media (max-width: 820px) { .sla-grid { grid-template-columns: repeat(2, 1fr); } }
+      .sla-cell { background: var(--bg-2); padding: 28px 24px; }
+      .sla-v {
+        font-size: 36px; font-weight: 700; letter-spacing: -0.025em;
+        background: linear-gradient(180deg, var(--fg) 0%, var(--fg-2) 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .sla-l { color: var(--fg-2); font-size: 13px; margin-top: 6px; }
+      .sla-d { color: var(--fg-3); font-size: 12px; margin-top: 2px; }
+
+      /* Big CTA */
+      .final-cta {
+        margin: 80px 0; padding: 64px 48px;
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 85% 20%, rgba(56, 189, 248, 0.18), transparent 50%),
+          linear-gradient(135deg, var(--surface), var(--bg-2));
+        border: 1px solid var(--line-2);
+        display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: center;
+      }
+      @media (max-width: 820px) { .final-cta { grid-template-columns: 1fr; padding: 40px 28px; } }
+      .final-cta h2 { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 14px; }
+      .final-cta p { color: var(--fg-2); font-size: 17px; }
+      .final-form {
+        background: rgba(11, 18, 32, 0.5); border: 1px solid var(--line);
+        padding: 22px; border-radius: 10px;
+      }
+      .final-form label { display: block; font-size: 12px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+      .final-form input {
+        width: 100%; padding: 12px 14px; border-radius: 8px;
+        background: var(--bg); border: 1px solid var(--line-2);
+        color: var(--fg); font-size: 14px;
+      }
+      .final-form input:focus { outline: none; border-color: var(--accent); }
+      .form-help { color: var(--fg-3); font-size: 12px; margin-top: 10px; }
+
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 40px 0; display: flex; justify-content: space-between;
+        flex-wrap: wrap; gap: 16px; color: var(--fg-3); font-size: 13px;
+      }
+
+      .locale-picker button { color: var(--fg-3); }
+      .locale-picker button.is-active { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <script>
+      window.CONCEPT_TRANSLATIONS = {
+        en: {
+          top: { customers: "Customers", security: "Security", contact: "Contact sales", status_label: "all systems operational" },
+          nav: { platform: "Platform", solutions: "Solutions", developers: "Developers", pricing: "Pricing", docs: "Docs", signin: "Sign in", cta: "Talk to sales" },
+          eyebrow: { chip: "AGENT-READY · SOC 2 TYPE II", text: "Scoped MCP tokens · full audit trail · available in 330+ Cloudflare locations" },
+          hero: {
+            title_a: "Your engineers ship with AI. Your auditors need receipts. ",
+            title_b: "We issue both.",
+            sub: "ShipEasy gives your Claude and Cursor agents a scoped MCP server for creating flags, experiments, rollouts, and translations — and gives your platform team an immutable audit trail of every agent action, backed by Welch's, CUPED, and universe-level holdouts. Enterprise-grade, agent-native.",
+            cta_primary: "Talk to sales",
+            cta_secondary: "Self-serve starts at $0",
+            cta_meta: "Trusted by {{count}}+ engineering teams deploying agents globally",
+          },
+          arch: {
+            title: "Reference architecture — agent-scoped, single-tenant",
+            legend: { a: "Your edge", b: "Your data plane", c: "Agent + human surface" },
+            labels: {
+              client: "Client SDK",
+              edge: "Cloudflare Edge",
+              kv: "KV Cache",
+              d1: "D1 (your account)",
+              ae: "Analytics Engine",
+              ui: "Admin UI + MCP",
+              dash: "Claude / Cursor",
+            },
+          },
+          trust: {
+            label: "Shipping to production",
+            meta_a: "Trusted by",
+            meta_b: "{{count}}+ teams",
+            meta_c: "across {{countries}} countries",
+          },
+          core: {
+            eyebrow: "The platform",
+            title: "Built for regulated orgs running agent-assisted engineering.",
+            sub: "Three pillars, one integrated surface — so every action your Claude or Cursor agent takes is scoped, auditable, statistically verified, and governed by the same controls your platform team already maintains.",
+            pillars: {
+              p1: {
+                title: "Agent surface · MCP + skills + CLI",
+                body: "9 MCP tools, 12 Claude Code skills, a deterministic CLI — all scoped by RBAC and signed per-project.",
+                items: [
+                  "Scoped MCP tokens per agent + per environment",
+                  "Every agent action signed, logged, and exportable to your SIEM",
+                  "Tool-level allowlists: let agents rollout but never halt",
+                  "Matching CLI + REST for parity with human operators",
+                ],
+              },
+              p2: {
+                title: "Experiments with defensible math",
+                body: "When an agent ships, we decide. Welch's, Bayesian, sequential — guardrails stop bad launches before a human pages.",
+                items: [
+                  "CUPED variance reduction baked in",
+                  "Universe-level holdouts prevent cross-contamination",
+                  "Auto-ship rules with mandatory reviewer sign-off",
+                  "Export verdicts to Snowflake, BigQuery, Databricks",
+                ],
+              },
+              p3: {
+                title: "Copy + i18n as governed flags",
+                body: "Translations are versioned flags your agent can update — with the same RBAC, approval flow, and audit coverage as any feature rollout.",
+                items: [
+                  "Translation memory with version pinning",
+                  "Per-locale experiment windows + rollback",
+                  "ICU MessageFormat, plurals, gender",
+                  "Glossary + style-guide enforcement in CI",
+                ],
+              },
+            },
+          },
+          comp: {
+            head: "Compliance isn't an afterthought.",
+            body: "Audits matter. We maintain SOC 2 Type II, ISO 27001, GDPR, HIPAA readiness, and regional data residency in EU / US / APAC.",
+            badges: {
+              b1: { n: "SOC 2", d: "Type II" },
+              b2: { n: "ISO 27001", d: "certified" },
+              b3: { n: "GDPR", d: "EU residency" },
+              b4: { n: "HIPAA", d: "BAA available" },
+              b5: { n: "PCI DSS", d: "scope-limited" },
+            },
+          },
+          quotes: {
+            eyebrow: "Outcomes",
+            title: "Agent-assisted teams ship faster — and still pass audit.",
+            q1: {
+              q: "Our agents now ship experiments end-to-end. Every action is scoped, signed, and landed in our SIEM before the human reviewer even sees the PR. Audit stopped being a blocker.",
+              name: "Elena Kawa",
+              role: "VP Engineering · FinTech scale-up",
+              stat_v: "63%",
+              stat_d: "reduction in launch-to-decision time",
+            },
+            q2: {
+              q: "Scoped MCP tokens were the unlock. Claude can create flags and start rollouts but can't halt production experiments — policy enforced at the token, not in prompt engineering.",
+              name: "Marcus Hall",
+              role: "Director of Platform · Healthcare",
+              stat_v: "100%",
+              stat_d: "agent-action audit coverage, 2-year retention",
+            },
+            q3: {
+              q: "Every experiment our agents launch carries guardrails on LCP and refund rate. Bad launches halt themselves. My team reviews verdicts, not firefights.",
+              name: "Priya Natarajan",
+              role: "Staff Engineer · E-commerce",
+              stat_v: "98%",
+              stat_d: "fewer manual rollbacks since agent onboarding",
+            },
+          },
+          sla: {
+            s1: { v: "9 + 12", l: "MCP tools + Claude skills", d: "Scoped, signed, SIEM-exportable" },
+            s2: { v: "< 10ms", l: "p95 SDK eval", d: "Edge-cached, globally" },
+            s3: { v: "99.99%", l: "Uptime SLO", d: "Measured monthly · credit on breach" },
+            s4: { v: "24/7", l: "Enterprise support", d: "Dedicated Slack channel · 1h response" },
+          },
+          final: {
+            title: "Let's talk about your agent rollout.",
+            sub: "30 minutes with our solutions team. We'll map your agent surface area, scope the MCP tokens, and show you the audit pipeline before you even touch an SDK.",
+            label: "Work email",
+            placeholder: "you@company.com",
+            button: "Request demo",
+            help: "Enterprise plans include dedicated onboarding, SSO/SAML, scoped MCP tokens, and custom SLAs.",
+          },
+          foot: { rights: "© 2026 ShipEasy, Inc. · All rights reserved.", links: "Terms · Privacy · Security · DPA" },
+        },
+        es: {
+          top: { customers: "Clientes", security: "Seguridad", contact: "Hablar con ventas", status_label: "todos los sistemas operativos" },
+          nav: { platform: "Plataforma", solutions: "Soluciones", developers: "Desarrolladores", pricing: "Precios", docs: "Docs", signin: "Entrar", cta: "Hablar con ventas" },
+          eyebrow: { chip: "AGENT-READY · SOC 2 TYPE II", text: "Tokens MCP con scope · auditoría completa · 330+ ubicaciones Cloudflare" },
+          hero: {
+            title_a: "Tus ingenieros envían con IA. Tu equipo de auditoría necesita recibos. ",
+            title_b: "Nosotros damos ambos.",
+            sub: "ShipEasy da a tus agentes Claude y Cursor un servidor MCP con scope para crear flags, experimentos, rollouts y traducciones — y a tu equipo de plataforma un audit trail inmutable de cada acción del agente, respaldado por Welch, CUPED y holdouts por universo. Enterprise-grade, agent-native.",
+            cta_primary: "Hablar con ventas",
+            cta_secondary: "Self-serve desde $0",
+            cta_meta: "Usado por {{count}}+ equipos que despliegan agentes globalmente",
+          },
+          arch: {
+            title: "Arquitectura de referencia — con scope por agente, single-tenant",
+            legend: { a: "Tu edge", b: "Tu plano de datos", c: "Superficie agente + humano" },
+            labels: { client: "SDK cliente", edge: "Edge de Cloudflare", kv: "Cache KV", d1: "D1 (tu cuenta)", ae: "Analytics Engine", ui: "Admin UI + MCP", dash: "Claude / Cursor" },
+          },
+          trust: { label: "En producción", meta_a: "Confían", meta_b: "{{count}}+ equipos", meta_c: "en {{countries}} países" },
+          core: {
+            eyebrow: "La plataforma",
+            title: "Para organizaciones reguladas con ingeniería asistida por agentes.",
+            sub: "Tres pilares, una superficie integrada — cada acción de tu agente Claude o Cursor tiene scope, auditoría, verificación estadística y los mismos controles que ya mantiene tu equipo de plataforma.",
+            pillars: {
+              p1: {
+                title: "Superficie de agente · MCP + skills + CLI",
+                body: "9 tools MCP, 12 skills de Claude Code, una CLI determinista — todo con scope RBAC y firmado por proyecto.",
+                items: [
+                  "Tokens MCP con scope por agente y entorno",
+                  "Cada acción del agente firmada, registrada y exportable a tu SIEM",
+                  "Allowlist a nivel de tool: rollout sí, halt no",
+                  "CLI + REST equivalentes para operadores humanos",
+                ],
+              },
+              p2: {
+                title: "Experimentos con matemática defendible",
+                body: "Cuando el agente lanza, nosotros decidimos. Welch, bayesiano, secuencial — guardrails detienen lanzamientos malos antes de que llegue un page.",
+                items: [
+                  "Reducción de varianza CUPED",
+                  "Holdouts por universo",
+                  "Auto-ship con sign-off obligatorio",
+                  "Export a Snowflake, BigQuery, Databricks",
+                ],
+              },
+              p3: {
+                title: "Copy + i18n como flags gobernadas",
+                body: "Las traducciones son flags versionadas que tu agente puede actualizar — con el mismo RBAC, flujo de aprobación y cobertura de auditoría.",
+                items: [
+                  "Memoria de traducción versionada",
+                  "Ventanas por locale + rollback",
+                  "ICU MessageFormat, plurales, género",
+                  "Glosario y style-guide en CI",
+                ],
+              },
+            },
+          },
+          comp: {
+            head: "El cumplimiento no es un extra.",
+            body: "Mantenemos SOC 2 Type II, ISO 27001, GDPR, disponibilidad HIPAA y residencia regional EU / US / APAC.",
+            badges: { b1: { n: "SOC 2", d: "Type II" }, b2: { n: "ISO 27001", d: "certificado" }, b3: { n: "GDPR", d: "residencia UE" }, b4: { n: "HIPAA", d: "BAA" }, b5: { n: "PCI DSS", d: "scope limitado" } },
+          },
+          quotes: {
+            eyebrow: "Resultados",
+            title: "Equipos agent-assisted envían rápido — y pasan auditoría.",
+            q1: { q: "Nuestros agentes lanzan experimentos end-to-end. Cada acción con scope, firmada y en el SIEM antes de que el reviewer humano vea el PR. La auditoría dejó de ser un blocker.", name: "Elena Kawa", role: "VP Eng · FinTech scale-up", stat_v: "63%", stat_d: "menos tiempo de launch a decisión" },
+            q2: { q: "Los tokens MCP con scope fueron el desbloqueo. Claude crea flags e inicia rollouts pero no puede parar experimentos en producción — política en el token, no en prompt engineering.", name: "Marcus Hall", role: "Director Platform · Healthcare", stat_v: "100%", stat_d: "auditoría de acciones de agente, 2 años" },
+            q3: { q: "Cada experimento que lanzan nuestros agentes lleva guardrails en LCP y refund rate. Los lanzamientos malos se detienen solos. Mi equipo revisa veredictos, no incendios.", name: "Priya Natarajan", role: "Staff Eng · E-commerce", stat_v: "98%", stat_d: "menos rollbacks manuales desde el onboarding del agente" },
+          },
+          sla: {
+            s1: { v: "9 + 12", l: "tools MCP + skills Claude", d: "Scope, firmados, exportables a SIEM" },
+            s2: { v: "< 10ms", l: "p95 SDK eval", d: "Edge-cached, global" },
+            s3: { v: "99.99%", l: "SLO de uptime", d: "Medido mensual · crédito si falla" },
+            s4: { v: "24/7", l: "Soporte enterprise", d: "Canal Slack · respuesta 1h" },
+          },
+          final: {
+            title: "Hablemos del rollout de tus agentes.",
+            sub: "30 min con nuestro equipo. Mapeamos la superficie de agente, damos scope a los tokens MCP y te enseñamos el pipeline de auditoría antes de tocar un SDK.",
+            label: "Email de trabajo",
+            placeholder: "tu@empresa.com",
+            button: "Solicitar demo",
+            help: "Planes enterprise incluyen onboarding, SSO/SAML, tokens MCP con scope y SLA a medida.",
+          },
+          foot: { rights: "© 2026 ShipEasy, Inc. · Todos los derechos reservados.", links: "Términos · Privacidad · Seguridad · DPA" },
+        },
+        de: {
+          top: { customers: "Kunden", security: "Sicherheit", contact: "Vertrieb kontaktieren", status_label: "alle Systeme laufen" },
+          nav: { platform: "Plattform", solutions: "Lösungen", developers: "Entwickler", pricing: "Preise", docs: "Docs", signin: "Anmelden", cta: "Vertrieb sprechen" },
+          eyebrow: { chip: "AGENT-READY · SOC 2 TYPE II", text: "Gescopte MCP-Tokens · vollständiger Audit-Trail · 330+ Cloudflare-Standorte" },
+          hero: {
+            title_a: "Deine Engineers shippen mit KI. Dein Audit will Belege. ",
+            title_b: "Wir liefern beide.",
+            sub: "ShipEasy gibt deinen Claude- und Cursor-Agenten einen gescopten MCP-Server zum Erstellen von Flags, Experimenten, Rollouts und Übersetzungen — und deinem Platform-Team einen unveränderlichen Audit-Trail jeder Agentenaktion, gestützt auf Welch, CUPED und Universum-Holdouts. Enterprise-Grade, Agent-Native.",
+            cta_primary: "Vertrieb sprechen",
+            cta_secondary: "Self-serve ab $0",
+            cta_meta: "Von {{count}}+ Teams genutzt, die Agenten global deployen",
+          },
+          arch: {
+            title: "Referenzarchitektur — agent-gescopt, Single-Tenant",
+            legend: { a: "Ihr Edge", b: "Ihre Data-Plane", c: "Agent + Human-Surface" },
+            labels: { client: "Client-SDK", edge: "Cloudflare Edge", kv: "KV-Cache", d1: "D1 (Ihr Konto)", ae: "Analytics Engine", ui: "Admin-UI + MCP", dash: "Claude / Cursor" },
+          },
+          trust: { label: "In Produktion", meta_a: "Im Einsatz bei", meta_b: "{{count}}+ Teams", meta_c: "in {{countries}} Ländern" },
+          core: {
+            eyebrow: "Die Plattform",
+            title: "Für regulierte Orgs mit agent-assistierter Engineering.",
+            sub: "Drei Säulen, eine integrierte Fläche — jede Aktion deines Claude- oder Cursor-Agenten ist gescopt, auditierbar, statistisch verifiziert und von denselben Kontrollen geführt, die dein Platform-Team bereits pflegt.",
+            pillars: {
+              p1: {
+                title: "Agent-Surface · MCP + Skills + CLI",
+                body: "9 MCP-Tools, 12 Claude-Code-Skills, eine deterministische CLI — alles RBAC-gescopt und pro Projekt signiert.",
+                items: [
+                  "Gescopte MCP-Tokens pro Agent + Umgebung",
+                  "Jede Agentenaktion signiert, geloggt, ins SIEM exportierbar",
+                  "Tool-Level-Allowlists: Agent darf rollouten, aber nicht halten",
+                  "Parallele CLI + REST für menschliche Operatoren",
+                ],
+              },
+              p2: {
+                title: "Experimente mit verteidigbarer Mathe",
+                body: "Wenn der Agent shippt, entscheiden wir. Welch, Bayes, sequentiell — Guardrails stoppen schlechte Launches, bevor ein Human paged wird.",
+                items: [
+                  "CUPED-Varianzreduktion eingebaut",
+                  "Universum-Holdouts",
+                  "Auto-Ship mit Pflicht-Reviewer-Sign-off",
+                  "Export nach Snowflake, BigQuery, Databricks",
+                ],
+              },
+              p3: {
+                title: "Copy + i18n als regierte Flags",
+                body: "Übersetzungen sind versionierte Flags, die dein Agent aktualisieren kann — mit demselben RBAC, Approval-Flow und Audit wie jedes Feature-Rollout.",
+                items: [
+                  "Translation Memory mit Versionspinning",
+                  "Pro-Locale Experiment-Fenster + Rollback",
+                  "ICU MessageFormat, Plurale, Gender",
+                  "Glossar und Style-Guide im CI",
+                ],
+              },
+            },
+          },
+          comp: {
+            head: "Compliance ist kein Nachgedanke.",
+            body: "Wir halten SOC 2 Type II, ISO 27001, GDPR, HIPAA-Bereitschaft und regionale Datenresidenz EU / US / APAC.",
+            badges: { b1: { n: "SOC 2", d: "Type II" }, b2: { n: "ISO 27001", d: "zertifiziert" }, b3: { n: "GDPR", d: "EU-Residenz" }, b4: { n: "HIPAA", d: "BAA verfügbar" }, b5: { n: "PCI DSS", d: "Scope-limitiert" } },
+          },
+          quotes: {
+            eyebrow: "Ergebnisse",
+            title: "Agent-Teams liefern schneller — und bestehen das Audit.",
+            q1: { q: "Unsere Agenten shippen Experimente end-to-end. Jede Aktion gescopt, signiert, im SIEM, bevor der Human den PR sieht. Audit ist kein Blocker mehr.", name: "Elena Kawa", role: "VP Eng · FinTech Scale-up", stat_v: "63%", stat_d: "weniger Zeit Launch bis Entscheidung" },
+            q2: { q: "Gescopte MCP-Tokens waren der Schlüssel. Claude erstellt Flags und startet Rollouts, darf aber kein Produktions-Experiment halten — Policy im Token, nicht im Prompt.", name: "Marcus Hall", role: "Director Platform · Healthcare", stat_v: "100%", stat_d: "Agent-Action-Audit, 2 Jahre" },
+            q3: { q: "Jedes Experiment, das unsere Agenten launchen, trägt Guardrails auf LCP und Refund-Rate. Schlechte Launches stoppen sich selbst. Mein Team reviewt Urteile, keine Feuer.", name: "Priya Natarajan", role: "Staff Eng · E-commerce", stat_v: "98%", stat_d: "weniger manuelle Rollbacks seit Agent-Onboarding" },
+          },
+          sla: {
+            s1: { v: "9 + 12", l: "MCP-Tools + Claude-Skills", d: "Gescopt, signiert, SIEM-exportierbar" },
+            s2: { v: "< 10ms", l: "p95 SDK-Eval", d: "Edge-gecached, global" },
+            s3: { v: "99.99%", l: "Uptime-SLO", d: "Monatlich · Credit bei Verletzung" },
+            s4: { v: "24/7", l: "Enterprise-Support", d: "Dedicated Slack · 1h Response" },
+          },
+          final: {
+            title: "Sprechen wir über deinen Agent-Rollout.",
+            sub: "30 Minuten mit unserem Team. Wir mappen die Agent-Fläche, scopen die MCP-Tokens und zeigen die Audit-Pipeline, bevor du ein SDK anfasst.",
+            label: "Arbeits-E-Mail",
+            placeholder: "sie@firma.de",
+            button: "Demo anfragen",
+            help: "Enterprise-Pläne beinhalten Onboarding, SSO/SAML, gescopte MCP-Tokens und individuelle SLAs.",
+          },
+          foot: { rights: "© 2026 ShipEasy, Inc. · Alle Rechte vorbehalten.", links: "AGB · Datenschutz · Sicherheit · DPA" },
+        },
+        ja: {
+          top: { customers: "お客様", security: "セキュリティ", contact: "営業に問い合わせ", status_label: "全システム稼働中" },
+          nav: { platform: "プラットフォーム", solutions: "ソリューション", developers: "開発者", pricing: "料金", docs: "Docs", signin: "ログイン", cta: "営業に相談" },
+          eyebrow: { chip: "AGENT-READY · SOC 2 TYPE II", text: "スコープ付き MCP トークン · 完全な監査ログ · Cloudflare 330+ ロケーション" },
+          hero: {
+            title_a: "エンジニアは AI で出荷する。監査は証跡を求める。",
+            title_b: "その両方を提供します。",
+            sub: "ShipEasy は Claude・Cursor エージェントに、フラグ・実験・ロールアウト・翻訳を作成するためのスコープ付き MCP サーバーを、そしてプラットフォームチームには、すべてのエージェント行動の不変監査ログを提供します — Welch、CUPED、Universe ホールドアウトに裏打ちされた、エンタープライズグレード、エージェントネイティブ。",
+            cta_primary: "営業に相談",
+            cta_secondary: "セルフサーブは $0 から",
+            cta_meta: "エージェントを世界展開する {{count}}+ のチームが利用",
+          },
+          arch: {
+            title: "参照アーキテクチャ — エージェントスコープ、シングルテナント",
+            legend: { a: "あなたの Edge", b: "あなたのデータ面", c: "エージェント + 人間の面" },
+            labels: { client: "クライアント SDK", edge: "Cloudflare Edge", kv: "KV キャッシュ", d1: "D1（あなたのアカウント）", ae: "Analytics Engine", ui: "管理 UI + MCP", dash: "Claude / Cursor" },
+          },
+          trust: { label: "本番稼働中", meta_a: "ご利用中", meta_b: "{{count}}+ チーム", meta_c: "{{countries}} カ国" },
+          core: {
+            eyebrow: "プラットフォーム",
+            title: "エージェント支援エンジニアリングを運用する規制組織のために。",
+            sub: "三つの柱、一つの統合された画面。Claude や Cursor エージェントのすべての行動が、スコープ付きで、監査可能で、統計的に検証され、プラットフォームチームが既に運用しているコントロールの下で動きます。",
+            pillars: {
+              p1: {
+                title: "エージェント面 · MCP + スキル + CLI",
+                body: "MCP ツール 9 個、Claude Code スキル 12 個、決定的な CLI — すべて RBAC でスコープされ、プロジェクト単位で署名。",
+                items: [
+                  "エージェント + 環境単位のスコープ付き MCP トークン",
+                  "エージェント行動は署名・ログ・SIEM へエクスポート可能",
+                  "ツール単位の許可リスト: rollout は可、halt は不可",
+                  "人間オペレーター用に同等の CLI + REST",
+                ],
+              },
+              p2: {
+                title: "守れる数学のある実験",
+                body: "エージェントが出荷すれば、私たちが判定する。Welch、ベイズ、逐次 — ガードレールが悪いローンチを人間がページされる前に停止。",
+                items: [
+                  "CUPED 分散削減を標準搭載",
+                  "Universe 単位のホールドアウト",
+                  "必須レビュー承認付き自動出荷",
+                  "Snowflake、BigQuery、Databricks にエクスポート",
+                ],
+              },
+              p3: {
+                title: "統治されたフラグとしてのコピー + i18n",
+                body: "翻訳はバージョン付きフラグで、エージェントが更新可能 — 機能ロールアウトと同じ RBAC、承認フロー、監査カバレッジ。",
+                items: [
+                  "バージョン固定の翻訳メモリ",
+                  "ロケール別実験期間 + ロールバック",
+                  "ICU MessageFormat、複数形、性別",
+                  "CI で用語集 & スタイルガイド検証",
+                ],
+              },
+            },
+          },
+          comp: {
+            head: "コンプライアンスは後付けではありません。",
+            body: "SOC 2 Type II、ISO 27001、GDPR、HIPAA 対応、EU / US / APAC のデータ所在を維持。",
+            badges: { b1: { n: "SOC 2", d: "Type II" }, b2: { n: "ISO 27001", d: "認証取得" }, b3: { n: "GDPR", d: "EU 所在" }, b4: { n: "HIPAA", d: "BAA 対応" }, b5: { n: "PCI DSS", d: "スコープ限定" } },
+          },
+          quotes: {
+            eyebrow: "成果",
+            title: "エージェント支援チームは速く出荷し、監査も通す。",
+            q1: { q: "エージェントが実験をエンドツーエンドで出荷。すべての行動はスコープ付き、署名済み、人間レビュアーが PR を見る前に SIEM に届きます。監査はもはやブロッカーではありません。", name: "Elena Kawa", role: "VP Eng · FinTech スケールアップ", stat_v: "63%", stat_d: "ローンチから意思決定までの時間短縮" },
+            q2: { q: "スコープ付き MCP トークンが鍵でした。Claude はフラグ作成やロールアウト開始はできるが、本番実験を停止できない — ポリシーはトークンに、プロンプトではありません。", name: "Marcus Hall", role: "Director of Platform · ヘルスケア", stat_v: "100%", stat_d: "エージェント行動監査、2 年保持" },
+            q3: { q: "エージェントが立ち上げる実験はすべて LCP と返金率のガードレール付き。悪いローンチは自動停止。私のチームは判定をレビューし、消火活動はしません。", name: "Priya Natarajan", role: "Staff Engineer · Eコマース", stat_v: "98%", stat_d: "エージェント導入後の手動ロールバック削減" },
+          },
+          sla: {
+            s1: { v: "9 + 12", l: "MCP ツール + Claude スキル", d: "スコープ付き、署名済み、SIEM へエクスポート可能" },
+            s2: { v: "< 10ms", l: "p95 SDK 評価", d: "Edge キャッシュ、グローバル" },
+            s3: { v: "99.99%", l: "稼働率 SLO", d: "月次計測・違反時クレジット" },
+            s4: { v: "24/7", l: "エンタープライズサポート", d: "専用 Slack · 1 時間応答" },
+          },
+          final: {
+            title: "エージェントのロールアウトを相談しましょう。",
+            sub: "30 分でソリューションチームとお話。エージェント面をマップし、MCP トークンをスコープ化し、SDK を触る前に監査パイプラインをお見せします。",
+            label: "会社のメール",
+            placeholder: "you@company.co.jp",
+            button: "デモを依頼",
+            help: "エンタープライズプランは専任オンボーディング、SSO/SAML、スコープ付き MCP トークン、カスタム SLA を含みます。",
+          },
+          foot: { rights: "© 2026 ShipEasy, Inc. · All rights reserved.", links: "利用規約 · プライバシー · セキュリティ · DPA" },
+        },
+      };
+    </script>
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="container topbar-inner">
+        <a href="#" data-i18n="top.customers"></a>
+        <a href="#" data-i18n="top.security"></a>
+        <a href="#" data-i18n="top.contact"></a>
+        <div class="topbar-right">
+          <span class="status"><span data-i18n="top.status_label"></span></span>
+          <div class="locale-picker">
+            <button data-locale-switch="en">EN</button>
+            <button data-locale-switch="es">ES</button>
+            <button data-locale-switch="de">DE</button>
+            <button data-locale-switch="ja">JA</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main nav -->
+    <header class="nav">
+      <div class="container nav-inner">
+        <a href="index.html" class="brand">
+          <span class="mark"></span>
+          <span>ShipEasy</span>
+        </a>
+        <nav class="nav-links">
+          <a href="#" data-i18n="nav.platform"></a>
+          <a href="#" data-i18n="nav.solutions"></a>
+          <a href="#" data-i18n="nav.developers"></a>
+          <a href="#" data-i18n="nav.pricing"></a>
+          <a href="#" data-i18n="nav.docs"></a>
+        </nav>
+        <div class="nav-right">
+          <a href="#" class="btn btn-ghost" data-i18n="nav.signin"></a>
+          <a href="#" class="btn btn-primary" data-i18n="nav.cta"></a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="eyebrow">
+            <span class="chip mono" data-i18n="eyebrow.chip"></span>
+            <span data-i18n="eyebrow.text"></span>
+          </span>
+          <h1 class="headline">
+            <span data-i18n="hero.title_a"></span><span class="em" data-i18n="hero.title_b"></span>
+          </h1>
+          <p class="sub" data-i18n="hero.sub"></p>
+          <div class="cta-row">
+            <a href="#" class="btn btn-primary" data-i18n="hero.cta_primary"></a>
+            <a href="#" class="btn btn-outline" data-i18n="hero.cta_secondary"></a>
+            <span class="cta-meta" data-i18n="hero.cta_meta" data-i18n-vars='{"count":"1,200"}'></span>
+          </div>
+        </div>
+
+        <div class="arch-card">
+          <div class="arch-title mono" data-i18n="arch.title"></div>
+          <svg class="arch-svg" viewBox="0 0 420 280">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="#38bdf8" />
+              </marker>
+            </defs>
+            <!-- client -->
+            <rect x="10" y="30" width="110" height="56" rx="8" fill="rgba(56,189,248,0.08)" stroke="#38bdf8" />
+            <text x="65" y="55" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="12" font-weight="600" data-i18n="arch.labels.client"></text>
+            <text x="65" y="72" text-anchor="middle" fill="#64748b" font-family="IBM Plex Mono" font-size="10">SDK</text>
+
+            <!-- edge -->
+            <rect x="160" y="30" width="110" height="56" rx="8" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" />
+            <text x="215" y="55" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="12" font-weight="600" data-i18n="arch.labels.edge"></text>
+            <text x="215" y="72" text-anchor="middle" fill="#64748b" font-family="IBM Plex Mono" font-size="10">Hono · Workers</text>
+
+            <!-- kv -->
+            <rect x="305" y="10" width="105" height="44" rx="6" fill="rgba(251,191,36,0.1)" stroke="#fbbf24" />
+            <text x="357" y="35" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="11" font-weight="600" data-i18n="arch.labels.kv"></text>
+            <text x="357" y="48" text-anchor="middle" fill="#64748b" font-family="IBM Plex Mono" font-size="9">global</text>
+
+            <!-- d1 -->
+            <rect x="305" y="70" width="105" height="44" rx="6" fill="rgba(251,191,36,0.08)" stroke="#fbbf24" />
+            <text x="357" y="90" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="11" font-weight="600" data-i18n="arch.labels.d1"></text>
+            <text x="357" y="103" text-anchor="middle" fill="#64748b" font-family="IBM Plex Mono" font-size="9">SQLite</text>
+
+            <!-- ae -->
+            <rect x="305" y="130" width="105" height="44" rx="6" fill="rgba(251,191,36,0.08)" stroke="#fbbf24" />
+            <text x="357" y="150" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="11" font-weight="600" data-i18n="arch.labels.ae"></text>
+            <text x="357" y="163" text-anchor="middle" fill="#64748b" font-family="IBM Plex Mono" font-size="9">events</text>
+
+            <!-- admin ui -->
+            <rect x="100" y="160" width="120" height="48" rx="8" fill="rgba(52,211,153,0.08)" stroke="#34d399" />
+            <text x="160" y="182" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="12" font-weight="600" data-i18n="arch.labels.ui"></text>
+            <text x="160" y="198" text-anchor="middle" fill="#64748b" font-family="IBM Plex Mono" font-size="10">Next.js 16</text>
+
+            <!-- AI agent + human operator -->
+            <circle cx="30" cy="170" r="14" fill="rgba(52,211,153,0.1)" stroke="#34d399" />
+            <text x="30" y="174" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="10" font-weight="600">🤖</text>
+            <circle cx="30" cy="200" r="14" fill="rgba(52,211,153,0.06)" stroke="#34d399" stroke-dasharray="3,2" />
+            <text x="30" y="204" text-anchor="middle" fill="#e2e8f0" font-family="Inter" font-size="10" font-weight="600">👤</text>
+            <text x="30" y="232" text-anchor="middle" fill="#94a3b8" font-family="Inter" font-size="10" data-i18n="arch.labels.dash"></text>
+
+            <!-- Arrows -->
+            <path d="M120 58 L160 58" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#ah)" />
+            <path d="M270 50 L305 30" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#ah)" />
+            <path d="M270 62 L305 92" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#ah)" />
+            <path d="M270 78 L305 150" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#ah)" />
+            <path d="M46 170 L100 180" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)" />
+            <path d="M46 200 L100 192" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)" />
+            <path d="M220 184 L320 110" stroke="#34d399" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#ah)" />
+
+            <!-- Latency + agent labels -->
+            <text x="140" y="48" text-anchor="middle" fill="#38bdf8" font-family="IBM Plex Mono" font-size="10" font-weight="500">5ms</text>
+            <text x="70" y="175" fill="#34d399" font-family="IBM Plex Mono" font-size="8" font-weight="500">MCP</text>
+            <text x="70" y="205" fill="#64748b" font-family="IBM Plex Mono" font-size="8">REST</text>
+            <text x="290" y="235" text-anchor="middle" fill="#64748b" font-family="IBM Plex Mono" font-size="10">cron · queue · daily · audit</text>
+          </svg>
+
+          <div class="arch-legend">
+            <span class="leg-1" data-i18n="arch.legend.a"></span>
+            <span class="leg-2" data-i18n="arch.legend.b"></span>
+            <span class="leg-3" data-i18n="arch.legend.c"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trust -->
+    <section class="trust">
+      <div class="container">
+        <div class="trust-head">
+          <span class="trust-label" data-i18n="trust.label"></span>
+          <span class="trust-meta">
+            <span data-i18n="trust.meta_a"></span>
+            <strong data-i18n="trust.meta_b" data-i18n-vars='{"count":"1,200"}'></strong>
+            <span data-i18n="trust.meta_c" data-i18n-vars='{"countries":46}'></span>
+          </span>
+        </div>
+        <div class="logos">
+          <div class="logo-box">Ramp</div>
+          <div class="logo-box">Datadog</div>
+          <div class="logo-box">Plaid</div>
+          <div class="logo-box">Census</div>
+          <div class="logo-box">Watershed</div>
+          <div class="logo-box">Clay</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core pillars -->
+    <section class="core">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-eyebrow mono" data-i18n="core.eyebrow"></div>
+          <h2 class="sec-title" data-i18n="core.title"></h2>
+          <p class="sec-sub" data-i18n="core.sub"></p>
+        </div>
+
+        <div class="pillars">
+          <div class="pillar">
+            <div class="pillar-icon">◆</div>
+            <h3 data-i18n="core.pillars.p1.title"></h3>
+            <p data-i18n="core.pillars.p1.body"></p>
+            <ul class="pillar-list">
+              <li data-i18n="core.pillars.p1.items.0"></li>
+              <li data-i18n="core.pillars.p1.items.1"></li>
+              <li data-i18n="core.pillars.p1.items.2"></li>
+              <li data-i18n="core.pillars.p1.items.3"></li>
+            </ul>
+          </div>
+          <div class="pillar">
+            <div class="pillar-icon">∑</div>
+            <h3 data-i18n="core.pillars.p2.title"></h3>
+            <p data-i18n="core.pillars.p2.body"></p>
+            <ul class="pillar-list">
+              <li data-i18n="core.pillars.p2.items.0"></li>
+              <li data-i18n="core.pillars.p2.items.1"></li>
+              <li data-i18n="core.pillars.p2.items.2"></li>
+              <li data-i18n="core.pillars.p2.items.3"></li>
+            </ul>
+          </div>
+          <div class="pillar">
+            <div class="pillar-icon">文</div>
+            <h3 data-i18n="core.pillars.p3.title"></h3>
+            <p data-i18n="core.pillars.p3.body"></p>
+            <ul class="pillar-list">
+              <li data-i18n="core.pillars.p3.items.0"></li>
+              <li data-i18n="core.pillars.p3.items.1"></li>
+              <li data-i18n="core.pillars.p3.items.2"></li>
+              <li data-i18n="core.pillars.p3.items.3"></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- SLA grid -->
+        <div class="sla-grid">
+          <div class="sla-cell">
+            <div class="sla-v" data-i18n="sla.s1.v"></div>
+            <div class="sla-l" data-i18n="sla.s1.l"></div>
+            <div class="sla-d" data-i18n="sla.s1.d"></div>
+          </div>
+          <div class="sla-cell">
+            <div class="sla-v" data-i18n="sla.s2.v"></div>
+            <div class="sla-l" data-i18n="sla.s2.l"></div>
+            <div class="sla-d" data-i18n="sla.s2.d"></div>
+          </div>
+          <div class="sla-cell">
+            <div class="sla-v" data-i18n="sla.s3.v"></div>
+            <div class="sla-l" data-i18n="sla.s3.l"></div>
+            <div class="sla-d" data-i18n="sla.s3.d"></div>
+          </div>
+          <div class="sla-cell">
+            <div class="sla-v" data-i18n="sla.s4.v"></div>
+            <div class="sla-l" data-i18n="sla.s4.l"></div>
+            <div class="sla-d" data-i18n="sla.s4.d"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compliance -->
+    <section class="container">
+      <div class="compliance">
+        <div class="comp-grid">
+          <div class="comp-head">
+            <h3 data-i18n="comp.head"></h3>
+            <p data-i18n="comp.body"></p>
+          </div>
+          <div class="comp-badges">
+            <div class="badge-card">
+              <div class="circ">✓</div>
+              <div class="name" data-i18n="comp.badges.b1.n"></div>
+              <div class="desc" data-i18n="comp.badges.b1.d"></div>
+            </div>
+            <div class="badge-card">
+              <div class="circ">✓</div>
+              <div class="name" data-i18n="comp.badges.b2.n"></div>
+              <div class="desc" data-i18n="comp.badges.b2.d"></div>
+            </div>
+            <div class="badge-card">
+              <div class="circ">✓</div>
+              <div class="name" data-i18n="comp.badges.b3.n"></div>
+              <div class="desc" data-i18n="comp.badges.b3.d"></div>
+            </div>
+            <div class="badge-card">
+              <div class="circ">✓</div>
+              <div class="name" data-i18n="comp.badges.b4.n"></div>
+              <div class="desc" data-i18n="comp.badges.b4.d"></div>
+            </div>
+            <div class="badge-card">
+              <div class="circ">✓</div>
+              <div class="name" data-i18n="comp.badges.b5.n"></div>
+              <div class="desc" data-i18n="comp.badges.b5.d"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quotes -->
+    <section class="quotes">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-eyebrow mono" data-i18n="quotes.eyebrow"></div>
+          <h2 class="sec-title" data-i18n="quotes.title"></h2>
+        </div>
+        <div class="qwall">
+          <div class="qcard">
+            <div class="mark">"</div>
+            <p class="q" data-i18n="quotes.q1.q"></p>
+            <div class="who">
+              <span class="avatar">EK</span>
+              <div>
+                <div class="who-name" data-i18n="quotes.q1.name"></div>
+                <div class="who-role" data-i18n="quotes.q1.role"></div>
+              </div>
+            </div>
+            <div class="stat">
+              <strong data-i18n="quotes.q1.stat_v"></strong>
+              <span data-i18n="quotes.q1.stat_d"></span>
+            </div>
+          </div>
+          <div class="qcard">
+            <div class="mark">"</div>
+            <p class="q" data-i18n="quotes.q2.q"></p>
+            <div class="who">
+              <span class="avatar">MH</span>
+              <div>
+                <div class="who-name" data-i18n="quotes.q2.name"></div>
+                <div class="who-role" data-i18n="quotes.q2.role"></div>
+              </div>
+            </div>
+            <div class="stat">
+              <strong data-i18n="quotes.q2.stat_v"></strong>
+              <span data-i18n="quotes.q2.stat_d"></span>
+            </div>
+          </div>
+          <div class="qcard">
+            <div class="mark">"</div>
+            <p class="q" data-i18n="quotes.q3.q"></p>
+            <div class="who">
+              <span class="avatar">PN</span>
+              <div>
+                <div class="who-name" data-i18n="quotes.q3.name"></div>
+                <div class="who-role" data-i18n="quotes.q3.role"></div>
+              </div>
+            </div>
+            <div class="stat">
+              <strong data-i18n="quotes.q3.stat_v"></strong>
+              <span data-i18n="quotes.q3.stat_d"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="container">
+      <div class="final-cta">
+        <div>
+          <h2 data-i18n="final.title"></h2>
+          <p data-i18n="final.sub"></p>
+        </div>
+        <form
+          class="final-form"
+          onsubmit="event.preventDefault(); this.querySelector('button').textContent='✓ Received';"
+        >
+          <label data-i18n="final.label"></label>
+          <input
+            type="email"
+            data-i18n-attr="placeholder:final.placeholder"
+            required
+          />
+          <button
+            type="submit"
+            class="btn btn-primary"
+            style="margin-top: 12px; width: 100%; justify-content: center"
+            data-i18n="final.button"
+          ></button>
+          <div class="form-help" data-i18n="final.help"></div>
+        </form>
+      </div>
+    </section>
+
+    <footer class="container">
+      <span data-i18n="foot.rights"></span>
+      <span data-i18n="foot.links"></span>
+    </footer>
+
+    <script src="_shared/i18n.js"></script>
+  </body>
+</html>

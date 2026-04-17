@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipEasy — Landing page concepts</title>
+    <link rel="stylesheet" href="_shared/reset.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b0b10;
+        --surface: #15151d;
+        --surface-2: #1e1e28;
+        --line: #26262f;
+        --line-2: #353541;
+        --fg: #ececf1;
+        --fg-2: #9a9aaa;
+        --fg-3: #5a5a67;
+        --accent: #a6f464;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+        min-height: 100vh;
+      }
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+
+      /* Header */
+      .header { padding: 80px 0 40px; border-bottom: 1px solid var(--line); }
+      .h-top {
+        display: flex; align-items: center; gap: 16px; margin-bottom: 40px;
+        font-family: "JetBrains Mono", monospace; font-size: 12px;
+        text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-3);
+      }
+      .h-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+      .h-title {
+        font-size: clamp(40px, 5vw, 64px); font-weight: 700;
+        letter-spacing: -0.03em; line-height: 1.05; max-width: 900px;
+      }
+      .h-title em { font-style: normal; color: var(--accent); }
+      .h-sub { color: var(--fg-2); font-size: 18px; max-width: 660px; margin-top: 16px; }
+      .h-meta {
+        margin-top: 28px; display: flex; flex-wrap: wrap; gap: 18px;
+        color: var(--fg-3); font-size: 13px;
+      }
+      .h-meta kbd {
+        background: var(--surface-2); border: 1px solid var(--line-2);
+        border-radius: 4px; padding: 2px 7px; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--fg);
+      }
+
+      /* Grid of concept cards */
+      .grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 20px; padding: 48px 0 80px;
+      }
+      .card {
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: 14px; overflow: hidden;
+        transition: transform 0.2s, border-color 0.2s;
+        display: flex; flex-direction: column;
+      }
+      .card:hover { transform: translateY(-3px); border-color: var(--line-2); }
+      .card-preview {
+        aspect-ratio: 16 / 10;
+        position: relative; border-bottom: 1px solid var(--line);
+        overflow: hidden; display: flex; align-items: center; justify-content: center;
+      }
+
+      /* Preview 1 — terminal */
+      .pv-terminal {
+        background: #07070a;
+        background-image: radial-gradient(circle at 80% 20%, rgba(166,244,100,0.1), transparent 50%);
+      }
+      .pv-terminal .w {
+        width: 70%; height: 60%;
+        background: #0f0f14; border: 1px solid #1c1c24; border-radius: 8px;
+        padding: 10px; font-family: "JetBrains Mono", monospace; font-size: 9px;
+        color: #a6f464;
+      }
+      .pv-terminal .w b { color: #c084fc; font-weight: 500; }
+      .pv-terminal .w span { color: #60a5fa; }
+
+      /* Preview 2 — data */
+      .pv-data {
+        background: #fbfbfa; padding: 18px;
+      }
+      .pv-data .card-mini {
+        width: 100%; height: 100%;
+        background: white; border-radius: 8px; padding: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        color: #0a0a0f; font-size: 9px; display: flex; flex-direction: column; gap: 6px;
+      }
+      .pv-data h4 { font-size: 10px; font-weight: 600; }
+      .pv-data .kpi-row { display: flex; gap: 4px; }
+      .pv-data .mini-kpi {
+        flex: 1; background: #f6f6f3; border-radius: 4px; padding: 4px;
+      }
+      .pv-data .mini-kpi .v { font-size: 11px; font-weight: 600; color: #2546f0; }
+      .pv-data .mini-kpi .l { font-size: 7px; color: #7a7a85; }
+      .pv-data .mini-chart { flex: 1; background: #f9fafe; border-radius: 4px; padding: 4px; }
+      .pv-data svg { width: 100%; height: 100%; }
+
+      /* Preview 3 — editorial */
+      .pv-editorial {
+        background: #f3efe7; color: #171511;
+        padding: 14px 18px;
+        font-family: "Fraunces", Georgia, serif; overflow: hidden;
+      }
+      .pv-editorial .title {
+        font-size: 32px; font-weight: 900; letter-spacing: -0.04em; line-height: 0.95;
+      }
+      .pv-editorial .title em { color: #e2431d; font-weight: 700; }
+      .pv-editorial .byline {
+        margin-top: 8px; font-family: "JetBrains Mono", monospace; font-size: 8px;
+        text-transform: uppercase; letter-spacing: 0.15em; color: #7e786c;
+      }
+      .pv-editorial .rule { border-top: 2px double #171511; margin: 10px 0; }
+
+      /* Preview 4 — playful */
+      .pv-playful {
+        background: #fdfbff;
+        position: relative; overflow: hidden;
+      }
+      .pv-playful::before, .pv-playful::after {
+        content: ""; position: absolute; border-radius: 50%; filter: blur(30px);
+      }
+      .pv-playful::before { width: 120px; height: 120px; background: #ec4899; top: -20px; right: -30px; opacity: 0.5; }
+      .pv-playful::after { width: 140px; height: 140px; background: #8b5cf6; bottom: -30px; left: -20px; opacity: 0.5; }
+      .pv-playful .toggle-bar {
+        position: relative; z-index: 1; padding: 12px 16px; margin: auto;
+        width: 70%; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.5); border-radius: 100px;
+        display: flex; align-items: center; gap: 10px;
+      }
+      .pv-playful .dot-play {
+        width: 18px; height: 18px; border-radius: 50%;
+        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      }
+      .pv-playful .text-play { font-size: 11px; font-weight: 600; color: #1a1530; }
+
+      /* Preview 5 — enterprise */
+      .pv-enterprise {
+        background: linear-gradient(180deg, #0b1220, #101a2e);
+      }
+      .pv-enterprise .arch-mini {
+        width: 80%; padding: 12px;
+        background: #142140; border: 1px solid rgba(148,163,184,0.22); border-radius: 8px;
+      }
+      .pv-enterprise svg { width: 100%; height: auto; }
+
+      /* Card body */
+      .card-body { padding: 22px; flex: 1; display: flex; flex-direction: column; }
+      .card-tag {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-family: "JetBrains Mono", monospace; font-size: 11px;
+        text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3);
+        margin-bottom: 12px;
+      }
+      .card-tag b { color: var(--accent); }
+      .card h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 8px; }
+      .card p { color: var(--fg-2); font-size: 14px; line-height: 1.5; margin-bottom: 14px; }
+      .card-meta {
+        display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
+      }
+      .meta-chip {
+        padding: 3px 8px; background: var(--surface-2);
+        border: 1px solid var(--line-2); border-radius: 100px;
+        font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--fg-2);
+      }
+      .card-actions { margin-top: auto; display: flex; gap: 10px; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 9px 14px; border-radius: 7px; font-size: 13px; font-weight: 500;
+        border: 1px solid var(--line-2); color: var(--fg); transition: 0.15s;
+      }
+      .btn:hover { border-color: var(--fg-3); background: var(--surface-2); }
+      .btn-primary { background: var(--accent); color: #0b0b10; border-color: var(--accent); font-weight: 600; }
+      .btn-primary:hover { background: #b5f87a; color: #0b0b10; }
+
+      /* i18n note */
+      .i18n-note {
+        padding: 28px; border: 1px dashed var(--line-2); border-radius: 12px;
+        background: var(--surface); margin: 40px 0;
+      }
+      .i18n-note h3 {
+        font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px;
+        display: flex; align-items: center; gap: 10px;
+      }
+      .i18n-note h3::before {
+        content: ""; width: 8px; height: 8px; background: var(--accent);
+        border-radius: 50%; box-shadow: 0 0 8px var(--accent);
+      }
+      .i18n-note p { color: var(--fg-2); font-size: 14px; margin-bottom: 10px; }
+      .i18n-note code {
+        font-family: "JetBrains Mono", monospace; font-size: 12px;
+        background: var(--surface-2); padding: 2px 6px; border-radius: 3px;
+        color: var(--accent);
+      }
+      .i18n-note ul { list-style: none; padding: 0; color: var(--fg-2); font-size: 14px; }
+      .i18n-note li { padding: 4px 0; display: flex; gap: 10px; }
+      .i18n-note li::before { content: "→"; color: var(--accent); }
+
+      footer {
+        border-top: 1px solid var(--line); padding: 30px 0 48px;
+        font-size: 13px; color: var(--fg-3);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header container">
+      <div class="h-top">
+        <span class="h-dot"></span>
+        <span>shipeasy · AI-first landing design review</span>
+        <span style="margin-left:auto">5 concepts · 4 locales · 1 pitch</span>
+      </div>
+      <h1 class="h-title">
+        Five landings. One pitch:<br><em>don't just let AI ship code — let it ship experiments.</em>
+      </h1>
+      <p class="h-sub">
+        Every concept leads with the same story: shipeasy gives your Claude/Cursor agent an MCP
+        server, 12 Claude skills, and a CLI to create flags, run A/B tests, roll out translations,
+        and read statistically defensible verdicts — without a human babysitting a dashboard. The
+        variation is in voice and audience: dev-first, data-first, editorial, solo/vibe, or enterprise.
+      </p>
+      <div class="h-meta">
+        <span>Toggle locales in-page via the picker (top-right).</span>
+        <span>Press <kbd>⌘/Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd> to overlay translation keys.</span>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="i18n-note">
+        <h3>i18n / string-manager is an agent surface, not just a file</h3>
+        <p>
+          The string manager is a first-class primitive — same rails as flags and experiments.
+          That means a Claude agent can call <code>update_translation</code> to ship a copy
+          change, or <code>create_experiment</code> on a translation key to A/B test one locale
+          without touching the others. These concepts demonstrate the client side of that story
+          via a tiny runtime in <code>_shared/i18n.js</code>:
+        </p>
+        <ul>
+          <li>Locale switching without reload — ready for Next.js App Router + middleware matching</li>
+          <li>Interpolation: <code>"Welcome, {{name}}"</code> via <code>data-i18n-vars</code></li>
+          <li>Plurals: <code>{ one, other }</code> keyed by <code>data-i18n-plural="5"</code></li>
+          <li>Attribute translation: <code>data-i18n-attr="placeholder:form.email"</code></li>
+          <li>Dev-only key overlay (⌘/Ctrl+Shift+K) for designer and agent QA of coverage</li>
+          <li>Graceful fallback to <code>en</code> when a key is missing in the active locale</li>
+        </ul>
+      </div>
+
+      <section class="grid">
+        <!-- Concept 1 — Terminal -->
+        <article class="card">
+          <div class="card-preview pv-terminal">
+            <div class="w">
+              <div style="color: #8a8a99">&gt; ship checkout.flow_v2 at 10%</div>
+              <div>&nbsp;</div>
+              <div><b>claude</b> <span>shipeasy.create_experiment</span></div>
+              <div>&nbsp;→ id: exp_8fQ2</div>
+              <div><b>claude</b> <span>shipeasy.start_rollout</span>(10%)</div>
+              <div>&nbsp;✓ wired · guardrails armed</div>
+              <div style="color: #fbbf24">→ verdict in 24h_</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-tag"><b>01</b> · terminal · <i style="color:var(--accent)">AI-first</i></div>
+            <h3>Dev-first. Agent-driven. Dark.</h3>
+            <p>
+              For the HN reader shipping with Claude Code. Hero is a live agent session — Claude
+              calls the MCP tools, the CLI prints deterministic output, the statistics are real.
+              Closest tonal match: Vercel, Resend, Linear.
+            </p>
+            <div class="card-meta">
+              <span class="meta-chip">Geist + Geist Mono</span>
+              <span class="meta-chip">Dark</span>
+              <span class="meta-chip">MCP session hero</span>
+              <span class="meta-chip">Lime accent</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn btn-primary" href="concept-01-terminal.html" target="_blank" rel="noopener">Open →</a>
+              <a class="btn" href="concept-01-terminal.html">In this tab</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Concept 2 — Data Lab -->
+        <article class="card">
+          <div class="card-preview pv-data">
+            <div class="card-mini">
+              <h4>checkout.flow_v2 — verdict</h4>
+              <div class="kpi-row">
+                <div class="mini-kpi"><div class="v">+22.4%</div><div class="l">lift</div></div>
+                <div class="mini-kpi"><div class="v">0.003</div><div class="l">p-value</div></div>
+                <div class="mini-kpi"><div class="v">24.7k</div><div class="l">n</div></div>
+              </div>
+              <div class="mini-chart">
+                <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+                  <path d="M0 35 L20 32 L40 26 L60 22 L80 16 L100 12 L120 8" fill="none" stroke="#0f9d58" stroke-width="1.5" />
+                  <path d="M0 36 L20 35 L40 34 L60 32 L80 31 L100 30 L120 28" fill="none" stroke="#7a7a85" stroke-width="1" stroke-dasharray="2,2" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-tag"><b>02</b> · data lab · <i style="color:#2546f0">AI-first</i></div>
+            <h3>AI ships. ShipEasy verifies.</h3>
+            <p>
+              For PMs and eng leaders worried about what their agents are shipping. The dashboard
+              hero shows an experiment created by @claude-agent, with honest stats. Comparison
+              table calls out MCP readiness vs. Statsig / LaunchDarkly.
+            </p>
+            <div class="card-meta">
+              <span class="meta-chip">Inter</span>
+              <span class="meta-chip">Light</span>
+              <span class="meta-chip">Dashboard hero · agent-tagged</span>
+              <span class="meta-chip">Indigo accent</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn btn-primary" href="concept-02-data.html" target="_blank" rel="noopener">Open →</a>
+              <a class="btn" href="concept-02-data.html">In this tab</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Concept 3 — Editorial -->
+        <article class="card">
+          <div class="card-preview pv-editorial">
+            <div class="title">Let AI <em>measure.</em></div>
+            <div class="rule"></div>
+            <div class="byline">Manifesto · For the agent era · 2026</div>
+          </div>
+          <div class="card-body">
+            <div class="card-tag"><b>03</b> · editorial · <i style="color:#e2431d">AI accountability</i></div>
+            <h3>A manifesto on AI that measures.</h3>
+            <p>
+              The argument page. "An agent that writes code without measuring the result is a very
+              fast intern." Drop-cap article, three tenets reframed around agent loops, pull quote,
+              YAML signed by @claude-agent. Stripe Press energy.
+            </p>
+            <div class="card-meta">
+              <span class="meta-chip">Fraunces + Inter</span>
+              <span class="meta-chip">Paper</span>
+              <span class="meta-chip">Manifesto voice</span>
+              <span class="meta-chip">Red accent</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn btn-primary" href="concept-03-editorial.html" target="_blank" rel="noopener">Open →</a>
+              <a class="btn" href="concept-03-editorial.html">In this tab</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Concept 4 — Playful -->
+        <article class="card">
+          <div class="card-preview pv-playful">
+            <div class="toggle-bar">
+              <div class="dot-play"></div>
+              <div class="text-play">shipped by @claude 🤖</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-tag"><b>04</b> · playful · <i style="color:#8b5cf6">solo / vibe-coder</i></div>
+            <h3>"You vibe-code. Claude ships. We run the A/Bs."</h3>
+            <p>
+              For the indie hacker shipping solo with an AI co-worker. Demo shows what the user
+              prompted vs. what Claude executed via MCP. Testimonials from one-person teams.
+              Clerk / Cal.com warmth.
+            </p>
+            <div class="card-meta">
+              <span class="meta-chip">Space Grotesk</span>
+              <span class="meta-chip">Gradient mesh</span>
+              <span class="meta-chip">Prompt → MCP demo</span>
+              <span class="meta-chip">Violet → pink</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn btn-primary" href="concept-04-playful.html" target="_blank" rel="noopener">Open →</a>
+              <a class="btn" href="concept-04-playful.html">In this tab</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Concept 5 — Enterprise -->
+        <article class="card">
+          <div class="card-preview pv-enterprise">
+            <div class="arch-mini">
+              <svg viewBox="0 0 220 80">
+                <rect x="6" y="18" width="50" height="28" rx="4" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" />
+                <text x="31" y="36" text-anchor="middle" fill="#e2e8f0" font-size="8" font-family="Inter">SDK</text>
+                <rect x="80" y="18" width="60" height="28" rx="4" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" />
+                <text x="110" y="36" text-anchor="middle" fill="#e2e8f0" font-size="8" font-family="Inter">Edge</text>
+                <rect x="160" y="6" width="54" height="20" rx="3" fill="rgba(251,191,36,0.1)" stroke="#fbbf24" />
+                <text x="187" y="20" text-anchor="middle" fill="#e2e8f0" font-size="7" font-family="Inter">KV</text>
+                <rect x="160" y="34" width="54" height="20" rx="3" fill="rgba(251,191,36,0.08)" stroke="#fbbf24" />
+                <text x="187" y="47" text-anchor="middle" fill="#e2e8f0" font-size="7" font-family="Inter">D1</text>
+                <path d="M56 32 L80 32" stroke="#38bdf8" stroke-width="1" />
+                <path d="M140 28 L160 18" stroke="#38bdf8" stroke-width="1" />
+                <path d="M140 36 L160 44" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2,2" />
+                <text x="110" y="72" text-anchor="middle" fill="#64748b" font-size="6" font-family="JetBrains Mono">single-tenant · SOC 2 · 99.99%</text>
+              </svg>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-tag"><b>05</b> · enterprise · <i style="color:#38bdf8">AI governance</i></div>
+            <h3>Scoped MCP. Audit-ready agents.</h3>
+            <p>
+              For platform teams whose engineers ship with agents and whose auditors demand
+              receipts. Scoped MCP tokens, SIEM-exported agent actions, universe-level holdouts.
+              The diagram pairs 🤖 and 👤 on one surface. LaunchDarkly / Datadog feel.
+            </p>
+            <div class="card-meta">
+              <span class="meta-chip">Inter + IBM Plex Mono</span>
+              <span class="meta-chip">Navy dark</span>
+              <span class="meta-chip">Agent + human arch</span>
+              <span class="meta-chip">Sky accent</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn btn-primary" href="concept-05-enterprise.html" target="_blank" rel="noopener">Open →</a>
+              <a class="btn" href="concept-05-enterprise.html">In this tab</a>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="container">
+      Open <code class="mono">landing-concepts/index.html</code> directly in a browser — no build
+      step required. For the best dev experience, serve with
+      <code class="mono">python -m http.server 5173</code> from the folder.
+    </footer>
+  </body>
+</html>

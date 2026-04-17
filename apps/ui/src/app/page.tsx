@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { auth } from "@/auth";
+import { Badge } from "@/components/ui/badge";
+import { LinkButton } from "@/components/ui/link-button";
 
 export default async function LandingPage() {
   const session = await auth();
@@ -13,17 +12,22 @@ export default async function LandingPage() {
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <span className="font-bold text-lg">ShipEasy</span>
           <nav className="flex items-center gap-4">
-            <Link href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
+            <a
+              href="https://docs.shipeasy.ai"
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Docs
-            </Link>
+            </a>
             {session ? (
-              <Button render={<Link href="/dashboard" />} size="sm">
+              <LinkButton href="/dashboard" size="sm">
                 Dashboard
-              </Button>
+              </LinkButton>
             ) : (
-              <Button render={<Link href="/auth/signin" />} size="sm">
+              <LinkButton href="/auth/signin" size="sm">
                 Sign in
-              </Button>
+              </LinkButton>
             )}
           </nav>
         </div>
@@ -36,16 +40,22 @@ export default async function LandingPage() {
           Ship faster with the tools you need
         </h1>
         <p className="text-xl text-muted-foreground max-w-lg">
-          ShipEasy gives you auth, docs, and a polished UI out of the box so you can focus on
-          building your product.
+          Three products in one platform: feature Configs, Experiments, and a String Manager for
+          localization — all backed by the same project, SDK keys, and plan.
         </p>
         <div className="flex gap-3 mt-2">
-          <Button render={<Link href="/auth/signin" />} size="lg">
+          <LinkButton href="/auth/signin" size="lg">
             Get started free
-          </Button>
-          <Button render={<Link href="/docs" />} variant="outline" size="lg">
+          </LinkButton>
+          <LinkButton
+            href="https://docs.shipeasy.ai"
+            target="_blank"
+            rel="noreferrer"
+            variant="outline"
+            size="lg"
+          >
             Read the docs
-          </Button>
+          </LinkButton>
         </div>
       </main>
 

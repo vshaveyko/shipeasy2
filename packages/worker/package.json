@@ -10,13 +10,12 @@
   },
   "dependencies": {
     "@shipeasy/core": "workspace:*",
-    "hono": "^4.6.0",
-    "murmurhash-js": "^1.0.0"
+    "drizzle-orm": "^0.36.0",
+    "hono": "^4.6.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.5.0",
     "@cloudflare/workers-types": "^4.20240000.0",
-    "@types/murmurhash-js": "^1.0.6",
     "drizzle-kit": "^0.28.0",
     "typescript": "^5.7.4",
     "vitest": "^2.1.0",

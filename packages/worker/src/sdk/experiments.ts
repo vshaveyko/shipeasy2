@@ -1,1 +1,23 @@
-// GET /sdk/experiments/:projectId — universes + experiments, 600s CDN cache.
+// GET /sdk/experiments — server SDKs poll every 600s; ETag + infinite CDN cache.
+
+import { getExperiments } from "@shipeasy/core";
+import type { AuthedContext } from "../lib/auth";
+
+export async function handleExperiments(c: AuthedContext) {
+  const key = c.get("key");
+  const exps = await getExperiments(c.env, key.project_id);
+  const etag = `"${exps.version}"`;
+
+  if (c.req.header("If-None-Match") === etag) {
+    return new Response(null, { status: 304, headers: { ETag: etag } });
+  }
+
+  return new Response(JSON.stringify(exps), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=31536000",
+      ETag: etag,
+    },
+  });
+}

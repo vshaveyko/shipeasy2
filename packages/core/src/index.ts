@@ -1,3 +1,15 @@
 export * from "./auth/crypto";
+export { validateSdkKey, type SdkKeyMeta } from "./auth/sdk-key";
 export * from "./config/plans";
+export * from "./env";
+export * from "./errors";
+export * from "./limits";
 export * from "./types";
+export * from "./kv/cache";
+export * from "./kv/purge";
+export * from "./kv/rebuild";
+export * from "./db/scoped";
+export { getDb, type Db } from "./db";
+export * from "./eval/gate";
+export * from "./eval/experiment";
+export { getHashFn, murmur3_v1, type HashFn } from "./eval/hash";

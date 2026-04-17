@@ -1,0 +1,80 @@
+/* Minimal reset shared across concepts */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* i18n key overlay (Cmd+Shift+K) — designer QA tool */
+.i18n-keys-visible [data-i18n]::after {
+  content: " ⟨" attr(data-i18n) "⟩";
+  font:
+    500 10px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+  padding: 2px 4px;
+  margin-left: 4px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+/* Locale picker — reusable across concepts */
+.locale-picker {
+  display: inline-flex;
+  gap: 2px;
+  font:
+    500 11px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  letter-spacing: 0.02em;
+}
+.locale-picker button {
+  padding: 6px 8px;
+  border-radius: 5px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.locale-picker button:hover {
+  opacity: 0.85;
+}
+.locale-picker button.is-active {
+  opacity: 1;
+}

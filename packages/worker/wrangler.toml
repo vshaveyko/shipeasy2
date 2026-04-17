@@ -6,8 +6,90 @@ compatibility_flags = ["nodejs_compat"]
 [observability]
 enabled = true
 
-# Bindings are configured per environment.
-# D1:  [[d1_databases]]      binding = "DB"           database_name = "..."  database_id = "..."
-# KV:  [[kv_namespaces]]     binding = "FLAGS_KV"     id = "..."
-# AE:  [[analytics_engine_datasets]] binding = "AE"   dataset = "events"
-# Queue: [[queues.producers]] binding = "ANALYSIS_QUEUE" queue = "analysis"
+[vars]
+CF_ZONE_ID = "327bf22a5c585b1a72387bea588bf212"
+CF_ACCOUNT_ID = "b3b935b0b2a42ae7ec5029cd3de2f0e8"
+ANALYTICS_HOST = "cdn.shipeasy.ai"
+FLAGS_DOMAIN = "cdn.shipeasy.ai"
+CRONITOR_HEARTBEAT_URL = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "shipeasy-db"
+database_id = "e151fb96-2d60-4de3-aed6-8ff51730caae"
+
+[[routes]]
+pattern = "cdn.shipeasy.ai"
+custom_domain = true
+
+[[kv_namespaces]]
+binding = "FLAGS_KV"
+id = "e0ddf5c86029435880897410ca270488"
+
+[[kv_namespaces]]
+binding = "CLI_TOKEN_KV"
+id = "997c2f34a89e4d8197fb8f2c9a3c940a"
+
+[[analytics_engine_datasets]]
+binding = "EXPOSURES"
+dataset = "shipeasy_exposures"
+
+[[analytics_engine_datasets]]
+binding = "METRIC_EVENTS"
+dataset = "shipeasy_metric_events"
+
+[[analytics_engine_datasets]]
+binding = "I18N_REQUESTS"
+dataset = "shipeasy_i18n_requests"
+
+[[queues.producers]]
+binding = "ANALYSIS_QUEUE"
+queue = "experiment-analysis"
+
+[[queues.consumers]]
+queue = "experiment-analysis"
+max_batch_size = 1
+max_batch_timeout = 0
+max_retries = 3
+dead_letter_queue = "experiment-analysis-dlq"
+
+[[queues.consumers]]
+queue = "experiment-analysis-dlq"
+max_batch_size = 10
+max_retries = 1
+
+[[queues.producers]]
+binding = "I18N_USAGE_QUEUE"
+queue = "i18n-usage"
+
+[[queues.consumers]]
+queue = "i18n-usage"
+max_batch_size = 1
+max_batch_timeout = 0
+max_retries = 3
+dead_letter_queue = "i18n-usage-dlq"
+
+[[queues.consumers]]
+queue = "i18n-usage-dlq"
+max_batch_size = 10
+max_retries = 1
+
+[[r2_buckets]]
+binding = "EVENTS_R2"
+bucket_name = "shipeasy-events"
+
+[[r2_buckets]]
+binding = "LABELS_R2"
+bucket_name = "i18n-labels"
+
+[triggers]
+crons = [
+  "0 2 * * *",    # analysis fan-out
+  "0 3 * * *",    # retention purge
+  "0 4 * * *",    # AE → R2 archival
+  "*/5 * * * *",  # CDN purge retry
+]
+
+# ── Secrets (set via `wrangler secret put <NAME>`) ───────────────────────
+# CF_API_TOKEN         — scope: Cache Purge + Analytics Engine read
+# CLI_SERVICE_SECRET   — shared with apps/ui /cli-auth/complete route

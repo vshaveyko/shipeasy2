@@ -10,13 +10,16 @@
     "./config/plans": "./src/config/plans.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.4"
+    "@cloudflare/workers-types": "^4.20240000.0",
+    "typescript": "^5.7.4",
+    "vitest": "^2.1.0"
   }
 }

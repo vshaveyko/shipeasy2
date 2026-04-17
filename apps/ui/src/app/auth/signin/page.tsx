@@ -73,9 +73,14 @@ export default function SignInPage() {
 
         <p className="text-center text-xs text-muted-foreground">
           By signing in you agree to our{" "}
-          <Link href="/docs" className="underline hover:text-foreground">
+          <a
+            href="https://docs.shipeasy.ai/terms"
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:text-foreground"
+          >
             Terms of Service
-          </Link>
+          </a>
         </p>
       </div>
     </div>

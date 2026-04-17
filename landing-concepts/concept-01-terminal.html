@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipEasy — The experimentation platform for AI agents</title>
+    <link rel="stylesheet" href="_shared/reset.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #07070a;
+        --bg-elev: #0f0f14;
+        --line: #1c1c24;
+        --line-strong: #2a2a34;
+        --fg: #ececf1;
+        --fg-dim: #8a8a99;
+        --fg-faint: #55555f;
+        --accent: #a6f464;
+        --accent-glow: rgba(166, 244, 100, 0.15);
+        --warn: #fbbf24;
+        --error: #ef4444;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+        background-image: radial-gradient(
+            circle at 15% 10%,
+            rgba(166, 244, 100, 0.06),
+            transparent 50%
+          ),
+          radial-gradient(circle at 85% 60%, rgba(99, 102, 241, 0.05), transparent 50%);
+      }
+      .mono {
+        font-family: "Geist Mono", ui-monospace, monospace;
+      }
+      .container {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* Nav */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(7, 7, 10, 0.72);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        height: 56px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .brand .dot {
+        width: 9px;
+        height: 9px;
+        background: var(--accent);
+        border-radius: 2px;
+        box-shadow: 0 0 12px var(--accent-glow);
+      }
+      .nav-links {
+        display: flex;
+        gap: 22px;
+        font-size: 14px;
+        color: var(--fg-dim);
+      }
+      .nav-links a:hover {
+        color: var(--fg);
+      }
+      .nav-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: 0.15s;
+        border: 1px solid transparent;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #07070a;
+      }
+      .btn-primary:hover {
+        filter: brightness(1.08);
+      }
+      .btn-ghost {
+        color: var(--fg-dim);
+      }
+      .btn-ghost:hover {
+        color: var(--fg);
+      }
+      .btn-outline {
+        border-color: var(--line-strong);
+        color: var(--fg);
+      }
+      .btn-outline:hover {
+        border-color: var(--fg-faint);
+      }
+      .btn .arrow {
+        transition: transform 0.15s;
+      }
+      .btn:hover .arrow {
+        transform: translateX(2px);
+      }
+
+      /* Hero */
+      .hero {
+        padding: 80px 0 56px;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 10px 4px 4px;
+        border: 1px solid var(--line-strong);
+        border-radius: 100px;
+        font-size: 12px;
+        color: var(--fg-dim);
+        background: var(--bg-elev);
+      }
+      .eyebrow .tag {
+        padding: 2px 8px;
+        background: var(--accent-glow);
+        color: var(--accent);
+        border-radius: 100px;
+        font-weight: 600;
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .headline {
+        margin: 24px 0 20px;
+        font-size: clamp(40px, 6vw, 72px);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        max-width: 860px;
+      }
+      .headline .hl {
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--fg-dim);
+        font-size: 19px;
+        max-width: 620px;
+        line-height: 1.5;
+      }
+      .cta-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+        align-items: center;
+      }
+      .cta-meta {
+        color: var(--fg-faint);
+        font-size: 13px;
+      }
+
+      /* Terminal demo */
+      .term-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 64px;
+      }
+      @media (max-width: 820px) {
+        .term-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .term {
+        background: var(--bg-elev);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+      .term-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        background: #0a0a10;
+      }
+      .term-dots {
+        display: flex;
+        gap: 6px;
+      }
+      .term-dots span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--line-strong);
+      }
+      .term-title {
+        color: var(--fg-faint);
+        font-size: 12px;
+        margin-left: 8px;
+      }
+      .term-body {
+        padding: 18px 20px;
+        white-space: pre-wrap;
+      }
+      .tok-kw {
+        color: #c084fc;
+      }
+      .tok-fn {
+        color: #60a5fa;
+      }
+      .tok-str {
+        color: var(--accent);
+      }
+      .tok-num {
+        color: #fbbf24;
+      }
+      .tok-com {
+        color: var(--fg-faint);
+        font-style: italic;
+      }
+      .tok-op {
+        color: var(--fg-dim);
+      }
+      .tok-punct {
+        color: var(--fg-dim);
+      }
+      .prompt::before {
+        content: "$ ";
+        color: var(--accent);
+      }
+      .cursor {
+        display: inline-block;
+        width: 8px;
+        height: 15px;
+        background: var(--accent);
+        vertical-align: text-bottom;
+        margin-left: 2px;
+        animation: blink 1s steps(1) infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /* Logo strip */
+      .strip {
+        margin: 80px 0 40px;
+        padding: 20px 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+      .strip-label {
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--fg-faint);
+        margin-bottom: 14px;
+      }
+      .strip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 32px;
+        align-items: center;
+        color: var(--fg-dim);
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+      .strip-row span {
+        font-size: 18px;
+      }
+
+      /* Features */
+      .features {
+        padding: 80px 0;
+      }
+      .section-head {
+        max-width: 640px;
+        margin-bottom: 48px;
+      }
+      .section-eyebrow {
+        color: var(--accent);
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-size: 40px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 14px;
+        line-height: 1.1;
+      }
+      .section-sub {
+        color: var(--fg-dim);
+        font-size: 17px;
+      }
+      .feat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      @media (max-width: 820px) {
+        .feat-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .feat {
+        background: var(--bg);
+        padding: 28px;
+      }
+      .feat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--bg-elev);
+        border: 1px solid var(--line-strong);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        color: var(--accent);
+      }
+      .feat h3 {
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+      }
+      .feat p {
+        color: var(--fg-dim);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      /* Stats */
+      .stats {
+        padding: 60px 0;
+        border-top: 1px solid var(--line);
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 48px;
+      }
+      @media (max-width: 820px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .stat-v {
+        font-size: 42px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        color: var(--fg);
+      }
+      .stat-v .unit {
+        color: var(--accent);
+      }
+      .stat-l {
+        color: var(--fg-dim);
+        font-size: 13px;
+        margin-top: 4px;
+      }
+
+      /* CTA */
+      .cta-box {
+        margin: 80px 0;
+        padding: 56px;
+        border: 1px solid var(--line-strong);
+        border-radius: 16px;
+        background:
+          radial-gradient(circle at 90% 0%, rgba(166, 244, 100, 0.08), transparent 40%),
+          var(--bg-elev);
+        text-align: center;
+      }
+      .cta-box h2 {
+        font-size: 36px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+      }
+      .cta-box p {
+        color: var(--fg-dim);
+        margin-bottom: 24px;
+      }
+
+      /* Footer */
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 40px 0;
+        color: var(--fg-faint);
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      /* locale picker — dark variant */
+      .locale-picker button {
+        color: var(--fg-dim);
+      }
+      .locale-picker button.is-active {
+        color: var(--accent);
+      }
+
+      /* pill row */
+      .pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 28px;
+      }
+      .pill {
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 100px;
+        font-size: 12px;
+        color: var(--fg-dim);
+        font-family: "Geist Mono", ui-monospace, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Translations for this concept -->
+    <script>
+      window.CONCEPT_TRANSLATIONS = {
+        en: {
+          nav: { docs: "Docs", sdk: "MCP + SDKs", pricing: "Pricing", signin: "Sign in", cta: "Install MCP" },
+          eyebrow: { tag: "MCP", text: "Claude Code & Cursor compatible — 12 skills · 9 tools · 1 install" },
+          hero: {
+            title: "Don't just let AI ship code. Let it <span class=\"hl\">ship experiments.</span>",
+            sub: "ShipEasy is the experimentation backend for your AI agent. Claude, Cursor, and the shipeasy CLI can now create flags, launch experiments, roll out translations, and read the verdicts — without you babysitting a dashboard.",
+            cta_primary: "Install the MCP",
+            cta_secondary: "See it in action",
+            cta_meta: "Free forever up to {{mau}} MAU · works with any model that speaks MCP.",
+          },
+          pills: { a: "MCP server + Claude skills", b: "5ms p95 at edge", c: "CLI for agent loops", d: "Typed SDKs · 6 languages" },
+          strip: {
+            label: "Ship loops that close themselves",
+            count: { one: "{{count}} agent-driven experiment shipped this week", other: "{{count}} agent-driven experiments shipped this week" },
+          },
+          term1: { title: "claude code · session" },
+          term2: { title: "shipeasy · mcp tools exposed" },
+          features: {
+            eyebrow: "// the ship-measure-decide loop",
+            title: "Your AI writes code in minutes. ShipEasy is what tells it if the code worked.",
+            sub: "We're the missing half of the agent loop. Feature flags, experiments, configs, and localized copy — all exposed as MCP tools, Claude Code skills, and CLI commands your agent (or you) can drive end to end.",
+          },
+          f1: {
+            title: "An MCP server for your agent",
+            body: "9 tools your agent can actually use: create_flag, create_experiment, start_rollout, update_translation, read_verdict. Works with Claude Code, Cursor, Zed, or anything that speaks MCP.",
+          },
+          f2: {
+            title: "12 Claude Code skills",
+            body: "Drop-in skills — /ship-experiment, /rollout-feature, /analyze-launch, /translate-copy. Your agent learns the ShipEasy workflow the moment the MCP is installed.",
+          },
+          f3: {
+            title: "A CLI your agent can script",
+            body: "Deterministic JSON output on every command. Pipe it, grep it, chain it. The same API the dashboard uses — no scraping, no fragile selectors.",
+          },
+          f4: {
+            title: "Statistics that refuse to lie",
+            body: "Welch's t-test, CUPED variance reduction, sequential correction, universe-level holdouts. When your agent asks \"did it work?\", we give an answer you can defend in review.",
+          },
+          f5: {
+            title: "Edge-native, 5ms",
+            body: "SDKs evaluate at the edge against a signed KV blob. Changes propagate globally in ~150ms. The agent can flip a flag and watch the effect the same minute.",
+          },
+          f6: {
+            title: "i18n as a flag, not a silo",
+            body: "Translations are versioned flags. Your agent can ship a copy experiment in three tool calls, hold out a locale, and measure the lift per language — same surface as feature experiments.",
+          },
+          stats: {
+            s1: { value: "9", label: "MCP tools your agent can call" },
+            s2: { value: "12", label: "Claude Code skills included" },
+            s3: { value: "5ms", label: "p95 flag eval at the edge" },
+            s4: { value: "1", label: "command to install: `npx shipeasy@latest`" },
+          },
+          cta2: {
+            title: "Give your agent a ship-measure loop.",
+            sub: "`npx shipeasy@latest init` installs the MCP, registers the skills, and prints your first CLI command. Your next experiment can be created by an agent, tonight.",
+            primary: "Install the MCP",
+            secondary: "Read the agent guide",
+          },
+          foot: { rights: "© 2026 ShipEasy. Made on the edge.", status: "All systems operational" },
+        },
+        es: {
+          nav: { docs: "Docs", sdk: "MCP + SDKs", pricing: "Precios", signin: "Entrar", cta: "Instalar MCP" },
+          eyebrow: { tag: "MCP", text: "Compatible con Claude Code y Cursor — 12 skills · 9 tools · 1 instalación" },
+          hero: {
+            title: "No dejes que la IA solo envíe código. Deja que <span class=\"hl\">envíe experimentos.</span>",
+            sub: "ShipEasy es el backend de experimentación para tu agente IA. Claude, Cursor y la CLI de shipeasy ahora pueden crear flags, lanzar experimentos, desplegar traducciones y leer los veredictos — sin que tengas que vigilar un dashboard.",
+            cta_primary: "Instalar el MCP",
+            cta_secondary: "Verlo en acción",
+            cta_meta: "Gratis hasta {{mau}} MAU · funciona con cualquier modelo que hable MCP.",
+          },
+          pills: { a: "MCP + Claude skills", b: "5ms p95 en el edge", c: "CLI para bucles de agente", d: "SDKs tipados · 6 lenguajes" },
+          strip: {
+            label: "Bucles de envío que se cierran solos",
+            count: { one: "{{count}} experimento lanzado por agente esta semana", other: "{{count}} experimentos lanzados por agentes esta semana" },
+          },
+          term1: { title: "claude code · sesión" },
+          term2: { title: "shipeasy · herramientas MCP" },
+          features: {
+            eyebrow: "// el bucle enviar–medir–decidir",
+            title: "Tu IA escribe código en minutos. ShipEasy te dice si el código funcionó.",
+            sub: "Somos la mitad que falta en el bucle del agente. Flags, experimentos, configs y copy — expuestos como tools MCP, skills de Claude Code y comandos CLI que tu agente (o tú) pueden ejecutar de punta a punta.",
+          },
+          f1: { title: "Servidor MCP para tu agente", body: "9 tools que tu agente usa de verdad: create_flag, create_experiment, start_rollout, update_translation, read_verdict. Claude Code, Cursor, Zed — cualquier cliente MCP." },
+          f2: { title: "12 skills para Claude Code", body: "Skills listas: /ship-experiment, /rollout-feature, /analyze-launch, /translate-copy. Tu agente aprende el flujo en el momento que instalas el MCP." },
+          f3: { title: "Una CLI que el agente puede scriptear", body: "Salida JSON determinista en cada comando. Encadénalos, filtra, repite. La misma API del dashboard — sin scraping, sin selectors frágiles." },
+          f4: { title: "Estadística que no miente", body: "Welch, CUPED, corrección secuencial, holdouts por universo. Cuando tu agente pregunta «¿funcionó?», damos una respuesta defendible en revisión." },
+          f5: { title: "Edge-nativo, 5ms", body: "Los SDK evalúan en el edge contra un blob KV firmado. Cambios propagados en ~150ms. El agente cambia un flag y ve el efecto el mismo minuto." },
+          f6: { title: "i18n como flag, no silo", body: "Las traducciones son flags versionadas. Tu agente lanza un experimento de copy en tres tool calls, excluye un locale y mide el lift por idioma — misma superficie." },
+          stats: {
+            s1: { value: "9", label: "tools MCP para tu agente" },
+            s2: { value: "12", label: "skills de Claude Code incluidas" },
+            s3: { value: "5ms", label: "p95 eval de flag en el edge" },
+            s4: { value: "1", label: "comando: `npx shipeasy@latest`" },
+          },
+          cta2: {
+            title: "Dale a tu agente un bucle enviar–medir.",
+            sub: "`npx shipeasy@latest init` instala el MCP, registra las skills e imprime tu primer comando CLI. Tu próximo experimento lo puede crear un agente, esta noche.",
+            primary: "Instalar el MCP",
+            secondary: "Guía para agentes",
+          },
+          foot: { rights: "© 2026 ShipEasy. Hecho en el edge.", status: "Todos los sistemas operativos" },
+        },
+        de: {
+          nav: { docs: "Docs", sdk: "MCP + SDKs", pricing: "Preise", signin: "Anmelden", cta: "MCP installieren" },
+          eyebrow: { tag: "MCP", text: "Claude Code & Cursor kompatibel — 12 Skills · 9 Tools · 1 Installation" },
+          hero: {
+            title: "KI soll nicht nur Code shippen. Lass sie <span class=\"hl\">Experimente shippen.</span>",
+            sub: "ShipEasy ist das Experimentier-Backend für deinen KI-Agent. Claude, Cursor und die shipeasy-CLI erstellen jetzt Flags, starten Experimente, rollen Übersetzungen aus und lesen Urteile — ohne dass du ein Dashboard babysitten musst.",
+            cta_primary: "MCP installieren",
+            cta_secondary: "Live sehen",
+            cta_meta: "Dauerhaft frei bis {{mau}} MAU · funktioniert mit jedem Modell, das MCP spricht.",
+          },
+          pills: { a: "MCP + Claude-Skills", b: "5ms p95 am Edge", c: "CLI für Agent-Loops", d: "Typisierte SDKs · 6 Sprachen" },
+          strip: {
+            label: "Ship-Loops, die sich selbst schließen",
+            count: { one: "{{count}} agentengetriebenes Experiment diese Woche", other: "{{count}} agentengetriebene Experimente diese Woche" },
+          },
+          term1: { title: "claude code · Session" },
+          term2: { title: "shipeasy · MCP-Tools" },
+          features: {
+            eyebrow: "// der Ship-Measure-Decide-Loop",
+            title: "Deine KI schreibt Code in Minuten. ShipEasy sagt, ob der Code gewirkt hat.",
+            sub: "Wir sind die fehlende Hälfte des Agent-Loops. Flags, Experimente, Configs und Copy — als MCP-Tools, Claude-Code-Skills und CLI-Befehle, die dein Agent (oder du) end-to-end steuert.",
+          },
+          f1: { title: "MCP-Server für deinen Agent", body: "9 Tools, die dein Agent wirklich nutzt: create_flag, create_experiment, start_rollout, update_translation, read_verdict. Claude Code, Cursor, Zed — alles was MCP spricht." },
+          f2: { title: "12 Claude-Code-Skills", body: "Fertige Skills: /ship-experiment, /rollout-feature, /analyze-launch, /translate-copy. Dein Agent lernt den Workflow, sobald das MCP installiert ist." },
+          f3: { title: "Eine CLI, die der Agent scripten kann", body: "Deterministische JSON-Ausgabe bei jedem Befehl. Piping, Grep, Verkettung. Dieselbe API wie das Dashboard — kein Scraping, keine fragilen Selektoren." },
+          f4: { title: "Statistik, die nicht lügt", body: "Welch, CUPED, sequentielle Korrektur, Universum-Holdouts. Wenn dein Agent fragt „hat es gewirkt?\", geben wir eine Antwort, die im Review hält." },
+          f5: { title: "Edge-nativ, 5ms", body: "SDKs evaluieren am Edge gegen einen signierten KV-Blob. Global in ~150ms. Der Agent flippt ein Flag und sieht den Effekt binnen einer Minute." },
+          f6: { title: "i18n als Flag, nicht Silo", body: "Übersetzungen sind versionierte Flags. Dein Agent shippt ein Copy-Experiment in drei Tool-Calls, hält eine Locale raus und misst den Lift pro Sprache — gleiche Fläche." },
+          stats: {
+            s1: { value: "9", label: "MCP-Tools für deinen Agent" },
+            s2: { value: "12", label: "Claude-Code-Skills inklusive" },
+            s3: { value: "5ms", label: "p95 Flag-Eval am Edge" },
+            s4: { value: "1", label: "Befehl: `npx shipeasy@latest`" },
+          },
+          cta2: {
+            title: "Gib deinem Agenten einen Ship-Measure-Loop.",
+            sub: "`npx shipeasy@latest init` installiert das MCP, registriert die Skills und druckt deinen ersten CLI-Befehl. Dein nächstes Experiment kann ein Agent erstellen — heute Abend.",
+            primary: "MCP installieren",
+            secondary: "Agent-Guide lesen",
+          },
+          foot: { rights: "© 2026 ShipEasy. Am Edge gebaut.", status: "Alle Systeme laufen" },
+        },
+        ja: {
+          nav: { docs: "ドキュメント", sdk: "MCP + SDK", pricing: "料金", signin: "ログイン", cta: "MCP をインストール" },
+          eyebrow: { tag: "MCP", text: "Claude Code・Cursor 対応 — Skill 12 · Tool 9 · インストール 1 回" },
+          hero: {
+            title: "AI にコードだけを出荷させない。<span class=\"hl\">実験まで出荷</span>させる。",
+            sub: "ShipEasy は AI エージェントのための実験バックエンドです。Claude、Cursor、shipeasy CLI が、フラグ作成・実験開始・翻訳展開・判定読み取りまで一気通貫で実行します。ダッシュボードを見張る必要はもうありません。",
+            cta_primary: "MCP をインストール",
+            cta_secondary: "動作を見る",
+            cta_meta: "{{mau}} MAU まで永久無料 · MCP を話すモデルならどれでも。",
+          },
+          pills: { a: "MCP サーバー + Claude Skill", b: "Edge で p95 5ms", c: "エージェント用 CLI", d: "型付き SDK · 6 言語" },
+          strip: {
+            label: "自己完結する出荷ループ",
+            count: { other: "今週、エージェントが出荷した実験 {{count}} 件" },
+          },
+          term1: { title: "claude code · セッション" },
+          term2: { title: "shipeasy · MCP ツール" },
+          features: {
+            eyebrow: "// 出荷→測定→判断 のループ",
+            title: "AI は数分でコードを書く。ShipEasy はそのコードが効いたか教える。",
+            sub: "エージェントのループで欠けていた半分を私たちが埋めます。フラグ、実験、設定、コピー — すべてを MCP ツール、Claude Code スキル、CLI として公開。エージェント（またはあなた）が端から端まで実行できます。",
+          },
+          f1: { title: "エージェントのための MCP サーバー", body: "エージェントが実際に使える 9 つのツール: create_flag, create_experiment, start_rollout, update_translation, read_verdict。Claude Code、Cursor、Zed など MCP 対応なら。" },
+          f2: { title: "12 の Claude Code スキル", body: "すぐ使えるスキル: /ship-experiment, /rollout-feature, /analyze-launch, /translate-copy。MCP をインストールした瞬間にワークフローを習得。" },
+          f3: { title: "エージェントがスクリプトできる CLI", body: "すべてのコマンドで決定的な JSON 出力。パイプ・フィルタ・チェーン自由自在。ダッシュボードと同じ API — スクレイピングも脆弱なセレクタも不要。" },
+          f4: { title: "嘘をつかない統計", body: "Welch、CUPED、逐次補正、Universe 単位ホールドアウト。エージェントが「効いた？」と聞いたら、レビューで守れる答えを返します。" },
+          f5: { title: "Edge ネイティブ、5ms", body: "SDK は Edge で署名付き KV Blob を評価。変更は世界中に約 150ms で伝播。エージェントがフラグを切り替えた直後に効果を観測可能。" },
+          f6: { title: "i18n はフラグ、サイロではない", body: "翻訳はバージョン付きフラグ。エージェントが 3 ツールコールでコピー実験を出荷、あるロケールを除外、言語別リフトを測定 — 機能実験と同じ画面。" },
+          stats: {
+            s1: { value: "9", label: "エージェント向け MCP ツール" },
+            s2: { value: "12", label: "同梱 Claude Code スキル" },
+            s3: { value: "5ms", label: "Edge でのフラグ評価 p95" },
+            s4: { value: "1", label: "コマンド: `npx shipeasy@latest`" },
+          },
+          cta2: {
+            title: "エージェントに出荷–測定ループを。",
+            sub: "`npx shipeasy@latest init` で MCP をインストールし、スキルを登録し、最初の CLI コマンドを表示。次の実験は今夜、エージェントが作れます。",
+            primary: "MCP をインストール",
+            secondary: "エージェントガイドを読む",
+          },
+          foot: { rights: "© 2026 ShipEasy. Edge で作成。", status: "全システム稼働中" },
+        },
+      };
+    </script>
+
+    <!-- Nav -->
+    <header class="nav">
+      <div class="container nav-inner">
+        <a href="../landing-concepts/index.html" class="brand" title="Back to gallery">
+          <span class="dot"></span>
+          <span>shipeasy</span>
+        </a>
+        <nav class="nav-links">
+          <a href="#" data-i18n="nav.docs"></a>
+          <a href="#" data-i18n="nav.sdk"></a>
+          <a href="#" data-i18n="nav.pricing"></a>
+        </nav>
+        <div class="nav-right">
+          <div class="locale-picker" role="tablist" aria-label="Language">
+            <button data-locale-switch="en">EN</button>
+            <button data-locale-switch="es">ES</button>
+            <button data-locale-switch="de">DE</button>
+            <button data-locale-switch="ja">JA</button>
+          </div>
+          <a href="#" class="btn btn-ghost" data-i18n="nav.signin"></a>
+          <a href="#" class="btn btn-primary">
+            <span data-i18n="nav.cta"></span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">
+          <span class="tag" data-i18n="eyebrow.tag"></span>
+          <span data-i18n="eyebrow.text"></span>
+        </span>
+        <h1
+          class="headline"
+          data-i18n="hero.title"
+          data-i18n-vars='{"verb":"measure what it ships"}'
+          data-i18n-html="true"
+        ></h1>
+        <p class="sub" data-i18n="hero.sub"></p>
+        <div class="cta-row">
+          <a href="#" class="btn btn-primary">
+            <span data-i18n="hero.cta_primary"></span>
+            <span class="arrow">→</span>
+          </a>
+          <a href="#" class="btn btn-outline" data-i18n="hero.cta_secondary"></a>
+          <span class="cta-meta" data-i18n="hero.cta_meta" data-i18n-vars='{"mau":"50k"}'></span>
+        </div>
+        <div class="pills">
+          <span class="pill" data-i18n="pills.a"></span>
+          <span class="pill" data-i18n="pills.b"></span>
+          <span class="pill" data-i18n="pills.c"></span>
+          <span class="pill" data-i18n="pills.d"></span>
+        </div>
+
+        <div class="term-grid">
+          <div class="term">
+            <div class="term-head">
+              <div class="term-dots"><span></span><span></span><span></span></div>
+              <span class="term-title" data-i18n="term1.title"></span>
+            </div>
+            <div class="term-body"><span class="tok-com">&gt; you: ship the new checkout flow to 10% of pro users and A/B test it</span>
+
+<span class="tok-kw">claude</span>  Reading src/checkout/* …
+        Detected 2 candidate variants: classic, express.
+
+        <span class="tok-com">Calling</span> <span class="tok-fn">shipeasy.create_experiment</span>
+          name:      <span class="tok-str">"checkout.flow_v2"</span>
+          universe:  <span class="tok-str">"web"</span>
+          variants:  [<span class="tok-str">"classic"</span>, <span class="tok-str">"express"</span>]
+          split:     <span class="tok-num">50</span>/<span class="tok-num">50</span>
+          targeting: <span class="tok-str">"plan == 'pro'"</span>
+          guardrails: [<span class="tok-str">"lcp_p75"</span>, <span class="tok-str">"refund_rate"</span>]
+
+        <span class="tok-str">✓ experiment_id: exp_8fQ2</span>
+        <span class="tok-str">✓ flag wired to useFlag("checkout.flow_v2")</span>
+        <span class="tok-str">✓ exposure event → /collect</span>
+
+        <span class="tok-com">Calling</span> <span class="tok-fn">shipeasy.start_rollout</span>
+          percent: <span class="tok-num">10</span>
+          approval: <span class="tok-str">"auto-after-guardrails"</span>
+
+        Opening PR #412 for the SDK wiring. Ship when ready.<span class="cursor"></span></div>
+          </div>
+
+          <div class="term">
+            <div class="term-head">
+              <div class="term-dots"><span></span><span></span><span></span></div>
+              <span class="term-title" data-i18n="term2.title"></span>
+            </div>
+            <div class="term-body"><span class="prompt">claude mcp list shipeasy</span>
+
+<span class="tok-kw">tools</span>                               <span class="tok-kw">purpose</span>
+<span class="tok-fn">create_flag</span>                         gate a feature
+<span class="tok-fn">create_experiment</span>                   A/B with guardrails
+<span class="tok-fn">start_rollout</span>                       % ramp, auto-halt
+<span class="tok-fn">read_verdict</span>                        lift · p · CI
+<span class="tok-fn">update_translation</span>                  i18n as a flag
+<span class="tok-fn">halt_experiment</span>                     break-glass rollback
+
+<span class="tok-kw">skills</span>                              <span class="tok-kw">slash command</span>
+/ship-experiment                    end-to-end loop
+/rollout-feature                    gate + ramp + watch
+/analyze-launch                     post-hoc with guardrails
+/translate-copy                     locale A/B
+
+<span class="tok-com">→ 9 tools · 12 skills · 1 signed scope per project</span><span class="cursor"></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Social proof strip -->
+    <section class="container">
+      <div class="strip">
+        <div class="strip-label" data-i18n="strip.label"></div>
+        <div class="strip-row">
+          <span>Linear</span><span>Cal.com</span><span>Resend</span><span>Modal</span
+          ><span>Inngest</span><span>Hono</span><span>Better Auth</span>
+        </div>
+        <div
+          class="strip-label"
+          style="margin-top: 14px"
+          data-i18n="strip.count"
+          data-i18n-plural="847"
+          data-i18n-vars='{"count":847}'
+        ></div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-eyebrow mono" data-i18n="features.eyebrow"></div>
+          <h2 class="section-title" data-i18n="features.title"></h2>
+          <p class="section-sub" data-i18n="features.sub"></p>
+        </div>
+
+        <div class="feat-grid">
+          <div class="feat">
+            <div class="feat-icon">◆</div>
+            <h3 data-i18n="f1.title"></h3>
+            <p data-i18n="f1.body"></p>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">∑</div>
+            <h3 data-i18n="f2.title"></h3>
+            <p data-i18n="f2.body"></p>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">⟨⟩</div>
+            <h3 data-i18n="f3.title"></h3>
+            <p data-i18n="f3.body"></p>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">▶</div>
+            <h3 data-i18n="f4.title"></h3>
+            <p data-i18n="f4.body"></p>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">$</div>
+            <h3 data-i18n="f5.title"></h3>
+            <p data-i18n="f5.body"></p>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">文</div>
+            <h3 data-i18n="f6.title"></h3>
+            <p data-i18n="f6.body"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+      <div class="container stats-grid">
+        <div>
+          <div class="stat-v" data-i18n="stats.s1.value"></div>
+          <div class="stat-l" data-i18n="stats.s1.label"></div>
+        </div>
+        <div>
+          <div class="stat-v" data-i18n="stats.s2.value"></div>
+          <div class="stat-l" data-i18n="stats.s2.label"></div>
+        </div>
+        <div>
+          <div class="stat-v" data-i18n="stats.s3.value"></div>
+          <div class="stat-l" data-i18n="stats.s3.label"></div>
+        </div>
+        <div>
+          <div class="stat-v" data-i18n="stats.s4.value"></div>
+          <div class="stat-l" data-i18n="stats.s4.label"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="container">
+      <div class="cta-box">
+        <h2 data-i18n="cta2.title"></h2>
+        <p data-i18n="cta2.sub"></p>
+        <div style="display: flex; gap: 12px; justify-content: center">
+          <a href="#" class="btn btn-primary"
+            ><span data-i18n="cta2.primary"></span><span class="arrow">→</span></a
+          >
+          <a href="#" class="btn btn-outline" data-i18n="cta2.secondary"></a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="container">
+      <span data-i18n="foot.rights"></span>
+      <span class="mono" style="color: var(--accent)">● <span data-i18n="foot.status"></span></span>
+    </footer>
+
+    <script src="_shared/i18n.js"></script>
+  </body>
+</html>

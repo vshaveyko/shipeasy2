@@ -25,7 +25,7 @@ All workflow tasks are orchestrated by Turbo at the root:
 - `pnpm dev` — `turbo dev` (persistent, uncached).
 - `pnpm lint` — `turbo lint`.
 - `pnpm type-check` — `turbo type-check` (waits on upstream builds).
-- `pnpm test` — `turbo test` (waits on upstream builds).
+- `pnpm test` — `turbo test` (waits on upstream builds). For `apps/ui` this is the Playwright e2e suite (see Testing below).
 
 Run a task in a single workspace with `pnpm --filter <name> <script>`, e.g. `pnpm --filter @shipeasy/worker test` or `pnpm --filter @shipeasy/ui dev`. A single Vitest file: `pnpm --filter @shipeasy/worker exec vitest run path/to/file.test.ts`.
 
@@ -58,6 +58,18 @@ Auth is stateless JWT (Auth.js v5, 15-minute expiry — no stored sessions). Key
 - Plan-level knobs (e.g. `poll_interval`) live in `packages/core/src/config/plans.ts`; changing a plan propagates through KV rebuild, no per-project migration.
 
 When changing anything that touches runtime/ownership boundaries between the UI and Worker, consult `experiment-platform/13-runtime-boundary.md` — it is the authoritative map of what each runtime is allowed to do.
+
+## Testing
+
+**REQUIRED: every new workflow must be covered with a full e2e test.**
+
+A "workflow" means any user-visible path in `apps/ui` — a new page, auth flow, form submission, navigation, redirect, or access-control guard. If a user can reach it in the browser, it ships with an e2e spec in the same PR. This rule is non-negotiable; do not open a PR for a new workflow without the accompanying spec.
+
+- Tool: Playwright, configured in [apps/ui/playwright.config.ts](apps/ui/playwright.config.ts). Specs live in [apps/ui/e2e/](apps/ui/e2e/).
+- Run: `pnpm --filter @shipeasy/ui test` (or `pnpm test` at root via Turbo). Use `pnpm --filter @shipeasy/ui test:e2e:ui` while authoring.
+- The `webServer` block boots `next dev -p 3100` with test-only `AUTH_*` env vars injected, so specs don't collide with a local `pnpm dev` on `3000` and don't require real OAuth credentials.
+- Smoke-level coverage is the baseline: assert the page loads, the core copy/CTAs render, and primary links/redirects go where they claim. Add deeper assertions (form submit, happy-path navigation, access-control redirects) whenever the workflow involves state or side effects.
+- Browsers are installed with `pnpm --filter @shipeasy/ui exec playwright install chromium`. CI must run this before `pnpm test`.
 
 ## Conventions worth knowing
 
