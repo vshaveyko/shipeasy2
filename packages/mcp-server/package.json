@@ -1,0 +1,25 @@
+{
+  "name": "@shipeasy/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for AI-assisted experiment setup",
+  "bin": { "shipeasy-mcp": "./bin/mcp.js" },
+  "files": ["dist/", "bin/"],
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@shipeasy/sdk": "workspace:*",
+    "semver": "^7.6.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "@types/semver": "^7.5.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.4"
+  },
+  "engines": { "node": ">=20" }
+}

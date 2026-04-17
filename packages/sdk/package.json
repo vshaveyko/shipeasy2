@@ -1,0 +1,39 @@
+{
+  "name": "@shipeasy/sdk",
+  "version": "1.0.0",
+  "description": "Feature flag and experimentation SDK",
+  "main": "./dist/server/index.js",
+  "module": "./dist/server/index.mjs",
+  "browser": "./dist/client/index.js",
+  "exports": {
+    ".": {
+      "node": "./dist/server/index.js",
+      "browser": "./dist/client/index.js",
+      "default": "./dist/server/index.js"
+    },
+    "./server": "./dist/server/index.js",
+    "./client": "./dist/client/index.js",
+    "./templates/*": "./templates/*.js"
+  },
+  "files": ["dist/", "templates/"],
+  "scripts": {
+    "build": "tsup",
+    "type-check": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "murmurhash-js": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/murmurhash-js": "^1.0.6",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.4",
+    "vitest": "^2.1.0"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": { "optional": true }
+  }
+}

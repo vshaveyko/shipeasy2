@@ -1,0 +1,13 @@
+name = "shipeasy-worker"
+main = "src/index.ts"
+compatibility_date = "2026-04-16"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+# Bindings are configured per environment.
+# D1:  [[d1_databases]]      binding = "DB"           database_name = "..."  database_id = "..."
+# KV:  [[kv_namespaces]]     binding = "FLAGS_KV"     id = "..."
+# AE:  [[analytics_engine_datasets]] binding = "AE"   dataset = "events"
+# Queue: [[queues.producers]] binding = "ANALYSIS_QUEUE" queue = "analysis"

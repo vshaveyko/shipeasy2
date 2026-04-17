@@ -1,0 +1,22 @@
+{
+  "name": "@shipeasy/core",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./db/schema": "./src/db/schema.ts",
+    "./db/scoped": "./src/db/scoped.ts",
+    "./schemas/*": "./src/schemas/*.ts",
+    "./config/plans": "./src/config/plans.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.4"
+  }
+}
