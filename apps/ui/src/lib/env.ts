@@ -8,6 +8,8 @@ declare global {
     CF_ZONE_ID?: string;
     CF_API_TOKEN?: string;
     FLAGS_DOMAIN?: string;
+    WORKER_URL?: string;
+    CLI_SERVICE_SECRET?: string;
   }
 }
 

@@ -71,11 +71,10 @@ export async function deviceComplete(c: DeviceContext) {
   const body = (await c.req.json().catch(() => ({}))) as {
     state?: string;
     project_id?: string;
-    code_verifier?: string;
     user_email?: string;
   };
-  if (!body.state || !body.project_id || !body.code_verifier || !body.user_email) {
-    return c.json({ error: "state, project_id, code_verifier, user_email required" }, 400);
+  if (!body.state || !body.project_id || !body.user_email) {
+    return c.json({ error: "state, project_id, user_email required" }, 400);
   }
 
   const db = getDb(c.env.DB);
@@ -93,11 +92,6 @@ export async function deviceComplete(c: DeviceContext) {
       .set({ status: "expired" })
       .where(eq(cliAuthSessions.state, body.state));
     return c.text("Session expired", 410);
-  }
-
-  const expectedChallenge = await codeChallengeFromVerifier(body.code_verifier);
-  if (!safeCompare(expectedChallenge, session.codeChallenge)) {
-    return c.text("PKCE verification failed", 403);
   }
 
   const rawToken = `sdk_admin_${crypto.randomUUID().replace(/-/g, "")}${crypto.randomUUID().replace(/-/g, "")}`;

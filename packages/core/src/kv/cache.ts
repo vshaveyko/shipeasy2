@@ -43,6 +43,19 @@ export async function getExperiments(env: CoreEnv, projectId: string): Promise<E
   return data;
 }
 
+/** Clears all in-process KV caches. Intended for tests. */
+export function clearCaches(projectId?: string): void {
+  if (projectId) {
+    flagsCache.delete(projectId);
+    expsCache.delete(projectId);
+    catalogCache.delete(projectId);
+  } else {
+    flagsCache.clear();
+    expsCache.clear();
+    catalogCache.clear();
+  }
+}
+
 export async function getCatalog(env: CoreEnv, projectId: string): Promise<Set<string>> {
   const hit = catalogCache.get(projectId);
   if (hit && Date.now() < hit.expiry) return hit.data;
