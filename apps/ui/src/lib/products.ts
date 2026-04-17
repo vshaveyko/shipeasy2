@@ -25,6 +25,8 @@ export type NavItem = {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   description?: string;
   external?: boolean;
+  /** Match only the exact href, never sub-paths. */
+  exact?: boolean;
 };
 
 export type NavGroup = {
@@ -100,6 +102,7 @@ export const PRODUCTS: Product[] = [
             href: "/dashboard/experiments",
             label: "Experiments",
             icon: FlaskConical,
+            exact: true,
           },
           {
             href: "/dashboard/experiments/universes",
@@ -145,6 +148,7 @@ export const PRODUCTS: Product[] = [
             href: "/dashboard/i18n",
             label: "Overview",
             icon: LayoutDashboard,
+            exact: true,
           },
           {
             href: "/dashboard/i18n/profiles",

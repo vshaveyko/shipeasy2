@@ -13,13 +13,13 @@ import {
 } from "@/lib/products";
 import { ProductSwitcher } from "@/components/dashboard/product-switcher";
 
-function isActive(pathname: string, href: string) {
-  if (href === "/dashboard") return pathname === "/dashboard";
-  return pathname === href || pathname.startsWith(`${href}/`);
+function isActive(pathname: string, item: NavItem) {
+  if (item.exact || item.href === "/dashboard") return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
 function NavItemLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const active = isActive(pathname, item.href);
+  const active = isActive(pathname, item);
   const Icon = item.icon;
   const className = cn(
     "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
