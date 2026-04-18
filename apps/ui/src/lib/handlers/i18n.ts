@@ -321,6 +321,33 @@ export async function upsertDraftKey(
   await writeAudit(identity, "i18n.draft.key.upsert", "label_draft_key", draftId, { key, value });
 }
 
+// ── Publish ───────────────────────────────────────────────────────────────────
+
+export async function publishProfile(
+  identity: AdminIdentity,
+  id: string,
+  body: { chunk?: string },
+) {
+  const s = await scopedDbSA(identity.projectId);
+  const profiles = await s.selectWhere(labelProfiles, eq(labelProfiles.id, id));
+  if (profiles.length === 0) throw new ApiError("Profile not found", 404);
+
+  const chunkName = body.chunk ?? "default";
+  const chunks = await s.selectWhere(
+    labelChunks,
+    and(eq(labelChunks.profileId, id), eq(labelChunks.name, chunkName))!,
+  );
+  if (chunks.length === 0) throw new ApiError(`Chunk '${chunkName}' not found`, 404);
+
+  const chunk = chunks[0];
+  const now = new Date().toISOString();
+
+  await s.update(labelChunks).set({ publishedAt: now }).where(eq(labelChunks.id, chunk.id));
+
+  await writeAudit(identity, "i18n.profile.publish", "label_profile", id, { chunk: chunkName });
+  return { ok: true, profile_id: id, chunk: chunkName, published_at: now };
+}
+
 // ── Overview stats ────────────────────────────────────────────────────────────
 
 export async function getI18nStats(identity: AdminIdentity) {

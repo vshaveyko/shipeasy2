@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { detect } from "package-manager-detector";
+import type { Command } from "commander";
 
-// ── types ────────────────────────────────────────────────────────────────────
+// ── types ──────────────────────────────────────────────────────────────────
 
 interface ShipeasySdkState {
   installed: boolean;
@@ -29,6 +30,7 @@ interface ProjectInfo {
     i18n_sdk: ShipeasySdkState;
     loader_script_tag: LoaderScriptState;
     env_keys_detected: string[];
+    template_warning?: string;
   };
 }
 
@@ -44,7 +46,7 @@ interface DetectResult {
   projects: ProjectInfo[];
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── helpers ────────────────────────────────────────────────────────────────
 
 function safeReadFile(filePath: string, root: string): string | null {
   try {
@@ -84,7 +86,7 @@ function findProjectSubdirs(root: string): string[] {
     .filter((dir) => PROJECT_SIGNALS.some((sig) => fs.existsSync(path.join(dir, sig))));
 }
 
-// ── JS/TS detection ──────────────────────────────────────────────────────────
+// ── JS/TS detection ────────────────────────────────────────────────────────
 
 async function detectFromPackageJson(
   root: string,
@@ -164,7 +166,7 @@ async function detectFromPackageJson(
   return { language, frameworks, package_manager, entry_points, allDeps: deps };
 }
 
-// ── Shipeasy SDK detection ────────────────────────────────────────────────────
+// ── Shipeasy SDK analysis ──────────────────────────────────────────────────
 
 function searchInDir(dir: string, pattern: RegExp, root: string, maxDepth: number): string | null {
   if (maxDepth <= 0) return null;
@@ -269,9 +271,11 @@ function detectLoaderScript(root: string): LoaderScriptState {
     "app/views/layouts/application.html.erb",
     "templates/base.html",
   ];
+
   for (const f of LAYOUT_CANDIDATES) {
     const content = safeReadFile(path.join(root, f), root);
     if (!content || !content.includes("loader.js")) continue;
+
     const keyMatch = /data-key=["']([^"']+)["']/.exec(content);
     const profileMatch = /data-profile=["']([^"']+)["']/.exec(content);
     return {
@@ -305,8 +309,9 @@ function detectEnvKeys(root: string): string[] {
 function detectNonJs(
   root: string,
 ): { language: string; package_manager: string; frameworks: string[] } | null {
-  if (fs.existsSync(path.join(root, "go.mod")))
+  if (fs.existsSync(path.join(root, "go.mod"))) {
     return { language: "go", package_manager: "go", frameworks: [] };
+  }
   if (
     fs.existsSync(path.join(root, "pyproject.toml")) ||
     fs.existsSync(path.join(root, "setup.py")) ||
@@ -322,16 +327,22 @@ function detectNonJs(
     if (/fastapi/i.test(combined)) frameworks.push("fastapi");
     return { language: "python", package_manager: pm, frameworks };
   }
-  if (fs.existsSync(path.join(root, "Gemfile")))
+  if (fs.existsSync(path.join(root, "Gemfile"))) {
     return { language: "ruby", package_manager: "bundler", frameworks: ["rails"] };
-  if (fs.existsSync(path.join(root, "composer.json")))
+  }
+  if (fs.existsSync(path.join(root, "composer.json"))) {
     return { language: "php", package_manager: "composer", frameworks: ["laravel"] };
-  if (fs.existsSync(path.join(root, "pom.xml")))
+  }
+  if (fs.existsSync(path.join(root, "pom.xml"))) {
     return { language: "java", package_manager: "maven", frameworks: [] };
-  if (fs.existsSync(path.join(root, "build.gradle")))
+  }
+  if (fs.existsSync(path.join(root, "build.gradle"))) {
     return { language: "java", package_manager: "gradle", frameworks: [] };
+  }
   return null;
 }
+
+// ── single-path inspection ─────────────────────────────────────────────────
 
 async function inspectOne(
   root: string,
@@ -356,7 +367,9 @@ async function inspectOne(
   };
 }
 
-async function detectProject(
+// ── core function (also used by MCP handler) ───────────────────────────────
+
+export async function detectProject(
   inputPaths?: string | string[],
 ): Promise<DetectResult | ClarificationNeeded> {
   const paths: string[] = inputPaths
@@ -394,16 +407,61 @@ async function detectProject(
   return { status: "ok", projects: results };
 }
 
-// ── MCP handler ───────────────────────────────────────────────────────────────
+// ── CLI command wiring ─────────────────────────────────────────────────────
 
-export async function handleDetectProject(inputPaths?: string | string[]) {
-  try {
-    const result = await detectProject(inputPaths);
-    return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
-  } catch (err: unknown) {
-    return {
-      isError: true,
-      content: [{ type: "text" as const, text: `Failed to detect project: ${String(err)}` }],
-    };
+function printHuman(result: DetectResult | ClarificationNeeded): void {
+  if (result.status === "needs_clarification") {
+    console.error(`⚠  ${result.reason}`);
+    console.error(`\n${result.question}`);
+    return;
   }
+
+  for (const project of result.projects) {
+    console.log(`\nPath:            ${project.path}`);
+    console.log(`Language:        ${project.language}`);
+    console.log(`Frameworks:      ${project.frameworks.join(", ") || "—"}`);
+    console.log(`Package manager: ${project.package_manager}`);
+    if (project.entry_points.length) {
+      console.log(`Entry points:    ${project.entry_points.join(", ")}`);
+    }
+
+    const exp = project.shipeasy.experimentation_sdk;
+    console.log(`\nExperimentation SDK:`);
+    console.log(`  installed:  ${exp.installed}${exp.version ? ` (${exp.version})` : ""}`);
+    if (exp.installed) console.log(`  configured: ${exp.configured}`);
+    if (exp.subentry) console.log(`  subentry:   ${exp.subentry}`);
+
+    const i18n = project.shipeasy.i18n_sdk;
+    console.log(`\ni18n SDK:`);
+    console.log(`  installed:  ${i18n.installed}${i18n.version ? ` (${i18n.version})` : ""}`);
+    if (i18n.installed) console.log(`  configured: ${i18n.configured}`);
+    if (i18n.profile) console.log(`  profile:    ${i18n.profile}`);
+
+    const loader = project.shipeasy.loader_script_tag;
+    console.log(`\nLoader script:   ${loader.present ? "present" : "not found"}`);
+    if (loader.data_key) console.log(`  data-key:     ${loader.data_key}`);
+    if (loader.data_profile) console.log(`  data-profile: ${loader.data_profile}`);
+
+    if (project.shipeasy.env_keys_detected.length) {
+      console.log(`\nEnv keys found:  ${project.shipeasy.env_keys_detected.join(", ")}`);
+    }
+  }
+}
+
+export function scanCommand(program: Command): void {
+  program
+    .command("scan [paths...]")
+    .description("Detect project language, framework, and ShipEasy SDK state")
+    .option("--json", "Output raw JSON")
+    .action(async (paths: string[], opts: { json?: boolean }) => {
+      const result = await detectProject(paths.length ? paths : undefined);
+
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        printHuman(result);
+      }
+
+      if (result.status === "needs_clarification") process.exit(1);
+    });
 }
