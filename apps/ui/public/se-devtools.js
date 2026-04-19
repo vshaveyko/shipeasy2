@@ -1,9 +1,9 @@
 "use strict";
 (() => {
-  var Ee = Object.defineProperty;
-  var Le = (e, t, n) =>
-    t in e ? Ee(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
-  var z = (e, t, n) => Le(e, typeof t != "symbol" ? t + "" : t, n);
+  var Se = Object.defineProperty;
+  var Ee = (e, t, n) =>
+    t in e ? Se(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
+  var z = (e, t, n) => Ee(e, typeof t != "symbol" ? t + "" : t, n);
   var X = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -349,80 +349,64 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
 .sw-track.on .sw-thumb { transform: translateX(14px); }
 .sw-label { font-size: 12px; color: #94a3b8; }
 `;
-  var B = "se_dt_session";
-  function V(e) {
-    let t = "";
-    for (let n of e) t += String.fromCharCode(n);
-    return btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  }
-  async function $e(e) {
-    let t = new TextEncoder().encode(e),
-      n = await crypto.subtle.digest("SHA-256", t);
-    return V(new Uint8Array(n));
-  }
-  function ke() {
-    return V(crypto.getRandomValues(new Uint8Array(32)));
-  }
-  function Z() {
+  var I = "se_dt_session";
+  function V() {
     try {
-      let e = sessionStorage.getItem(B);
+      let e = sessionStorage.getItem(I);
       if (e) return JSON.parse(e);
     } catch {}
     return null;
   }
-  function Te(e) {
+  function Le(e) {
     try {
-      sessionStorage.setItem(B, JSON.stringify(e));
+      sessionStorage.setItem(I, JSON.stringify(e));
     } catch {}
   }
-  function Q() {
+  function Z() {
     try {
-      sessionStorage.removeItem(B);
+      sessionStorage.removeItem(I);
     } catch {}
   }
-  async function ee(e, t) {
-    let n = ke(),
-      i = await $e(n),
-      r = await fetch(`${e.edgeUrl}/auth/device/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code_challenge: i }),
-      });
-    if (!r.ok) throw new Error("Failed to start device auth");
-    let { state: o } = await r.json();
+  async function Q(e, t) {
+    let n = new URL(e.adminUrl).origin,
+      s = window.location.origin,
+      i = window.open(
+        `${e.adminUrl}/devtools-auth?origin=${encodeURIComponent(s)}`,
+        "shipeasy-devtools-auth",
+        "width=460,height=640,noopener=no",
+      );
+    if (!i) throw new Error("Popup blocked. Allow popups for this site and try again.");
     return (
-      window.open(
-        `${e.adminUrl}/cli-auth?state=${encodeURIComponent(o)}`,
-        "_blank",
-        "width=620,height=700,noopener",
-      ),
       t(),
-      Me(e, o, n)
+      new Promise((o, r) => {
+        let c = !1;
+        function u(y, v) {
+          c ||
+            ((c = !0),
+            window.removeEventListener("message", f),
+            clearInterval(x),
+            clearTimeout(S),
+            y ? r(y) : o(v));
+        }
+        function f(y) {
+          if (y.origin !== n) return;
+          let v = y.data;
+          if (!v || v.type !== "se:devtools-auth" || !v.token || !v.projectId) return;
+          let E = { token: v.token, projectId: v.projectId };
+          (Le(E), u(null, E));
+        }
+        window.addEventListener("message", f);
+        let x = setInterval(() => {
+            i.closed && !c && u(new Error("Sign-in window closed before approval."));
+          }, 500),
+          S = setTimeout(() => {
+            u(new Error("Sign-in timed out after 10 minutes."));
+          }, 6e5);
+      })
     );
   }
-  async function Me(e, t, n) {
-    let i = Date.now() + 6e5;
-    for (; Date.now() < i; ) {
-      await Pe(2e3);
-      let r = await fetch(`${e.edgeUrl}/auth/device/poll?state=${encodeURIComponent(t)}`, {
-        headers: { "X-Code-Verifier": n },
-      });
-      if (r.status !== 202) {
-        if (r.status === 200) {
-          let o = await r.json(),
-            s = { token: o.token, projectId: o.project_id };
-          return (Te(s), s);
-        }
-        throw new Error(`Device auth failed with status ${r.status}`);
-      }
-    }
-    throw new Error("Device auth timed out after 10 minutes");
-  }
-  function Pe(e) {
-    return new Promise((t) => setTimeout(t, e));
-  }
-  var w = "se_l_";
-  function E(e) {
+  var $ = "se_l_";
+  function k(e) {
     for (let t of [sessionStorage, localStorage])
       try {
         let n = t.getItem(e);
@@ -444,7 +428,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   function M() {
     window.dispatchEvent(new CustomEvent("se:override:change"));
   }
-  function q() {
+  function B() {
     if (typeof window > "u") return;
     let e = new URLSearchParams(window.location.search);
     for (let [t, n] of e)
@@ -456,21 +440,21 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             : t.startsWith("se-exp-") && sessionStorage.setItem(`se_exp_${t.slice(7)}`, n);
       } catch {}
   }
-  function te() {
+  function ee() {
     return typeof window > "u"
       ? !1
       : new URLSearchParams(window.location.search).has("se-devtools");
   }
-  function N(e) {
-    let t = E(`se_gate_${e}`) ?? E(`${w}gate_${e}`);
+  function q(e) {
+    let t = k(`se_gate_${e}`) ?? k(`${$}gate_${e}`);
     return t === null ? null : t === "true";
   }
-  function ne(e, t, n = "session") {
-    let i = `${n === "local" ? w : "se_"}gate_${e}`;
-    (t === null ? A(i) : H(i, String(t), n), M());
+  function te(e, t, n = "session") {
+    let s = `${n === "local" ? $ : "se_"}gate_${e}`;
+    (t === null ? A(s) : H(s, String(t), n), M());
   }
-  function U(e) {
-    let t = E(`se_config_${e}`) ?? E(`${w}config_${e}`);
+  function N(e) {
+    let t = k(`se_config_${e}`) ?? k(`${$}config_${e}`);
     if (t !== null)
       try {
         return JSON.parse(t);
@@ -478,29 +462,29 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         return t;
       }
   }
-  function I(e, t, n = "session") {
-    let i = `${n === "local" ? w : "se_"}config_${e}`;
-    (t == null ? A(i) : H(i, JSON.stringify(t), n), M());
+  function U(e, t, n = "session") {
+    let s = `${n === "local" ? $ : "se_"}config_${e}`;
+    (t == null ? A(s) : H(s, JSON.stringify(t), n), M());
   }
-  function oe(e) {
-    return E(`se_exp_${e}`) ?? E(`${w}exp_${e}`);
+  function ne(e) {
+    return k(`se_exp_${e}`) ?? k(`${$}exp_${e}`);
   }
-  function re(e, t, n = "session") {
-    let i = `${n === "local" ? w : "se_"}exp_${e}`;
-    (t === null ? A(i) : H(i, t, n), M());
+  function oe(e, t, n = "session") {
+    let s = `${n === "local" ? $ : "se_"}exp_${e}`;
+    (t === null ? A(s) : H(s, t, n), M());
   }
-  function se() {
-    return E("se_i18n_profile") ?? E(`${w}i18n_profile`);
+  function re() {
+    return k("se_i18n_profile") ?? k(`${$}i18n_profile`);
   }
   function ie(e, t = "session") {
-    let n = `${t === "local" ? w : "se_"}i18n_profile`;
+    let n = `${t === "local" ? $ : "se_"}i18n_profile`;
     (e === null ? A(n) : H(n, e, t), M());
   }
-  function ae() {
+  function se() {
     for (let e of [sessionStorage, localStorage])
       try {
         [...Object.keys(e)]
-          .filter((t) => t.startsWith("se_") || t.startsWith(w))
+          .filter((t) => t.startsWith("se_") || t.startsWith($))
           .forEach((t) => e.removeItem(t));
       } catch {}
     M();
@@ -515,8 +499,8 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         headers: { Authorization: `Bearer ${this.token}` },
       });
       if (!n.ok) throw new Error(`${t} \u2192 HTTP ${n.status}`);
-      let i = await n.json();
-      return Array.isArray(i) ? i : (i.data ?? i);
+      let s = await n.json();
+      return Array.isArray(s) ? s : (s.data ?? s);
     }
     gates() {
       return this.get("/api/admin/gates");
@@ -541,18 +525,18 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       return this.get(`/api/admin/i18n/keys${n}`);
     }
   };
-  function Oe() {
+  function $e() {
     return window.__shipeasy ?? null;
   }
-  function Re(e) {
-    let t = N(e.name),
-      n = Oe()?.getFlag(e.name);
+  function ke(e) {
+    let t = q(e.name),
+      n = $e()?.getFlag(e.name);
     return (t !== null ? t : (n ?? e.enabled))
       ? '<span class="badge badge-on">ON</span>'
       : '<span class="badge badge-off">OFF</span>';
   }
-  function _e(e, t) {
-    let n = (i) => (t === (i === "on" ? !0 : i === "off" ? !1 : null) ? " sel" : "");
+  function Te(e, t) {
+    let n = (s) => (t === (s === "on" ? !0 : s === "off" ? !1 : null) ? " sel" : "");
     return `
     <div class="tog" data-gate="${e}">
       <button class="tog-btn${n("default")}" data-v="default">default</button>
@@ -560,7 +544,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       <button class="tog-btn${n("off")}" data-v="off">OFF</button>
     </div>`;
   }
-  async function le(e, t) {
+  async function ae(e, t) {
     e.innerHTML = '<div class="loading">Loading gates\u2026</div>';
     let n;
     try {
@@ -573,7 +557,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       e.innerHTML = '<div class="empty">No gates found for this project.</div>';
       return;
     }
-    function i() {
+    function s() {
       ((e.innerHTML = n
         .map(
           (o) => `
@@ -582,31 +566,31 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             <div class="row-name">${o.name}</div>
             <div class="row-sub">${o.rolloutPct}% rollout</div>
           </div>
-          ${Re(o)}
-          ${_e(o.name, N(o.name))}
+          ${ke(o)}
+          ${Te(o.name, q(o.name))}
         </div>`,
         )
         .join("")),
         e.querySelectorAll(".tog-btn").forEach((o) => {
           o.addEventListener("click", () => {
-            let s = o.closest("[data-gate]").dataset.gate,
+            let r = o.closest("[data-gate]").dataset.gate,
               a = o.dataset.v;
-            (ne(s, a === "default" ? null : a === "on"), i());
+            (te(r, a === "default" ? null : a === "on"), s());
           });
         }));
     }
-    i();
-    let r = () => i();
-    window.addEventListener("se:state:update", r);
+    s();
+    let i = () => s();
+    window.addEventListener("se:state:update", i);
   }
-  function He(e) {
+  function Me(e) {
     let t = typeof e == "string" ? e : JSON.stringify(e);
     return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
   }
-  function Ae(e) {
-    return U(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
+  function Oe(e) {
+    return N(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
   }
-  async function de(e, t) {
+  async function le(e, t) {
     e.innerHTML = '<div class="loading">Loading configs\u2026</div>';
     let n;
     try {
@@ -619,104 +603,104 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       e.innerHTML = '<div class="empty">No configs found for this project.</div>';
       return;
     }
-    let i = new Set();
-    function r() {
+    let s = new Set();
+    function i() {
       ((e.innerHTML = n
-        .map((s) => {
-          let a = U(s.name),
-            p = a !== void 0 ? a : s.valueJson,
-            u = i.has(s.name);
+        .map((r) => {
+          let a = N(r.name),
+            c = a !== void 0 ? a : r.valueJson,
+            u = s.has(r.name);
           return `
-          <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${s.name}">
+          <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${r.name}">
             <div style="display:flex;align-items:center;gap:8px">
-              <div class="row-name">${s.name}</div>
-              ${Ae(s.name)}
-              ${u ? `<button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${s.name}">edit</button>`}
+              <div class="row-name">${r.name}</div>
+              ${Oe(r.name)}
+              ${u ? `<button class="ibtn cancel-edit" data-name="${r.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${r.name}">edit</button>`}
             </div>
             ${
               u
                 ? `
-                <textarea class="editor" data-name="${s.name}" rows="3">${JSON.stringify(p, null, 2)}</textarea>
+                <textarea class="editor" data-name="${r.name}" rows="3">${JSON.stringify(c, null, 2)}</textarea>
                 <div class="edit-row">
-                  <button class="ibtn pri save-session" data-name="${s.name}">Save (session)</button>
-                  <button class="ibtn save-local" data-name="${s.name}">Save (local)</button>
-                  ${a !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${s.name}">clear</button>` : ""}
+                  <button class="ibtn pri save-session" data-name="${r.name}">Save (session)</button>
+                  <button class="ibtn save-local" data-name="${r.name}">Save (local)</button>
+                  ${a !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${r.name}">clear</button>` : ""}
                 </div>`
-                : `<div class="mono val-display">${He(p)}</div>`
+                : `<div class="mono val-display">${Me(c)}</div>`
             }
           </div>`;
         })
         .join("")),
-        e.querySelectorAll(".edit-btn").forEach((s) => {
-          s.addEventListener("click", () => {
-            (i.add(s.dataset.name), r());
+        e.querySelectorAll(".edit-btn").forEach((r) => {
+          r.addEventListener("click", () => {
+            (s.add(r.dataset.name), i());
           });
         }),
-        e.querySelectorAll(".cancel-edit").forEach((s) => {
-          s.addEventListener("click", () => {
-            (i.delete(s.dataset.name), r());
+        e.querySelectorAll(".cancel-edit").forEach((r) => {
+          r.addEventListener("click", () => {
+            (s.delete(r.dataset.name), i());
           });
         }));
-      function o(s, a) {
-        let p = s.dataset.name,
-          u = e.querySelector(`textarea[data-name="${p}"]`);
+      function o(r, a) {
+        let c = r.dataset.name,
+          u = e.querySelector(`textarea[data-name="${c}"]`);
         if (u)
           try {
             let f = JSON.parse(u.value);
-            (I(p, f, a), i.delete(p), r());
+            (U(c, f, a), s.delete(c), i());
           } catch {
             u.style.borderColor = "#f87171";
           }
       }
-      (e.querySelectorAll(".save-session").forEach((s) => {
-        s.addEventListener("click", () => o(s, "session"));
+      (e.querySelectorAll(".save-session").forEach((r) => {
+        r.addEventListener("click", () => o(r, "session"));
       }),
-        e.querySelectorAll(".save-local").forEach((s) => {
-          s.addEventListener("click", () => o(s, "local"));
+        e.querySelectorAll(".save-local").forEach((r) => {
+          r.addEventListener("click", () => o(r, "local"));
         }),
-        e.querySelectorAll(".clear-ov").forEach((s) => {
-          s.addEventListener("click", () => {
-            (I(s.dataset.name, null), i.delete(s.dataset.name), r());
+        e.querySelectorAll(".clear-ov").forEach((r) => {
+          r.addEventListener("click", () => {
+            (U(r.dataset.name, null), s.delete(r.dataset.name), i());
           });
         }));
     }
-    r();
+    i();
   }
-  function Ce() {
+  function Pe() {
     return window.__shipeasy ?? null;
   }
-  function De(e) {
+  function Re(e) {
     return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
   }
-  function ze(e) {
-    let t = oe(e.name),
-      n = ["control", ...e.groups.map((r) => r.name)],
-      i = [
+  function _e(e) {
+    let t = ne(e.name),
+      n = ["control", ...e.groups.map((i) => i.name)],
+      s = [
         `<option value="" ${t === null ? "selected" : ""}>default</option>`,
-        ...n.map((r) => `<option value="${r}" ${t === r ? "selected" : ""}>${r}</option>`),
+        ...n.map((i) => `<option value="${i}" ${t === i ? "selected" : ""}>${i}</option>`),
       ].join("");
-    return `<select class="sel-input exp-sel" data-name="${e.name}">${i}</select>`;
+    return `<select class="sel-input exp-sel" data-name="${e.name}">${s}</select>`;
   }
-  function Be(e) {
-    let t = Ce()?.getExperiment(e);
+  function He(e) {
+    let t = Pe()?.getExperiment(e);
     return t
       ? t.inExperiment
         ? `<span class="badge badge-run">${t.group}</span>`
         : '<span class="badge badge-draft">not enrolled</span>'
       : "";
   }
-  function ce(e, t) {
+  function de(e, t) {
     if (t.length === 0) {
       e.innerHTML = '<div class="empty">No experiments found.</div>';
       return;
     }
     let n = t.filter((o) => o.status === "running"),
-      i = t.filter((o) => o.status !== "running");
-    function r(o, s) {
+      s = t.filter((o) => o.status !== "running");
+    function i(o, r) {
       return o.length === 0
         ? ""
         : `
-      <div class="sec-head">${s}</div>
+      <div class="sec-head">${r}</div>
       ${o
         .map(
           (a) => `
@@ -724,22 +708,22 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             <div>
               <div class="row-name">${a.name}</div>
             </div>
-            ${De(a.status)}
-            ${a.status === "running" ? Be(a.name) : ""}
-            ${a.status === "running" ? ze(a) : ""}
+            ${Re(a.status)}
+            ${a.status === "running" ? He(a.name) : ""}
+            ${a.status === "running" ? _e(a) : ""}
           </div>`,
         )
         .join("")}`;
     }
-    ((e.innerHTML = r(n, "Running") + r(i, "Other")),
+    ((e.innerHTML = i(n, "Running") + i(s, "Other")),
       e.querySelectorAll(".exp-sel").forEach((o) => {
         o.addEventListener("change", () => {
-          let s = o.dataset.name;
-          re(s, o.value || null);
+          let r = o.dataset.name;
+          oe(r, o.value || null);
         });
       }));
   }
-  function qe(e, t) {
+  function Ae(e, t) {
     if (t.length === 0) {
       e.innerHTML = '<div class="empty">No universes found.</div>';
       return;
@@ -756,24 +740,24 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       )
       .join("");
   }
-  async function pe(e, t) {
+  async function ce(e, t) {
     e.innerHTML = '<div class="loading">Loading\u2026</div>';
-    let n, i;
+    let n, s;
     try {
-      [n, i] = await Promise.all([t.experiments(), t.universes()]);
-    } catch (s) {
-      e.innerHTML = `<div class="err">Failed to load: ${String(s)}</div>`;
+      [n, s] = await Promise.all([t.experiments(), t.universes()]);
+    } catch (r) {
+      e.innerHTML = `<div class="err">Failed to load: ${String(r)}</div>`;
       return;
     }
-    let r = { activeTab: "experiments" };
+    let i = { activeTab: "experiments" };
     function o() {
       e.querySelector(".tabs")
         .querySelectorAll(".tab")
-        .forEach((p) => {
-          p.classList.toggle("active", p.dataset.tab === r.activeTab);
+        .forEach((c) => {
+          c.classList.toggle("active", c.dataset.tab === i.activeTab);
         });
       let a = e.querySelector(".tab-body");
-      r.activeTab === "experiments" ? ce(a, n) : qe(a, i);
+      i.activeTab === "experiments" ? de(a, n) : Ae(a, s);
     }
     ((e.innerHTML = `
     <div class="tabs">
@@ -781,38 +765,38 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       <button class="tab" data-tab="universes">Universes</button>
     </div>
     <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
-      e.querySelectorAll(".tab").forEach((s) => {
-        s.addEventListener("click", () => {
-          ((r.activeTab = s.dataset.tab), o());
+      e.querySelectorAll(".tab").forEach((r) => {
+        r.addEventListener("click", () => {
+          ((i.activeTab = r.dataset.tab), o());
         });
       }),
       o(),
       window.addEventListener("se:state:update", () => {
-        let s = e.querySelector(".tab-body");
-        s && r.activeTab === "experiments" && ce(s, n);
+        let r = e.querySelector(".tab-body");
+        r && i.activeTab === "experiments" && de(r, n);
       }));
   }
-  var P = !1,
+  var O = !1,
     D = null;
-  function Ne(e) {
-    if (((P = e), D && (D(), (D = null)), !e)) return;
+  function Ce(e) {
+    if (((O = e), D && (D(), (D = null)), !e)) return;
     let t = document.createElement("style");
     ((t.id = "__se_inplace_style"),
       (t.textContent =
         "[data-label] { outline: 2px dashed #7c3aed !important; outline-offset: 2px !important; cursor: pointer !important; }"),
       document.head.appendChild(t));
-    function n(i) {
-      let r = i.target.closest("[data-label]");
-      if (!r) return;
-      (i.preventDefault(), i.stopPropagation());
-      let o = r.dataset.label ?? "",
-        s = r.dataset.labelDesc ?? "",
-        a = r.textContent ?? "",
-        p = prompt(
+    function n(s) {
+      let i = s.target.closest("[data-label]");
+      if (!i) return;
+      (s.preventDefault(), s.stopPropagation());
+      let o = i.dataset.label ?? "",
+        r = i.dataset.labelDesc ?? "",
+        a = i.textContent ?? "",
+        c = prompt(
           `Edit label "${o}"${
-            s
+            r
               ? `
-${s}`
+${r}`
               : ""
           }
 Current: ${a}
@@ -820,24 +804,24 @@ Current: ${a}
 New value:`,
           a,
         );
-      p !== null &&
-        p !== a &&
-        ((r.textContent = p),
-        window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: o, value: p } })));
+      c !== null &&
+        c !== a &&
+        ((i.textContent = c),
+        window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: o, value: c } })));
     }
     (document.addEventListener("click", n, !0),
       (D = () => {
         (document.removeEventListener("click", n, !0),
           document.getElementById("__se_inplace_style")?.remove(),
-          (P = !1));
+          (O = !1));
       }));
   }
-  function ue(e, t, n) {
-    let i = se(),
-      r = [
+  function pe(e, t, n) {
+    let s = re(),
+      i = [
         '<option value="">Default</option>',
         ...t.map(
-          (o) => `<option value="${o.id}" ${i === o.id ? "selected" : ""}>${o.name}</option>`,
+          (o) => `<option value="${o.id}" ${s === o.id ? "selected" : ""}>${o.name}</option>`,
         ),
       ].join("");
     ((e.innerHTML = `
@@ -845,17 +829,17 @@ New value:`,
     <div class="row">
       <div class="row-name">Edit labels in page</div>
       <div class="sw" id="se-inplace-sw">
-        <div class="sw-track${P ? " on" : ""}">
+        <div class="sw-track${O ? " on" : ""}">
           <div class="sw-thumb"></div>
         </div>
-        <span class="sw-label">${P ? "On" : "Off"}</span>
+        <span class="sw-label">${O ? "On" : "Off"}</span>
       </div>
     </div>
 
     <div class="sec-head">Profile</div>
     <div class="row">
       <div class="row-name">Active profile</div>
-      <select class="sel-input" id="se-profile-sel">${r}</select>
+      <select class="sel-input" id="se-profile-sel">${i}</select>
     </div>
 
     <div class="sec-head">Drafts</div>
@@ -876,28 +860,28 @@ New value:`,
     }
   `),
       e.querySelector("#se-inplace-sw")?.addEventListener("click", () => {
-        (Ne(!P), ue(e, t, n));
+        (Ce(!O), pe(e, t, n));
       }),
       e.querySelector("#se-profile-sel")?.addEventListener("change", (o) => {
-        let s = o.target.value || null;
-        ie(s);
+        let r = o.target.value || null;
+        ie(r);
       }));
   }
-  function Ue(e, t) {
+  function De(e, t) {
     if (t.length === 0) {
       e.innerHTML = '<div class="empty">No translation keys found.</div>';
       return;
     }
     let n = new Map();
-    for (let i of t) {
-      let r = i.key.includes(".") ? i.key.split(".")[0] : "(root)";
-      (n.has(r) || n.set(r, []), n.get(r).push(i));
+    for (let s of t) {
+      let i = s.key.includes(".") ? s.key.split(".")[0] : "(root)";
+      (n.has(i) || n.set(i, []), n.get(i).push(s));
     }
     e.innerHTML = Array.from(n.entries())
       .map(
-        ([i, r]) => `
-      <div class="sec-head">${i} <span style="color:#334155;font-weight:400">(${r.length})</span></div>
-      ${r
+        ([s, i]) => `
+      <div class="sec-head">${s} <span style="color:#334155;font-weight:400">(${i.length})</span></div>
+      ${i
         .map(
           (o) => `
         <div class="row">
@@ -911,24 +895,24 @@ New value:`,
       )
       .join("");
   }
-  async function fe(e, t) {
+  async function ue(e, t) {
     e.innerHTML = '<div class="loading">Loading i18n data\u2026</div>';
-    let n, i, r;
+    let n, s, i;
     try {
-      [n, i, r] = await Promise.all([t.profiles(), t.drafts(), t.keys()]);
+      [n, s, i] = await Promise.all([t.profiles(), t.drafts(), t.keys()]);
     } catch (a) {
       e.innerHTML = `<div class="err">Failed to load i18n data: ${String(a)}</div>`;
       return;
     }
     let o = { activeTab: "labels" };
-    function s() {
+    function r() {
       e.querySelector(".tabs")
         .querySelectorAll(".tab")
         .forEach((u) => {
           u.classList.toggle("active", u.dataset.tab === o.activeTab);
         });
-      let p = e.querySelector(".tab-body");
-      o.activeTab === "labels" ? ue(p, n, i) : Ue(p, r);
+      let c = e.querySelector(".tab-body");
+      o.activeTab === "labels" ? pe(c, n, s) : De(c, i);
     }
     ((e.innerHTML = `
     <div class="tabs">
@@ -938,10 +922,10 @@ New value:`,
     <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
       e.querySelectorAll(".tab").forEach((a) => {
         a.addEventListener("click", () => {
-          ((o.activeTab = a.dataset.tab), s());
+          ((o.activeTab = a.dataset.tab), r());
         });
       }),
-      s());
+      r());
   }
   var K = {
       gates: { icon: "\u26F3", label: "Gates" },
@@ -949,68 +933,68 @@ New value:`,
       experiments: { icon: "\u{1F9EA}", label: "Experiments" },
       i18n: { icon: "\u{1F310}", label: "i18n" },
     },
-    he = "se_l_overlay",
-    j = 240,
-    ge = 580,
-    W = 180,
-    me = 700,
-    ve = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
-  function Ie() {
+    be = "se_l_overlay",
+    W = 240,
+    fe = 580,
+    j = 180,
+    ge = 700,
+    me = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
+  function ze() {
     try {
-      let e = localStorage.getItem(he);
-      if (e) return { ...ve, ...JSON.parse(e) };
+      let e = localStorage.getItem(be);
+      if (e) return { ...me, ...JSON.parse(e) };
     } catch {}
-    return { ...ve };
+    return { ...me };
   }
-  function be(e) {
+  function ve(e) {
     try {
-      localStorage.setItem(he, JSON.stringify(e));
+      localStorage.setItem(be, JSON.stringify(e));
     } catch {}
   }
-  function Ke(e, t) {
+  function Ie(e, t) {
     let n = window.innerWidth,
-      i = window.innerHeight,
-      r = [
+      s = window.innerHeight,
+      i = [
         [n - e, "right"],
         [e, "left"],
         [t, "top"],
-        [i - t, "bottom"],
+        [s - t, "bottom"],
       ];
-    r.sort((p, u) => p[0] - u[0]);
-    let o = r[0][1],
-      a = Math.max(5, Math.min(95, o === "left" || o === "right" ? (t / i) * 100 : (e / n) * 100));
+    i.sort((c, u) => c[0] - u[0]);
+    let o = i[0][1],
+      a = Math.max(5, Math.min(95, o === "left" || o === "right" ? (t / s) * 100 : (e / n) * 100));
     return { edge: o, offsetPct: a };
   }
-  function O(e, t, n, i) {
-    let { edge: r, offsetPct: o, panelWidth: s, panelHeight: a } = i,
-      p = window.innerWidth,
+  function P(e, t, n, s) {
+    let { edge: i, offsetPct: o, panelWidth: r, panelHeight: a } = s,
+      c = window.innerWidth,
       u = window.innerHeight,
-      f = r === "left" || r === "right",
-      x = Math.max(j, Math.min(s, p - 80)),
-      S = Math.max(W, Math.min(a, u - 40)),
-      L = (o / 100) * (f ? u : p),
-      $ = e.getBoundingClientRect(),
-      k = f ? $.width || 52 : $.height || 52,
+      f = i === "left" || i === "right",
+      x = Math.max(W, Math.min(r, c - 80)),
+      S = Math.max(j, Math.min(a, u - 40)),
+      y = (o / 100) * (f ? u : c),
+      v = e.getBoundingClientRect(),
+      E = f ? v.width || 52 : v.height || 52,
       l = e.style;
     ((l.top = l.bottom = l.left = l.right = l.transform = ""),
       (l.borderTop = l.borderBottom = l.borderLeft = l.borderRight = ""),
       (l.flexDirection = f ? "column" : "row"),
       (l.padding = f ? "8px 6px" : "6px 8px"),
-      r === "right"
+      i === "right"
         ? ((l.right = "0"),
           (l.top = `${o}%`),
           (l.transform = "translateY(-50%)"),
           (l.borderRadius = "10px 0 0 10px"),
           (l.borderRight = "none"),
           (l.boxShadow = "-3px 0 16px rgba(0,0,0,0.45)"))
-        : r === "left"
+        : i === "left"
           ? ((l.left = "0"),
             (l.top = `${o}%`),
             (l.transform = "translateY(-50%)"),
             (l.borderRadius = "0 10px 10px 0"),
             (l.borderLeft = "none"),
             (l.boxShadow = "3px 0 16px rgba(0,0,0,0.45)"))
-          : r === "top"
+          : i === "top"
             ? ((l.top = "0"),
               (l.left = `${o}%`),
               (l.transform = "translateX(-50%)"),
@@ -1023,42 +1007,42 @@ New value:`,
               (l.borderRadius = "10px 10px 0 0"),
               (l.borderBottom = "none"),
               (l.boxShadow = "0 -3px 16px rgba(0,0,0,0.45)")));
-    let c = t.style;
+    let p = t.style;
     if (
-      ((c.top = c.bottom = c.left = c.right = c.transform = ""),
-      (c.borderTop = c.borderBottom = c.borderLeft = c.borderRight = ""),
-      (c.width = x + "px"),
-      (c.height = S + "px"),
-      (t.dataset.edge = r),
-      r === "right")
+      ((p.top = p.bottom = p.left = p.right = p.transform = ""),
+      (p.borderTop = p.borderBottom = p.borderLeft = p.borderRight = ""),
+      (p.width = x + "px"),
+      (p.height = S + "px"),
+      (t.dataset.edge = i),
+      i === "right")
     ) {
-      let d = Math.max(10, Math.min(u - S - 10, L - S / 2));
-      ((c.right = k + "px"),
-        (c.top = d + "px"),
-        (c.borderRadius = "10px 0 0 10px"),
-        (c.borderRight = "none"),
-        (c.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
-    } else if (r === "left") {
-      let d = Math.max(10, Math.min(u - S - 10, L - S / 2));
-      ((c.left = k + "px"),
-        (c.top = d + "px"),
-        (c.borderRadius = "0 10px 10px 0"),
-        (c.borderLeft = "none"),
-        (c.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
-    } else if (r === "top") {
-      let d = Math.max(10, Math.min(p - x - 10, L - x / 2));
-      ((c.top = k + "px"),
-        (c.left = d + "px"),
-        (c.borderRadius = "0 0 10px 10px"),
-        (c.borderTop = "none"),
-        (c.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
+      let d = Math.max(10, Math.min(u - S - 10, y - S / 2));
+      ((p.right = E + "px"),
+        (p.top = d + "px"),
+        (p.borderRadius = "10px 0 0 10px"),
+        (p.borderRight = "none"),
+        (p.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
+    } else if (i === "left") {
+      let d = Math.max(10, Math.min(u - S - 10, y - S / 2));
+      ((p.left = E + "px"),
+        (p.top = d + "px"),
+        (p.borderRadius = "0 10px 10px 0"),
+        (p.borderLeft = "none"),
+        (p.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
+    } else if (i === "top") {
+      let d = Math.max(10, Math.min(c - x - 10, y - x / 2));
+      ((p.top = E + "px"),
+        (p.left = d + "px"),
+        (p.borderRadius = "0 0 10px 10px"),
+        (p.borderTop = "none"),
+        (p.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
     } else {
-      let d = Math.max(10, Math.min(p - x - 10, L - x / 2));
-      ((c.bottom = k + "px"),
-        (c.left = d + "px"),
-        (c.borderRadius = "10px 10px 0 0"),
-        (c.borderBottom = "none"),
-        (c.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
+      let d = Math.max(10, Math.min(c - x - 10, y - x / 2));
+      ((p.bottom = E + "px"),
+        (p.left = d + "px"),
+        (p.borderRadius = "10px 10px 0 0"),
+        (p.borderBottom = "none"),
+        (p.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
     }
     let m = n.style;
     ((m.top = m.bottom = m.left = m.right = m.width = m.height = ""),
@@ -1068,143 +1052,143 @@ New value:`,
           (m.top = "0"),
           (m.bottom = "0"),
           (n.style.cursor = "ew-resize"),
-          r === "right" ? (m.left = "0") : (m.right = "0"))
+          i === "right" ? (m.left = "0") : (m.right = "0"))
         : ((m.height = "10px"),
           (m.left = "0"),
           (m.right = "0"),
           (n.style.cursor = "ns-resize"),
-          r === "top" ? (m.bottom = "0") : (m.top = "0")));
+          i === "top" ? (m.bottom = "0") : (m.top = "0")));
   }
-  function xe(e) {
+  function he(e) {
     let t = document.createElement("div");
     t.setAttribute("id", "shipeasy-devtools");
     let n = t.attachShadow({ mode: "open" });
     n.innerHTML = `<style>${X}</style><div id="toolbar"></div><div id="panel"></div>`;
-    let i = n.getElementById("toolbar"),
-      r = n.getElementById("panel");
-    ((i.className = "toolbar"), (r.className = "panel"));
+    let s = n.getElementById("toolbar"),
+      i = n.getElementById("panel");
+    ((s.className = "toolbar"), (i.className = "panel"));
     let o = document.createElement("div");
-    ((o.className = "resize-handle"), r.appendChild(o));
-    let s = document.createElement("div");
-    ((s.className = "panel-inner"), r.appendChild(s));
-    let a = Ie(),
-      p = null,
-      u = Z();
-    requestAnimationFrame(() => O(i, r, o, a));
+    ((o.className = "resize-handle"), i.appendChild(o));
+    let r = document.createElement("div");
+    ((r.className = "panel-inner"), i.appendChild(r));
+    let a = ze(),
+      c = null,
+      u = V();
+    requestAnimationFrame(() => P(s, i, o, a));
     let f = document.createElement("div");
     ((f.className = "drag-handle"),
       (f.title = "Drag to reposition"),
       (f.textContent = "\u283F"),
-      i.appendChild(f),
+      s.appendChild(f),
       f.addEventListener("mousedown", (d) => {
         (d.preventDefault(), f.classList.add("dragging"));
-        let v = (g) => {
-            let { edge: b, offsetPct: y } = Ke(g.clientX, g.clientY);
-            ((a = { ...a, edge: b, offsetPct: y }), O(i, r, o, a));
+        let b = (g) => {
+            let { edge: h, offsetPct: L } = Ie(g.clientX, g.clientY);
+            ((a = { ...a, edge: h, offsetPct: L }), P(s, i, o, a));
           },
-          h = () => {
+          w = () => {
             (f.classList.remove("dragging"),
-              document.removeEventListener("mousemove", v),
-              document.removeEventListener("mouseup", h),
-              be(a));
+              document.removeEventListener("mousemove", b),
+              document.removeEventListener("mouseup", w),
+              ve(a));
           };
-        (document.addEventListener("mousemove", v), document.addEventListener("mouseup", h));
+        (document.addEventListener("mousemove", b), document.addEventListener("mouseup", w));
       }));
     let x = new Map();
-    for (let [d, { icon: v, label: h }] of Object.entries(K)) {
+    for (let [d, { icon: b, label: w }] of Object.entries(K)) {
       let g = document.createElement("button");
       ((g.className = "btn"),
-        (g.title = h),
-        (g.textContent = v),
-        g.addEventListener("click", () => k(d)),
-        i.appendChild(g),
+        (g.title = w),
+        (g.textContent = b),
+        g.addEventListener("click", () => E(d)),
+        s.appendChild(g),
         x.set(d, g));
     }
     o.addEventListener("mousedown", (d) => {
       (d.preventDefault(), d.stopPropagation(), o.classList.add("dragging"));
-      let v = d.clientX,
-        h = d.clientY,
+      let b = d.clientX,
+        w = d.clientY,
         g = a.panelWidth,
-        b = a.panelHeight,
-        { edge: y } = a,
+        h = a.panelHeight,
+        { edge: L } = a,
         _ = (G) => {
-          let J = G.clientX - v,
-            Y = G.clientY - h,
+          let J = G.clientX - b,
+            Y = G.clientY - w,
             T = { ...a };
-          (y === "right" && (T.panelWidth = Math.max(j, Math.min(ge, g - J))),
-            y === "left" && (T.panelWidth = Math.max(j, Math.min(ge, g + J))),
-            y === "top" && (T.panelHeight = Math.max(W, Math.min(me, b + Y))),
-            y === "bottom" && (T.panelHeight = Math.max(W, Math.min(me, b - Y))),
+          (L === "right" && (T.panelWidth = Math.max(W, Math.min(fe, g - J))),
+            L === "left" && (T.panelWidth = Math.max(W, Math.min(fe, g + J))),
+            L === "top" && (T.panelHeight = Math.max(j, Math.min(ge, h + Y))),
+            L === "bottom" && (T.panelHeight = Math.max(j, Math.min(ge, h - Y))),
             (a = T),
-            O(i, r, o, a));
+            P(s, i, o, a));
         },
         F = () => {
           (o.classList.remove("dragging"),
             document.removeEventListener("mousemove", _),
             document.removeEventListener("mouseup", F),
-            be(a));
+            ve(a));
         };
       (document.addEventListener("mousemove", _), document.addEventListener("mouseup", F));
     });
-    let S = () => O(i, r, o, a);
+    let S = () => P(s, i, o, a);
     window.addEventListener("resize", S);
-    function L(d) {
-      ((p = d),
-        x.forEach((v, h) => v.classList.toggle("active", h === d)),
-        r.classList.add("open"),
-        O(i, r, o, a),
-        c(d));
+    function y(d) {
+      ((c = d),
+        x.forEach((b, w) => b.classList.toggle("active", w === d)),
+        i.classList.add("open"),
+        P(s, i, o, a),
+        p(d));
     }
-    function $() {
-      (r.classList.remove("open"), x.forEach((d) => d.classList.remove("active")), (p = null));
+    function v() {
+      (i.classList.remove("open"), x.forEach((d) => d.classList.remove("active")), (c = null));
     }
-    function k(d) {
-      p === d ? $() : L(d);
+    function E(d) {
+      c === d ? v() : y(d);
     }
-    function l(d, v) {
+    function l(d, b) {
       return `
       <div class="panel-head">
-        <span class="panel-title">${d} ${v}</span>
+        <span class="panel-title">${d} ${b}</span>
         <button class="close" id="se-close">\u2715</button>
       </div>`;
     }
-    function c(d) {
-      let { icon: v, label: h } = K[d];
+    function p(d) {
+      let { icon: b, label: w } = K[d];
       if (!u) {
         m(d);
         return;
       }
       let g = new C(e.adminUrl, u.token);
-      ((s.innerHTML = `
-      ${l(v, h)}
+      ((r.innerHTML = `
+      ${l(b, w)}
       <div class="panel-body" id="se-body"></div>
       <div class="panel-footer">
         <button class="ibtn danger" id="se-signout">Sign out</button>
         <button class="ibtn danger" id="se-clearall">Clear overrides</button>
       </div>`),
-        s.querySelector("#se-close").addEventListener("click", $),
-        s.querySelector("#se-signout").addEventListener("click", () => {
-          (Q(), (u = null), m(d));
+        r.querySelector("#se-close").addEventListener("click", v),
+        r.querySelector("#se-signout").addEventListener("click", () => {
+          (Z(), (u = null), m(d));
         }),
-        s.querySelector("#se-clearall").addEventListener("click", () => {
-          (ae(), c(d));
+        r.querySelector("#se-clearall").addEventListener("click", () => {
+          (se(), p(d));
         }));
-      let b = s.querySelector("#se-body");
+      let h = r.querySelector("#se-body");
       ({
-        gates: () => le(b, g),
-        configs: () => de(b, g),
-        experiments: () => pe(b, g),
-        i18n: () => fe(b, g),
+        gates: () => ae(h, g),
+        configs: () => le(h, g),
+        experiments: () => ce(h, g),
+        i18n: () => ue(h, g),
       })
         [d]()
         .catch((_) => {
-          b.innerHTML = `<div class="err">${String(_)}</div>`;
+          h.innerHTML = `<div class="err">${String(_)}</div>`;
         });
     }
     function m(d) {
-      let { icon: v, label: h } = K[d];
-      ((s.innerHTML = `
-      ${l(v, h)}
+      let { icon: b, label: w } = K[d];
+      ((r.innerHTML = `
+      ${l(b, w)}
       <div class="panel-body">
         <div class="auth-box">
           <div class="auth-title">Connect to ShipEasy</div>
@@ -1213,19 +1197,19 @@ New value:`,
           <div class="auth-status" id="se-auth-status"></div>
         </div>
       </div>`),
-        s.querySelector("#se-close").addEventListener("click", $),
-        s.querySelector("#se-connect").addEventListener("click", async () => {
-          let g = s.querySelector("#se-connect"),
-            b = s.querySelector("#se-auth-status");
+        r.querySelector("#se-close").addEventListener("click", v),
+        r.querySelector("#se-connect").addEventListener("click", async () => {
+          let g = r.querySelector("#se-connect"),
+            h = r.querySelector("#se-auth-status");
           ((g.disabled = !0), (g.textContent = "Opening browser\u2026"));
           try {
-            ((u = await ee(e, () => {
-              ((b.textContent = "Waiting for approval in the opened tab\u2026"),
+            ((u = await Q(e, () => {
+              ((h.textContent = "Waiting for approval in the opened tab\u2026"),
                 (g.textContent = "Waiting\u2026"));
             })),
-              c(d));
-          } catch (y) {
-            ((b.textContent = `Auth failed: ${String(y)}`),
+              p(d));
+          } catch (L) {
+            ((h.textContent = `Auth failed: ${String(L)}`),
               (g.disabled = !1),
               (g.textContent = "Retry"));
           }
@@ -1240,40 +1224,40 @@ New value:`,
       }
     );
   }
-  var ye = { adminUrl: "https://app.shipeasy.dev", edgeUrl: "https://edge.shipeasy.dev" },
+  var xe = { adminUrl: "https://app.shipeasy.dev", edgeUrl: "https://edge.shipeasy.dev" },
     R = null;
-  function we(e = {}) {
+  function ye(e = {}) {
     if (R || typeof window > "u" || typeof document > "u") return;
-    q();
-    let t = { adminUrl: e.adminUrl ?? ye.adminUrl, edgeUrl: e.edgeUrl ?? ye.edgeUrl },
-      { destroy: n } = xe(t);
+    B();
+    let t = { adminUrl: e.adminUrl ?? xe.adminUrl, edgeUrl: e.edgeUrl ?? xe.edgeUrl },
+      { destroy: n } = he(t);
     R = n;
   }
-  function je() {
+  function Be() {
     (R?.(), (R = null));
   }
-  function Se(e = {}, t = "Shift+Alt+S") {
+  function we(e = {}, t = "Shift+Alt+S") {
     if (typeof window > "u") return () => {};
-    (q(), te() && we(e));
+    (B(), ee() && ye(e));
     let n = t.split("+"),
-      i = n[n.length - 1],
-      r = n.includes("Shift"),
+      s = n[n.length - 1],
+      i = n.includes("Shift"),
       o = n.includes("Alt") || n.includes("Option"),
-      s = n.includes("Ctrl") || n.includes("Control"),
+      r = n.includes("Ctrl") || n.includes("Control"),
       a = n.includes("Meta") || n.includes("Cmd"),
-      p = /^[a-zA-Z]$/.test(i) ? `Key${i.toUpperCase()}` : null;
+      c = /^[a-zA-Z]$/.test(s) ? `Key${s.toUpperCase()}` : null;
     function u(f) {
-      (p ? f.code === p : f.key.toLowerCase() === i.toLowerCase()) &&
-        f.shiftKey === r &&
+      (c ? f.code === c : f.key.toLowerCase() === s.toLowerCase()) &&
+        f.shiftKey === i &&
         f.altKey === o &&
-        f.ctrlKey === s &&
+        f.ctrlKey === r &&
         f.metaKey === a &&
-        (R ? je() : we(e));
+        (R ? Be() : ye(e));
     }
     return (window.addEventListener("keydown", u), () => window.removeEventListener("keydown", u));
   }
   if (typeof window < "u") {
     let e = window.__se_devtools_config ?? {};
-    (Se(e), (window.__se_devtools_ready = !0));
+    (we(e), (window.__se_devtools_ready = !0));
   }
 })();
