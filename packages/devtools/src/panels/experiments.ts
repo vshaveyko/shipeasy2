@@ -1,6 +1,6 @@
 import { DevtoolsApi } from "../api";
 import { getExpOverride, setExpOverride } from "../overrides";
-import type { ExperimentRecord, ShipeasySdkBridge } from "../types";
+import type { ExperimentRecord, UniverseRecord, ShipeasySdkBridge } from "../types";
 
 function bridge(): ShipeasySdkBridge | null {
   return (window as unknown as { __shipeasy?: ShipeasySdkBridge }).__shipeasy ?? null;
@@ -34,17 +34,7 @@ function liveVariant(name: string): string {
     : `<span class="badge badge-draft">not enrolled</span>`;
 }
 
-export async function renderExperimentsPanel(container: Element, api: DevtoolsApi): Promise<void> {
-  container.innerHTML = `<div class="loading">Loading experiments…</div>`;
-
-  let experiments: ExperimentRecord[];
-  try {
-    experiments = await api.experiments();
-  } catch (err) {
-    container.innerHTML = `<div class="err">Failed to load experiments: ${String(err)}</div>`;
-    return;
-  }
-
+function renderExperimentsTab(container: Element, experiments: ExperimentRecord[]) {
   if (experiments.length === 0) {
     container.innerHTML = `<div class="empty">No experiments found.</div>`;
     return;
@@ -72,17 +62,80 @@ export async function renderExperimentsPanel(container: Element, api: DevtoolsAp
         .join("")}`;
   }
 
-  function render() {
-    container.innerHTML = renderSection(running, "Running") + renderSection(other, "Other");
+  container.innerHTML = renderSection(running, "Running") + renderSection(other, "Other");
 
-    container.querySelectorAll<HTMLSelectElement>(".exp-sel").forEach((sel) => {
-      sel.addEventListener("change", () => {
-        const name = sel.dataset.name!;
-        setExpOverride(name, sel.value || null);
-      });
+  container.querySelectorAll<HTMLSelectElement>(".exp-sel").forEach((sel) => {
+    sel.addEventListener("change", () => {
+      const name = sel.dataset.name!;
+      setExpOverride(name, sel.value || null);
     });
+  });
+}
+
+function renderUniversesTab(container: Element, universes: UniverseRecord[]) {
+  if (universes.length === 0) {
+    container.innerHTML = `<div class="empty">No universes found.</div>`;
+    return;
+  }
+  container.innerHTML = universes
+    .map(
+      (u) => `
+      <div class="row">
+        <div style="flex:1;min-width:0">
+          <div class="row-name">${u.name}</div>
+          <div class="row-sub">${u.unitType}${u.holdoutRange ? ` · holdout ${u.holdoutRange[0]}–${u.holdoutRange[1]}%` : ""}</div>
+        </div>
+      </div>`,
+    )
+    .join("");
+}
+
+type Tab = "experiments" | "universes";
+
+export async function renderExperimentsPanel(container: Element, api: DevtoolsApi): Promise<void> {
+  container.innerHTML = `<div class="loading">Loading…</div>`;
+
+  let experiments: ExperimentRecord[];
+  let universes: UniverseRecord[];
+  try {
+    [experiments, universes] = await Promise.all([api.experiments(), api.universes()]);
+  } catch (err) {
+    container.innerHTML = `<div class="err">Failed to load: ${String(err)}</div>`;
+    return;
   }
 
-  render();
-  window.addEventListener("se:state:update", () => render());
+  const state = { activeTab: "experiments" as Tab };
+
+  function renderTabs() {
+    const tabBar = container.querySelector<HTMLDivElement>(".tabs")!;
+    tabBar.querySelectorAll<HTMLButtonElement>(".tab").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.tab === state.activeTab);
+    });
+    const body = container.querySelector<HTMLDivElement>(".tab-body")!;
+    if (state.activeTab === "experiments") {
+      renderExperimentsTab(body, experiments);
+    } else {
+      renderUniversesTab(body, universes);
+    }
+  }
+
+  container.innerHTML = `
+    <div class="tabs">
+      <button class="tab active" data-tab="experiments">Experiments</button>
+      <button class="tab" data-tab="universes">Universes</button>
+    </div>
+    <div class="tab-body" style="overflow-y:auto;flex:1"></div>`;
+
+  container.querySelectorAll<HTMLButtonElement>(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.activeTab = btn.dataset.tab as Tab;
+      renderTabs();
+    });
+  });
+
+  renderTabs();
+  window.addEventListener("se:state:update", () => {
+    const body = container.querySelector<HTMLElement>(".tab-body");
+    if (body && state.activeTab === "experiments") renderExperimentsTab(body, experiments);
+  });
 }

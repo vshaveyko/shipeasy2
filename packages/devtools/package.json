@@ -17,7 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node -e \"require('fs').cpSync('dist/devtools.global.js','../../apps/ui/public/se-devtools.js',{force:true})\"",
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit"
   },

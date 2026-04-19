@@ -3,7 +3,9 @@ import type {
   DraftRecord,
   ExperimentRecord,
   GateRecord,
+  KeyRecord,
   ProfileRecord,
+  UniverseRecord,
 } from "./types";
 
 export class DevtoolsApi {
@@ -34,11 +36,20 @@ export class DevtoolsApi {
     return this.get("/api/admin/experiments");
   }
 
+  universes(): Promise<UniverseRecord[]> {
+    return this.get("/api/admin/universes");
+  }
+
   profiles(): Promise<ProfileRecord[]> {
     return this.get("/api/admin/i18n/profiles");
   }
 
   drafts(): Promise<DraftRecord[]> {
     return this.get("/api/admin/i18n/drafts");
+  }
+
+  keys(profileId?: string): Promise<KeyRecord[]> {
+    const qs = profileId ? `?profile_id=${encodeURIComponent(profileId)}` : "";
+    return this.get(`/api/admin/i18n/keys${qs}`);
   }
 }

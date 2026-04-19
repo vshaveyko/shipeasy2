@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +43,10 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        {children}
+        <Script src="/se-devtools.js" strategy="afterInteractive" />
+      </body>
     </html>
   );
 }

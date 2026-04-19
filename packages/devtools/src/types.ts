@@ -40,6 +40,22 @@ export interface ProfileRecord {
   createdAt: string;
 }
 
+export interface UniverseRecord {
+  id: string;
+  name: string;
+  unitType: string;
+  holdoutRange: [number, number] | null;
+  createdAt: string;
+}
+
+export interface KeyRecord {
+  id: string;
+  key: string;
+  value: string;
+  profileId: string | null;
+  createdAt: string;
+}
+
 export interface DraftRecord {
   id: string;
   name: string;

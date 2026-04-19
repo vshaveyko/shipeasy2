@@ -44,5 +44,51 @@ export function destroy(): void {
   destroyFn = null;
 }
 
+/**
+ * Framework-agnostic entry point.
+ *
+ * - Captures ?se-* URL params into sessionStorage.
+ * - Opens the overlay immediately if ?se-devtools is present.
+ * - Installs a keyboard listener for the hotkey (default: Shift+Alt+S).
+ *   Subsequent presses toggle the overlay.
+ *
+ * Returns a cleanup function (remove the listener) — call it in a
+ * useEffect cleanup, componentWillUnmount, or an AbortController callback.
+ *
+ * Works in any environment (vanilla JS, React, Vue, Svelte, …).
+ */
+export function loadOnTrigger(opts: DevtoolsOptions = {}, hotkey = "Shift+Alt+S"): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  initFromUrl();
+
+  if (isDevtoolsRequested()) {
+    init(opts);
+  }
+
+  const parts = hotkey.split("+");
+  const triggerKey = parts[parts.length - 1];
+  const needShift = parts.includes("Shift");
+  const needAlt = parts.includes("Alt");
+  const needCtrl = parts.includes("Ctrl") || parts.includes("Control");
+  const needMeta = parts.includes("Meta") || parts.includes("Cmd");
+
+  function onKeyDown(e: KeyboardEvent) {
+    if (
+      e.key === triggerKey &&
+      e.shiftKey === needShift &&
+      e.altKey === needAlt &&
+      e.ctrlKey === needCtrl &&
+      e.metaKey === needMeta
+    ) {
+      if (destroyFn) destroy();
+      else init(opts);
+    }
+  }
+
+  window.addEventListener("keydown", onKeyDown);
+  return () => window.removeEventListener("keydown", onKeyDown);
+}
+
 /** True when the current URL contains ?se-devtools */
 export { isDevtoolsRequested };
