@@ -17,6 +17,10 @@ pnpm + Turborepo monorepo. Workspaces are declared in `pnpm-workspace.yaml` (`ap
 
 Note: the top-level `README.md` is an untouched `create-next-app` stub and does not describe this project — ignore it in favor of `experiment-platform/README.md`.
 
+## Deploy
+
+**Cloudflare Workers Builds deploys every Worker in this repo — do NOT add a GitHub Actions workflow for CF deploys.** Build and deploy commands are configured per-Worker in the Cloudflare dashboard. See [`DEPLOY.md`](DEPLOY.md) for the exact commands, the three Workers in play (`shipeasy`, `shipeasy-worker`, `shipeasy-docs`), and the migration flow. D1 schema changes go live via `wrangler d1 migrations apply` wired into each Worker's Build command, not as a separate step.
+
 ## Commands
 
 All workflow tasks are orchestrated by Turbo at the root:
