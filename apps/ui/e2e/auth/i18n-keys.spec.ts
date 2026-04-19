@@ -228,7 +228,8 @@ test.describe("i18n Keys table — draft workflow", () => {
     await ctx.close();
   });
 
-  // Abandon then delete the draft after all draft tests finish.
+  // Abandon the draft after all draft tests finish.
+  // Abandoned drafts are filtered out of the active drafts list so no further cleanup needed.
   test.afterAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
@@ -236,10 +237,6 @@ test.describe("i18n Keys table — draft workflow", () => {
     const row = p.getByRole("row").filter({ hasText: dName });
     const abandonBtn = row.getByRole("button", { name: /^abandon$/i });
     if ((await abandonBtn.count()) > 0) await abandonBtn.click();
-    const deleteBtn = p.getByRole("button", {
-      name: new RegExp(`delete draft ${dName}`, "i"),
-    });
-    if ((await deleteBtn.count()) > 0) await deleteBtn.click();
     await ctx.close();
   });
 

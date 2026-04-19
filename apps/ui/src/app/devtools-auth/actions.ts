@@ -1,32 +1,63 @@
 "use server";
 
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@shipeasy/core";
+import { projects } from "@shipeasy/core/db/schema";
 import { createKey } from "@/lib/handlers/keys";
 import type { AdminIdentity } from "@/lib/admin-auth";
 import { auth } from "@/auth";
+import { getEnvAsync } from "@/lib/env";
+
+export interface ProjectOption {
+  id: string;
+  name: string;
+  plan: string;
+}
 
 export interface DevtoolsAuthResult {
   token: string;
   projectId: string;
+  projectName: string;
   email: string;
 }
 
 /**
- * Mints a fresh admin SDK key for the signed-in user's project and returns
- * it along with the project id. Invoked from the /devtools-auth approval
- * page; the page then postMessages the result back to window.opener.
+ * List projects the signed-in user can authorize DevTools for. Currently
+ * each user owns exactly one project (projects.owner_email is unique), but
+ * the list shape is forward-compatible with future multi-project membership.
  */
-export async function approveDevtoolsAuthAction(): Promise<DevtoolsAuthResult> {
+export async function listDevtoolsProjectsAction(): Promise<ProjectOption[]> {
   const session = await auth();
-  const user = session?.user as { email?: string; project_id?: string } | undefined;
-  if (!user?.email || !user?.project_id) {
-    throw new Error("Not signed in");
-  }
+  const email = session?.user?.email;
+  if (!email) throw new Error("Not signed in");
 
-  const identity: AdminIdentity = {
-    projectId: user.project_id,
-    actorEmail: user.email,
-    source: "jwt",
-  };
+  const env = await getEnvAsync();
+  const db = getDb(env.DB);
+  const rows = await db.select().from(projects).where(eq(projects.ownerEmail, email));
+  return rows.map((r) => ({ id: r.id, name: r.name, plan: r.plan }));
+}
+
+/**
+ * Mints a fresh admin SDK key for the chosen project (must be owned by the
+ * signed-in user) and returns it so the popup can postMessage it back to
+ * the opener.
+ */
+export async function approveDevtoolsAuthAction(projectId: string): Promise<DevtoolsAuthResult> {
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!email) throw new Error("Not signed in");
+  if (!projectId) throw new Error("Project is required");
+
+  const env = await getEnvAsync();
+  const db = getDb(env.DB);
+  const [project] = await db
+    .select()
+    .from(projects)
+    .where(and(eq(projects.id, projectId), eq(projects.ownerEmail, email)))
+    .limit(1);
+  if (!project) throw new Error("Project not found or you do not have access to it");
+
+  const identity: AdminIdentity = { projectId: project.id, actorEmail: email, source: "jwt" };
   const result = await createKey(identity, { type: "admin" });
-  return { token: result.key, projectId: user.project_id, email: user.email };
+  return { token: result.key, projectId: project.id, projectName: project.name, email };
 }

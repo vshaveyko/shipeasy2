@@ -1,44 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { approveDevtoolsAuthAction } from "./actions";
+import {
+  approveDevtoolsAuthAction,
+  listDevtoolsProjectsAction,
+  type ProjectOption,
+} from "./actions";
 
 interface Props {
-  /** Origin of the opener window, used to restrict postMessage target. */
+  /** Origin of the opener window; restricts postMessage target. */
   origin: string;
   email: string;
 }
 
+type Phase = "loading" | "ready" | "pending" | "success" | "error";
+
 export function ApproveButton({ origin, email }: Props) {
-  const [state, setState] = useState<"idle" | "pending" | "success" | "error">("idle");
+  const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [projectList, setProjectList] = useState<ProjectOption[]>([]);
+  const [selected, setSelected] = useState<string>("");
+
+  useEffect(() => {
+    listDevtoolsProjectsAction()
+      .then((list) => {
+        setProjectList(list);
+        if (list.length === 1) setSelected(list[0].id);
+        setPhase("ready");
+      })
+      .catch((e) => {
+        setPhase("error");
+        setError(e instanceof Error ? e.message : String(e));
+      });
+  }, []);
 
   async function onApprove() {
-    setState("pending");
+    if (!selected) return;
+    setPhase("pending");
     setError(null);
     try {
-      const result = await approveDevtoolsAuthAction();
+      const result = await approveDevtoolsAuthAction(selected);
       if (window.opener) {
         window.opener.postMessage(
           {
             type: "se:devtools-auth",
             token: result.token,
             projectId: result.projectId,
+            projectName: result.projectName,
             email: result.email,
           },
           origin,
         );
       }
-      setState("success");
+      setPhase("success");
       setTimeout(() => window.close(), 600);
     } catch (e) {
-      setState("error");
+      setPhase("error");
       setError(e instanceof Error ? e.message : String(e));
     }
   }
 
-  if (state === "success") {
+  if (phase === "loading") {
+    return <p className="text-muted-foreground text-center text-sm">Loading projects…</p>;
+  }
+
+  if (phase === "success") {
     return (
       <p className="text-center text-sm text-muted-foreground">
         Connected. You can close this window.
@@ -46,10 +73,47 @@ export function ApproveButton({ origin, email }: Props) {
     );
   }
 
+  if (projectList.length === 0) {
+    return (
+      <p className="text-muted-foreground text-center text-sm">
+        No projects found for <strong>{email}</strong>.
+      </p>
+    );
+  }
+
   return (
-    <div className="space-y-3">
-      <Button className="w-full" onClick={onApprove} disabled={state === "pending"}>
-        {state === "pending" ? "Connecting…" : `Approve as ${email}`}
+    <div className="space-y-4">
+      <div>
+        <label className="text-muted-foreground mb-2 block text-xs font-semibold tracking-wider uppercase">
+          Choose a project
+        </label>
+        <div className="space-y-1.5" role="radiogroup" aria-label="Projects">
+          {projectList.map((p) => (
+            <label
+              key={p.id}
+              className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
+                selected === p.id ? "border-primary bg-muted" : "hover:bg-muted/60"
+              }`}
+            >
+              <input
+                type="radio"
+                name="devtools-project"
+                value={p.id}
+                checked={selected === p.id}
+                onChange={() => setSelected(p.id)}
+                className="accent-primary size-4"
+              />
+              <span className="flex-1">
+                <span className="block font-medium">{p.name}</span>
+                <span className="text-muted-foreground block text-xs capitalize">{p.plan}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <Button className="w-full" onClick={onApprove} disabled={phase === "pending" || !selected}>
+        {phase === "pending" ? "Connecting…" : `Approve as ${email}`}
       </Button>
       {error && <p className="text-destructive text-center text-xs">{error}</p>}
     </div>

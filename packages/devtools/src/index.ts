@@ -15,10 +15,35 @@ export {
   clearAllOverrides,
 } from "./overrides";
 
-const DEFAULTS = {
-  adminUrl: "https://app.shipeasy.dev",
-  edgeUrl: "https://edge.shipeasy.dev",
-} satisfies Required<DevtoolsOptions>;
+/**
+ * Origin of the <script src="…/se-devtools.js"> tag that bootstrapped this
+ * bundle. Used to default adminUrl when the script is embedded cross-origin
+ * (e.g. a customer app pulls se-devtools.js from app.shipeasy.dev). Falls
+ * back to window.location.origin when it cannot be determined.
+ */
+function scriptTagOrigin(): string {
+  if (typeof document !== "undefined") {
+    const cur = document.currentScript as HTMLScriptElement | null;
+    if (cur?.src) {
+      try {
+        return new URL(cur.src).origin;
+      } catch {
+        /* fall through */
+      }
+    }
+    const scripts = document.querySelectorAll<HTMLScriptElement>("script[src]");
+    for (const s of Array.from(scripts)) {
+      if (s.src.includes("se-devtools.js")) {
+        try {
+          return new URL(s.src).origin;
+        } catch {
+          /* fall through */
+        }
+      }
+    }
+  }
+  return typeof window !== "undefined" ? window.location.origin : "";
+}
 
 let destroyFn: (() => void) | null = null;
 
@@ -30,8 +55,7 @@ export function init(opts: DevtoolsOptions = {}): void {
   initFromUrl();
 
   const resolved: Required<DevtoolsOptions> = {
-    adminUrl: opts.adminUrl ?? DEFAULTS.adminUrl,
-    edgeUrl: opts.edgeUrl ?? DEFAULTS.edgeUrl,
+    adminUrl: opts.adminUrl ?? scriptTagOrigin(),
   };
 
   const { destroy } = createOverlay(resolved);

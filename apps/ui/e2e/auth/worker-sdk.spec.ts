@@ -171,7 +171,7 @@ test.describe("Gates → /sdk/flags", () => {
     expect(second.status()).toBe(304);
   });
 
-  test("disabling a gate → flags blob shows enabled=0", async ({ request }) => {
+  test("disabling a gate → gate is absent from flags blob", async ({ request }) => {
     // Create a separate gate so we don't disturb the 100%-gate cache.
     const name = `e2gwrk_dis_${RUN}`;
     const created = await adminPost(request, "/api/admin/gates", {
@@ -181,7 +181,7 @@ test.describe("Gates → /sdk/flags", () => {
     });
     const id = created.id as string;
 
-    // Disable it
+    // Disable it — rebuildFlags excludes enabled=0 gates from the blob.
     await request.patch(path.posix.join("/api/admin/gates", id), {
       data: { enabled: false },
     });
@@ -189,7 +189,8 @@ test.describe("Gates → /sdk/flags", () => {
     const resp = await workerGet(request, "/sdk/flags", serverKey);
     expect(resp.ok()).toBe(true);
     const flags = await resp.json();
-    expect(flags.gates[name].enabled).toBe(0);
+    // Disabled gates are excluded from the flags blob entirely.
+    expect(flags.gates[name]).toBeUndefined();
   });
 
   test("killswitch gate → flags blob shows killswitch=1", async ({ request }) => {
@@ -388,7 +389,8 @@ test.describe("User evaluation → /sdk/evaluate", () => {
     });
     expect(resp.ok()).toBe(true);
     const body = await resp.json();
-    expect(body.flags[name]).toBe(false);
+    // Disabled gates are excluded from the flags blob → absent from evaluate response → falsy.
+    expect(body.flags[name]).toBeFalsy();
   });
 
   test("string config appears in evaluate response", async ({ request }) => {

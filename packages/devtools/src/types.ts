@@ -1,8 +1,10 @@
 export interface DevtoolsOptions {
-  /** Admin dashboard base URL. Defaults to https://app.shipeasy.dev */
+  /**
+   * Admin app base URL. Defaults to the origin of the <script> tag that
+   * loaded the devtools bundle, falling back to window.location.origin.
+   * Override when embedding from a different admin deployment.
+   */
   adminUrl?: string;
-  /** Edge worker base URL. Defaults to https://edge.shipeasy.dev */
-  edgeUrl?: string;
 }
 
 export interface DevtoolsSession {

@@ -1,9 +1,9 @@
 "use strict";
 (() => {
-  var Se = Object.defineProperty;
-  var Ee = (e, t, n) =>
-    t in e ? Se(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
-  var z = (e, t, n) => Ee(e, typeof t != "symbol" ? t + "" : t, n);
+  var we = Object.defineProperty;
+  var Se = (e, t, n) =>
+    t in e ? we(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
+  var z = (e, t, n) => Se(e, typeof t != "symbol" ? t + "" : t, n);
   var X = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -357,7 +357,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
     } catch {}
     return null;
   }
-  function Le(e) {
+  function Ee(e) {
     try {
       sessionStorage.setItem(I, JSON.stringify(e));
     } catch {}
@@ -393,7 +393,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
           let v = y.data;
           if (!v || v.type !== "se:devtools-auth" || !v.token || !v.projectId) return;
           let E = { token: v.token, projectId: v.projectId };
-          (Le(E), u(null, E));
+          (Ee(E), u(null, E));
         }
         window.addEventListener("message", f);
         let x = setInterval(() => {
@@ -414,7 +414,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       } catch {}
     return null;
   }
-  function H(e, t, n) {
+  function _(e, t, n) {
     try {
       (n === "local" ? localStorage : sessionStorage).setItem(e, t);
     } catch {}
@@ -451,7 +451,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   }
   function te(e, t, n = "session") {
     let s = `${n === "local" ? $ : "se_"}gate_${e}`;
-    (t === null ? A(s) : H(s, String(t), n), M());
+    (t === null ? A(s) : _(s, String(t), n), M());
   }
   function N(e) {
     let t = k(`se_config_${e}`) ?? k(`${$}config_${e}`);
@@ -464,21 +464,21 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   }
   function U(e, t, n = "session") {
     let s = `${n === "local" ? $ : "se_"}config_${e}`;
-    (t == null ? A(s) : H(s, JSON.stringify(t), n), M());
+    (t == null ? A(s) : _(s, JSON.stringify(t), n), M());
   }
   function ne(e) {
     return k(`se_exp_${e}`) ?? k(`${$}exp_${e}`);
   }
   function oe(e, t, n = "session") {
     let s = `${n === "local" ? $ : "se_"}exp_${e}`;
-    (t === null ? A(s) : H(s, t, n), M());
+    (t === null ? A(s) : _(s, t, n), M());
   }
   function re() {
     return k("se_i18n_profile") ?? k(`${$}i18n_profile`);
   }
   function ie(e, t = "session") {
     let n = `${t === "local" ? $ : "se_"}i18n_profile`;
-    (e === null ? A(n) : H(n, e, t), M());
+    (e === null ? A(n) : _(n, e, t), M());
   }
   function se() {
     for (let e of [sessionStorage, localStorage])
@@ -525,17 +525,17 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       return this.get(`/api/admin/i18n/keys${n}`);
     }
   };
-  function $e() {
+  function Le() {
     return window.__shipeasy ?? null;
   }
-  function ke(e) {
+  function $e(e) {
     let t = q(e.name),
-      n = $e()?.getFlag(e.name);
+      n = Le()?.getFlag(e.name);
     return (t !== null ? t : (n ?? e.enabled))
       ? '<span class="badge badge-on">ON</span>'
       : '<span class="badge badge-off">OFF</span>';
   }
-  function Te(e, t) {
+  function ke(e, t) {
     let n = (s) => (t === (s === "on" ? !0 : s === "off" ? !1 : null) ? " sel" : "");
     return `
     <div class="tog" data-gate="${e}">
@@ -566,8 +566,8 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             <div class="row-name">${o.name}</div>
             <div class="row-sub">${o.rolloutPct}% rollout</div>
           </div>
-          ${ke(o)}
-          ${Te(o.name, q(o.name))}
+          ${$e(o)}
+          ${ke(o.name, q(o.name))}
         </div>`,
         )
         .join("")),
@@ -583,11 +583,11 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
     let i = () => s();
     window.addEventListener("se:state:update", i);
   }
-  function Me(e) {
+  function Te(e) {
     let t = typeof e == "string" ? e : JSON.stringify(e);
     return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
   }
-  function Oe(e) {
+  function Me(e) {
     return N(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
   }
   async function le(e, t) {
@@ -614,7 +614,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
           <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${r.name}">
             <div style="display:flex;align-items:center;gap:8px">
               <div class="row-name">${r.name}</div>
-              ${Oe(r.name)}
+              ${Me(r.name)}
               ${u ? `<button class="ibtn cancel-edit" data-name="${r.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${r.name}">edit</button>`}
             </div>
             ${
@@ -626,7 +626,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
                   <button class="ibtn save-local" data-name="${r.name}">Save (local)</button>
                   ${a !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${r.name}">clear</button>` : ""}
                 </div>`
-                : `<div class="mono val-display">${Me(c)}</div>`
+                : `<div class="mono val-display">${Te(c)}</div>`
             }
           </div>`;
         })
@@ -666,13 +666,13 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
     }
     i();
   }
-  function Pe() {
+  function Oe() {
     return window.__shipeasy ?? null;
   }
-  function Re(e) {
+  function Pe(e) {
     return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
   }
-  function _e(e) {
+  function Re(e) {
     let t = ne(e.name),
       n = ["control", ...e.groups.map((i) => i.name)],
       s = [
@@ -682,7 +682,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
     return `<select class="sel-input exp-sel" data-name="${e.name}">${s}</select>`;
   }
   function He(e) {
-    let t = Pe()?.getExperiment(e);
+    let t = Oe()?.getExperiment(e);
     return t
       ? t.inExperiment
         ? `<span class="badge badge-run">${t.group}</span>`
@@ -708,9 +708,9 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             <div>
               <div class="row-name">${a.name}</div>
             </div>
-            ${Re(a.status)}
+            ${Pe(a.status)}
             ${a.status === "running" ? He(a.name) : ""}
-            ${a.status === "running" ? _e(a) : ""}
+            ${a.status === "running" ? Re(a) : ""}
           </div>`,
         )
         .join("")}`;
@@ -723,7 +723,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         });
       }));
   }
-  function Ae(e, t) {
+  function _e(e, t) {
     if (t.length === 0) {
       e.innerHTML = '<div class="empty">No universes found.</div>';
       return;
@@ -757,7 +757,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
           c.classList.toggle("active", c.dataset.tab === i.activeTab);
         });
       let a = e.querySelector(".tab-body");
-      i.activeTab === "experiments" ? de(a, n) : Ae(a, s);
+      i.activeTab === "experiments" ? de(a, n) : _e(a, s);
     }
     ((e.innerHTML = `
     <div class="tabs">
@@ -778,7 +778,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   }
   var O = !1,
     D = null;
-  function Ce(e) {
+  function Ae(e) {
     if (((O = e), D && (D(), (D = null)), !e)) return;
     let t = document.createElement("style");
     ((t.id = "__se_inplace_style"),
@@ -860,14 +860,14 @@ New value:`,
     }
   `),
       e.querySelector("#se-inplace-sw")?.addEventListener("click", () => {
-        (Ce(!O), pe(e, t, n));
+        (Ae(!O), pe(e, t, n));
       }),
       e.querySelector("#se-profile-sel")?.addEventListener("change", (o) => {
         let r = o.target.value || null;
         ie(r);
       }));
   }
-  function De(e, t) {
+  function Ce(e, t) {
     if (t.length === 0) {
       e.innerHTML = '<div class="empty">No translation keys found.</div>';
       return;
@@ -912,7 +912,7 @@ New value:`,
           u.classList.toggle("active", u.dataset.tab === o.activeTab);
         });
       let c = e.querySelector(".tab-body");
-      o.activeTab === "labels" ? pe(c, n, s) : De(c, i);
+      o.activeTab === "labels" ? pe(c, n, s) : Ce(c, i);
     }
     ((e.innerHTML = `
     <div class="tabs">
@@ -939,7 +939,7 @@ New value:`,
     j = 180,
     ge = 700,
     me = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
-  function ze() {
+  function De() {
     try {
       let e = localStorage.getItem(be);
       if (e) return { ...me, ...JSON.parse(e) };
@@ -951,7 +951,7 @@ New value:`,
       localStorage.setItem(be, JSON.stringify(e));
     } catch {}
   }
-  function Ie(e, t) {
+  function ze(e, t) {
     let n = window.innerWidth,
       s = window.innerHeight,
       i = [
@@ -1071,7 +1071,7 @@ New value:`,
     ((o.className = "resize-handle"), i.appendChild(o));
     let r = document.createElement("div");
     ((r.className = "panel-inner"), i.appendChild(r));
-    let a = ze(),
+    let a = De(),
       c = null,
       u = V();
     requestAnimationFrame(() => P(s, i, o, a));
@@ -1083,7 +1083,7 @@ New value:`,
       f.addEventListener("mousedown", (d) => {
         (d.preventDefault(), f.classList.add("dragging"));
         let b = (g) => {
-            let { edge: h, offsetPct: L } = Ie(g.clientX, g.clientY);
+            let { edge: h, offsetPct: L } = ze(g.clientX, g.clientY);
             ((a = { ...a, edge: h, offsetPct: L }), P(s, i, o, a));
           },
           w = () => {
@@ -1111,7 +1111,7 @@ New value:`,
         g = a.panelWidth,
         h = a.panelHeight,
         { edge: L } = a,
-        _ = (G) => {
+        H = (G) => {
           let J = G.clientX - b,
             Y = G.clientY - w,
             T = { ...a };
@@ -1124,11 +1124,11 @@ New value:`,
         },
         F = () => {
           (o.classList.remove("dragging"),
-            document.removeEventListener("mousemove", _),
+            document.removeEventListener("mousemove", H),
             document.removeEventListener("mouseup", F),
             ve(a));
         };
-      (document.addEventListener("mousemove", _), document.addEventListener("mouseup", F));
+      (document.addEventListener("mousemove", H), document.addEventListener("mouseup", F));
     });
     let S = () => P(s, i, o, a);
     window.addEventListener("resize", S);
@@ -1181,8 +1181,8 @@ New value:`,
         i18n: () => ue(h, g),
       })
         [d]()
-        .catch((_) => {
-          h.innerHTML = `<div class="err">${String(_)}</div>`;
+        .catch((H) => {
+          h.innerHTML = `<div class="err">${String(H)}</div>`;
         });
     }
     function m(d) {
@@ -1224,21 +1224,36 @@ New value:`,
       }
     );
   }
-  var xe = { adminUrl: "https://app.shipeasy.dev", edgeUrl: "https://edge.shipeasy.dev" },
-    R = null;
-  function ye(e = {}) {
+  function Ie() {
+    if (typeof document < "u") {
+      let e = document.currentScript;
+      if (e?.src)
+        try {
+          return new URL(e.src).origin;
+        } catch {}
+      let t = document.querySelectorAll("script[src]");
+      for (let n of Array.from(t))
+        if (n.src.includes("se-devtools.js"))
+          try {
+            return new URL(n.src).origin;
+          } catch {}
+    }
+    return typeof window < "u" ? window.location.origin : "";
+  }
+  var R = null;
+  function xe(e = {}) {
     if (R || typeof window > "u" || typeof document > "u") return;
     B();
-    let t = { adminUrl: e.adminUrl ?? xe.adminUrl, edgeUrl: e.edgeUrl ?? xe.edgeUrl },
+    let t = { adminUrl: e.adminUrl ?? Ie() },
       { destroy: n } = he(t);
     R = n;
   }
   function Be() {
     (R?.(), (R = null));
   }
-  function we(e = {}, t = "Shift+Alt+S") {
+  function ye(e = {}, t = "Shift+Alt+S") {
     if (typeof window > "u") return () => {};
-    (B(), ee() && ye(e));
+    (B(), ee() && xe(e));
     let n = t.split("+"),
       s = n[n.length - 1],
       i = n.includes("Shift"),
@@ -1252,12 +1267,12 @@ New value:`,
         f.altKey === o &&
         f.ctrlKey === r &&
         f.metaKey === a &&
-        (R ? Be() : ye(e));
+        (R ? Be() : xe(e));
     }
     return (window.addEventListener("keydown", u), () => window.removeEventListener("keydown", u));
   }
   if (typeof window < "u") {
     let e = window.__se_devtools_config ?? {};
-    (we(e), (window.__se_devtools_ready = !0));
+    (ye(e), (window.__se_devtools_ready = !0));
   }
 })();
