@@ -7,7 +7,25 @@ import { createConfig, deleteConfig } from "@/lib/handlers/configs";
 export async function createConfigAction(formData: FormData) {
   const identity = await getIdentity();
   const name = formData.get("key") as string;
-  await createConfig(identity, { name, value: {} });
+  const valueType = (formData.get("value_type") as string) || "string";
+  const rawValue = (formData.get("value") as string) ?? "";
+
+  let value: unknown;
+  if (valueType === "string") {
+    value = rawValue;
+  } else if (valueType === "number") {
+    value = rawValue !== "" ? Number(rawValue) : 0;
+  } else if (valueType === "boolean") {
+    value = rawValue === "true";
+  } else {
+    try {
+      value = JSON.parse(rawValue || "null");
+    } catch {
+      value = null;
+    }
+  }
+
+  await createConfig(identity, { name, value: value ?? "" });
   redirect("/dashboard/configs/values");
 }
 

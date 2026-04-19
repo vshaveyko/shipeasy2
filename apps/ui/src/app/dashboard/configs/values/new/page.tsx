@@ -149,6 +149,7 @@ export default function NewConfigValuePage() {
                 <Input
                   id="config-value"
                   name="value"
+                  type="text"
                   placeholder="my string value"
                   value={preview}
                   onChange={(e) => setPreview(e.target.value)}

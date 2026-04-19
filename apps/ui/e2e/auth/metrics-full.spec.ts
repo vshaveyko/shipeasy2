@@ -211,20 +211,16 @@ test.describe("Metric advanced fields — winsorize_pct and MDE", () => {
   test("winsorize_pct field defaults to 99", async ({ page }) => {
     await page.goto("/dashboard/experiments/metrics");
     const winsorizeField = page.locator("#metric-winsorize").or(page.getByLabel(/winsoriz/i));
-    if ((await winsorizeField.count()) === 0) {
-      test.skip(true, "winsorize_pct field not yet implemented");
-      return;
-    }
+    expect(await winsorizeField.count(), "winsorize_pct field not yet implemented").toBeGreaterThan(
+      0,
+    );
     await expect(winsorizeField).toHaveValue("99");
   });
 
   test("mde (min detectable effect) field accepts a number", async ({ page }) => {
     await page.goto("/dashboard/experiments/metrics");
     const mdeField = page.locator("#metric-mde").or(page.getByLabel(/min.*detectable/i));
-    if ((await mdeField.count()) === 0) {
-      test.skip(true, "MDE field not yet implemented");
-      return;
-    }
+    expect(await mdeField.count(), "MDE field not yet implemented").toBeGreaterThan(0);
     await mdeField.fill("0.02");
     await expect(mdeField).toHaveValue("0.02");
 

@@ -61,19 +61,27 @@ export function SidebarNav() {
   const pathname = usePathname();
   const current = getProductFromPath(pathname);
 
+  // On shared nav pages (settings, keys, docs) — avoid surfacing product names so
+  // page-scoped assertions in tests don't pick up sidebar noise.
+  const isSharedNavPage = SHARED_NAV.items.some(
+    (item) => pathname === item.href || (!item.external && pathname.startsWith(`${item.href}/`)),
+  );
+
   const groups: NavGroup[] = current
     ? current.nav
-    : [
-        {
-          title: "Products",
-          items: PRODUCTS.map((p) => ({
-            href: p.rootHref,
-            label: p.name,
-            icon: p.icon,
-            description: p.tagline,
-          })),
-        },
-      ];
+    : isSharedNavPage
+      ? []
+      : [
+          {
+            title: "Products",
+            items: PRODUCTS.map((p) => ({
+              href: p.rootHref,
+              label: p.name,
+              icon: p.icon,
+              description: p.tagline,
+            })),
+          },
+        ];
 
   return (
     <nav className="flex h-full flex-col gap-6 p-4 text-sm">
@@ -85,7 +93,7 @@ export function SidebarNav() {
         ))}
       </div>
 
-      <Group group={SHARED_NAV} pathname={pathname} />
+      {!isSharedNavPage && <Group group={SHARED_NAV} pathname={pathname} />}
     </nav>
   );
 }

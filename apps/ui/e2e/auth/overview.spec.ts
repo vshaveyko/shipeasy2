@@ -24,7 +24,7 @@ test.describe("Overview page", () => {
     const main = page.locator("main");
 
     await main.getByRole("link", { name: /open configs/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/configs$/);
+    await expect(page).toHaveURL(/\/dashboard\/configs\/values$/);
     await page.goBack();
 
     await main.getByRole("link", { name: /open experiments/i }).click();

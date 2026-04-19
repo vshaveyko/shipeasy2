@@ -45,10 +45,10 @@ test.describe("Statistical power calculator — new experiment form", () => {
   test("daily users input updates power estimate when filled", async ({ page }) => {
     await page.goto("/dashboard/experiments/new");
     const dailyUsersInput = page.locator("#pc-daily-users").or(page.getByLabel(/daily users/i));
-    if ((await dailyUsersInput.count()) === 0) {
-      test.skip(true, "Power calculator inputs not yet wired up");
-      return;
-    }
+    expect(
+      await dailyUsersInput.count(),
+      "Power calculator inputs not yet wired up",
+    ).toBeGreaterThan(0);
     await dailyUsersInput.fill("1000");
     // Days needed should update from "—" to a number
     await expect(page.getByText("—").first()).not.toBeVisible();
@@ -70,10 +70,7 @@ test.describe("Experiment params schema editor", () => {
   test("Add param button adds a param row with name and type fields", async ({ page }) => {
     await page.goto("/dashboard/experiments/new");
     const addParamBtn = page.getByRole("button", { name: /add param/i });
-    if ((await addParamBtn.count()) === 0) {
-      test.skip(true, "Params editor not yet implemented");
-      return;
-    }
+    expect(await addParamBtn.count(), "Params editor not yet implemented").toBeGreaterThan(0);
     await addParamBtn.click();
     await expect(
       page.locator('input[name^="param_name"]').or(page.getByPlaceholder(/param.*name/i)),
@@ -86,10 +83,7 @@ test.describe("Experiment params schema editor", () => {
   test("param with name and type is saved in the experiment", async ({ page }) => {
     await page.goto("/dashboard/experiments/new");
     const addParamBtn = page.getByRole("button", { name: /add param/i });
-    if ((await addParamBtn.count()) === 0) {
-      test.skip(true, "Params editor not yet implemented");
-      return;
-    }
+    expect(await addParamBtn.count(), "Params editor not yet implemented").toBeGreaterThan(0);
 
     await addParamBtn.click();
     const nameInput = page
@@ -165,10 +159,7 @@ test.describe("Experiment — targeting gate selector", () => {
       .locator("#exp-gate")
       .or(page.getByLabel(/targeting gate/i))
       .or(page.getByLabel(/gate/i));
-    if ((await gateSel.count()) === 0) {
-      test.skip(true, "Targeting gate selector not yet implemented");
-      return;
-    }
+    expect(await gateSel.count(), "Targeting gate selector not yet implemented").toBeGreaterThan(0);
     await expect(gateSel).toBeVisible();
   });
 
@@ -176,10 +167,7 @@ test.describe("Experiment — targeting gate selector", () => {
     await page.goto("/dashboard/experiments/new");
     await page.reload();
     const gateSel = page.locator("#exp-gate").or(page.getByLabel(/targeting gate/i));
-    if ((await gateSel.count()) === 0) {
-      test.skip(true, "Targeting gate selector not yet implemented");
-      return;
-    }
+    expect(await gateSel.count(), "Targeting gate selector not yet implemented").toBeGreaterThan(0);
 
     await gateSel.selectOption({ value: gateKey });
     await page.locator("#exp-key").fill(expKey);
@@ -213,10 +201,10 @@ test.describe("Experiment — statistical config fields", () => {
     const thresholdInput = page
       .locator("#exp-sig-threshold")
       .or(page.getByLabel(/significance.*threshold/i));
-    if ((await thresholdInput.count()) === 0) {
-      test.skip(true, "Statistical config fields not yet implemented");
-      return;
-    }
+    expect(
+      await thresholdInput.count(),
+      "Statistical config fields not yet implemented",
+    ).toBeGreaterThan(0);
     await thresholdInput.fill("0.01");
     await expect(thresholdInput).toHaveValue("0.01");
   });
@@ -224,10 +212,10 @@ test.describe("Experiment — statistical config fields", () => {
   test("min runtime days input accepts an integer", async ({ page }) => {
     await page.goto("/dashboard/experiments/new");
     const minDaysInput = page.locator("#exp-min-days").or(page.getByLabel(/min.*runtime.*days/i));
-    if ((await minDaysInput.count()) === 0) {
-      test.skip(true, "min_runtime_days field not yet implemented");
-      return;
-    }
+    expect(
+      await minDaysInput.count(),
+      "min_runtime_days field not yet implemented",
+    ).toBeGreaterThan(0);
     await minDaysInput.fill("7");
     await expect(minDaysInput).toHaveValue("7");
   });
@@ -235,10 +223,10 @@ test.describe("Experiment — statistical config fields", () => {
   test("min sample size input accepts an integer", async ({ page }) => {
     await page.goto("/dashboard/experiments/new");
     const minSampleInput = page.locator("#exp-min-sample").or(page.getByLabel(/min.*sample/i));
-    if ((await minSampleInput.count()) === 0) {
-      test.skip(true, "min_sample_size field not yet implemented");
-      return;
-    }
+    expect(
+      await minSampleInput.count(),
+      "min_sample_size field not yet implemented",
+    ).toBeGreaterThan(0);
     await minSampleInput.fill("500");
     await expect(minSampleInput).toHaveValue("500");
   });
@@ -305,10 +293,10 @@ test.describe("Experiment — metric attachment", () => {
     await page.goto(`/dashboard/experiments/${id}`);
 
     const addGuardrailBtn = page.getByRole("button", { name: /add.*guardrail/i });
-    if ((await addGuardrailBtn.count()) === 0) {
-      test.skip(true, "Metric attachment UI not yet implemented");
-      return;
-    }
+    expect(
+      await addGuardrailBtn.count(),
+      "Metric attachment UI not yet implemented",
+    ).toBeGreaterThan(0);
 
     await addGuardrailBtn.click();
     const metricSel = page.locator("#attach-metric").or(page.getByLabel(/metric/i).first());
@@ -331,10 +319,10 @@ test.describe("Experiment — metric attachment", () => {
     await page.goto(`/dashboard/experiments/${id}`);
 
     const addSecondaryBtn = page.getByRole("button", { name: /add.*secondary/i });
-    if ((await addSecondaryBtn.count()) === 0) {
-      test.skip(true, "Secondary metric attachment UI not yet implemented");
-      return;
-    }
+    expect(
+      await addSecondaryBtn.count(),
+      "Secondary metric attachment UI not yet implemented",
+    ).toBeGreaterThan(0);
 
     await addSecondaryBtn.click();
     const metricSel = page.locator("#attach-metric").or(page.getByLabel(/metric/i).first());

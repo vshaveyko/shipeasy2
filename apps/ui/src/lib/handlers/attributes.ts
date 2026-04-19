@@ -66,7 +66,10 @@ export async function deleteAttribute(identity: AdminIdentity, id: string) {
   const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(userAttributes, eq(userAttributes.id, id));
   if (rows.length === 0) throw new ApiError("Attribute not found", 404);
-  await s.delete(userAttributes).where(eq(userAttributes.id, id));
+  await s
+    .update(userAttributes)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(eq(userAttributes.id, id));
   await writeAudit(identity, "attribute.delete", "attribute", id);
   return { ok: true };
 }

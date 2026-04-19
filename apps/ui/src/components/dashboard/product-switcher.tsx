@@ -47,7 +47,7 @@ export function ProductSwitcher() {
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-medium text-foreground">Choose a product</span>
               <span className="truncate text-[11px] text-muted-foreground">
-                Gates · Configs · Experiments · Strings
+                Feature flags · A/B tests · i18n
               </span>
             </span>
           </>

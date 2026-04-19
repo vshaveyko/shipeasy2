@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { checkLimit, rebuildCatalog, ApiError, getPlan } from "@shipeasy/core";
-import { events } from "@shipeasy/core/db/schema";
+import { events, metrics } from "@shipeasy/core/db/schema";
 import {
   eventCreateSchema,
   eventUpdateSchema,
@@ -91,7 +91,17 @@ export async function deleteEvent(identity: AdminIdentity, id: string) {
   const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(events, eq(events.id, id));
   if (rows.length === 0) throw new ApiError("Event not found", 404);
-  await s.delete(events).where(eq(events.id, id));
+
+  const event = rows[0];
+  const dependentMetrics = await s.selectWhere(metrics, eq(metrics.eventName, event.name));
+  if (dependentMetrics.length > 0) {
+    throw new ApiError(
+      `Event is referenced by ${dependentMetrics.length} metric(s). Delete them first.`,
+      409,
+    );
+  }
+
+  await s.update(events).set({ deletedAt: new Date().toISOString() }).where(eq(events.id, id));
   await rebuildCatalog(env, identity.projectId);
   await writeAudit(identity, "event.delete", "event", id);
   return { ok: true };

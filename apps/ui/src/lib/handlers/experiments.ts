@@ -261,7 +261,10 @@ export async function deleteExperiment(identity: AdminIdentity, id: string) {
   if (rows.length === 0) throw new ApiError("Experiment not found", 404);
   if (rows[0].status === "running") throw new ApiError("Stop the experiment before deleting", 409);
 
-  await s.delete(experiments).where(eq(experiments.id, id));
+  await s
+    .update(experiments)
+    .set({ status: "archived", updatedAt: new Date().toISOString() })
+    .where(eq(experiments.id, id));
   await rebuildExperiments(env, identity.projectId);
   await writeAudit(identity, "experiment.delete", "experiment", id);
   return { ok: true };

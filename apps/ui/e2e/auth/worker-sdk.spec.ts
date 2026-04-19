@@ -90,6 +90,16 @@ test.beforeAll(async ({ request }) => {
     return;
   }
 
+  // Revoke any leftover keys from previous runs (wrangler locks SQLite so
+  // auth.setup.ts cleanup may fail silently; revoked keys don't count toward plan limit).
+  const existingKeys = await request.get("/api/admin/keys");
+  if (existingKeys.ok()) {
+    const keys: { id: string }[] = await existingKeys.json();
+    for (const k of keys) {
+      await request.post(`/api/admin/keys/${k.id}/revoke`);
+    }
+  }
+
   // Create one server key and one client key for the test suite.
   const s = await adminPost(request, "/api/admin/keys", { type: "server" });
   serverKey = s.key as string;
@@ -218,7 +228,7 @@ test.describe("Configs → /sdk/flags", () => {
     await adminPost(request, "/api/admin/configs", {
       name,
       value_type: "string",
-      value_json: JSON.stringify("hello-worker"),
+      value: "hello-worker",
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
@@ -233,7 +243,7 @@ test.describe("Configs → /sdk/flags", () => {
     await adminPost(request, "/api/admin/configs", {
       name,
       value_type: "number",
-      value_json: JSON.stringify(42),
+      value: 42,
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
@@ -247,7 +257,7 @@ test.describe("Configs → /sdk/flags", () => {
     await adminPost(request, "/api/admin/configs", {
       name,
       value_type: "boolean",
-      value_json: JSON.stringify(true),
+      value: true,
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
@@ -262,7 +272,7 @@ test.describe("Configs → /sdk/flags", () => {
     await adminPost(request, "/api/admin/configs", {
       name,
       value_type: "object",
-      value_json: JSON.stringify(obj),
+      value: obj,
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
@@ -277,7 +287,7 @@ test.describe("Configs → /sdk/flags", () => {
     await adminPost(request, "/api/admin/configs", {
       name,
       value_type: "array",
-      value_json: JSON.stringify(arr),
+      value: arr,
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
@@ -291,7 +301,7 @@ test.describe("Configs → /sdk/flags", () => {
     const created = await adminPost(request, "/api/admin/configs", {
       name,
       value_type: "string",
-      value_json: JSON.stringify("temp"),
+      value: "temp",
     });
 
     // Confirm it's there
@@ -386,7 +396,7 @@ test.describe("User evaluation → /sdk/evaluate", () => {
     await adminPost(request, "/api/admin/configs", {
       name,
       value_type: "string",
-      value_json: JSON.stringify("variant-a"),
+      value: "variant-a",
     });
 
     const resp = await workerPost(request, "/sdk/evaluate", clientKey, {

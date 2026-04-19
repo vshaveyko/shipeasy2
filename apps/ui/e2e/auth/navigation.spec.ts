@@ -7,21 +7,18 @@ type NavCase = {
   heading: RegExp;
 };
 
-const CONFIGS_NAV: NavCase[] = [
+const GATES_NAV: NavCase[] = [
   {
-    startAt: "/dashboard/configs",
-    label: /^overview$/i,
-    url: /\/dashboard\/configs$/,
-    heading: /^configs$/i,
-  },
-  {
-    startAt: "/dashboard/configs",
+    startAt: "/dashboard/gates",
     label: /^gates$/i,
-    url: /\/dashboard\/configs\/gates$/,
+    url: /\/dashboard\/gates$/,
     heading: /^gates$/i,
   },
+];
+
+const CONFIGS_NAV: NavCase[] = [
   {
-    startAt: "/dashboard/configs",
+    startAt: "/dashboard/configs/values",
     label: /^configs$/i,
     url: /\/dashboard\/configs\/values$/,
     heading: /^dynamic configs$/i,
@@ -73,6 +70,10 @@ async function runNavSuite(page: import("@playwright/test").Page, cases: NavCase
 }
 
 test.describe("Sidebar navigation", () => {
+  test("renders Gates product nav items", async ({ page }) => {
+    await runNavSuite(page, GATES_NAV);
+  });
+
   test("renders Configs product nav items", async ({ page }) => {
     await runNavSuite(page, CONFIGS_NAV);
   });
@@ -95,7 +96,7 @@ test.describe("Sidebar navigation", () => {
   }) => {
     const sidebar = page.locator("aside");
 
-    await page.goto("/dashboard/configs");
+    await page.goto("/dashboard/configs/values");
     await sidebar.getByRole("link", { name: /^sdk keys$/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/keys$/);
 

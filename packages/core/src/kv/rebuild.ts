@@ -1,7 +1,7 @@
 // rebuildFlags / rebuildExperiments / rebuildCatalog — KV blob writers.
 // See 02-kv-cache.md for blob shapes and propagation invariants.
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import { gates, configs, universes, experiments, events } from "../db/schema";
 import { sha256 } from "../auth/crypto";
@@ -26,8 +26,11 @@ export async function rebuildFlags(
     db
       .select()
       .from(gates)
-      .where(and(eq(gates.projectId, projectId), eq(gates.enabled, 1))),
-    db.select().from(configs).where(eq(configs.projectId, projectId)),
+      .where(and(eq(gates.projectId, projectId), eq(gates.enabled, 1), isNull(gates.deletedAt))),
+    db
+      .select()
+      .from(configs)
+      .where(and(eq(configs.projectId, projectId), isNull(configs.deletedAt))),
   ]);
 
   const gatesMap: Record<string, unknown> = {};
@@ -69,7 +72,10 @@ export async function rebuildFlags(
 export async function rebuildExperiments(env: CoreEnv, projectId: string): Promise<void> {
   const db = getDb(env.DB);
   const [universeRows, experimentRows] = await Promise.all([
-    db.select().from(universes).where(eq(universes.projectId, projectId)),
+    db
+      .select()
+      .from(universes)
+      .where(and(eq(universes.projectId, projectId), isNull(universes.deletedAt))),
     db
       .select()
       .from(experiments)
@@ -124,7 +130,7 @@ export async function rebuildCatalog(env: CoreEnv, projectId: string): Promise<v
   const eventRows = await db
     .select({ name: events.name })
     .from(events)
-    .where(and(eq(events.projectId, projectId), eq(events.pending, 0)));
+    .where(and(eq(events.projectId, projectId), eq(events.pending, 0), isNull(events.deletedAt)));
   const names = eventRows.map((e) => e.name);
   if (!env.FLAGS_KV) return;
   await env.FLAGS_KV.put(`${projectId}:catalog`, JSON.stringify(names));

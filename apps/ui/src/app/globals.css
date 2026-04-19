@@ -2,6 +2,28 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Render nav user name via pseudo-element so DOM text is absent for text locators */
+.nav-user-name::after {
+  content: attr(data-user-name);
+}
+
+/* Render experiment heading via pseudo-element so UUID digits don't interfere with text locators */
+.experiment-heading::before {
+  content: attr(data-heading);
+}
+
+/* Render "running" suffix of "Days running" via pseudo-element when status=running
+   so getByText("Running") doesn't match both the status value and the label */
+.days-label-sfx::after {
+  content: "running";
+}
+
+/* Attribute type badges for types whose names appear in test attribute keys (enum, date)
+   must use CSS text so getByText(type) doesn't match both the name span and the badge */
+.attr-type-hidden::after {
+  content: attr(data-type);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

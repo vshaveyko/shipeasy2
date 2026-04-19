@@ -39,8 +39,11 @@ test.describe("New gate form UI", () => {
   test("moving the slider updates the displayed percentage", async ({ page }) => {
     await page.goto("/dashboard/gates/new");
     const slider = page.locator("input[type=range]");
-    await slider.evaluate((el) => {
-      (el as HTMLInputElement).value = "75";
+    await slider.evaluate((el: HTMLInputElement) => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(
+        el,
+        "75",
+      );
       el.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await expect(page.getByText("75%")).toBeVisible();
@@ -75,15 +78,18 @@ test.describe("Rollout gate — full CRUD", () => {
 
     // Set slider to 50
     const slider = page.locator("input[type=range]");
-    await slider.evaluate((el) => {
-      (el as HTMLInputElement).value = "50";
+    await slider.evaluate((el: HTMLInputElement) => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(
+        el,
+        "50",
+      );
       el.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await page.locator("#gate-key").fill(key);
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard\/gates$/);
-    await expect(gateRow(page, key).getByText("enabled")).toBeVisible();
+    await expect(gateRow(page, key).getByText("enabled", { exact: true })).toBeVisible();
 
     // Admin API: gate is present with correct rolloutPct (50% → 5000 in 0-10000 scale)
     const resp = await page.request.get("/api/admin/gates");
@@ -119,7 +125,7 @@ test.describe("Rollout gate — full CRUD", () => {
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/gates$/);
-    await expect(gateRow(page, key).getByText("enabled")).toBeVisible();
+    await expect(gateRow(page, key).getByText("enabled", { exact: true })).toBeVisible();
 
     const resp = await page.request.get("/api/admin/gates");
     const gates = await resp.json();

@@ -72,7 +72,7 @@ export async function deleteConfig(identity: AdminIdentity, id: string) {
   const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(configs, eq(configs.id, id));
   if (rows.length === 0) throw new ApiError("Config not found", 404);
-  await s.delete(configs).where(eq(configs.id, id));
+  await s.update(configs).set({ deletedAt: new Date().toISOString() }).where(eq(configs.id, id));
   await rebuildFlags(env, identity.projectId, project.plan);
   await writeAudit(identity, "config.delete", "config", id);
   return { ok: true };

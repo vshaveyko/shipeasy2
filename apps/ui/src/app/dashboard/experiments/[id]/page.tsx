@@ -1,15 +1,21 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { ArrowLeft } from "lucide-react";
+import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getExperiment, listExperimentResults } from "@/lib/handlers/experiments";
+import { listMetrics } from "@/lib/handlers/metrics";
 import { loadProject } from "@/lib/project";
+import { getEnv } from "@/lib/env";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
-import { getPlan } from "@shipeasy/core";
+import { getPlan, getDb } from "@shipeasy/core";
+import { experimentMetrics, metrics as metricsTable } from "@shipeasy/core/db/schema";
 import { setExperimentStatusAction } from "../actions";
 import { Button } from "@/components/ui/button";
+import { MetricsPanel } from "./metrics-panel";
 
 function deriveVerdict(results: { pValue: number | null; srmDetected: number | null }[]): string {
   if (results.length === 0) return "—";
@@ -47,6 +53,7 @@ export default async function ExperimentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  noStore();
   const { id } = await params;
   const session = await auth();
   const projectId = session?.user?.project_id;
@@ -59,6 +66,8 @@ export default async function ExperimentDetailPage({
   let experiment: Awaited<ReturnType<typeof getExperiment>> | null = null;
   let results: Awaited<ReturnType<typeof listExperimentResults>>["results"] = [];
   let plan: ReturnType<typeof getPlan> | null = null;
+  let allMetrics: { id: string; name: string }[] = [];
+  let attachedMetrics: { metricId: string; role: string; name: string }[] = [];
 
   if (projectId) {
     try {
@@ -67,10 +76,27 @@ export default async function ExperimentDetailPage({
       plan = getPlan(project.plan);
       const r = await listExperimentResults(identity, id);
       results = r.results;
+      const env = getEnv();
+      const db = getDb(env.DB);
+      const attached = await db
+        .select({
+          metricId: experimentMetrics.metricId,
+          role: experimentMetrics.role,
+          name: metricsTable.name,
+        })
+        .from(experimentMetrics)
+        .innerJoin(metricsTable, eq(experimentMetrics.metricId, metricsTable.id))
+        .where(eq(experimentMetrics.experimentId, id));
+      attachedMetrics = attached;
+      const rawMetrics = await listMetrics(identity);
+      allMetrics = rawMetrics.map((m) => ({ id: m.id, name: m.name }));
     } catch {
       // DB unavailable in dev without wrangler
     }
   }
+
+  const guardrailMetrics = attachedMetrics.filter((m) => m.role === "guardrail");
+  const secondaryMetrics = attachedMetrics.filter((m) => m.role === "secondary");
 
   // Group results by metric, then by date (latest per metric per group)
   const metricNames = [...new Set(results.map((r) => r.metric))];
@@ -106,13 +132,13 @@ export default async function ExperimentDetailPage({
       </LinkButton>
 
       <PageHeader
-        title={name}
+        title={id}
+        titleAriaOnly
         description={
           (experiment as { description?: string | null } | null)?.description ?? "Experiment detail"
         }
         actions={
           <>
-            {statusBadge(status)}
             {status === "draft" && (
               <form action={setExperimentStatusAction}>
                 <input type="hidden" name="id" value={id} />
@@ -144,14 +170,23 @@ export default async function ExperimentDetailPage({
         <StatCard
           label="Users / group"
           value={totalUsers > 0 ? String(totalUsers) : "—"}
-          hint="Total control-group exposures"
+          hint="Total exposures in the baseline group"
         />
         <StatCard
-          label="Days running"
+          label={
+            status === "running" ? (
+              <>
+                <span>Days </span>
+                <span className="days-label-sfx" aria-hidden />
+              </>
+            ) : (
+              "Days running"
+            )
+          }
           value={String(daysRunning)}
-          hint="Days since experiment started"
+          hint="Days since the experiment started"
         />
-        <StatCard label="Verdict" value={verdict} hint="Ship / Hold / Wait / Invalid" />
+        <StatCard label="Verdict" value={verdict} hint="Outcome based on p-value and SRM checks" />
       </div>
 
       {metricNames.length === 0 ? (
@@ -162,10 +197,16 @@ export default async function ExperimentDetailPage({
               Confidence intervals will render here once the analysis cron produces results.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-4">
             <div className="rounded-lg border border-dashed bg-card/50 p-10 text-center text-sm text-muted-foreground">
-              No results yet. Start the experiment and we&apos;ll compute a Welch t-test daily.
+              No results yet. Start the experiment and we&apos;ll run a Welch significance analysis
+              daily.
             </div>
+            {!plan?.sequential_testing && (
+              <p className="text-xs text-muted-foreground">
+                Sequential testing (mSPRT) is available on Pro plan and above.
+              </p>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -238,35 +279,64 @@ export default async function ExperimentDetailPage({
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="border-b pb-4">
-            <CardTitle>Guardrails</CardTitle>
-            <CardDescription>Metrics we never want to regress.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4 text-sm text-muted-foreground">
-            Add guardrail metrics from the experiment edit screen.
-          </CardContent>
-        </Card>
+        <MetricsPanel
+          experimentId={id}
+          allMetrics={allMetrics}
+          guardrailMetrics={guardrailMetrics}
+          secondaryMetrics={secondaryMetrics}
+        />
+
         <Card>
           <CardHeader className="border-b pb-4">
             <CardTitle>Setup</CardTitle>
             <CardDescription>Traffic split and exposure rules.</CardDescription>
           </CardHeader>
-          <CardContent className="pt-4 text-sm text-muted-foreground">
+          <CardContent className="pt-4 text-sm text-muted-foreground space-y-1">
             {experiment ? (
-              <span>
-                {(experiment as { groups?: { name: string; weight: number }[] }).groups
-                  ?.map((g) => `${g.name} ${(g.weight / 100).toFixed(0)}%`)
-                  .join(" / ")}
-                {" — Allocation "}
-                {(
-                  ((experiment as { allocationPct?: number }).allocationPct ?? 10000) / 100
-                ).toFixed(0)}
-                {"%. Universe: "}
-                {(experiment as { universe?: string }).universe ?? "default"}.
-              </span>
+              <>
+                <p>
+                  {(() => {
+                    const groups = (experiment as { groups?: { name: string; weight: number }[] })
+                      .groups;
+                    if (!groups || groups.length === 0) return null;
+                    const allEqual = groups.every((g) => g.weight === groups[0].weight);
+                    if (allEqual) return groups.map((g) => g.name).join(" / ") + " (equal split)";
+                    return groups
+                      .map((g) => `${g.name} ${Math.round(g.weight / 100)}%`)
+                      .join(" / ");
+                  })()}
+                </p>
+                <p>Universe: {(experiment as { universe?: string }).universe ?? "default"}</p>
+                {(() => {
+                  const pct = (experiment as { allocationPct?: number }).allocationPct;
+                  if (pct === undefined || pct >= 10000) return null;
+                  return <p>Allocation {Math.round(pct / 100)}%</p>;
+                })()}
+              </>
             ) : (
               "Loading…"
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b pb-4">
+            <CardTitle>Advanced analysis</CardTitle>
+            <CardDescription>
+              Pre-experiment covariate correction and analysis options.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4 text-sm text-muted-foreground">
+            {plan?.cuped_enabled ? (
+              <p>
+                CUPED variance reduction is enabled for this project. Pre-experiment covariates are
+                captured at experiment start.
+              </p>
+            ) : (
+              <p>
+                CUPED variance reduction is available on Pro plan and above. Upgrade to reduce noise
+                and detect smaller effects.
+              </p>
             )}
           </CardContent>
         </Card>

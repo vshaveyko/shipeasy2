@@ -8,7 +8,15 @@ export async function createAttributeAction(formData: FormData) {
   const identity = await getIdentity();
   const name = formData.get("name") as string;
   const type = (formData.get("type") as string) || "string";
-  await createAttribute(identity, { name, type, enum_values: null, required: false });
+  const enumValuesRaw = formData.get("enum_values") as string | null;
+  const enum_values =
+    type === "enum" && enumValuesRaw
+      ? enumValuesRaw
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean)
+      : null;
+  await createAttribute(identity, { name, type, enum_values, required: false });
   redirect("/dashboard/experiments/attributes");
 }
 

@@ -30,14 +30,14 @@ test.describe("Product switcher", () => {
     const configs = page.getByRole("menuitem", { name: /^configs/i });
     await expect(configs).toBeVisible();
     await configs.click();
-    await expect(page).toHaveURL(/\/dashboard\/configs$/);
+    await expect(page).toHaveURL(/\/dashboard\/configs\/values$/);
   });
 
-  test("menu lists all three products", async ({ page }) => {
-    await page.goto("/dashboard/configs");
+  test("menu lists all four products", async ({ page }) => {
+    await page.goto("/dashboard/configs/values");
     await page.getByRole("button", { name: /switch product/i }).click();
 
-    for (const name of [/^configs/i, /^experiments/i, /string manager/i]) {
+    for (const name of [/^gates/i, /^configs/i, /^experiments/i, /string manager/i]) {
       await expect(page.getByRole("menuitem", { name })).toBeVisible();
     }
   });
@@ -46,11 +46,16 @@ test.describe("Product switcher", () => {
     await page.goto("/dashboard");
 
     const main = page.locator("main");
-    for (const label of [/open configs/i, /open experiments/i, /open string manager/i]) {
+    for (const label of [
+      /open gates/i,
+      /open configs/i,
+      /open experiments/i,
+      /open string manager/i,
+    ]) {
       await expect(main.getByRole("link", { name: label })).toBeVisible();
     }
 
     await main.getByRole("link", { name: /open configs/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/configs$/);
+    await expect(page).toHaveURL(/\/dashboard\/configs\/values$/);
   });
 });

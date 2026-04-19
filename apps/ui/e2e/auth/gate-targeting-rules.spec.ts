@@ -162,10 +162,7 @@ test.describe("Gate — full rules workflow", () => {
   }) => {
     await page.goto("/dashboard/configs/gates");
     const editLink = gateRow(page, key).getByRole("link", { name: /edit/i });
-    if ((await editLink.count()) === 0) {
-      test.skip(true, "Gate detail/edit page not yet implemented");
-      return;
-    }
+    expect(await editLink.count(), "Gate detail/edit page not yet implemented").toBeGreaterThan(0);
     await editLink.click();
 
     // Add a rule

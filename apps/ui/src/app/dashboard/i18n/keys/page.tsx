@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { unstable_noStore as noStore } from "next/cache";
 import { Languages } from "lucide-react";
 
 import { auth } from "@/auth";
@@ -9,6 +10,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { KeysTable } from "./_components/keys-table";
 
 export default async function I18nKeysPage() {
+  noStore();
   const session = await auth();
   if (!session?.user?.project_id) redirect("/auth/signin");
   const identity = {
@@ -30,7 +32,6 @@ export default async function I18nKeysPage() {
     keysByProfile[key.profileId].push(key);
   }
 
-  // Pre-fetch draft keys for all open drafts so the client has everything upfront
   const openDrafts = drafts.filter((d) => d.status === "open");
   const draftKeysByDraft: Record<string, Awaited<ReturnType<typeof listDraftKeys>>> = {};
   await Promise.all(
@@ -79,7 +80,7 @@ export default async function I18nKeysPage() {
 
       <KeysTable
         profiles={profiles}
-        drafts={drafts}
+        drafts={openDrafts}
         keysByProfile={keysByProfile}
         draftKeysByDraft={draftKeysByDraft}
       />

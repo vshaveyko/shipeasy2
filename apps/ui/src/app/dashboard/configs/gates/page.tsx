@@ -61,6 +61,9 @@ export default async function GatesPage() {
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
+                <LinkButton size="sm" variant="ghost" href={`/dashboard/configs/gates/${gate.id}`}>
+                  Edit
+                </LinkButton>
                 <form action={enableGateAction}>
                   <input type="hidden" name="id" value={gate.id} />
                   <input type="hidden" name="enabled" value={gate.enabled ? "false" : "true"} />

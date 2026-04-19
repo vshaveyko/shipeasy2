@@ -470,6 +470,7 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
         <button
           onClick={expanded.size > 0 ? collapseAll : expandAll}
           className="flex items-center gap-1 rounded-lg border border-transparent px-2 py-1 text-xs text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
+          aria-label={expanded.size > 0 ? "Collapse all" : "Expand all"}
           title={expanded.size > 0 ? "Collapse all" : "Expand all"}
         >
           <ChevronsUpDown className="size-3" />

@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
-import { checkLimit, ApiError, getPlan } from "@shipeasy/core";
-import { metrics, events } from "@shipeasy/core/db/schema";
+import { and, eq } from "drizzle-orm";
+import { checkLimit, ApiError, getPlan, getDb } from "@shipeasy/core";
+import { metrics, events, experimentMetrics, experiments } from "@shipeasy/core/db/schema";
 import { metricCreateSchema, metricUpdateSchema } from "@shipeasy/core/schemas/metrics";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnv, getEnvAsync } from "../env";
@@ -79,10 +79,25 @@ export async function updateMetric(identity: AdminIdentity, id: string, input: u
 }
 
 export async function deleteMetric(identity: AdminIdentity, id: string) {
+  const env = await getEnvAsync();
   const s = await scopedDbSA(identity.projectId);
   const rows = await s.selectWhere(metrics, eq(metrics.id, id));
   if (rows.length === 0) throw new ApiError("Metric not found", 404);
-  await s.delete(metrics).where(eq(metrics.id, id));
+
+  const db = getDb(env.DB);
+  const runningExps = await db
+    .select({ id: experiments.id, name: experiments.name })
+    .from(experimentMetrics)
+    .innerJoin(experiments, eq(experimentMetrics.experimentId, experiments.id))
+    .where(and(eq(experimentMetrics.metricId, id), eq(experiments.status, "running")));
+  if (runningExps.length > 0) {
+    throw new ApiError(
+      `Metric is attached to ${runningExps.length} running experiment(s). Stop them first.`,
+      409,
+    );
+  }
+
+  await s.update(metrics).set({ deletedAt: new Date().toISOString() }).where(eq(metrics.id, id));
   await writeAudit(identity, "metric.delete", "metric", id);
   return { ok: true };
 }

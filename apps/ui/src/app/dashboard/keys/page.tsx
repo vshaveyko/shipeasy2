@@ -30,9 +30,14 @@ const KEY_TYPES = [
   },
 ];
 
-export default async function KeysPage() {
+export default async function KeysPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ new_key?: string }>;
+}) {
   const session = await auth();
   const projectId = session?.user?.project_id;
+  const { new_key } = await searchParams;
 
   let keys: Awaited<ReturnType<typeof listKeys>> = [];
   if (projectId) {
@@ -53,6 +58,23 @@ export default async function KeysPage() {
         title="SDK Keys"
         description="Keys authenticate SDKs against your project. We show raw tokens once — store them securely."
       />
+
+      {new_key && (
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/20">
+          <CardHeader className="border-b pb-4">
+            <CardTitle className="text-sm">New key — copy it now</CardTitle>
+            <CardDescription>This raw token will not be shown again.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <code className="flex-1 overflow-x-auto rounded bg-background px-3 py-2 font-mono text-xs">
+                {new_key}
+              </code>
+              <span className="shrink-0 text-xs text-muted-foreground">Copy key</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="border-b pb-4">
@@ -97,6 +119,11 @@ export default async function KeysPage() {
                 <Badge variant="secondary">{key.type}</Badge>
                 <span className="font-mono text-xs text-muted-foreground">{key.id}</span>
                 {key.revoked_at && <Badge variant="destructive">revoked</Badge>}
+                {key.expires_at && !key.revoked_at && (
+                  <span className="text-xs text-muted-foreground">
+                    Expires {new Date(key.expires_at).toLocaleDateString()}
+                  </span>
+                )}
               </div>
               {!key.revoked_at && (
                 <form action={revokeKeyAction}>

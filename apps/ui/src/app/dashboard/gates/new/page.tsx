@@ -44,13 +44,17 @@ const PROFILES = [
 export default function NewGatePage() {
   const [selectedProfile, setSelectedProfile] = useState<string>("rollout");
   const [rolloutPct, setRolloutPct] = useState(10);
+  const [killswitch, setKillswitch] = useState(false);
 
   const profile = PROFILES.find((p) => p.id === selectedProfile);
 
   function handleProfileSelect(id: string) {
     setSelectedProfile(id);
     const p = PROFILES.find((p) => p.id === id);
-    if (p) setRolloutPct(p.defaultPct);
+    if (p) {
+      setRolloutPct(p.defaultPct);
+      setKillswitch(id === "killswitch");
+    }
   }
 
   return (
@@ -145,7 +149,7 @@ export default function NewGatePage() {
         {/* Rollout */}
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle>Rollout</CardTitle>
+            <CardTitle>Rollout percentage</CardTitle>
             <CardDescription>Percentage of eligible users who see this gate as ON.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
@@ -216,7 +220,7 @@ export default function NewGatePage() {
         {/* Killswitch */}
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle>Killswitch</CardTitle>
+            <CardTitle>Force off</CardTitle>
             <CardDescription>
               Force the gate OFF for everyone, overriding all rules.
             </CardDescription>
@@ -227,7 +231,8 @@ export default function NewGatePage() {
                 type="checkbox"
                 name="killswitch"
                 value="true"
-                defaultChecked={profile?.id === "killswitch"}
+                checked={killswitch}
+                onChange={(e) => setKillswitch(e.target.checked)}
                 className="peer sr-only"
               />
               <div className="relative h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-foreground">

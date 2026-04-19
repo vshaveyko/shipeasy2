@@ -81,6 +81,9 @@ export default async function EventsPage() {
             >
               <div className="flex items-center gap-3">
                 <span className="font-mono text-sm font-medium">{ev.name}</span>
+                {ev.description && (
+                  <span className="text-xs text-muted-foreground">{ev.description}</span>
+                )}
                 {ev.pending ? (
                   <Badge variant="secondary">pending</Badge>
                 ) : (

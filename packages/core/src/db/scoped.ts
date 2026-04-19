@@ -1,7 +1,7 @@
 // scopedDb(projectId) — project-scoped query builder.
 // Consumers must go through this; raw db is kept internal.
 
-import { and, eq, type SQL } from "drizzle-orm";
+import { and, eq, isNull, type SQL } from "drizzle-orm";
 import { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { getDb, type Db } from "./index";
 import {
@@ -51,6 +51,12 @@ export type ScopedTable =
 
 export type ScopedDb = ReturnType<typeof scopedDb>;
 
+function notDeleted(table: SQLiteTable): SQL | undefined {
+  const col = (table as unknown as Record<string, unknown>).deletedAt;
+  if (col) return isNull(col as Parameters<typeof isNull>[0]);
+  return undefined;
+}
+
 export function scopedDb(d1: D1Database, projectId: string) {
   const db = getDb(d1);
   const pid = (table: SQLiteTable) =>
@@ -61,14 +67,17 @@ export function scopedDb(d1: D1Database, projectId: string) {
     projectId,
 
     select<T extends ScopedTable>(table: T) {
-      return db.select().from(table).where(pid(table));
+      return db
+        .select()
+        .from(table)
+        .where(and(pid(table), notDeleted(table))!);
     },
 
     selectWhere<T extends ScopedTable>(table: T, extra: SQL) {
       return db
         .select()
         .from(table)
-        .where(and(pid(table), extra)!);
+        .where(and(pid(table), notDeleted(table), extra)!);
     },
 
     insert<T extends ScopedTable>(table: T) {

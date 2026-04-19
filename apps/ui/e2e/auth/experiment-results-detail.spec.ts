@@ -53,9 +53,11 @@ test.describe("Results page — draft state", () => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
     await p.goto("/dashboard/experiments");
-    await expRow(p, name)
-      .getByRole("button", { name: /^delete$/i })
-      .click();
+    const delBtn = expRow(p, name).getByRole("button", { name: /^delete$/i });
+    if ((await delBtn.count()) > 0) {
+      await delBtn.click();
+      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
+    }
     await ctx.close();
   });
 
@@ -149,13 +151,19 @@ test.describe("Results page — running state", () => {
     await p.goto("/dashboard/experiments");
     const row = p.getByText(name, { exact: true }).locator("..").locator("..");
     const stopBtn = row.getByRole("button", { name: /^stop$/i });
-    if ((await stopBtn.count()) > 0) await stopBtn.click();
+    if ((await stopBtn.count()) > 0) {
+      await stopBtn.click();
+      await expect(row.getByRole("button", { name: /^delete$/i })).toBeVisible();
+    }
     const delBtn = p
       .getByText(name, { exact: true })
       .locator("..")
       .locator("..")
       .getByRole("button", { name: /^delete$/i });
-    if ((await delBtn.count()) > 0) await delBtn.click();
+    if ((await delBtn.count()) > 0) {
+      await delBtn.click();
+      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
+    }
     await ctx.close();
   });
 
@@ -209,8 +217,15 @@ test.describe("Results page — stopped state", () => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
     await p.goto("/dashboard/experiments");
-    const row = p.getByText(name, { exact: true }).locator("..").locator("..");
-    if ((await row.count()) > 0) await row.getByRole("button", { name: /^delete$/i }).click();
+    const delBtn = p
+      .getByText(name, { exact: true })
+      .locator("..")
+      .locator("..")
+      .getByRole("button", { name: /^delete$/i });
+    if ((await delBtn.count()) > 0) {
+      await delBtn.click();
+      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
+    }
     await ctx.close();
   });
 
@@ -304,8 +319,15 @@ test.describe("Results page — multi-variant setup card", () => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
     await p.goto("/dashboard/experiments");
-    const row = p.getByText(name, { exact: true }).locator("..").locator("..");
-    if ((await row.count()) > 0) await row.getByRole("button", { name: /^delete$/i }).click();
+    const delBtn = p
+      .getByText(name, { exact: true })
+      .locator("..")
+      .locator("..")
+      .getByRole("button", { name: /^delete$/i });
+    if ((await delBtn.count()) > 0) {
+      await delBtn.click();
+      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
+    }
     await ctx.close();
   });
 

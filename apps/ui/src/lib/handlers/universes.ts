@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { checkLimit, rebuildExperiments, ApiError, getPlan } from "@shipeasy/core";
-import { universes } from "@shipeasy/core/db/schema";
+import { universes, experiments } from "@shipeasy/core/db/schema";
 import { universeCreateSchema, universeUpdateSchema } from "@shipeasy/core/schemas/universes";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnvAsync } from "../env";
@@ -73,7 +73,22 @@ export async function deleteUniverse(identity: AdminIdentity, id: string) {
   const rows = await s.selectWhere(universes, eq(universes.id, id));
   if (rows.length === 0) throw new ApiError("Universe not found", 404);
 
-  await s.delete(universes).where(eq(universes.id, id));
+  const universe = rows[0];
+  const activeExps = await s.selectWhere(
+    experiments,
+    and(eq(experiments.universe, universe.name), ne(experiments.status, "archived"))!,
+  );
+  if (activeExps.length > 0) {
+    throw new ApiError(
+      `Universe is used by ${activeExps.length} active experiment(s). Archive them first.`,
+      409,
+    );
+  }
+
+  await s
+    .update(universes)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(eq(universes.id, id));
   await rebuildExperiments(env, identity.projectId);
   await writeAudit(identity, "universe.delete", "universe", id);
   return { ok: true };

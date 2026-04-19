@@ -70,16 +70,26 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium capitalize">{project?.plan ?? "free"}</div>
+            <div className="text-xs text-muted-foreground">
+              {plan
+                ? `${plan.max_flags === -1 ? "∞" : plan.max_flags} gates · ${plan.max_configs === -1 ? "∞" : plan.max_configs} configs · ${plan.max_experiments_running === -1 ? "∞" : plan.max_experiments_running} running experiments · ${plan.max_sdk_keys === -1 ? "∞" : plan.max_sdk_keys} keys`
+                : "—"}
+            </div>
+            <Badge variant="secondary">Current</Badge>
+          </div>
+          {plan && (
+            <div className="grid gap-2 text-sm">
               <div className="text-xs text-muted-foreground">
-                {plan
-                  ? `${plan.max_flags === -1 ? "∞" : plan.max_flags} flags · ${plan.max_experiments_running === -1 ? "∞" : plan.max_experiments_running} running experiments`
-                  : "—"}
+                Poll interval: {plan.poll_interval_seconds}s
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Analytics retention: {plan.ae_retention_days} days
+              </div>
+              <div className="text-xs text-muted-foreground">
+                CUPED variance reduction: {plan.cuped_enabled ? "Enabled" : "Not included"}
               </div>
             </div>
-            <Badge variant="secondary">current</Badge>
-          </div>
+          )}
           <Button variant="outline" size="sm" disabled>
             Upgrade
           </Button>

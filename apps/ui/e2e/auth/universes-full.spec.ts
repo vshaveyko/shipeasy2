@@ -126,10 +126,7 @@ test.describe("Universe with custom unit type", () => {
     await page.goto("/dashboard/experiments/universes");
     const unitSel = page.locator("#universe-unit-type").or(page.getByLabel(/unit.*type/i));
     // Forward-looking: may not exist yet — skip gracefully
-    if ((await unitSel.count()) === 0) {
-      test.skip(true, "unit_type selector not yet implemented");
-      return;
-    }
+    expect(await unitSel.count(), "unit_type selector not yet implemented").toBeGreaterThan(0);
     await expect(unitSel).toBeVisible();
     await expect(unitSel).toHaveValue("user_id");
   });
@@ -137,10 +134,7 @@ test.describe("Universe with custom unit type", () => {
   test("create universe with device_id unit type → appears in list", async ({ page }) => {
     await page.goto("/dashboard/experiments/universes");
     const unitSel = page.locator("#universe-unit-type").or(page.getByLabel(/unit.*type/i));
-    if ((await unitSel.count()) === 0) {
-      test.skip(true, "unit_type selector not yet implemented");
-      return;
-    }
+    expect(await unitSel.count(), "unit_type selector not yet implemented").toBeGreaterThan(0);
 
     await page.locator("#universe-name").fill(name);
     await unitSel.selectOption("device_id");

@@ -17,6 +17,15 @@ function cleanE2eTestData() {
 
   const db = path.join(dir, files[0]);
   const pid = "e2e-project-id";
+  // experiment_metrics has no project_id column — must use subquery; delete before experiments
+  try {
+    execSync(
+      `sqlite3 "${db}" "DELETE FROM experiment_metrics WHERE experiment_id IN (SELECT id FROM experiments WHERE project_id='${pid}')"`,
+    );
+  } catch {
+    // ignore
+  }
+
   const tables = [
     "label_draft_keys",
     "label_chunks",
@@ -24,6 +33,7 @@ function cleanE2eTestData() {
     "label_drafts",
     "label_profiles",
     "sdk_keys",
+    "experiment_results",
     "metrics",
     "gates",
     "configs",
@@ -42,8 +52,21 @@ function cleanE2eTestData() {
 
   // Re-seed fixed rows that various tests depend on
   const seeds = [
+    // Project row must exist (with plan=pro) so loadProject() resolves and TopBar shows plan badge
+    // Use INSERT OR IGNORE + UPDATE to avoid CASCADE deleting child rows (universes, etc.)
+    `INSERT OR IGNORE INTO projects (id, name, owner_email, plan, status, created_at, updated_at) VALUES ('${pid}', 'Default project', 'e2e@shipeasy.test', 'free', 'active', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z')`,
+    `UPDATE projects SET plan='free', name='Default project' WHERE id='${pid}'`,
     `INSERT OR IGNORE INTO events (id, project_id, name, pending, created_at) VALUES ('e2e-event-id', '${pid}', 'e2e_event', 0, '2024-01-01T00:00:00.000Z')`,
     `INSERT OR IGNORE INTO universes (id, project_id, name, unit_type, holdout_range, created_at) VALUES ('e2e-universe-default', '${pid}', 'default', 'user_id', NULL, '2024-01-01T00:00:00.000Z')`,
+    // i18n test profile (en:test) with 5 keys matching i18n-keys.spec.ts expectations
+    // IDs must be valid UUIDs so draftCreateSchema (z.string().uuid()) accepts the profile_id.
+    `INSERT OR IGNORE INTO label_profiles (id, project_id, name, created_at) VALUES ('e2e00000-0000-4000-8000-000000000001', '${pid}', 'en:test', '2024-01-01T00:00:00.000Z')`,
+    `INSERT OR IGNORE INTO label_chunks (id, project_id, profile_id, name, is_index) VALUES ('e2e00000-0000-4000-8000-000000000002', '${pid}', 'e2e00000-0000-4000-8000-000000000001', 'main', 1)`,
+    `INSERT OR IGNORE INTO label_keys (id, project_id, profile_id, chunk_id, key, value, updated_at, updated_by) VALUES ('e2e00000-0000-4000-8000-000000000003', '${pid}', 'e2e00000-0000-4000-8000-000000000001', 'e2e00000-0000-4000-8000-000000000002', 'simple', 'Simple value', '2024-01-01T00:00:00.000Z', 'e2e')`,
+    `INSERT OR IGNORE INTO label_keys (id, project_id, profile_id, chunk_id, key, value, updated_at, updated_by) VALUES ('e2e00000-0000-4000-8000-000000000004', '${pid}', 'e2e00000-0000-4000-8000-000000000001', 'e2e00000-0000-4000-8000-000000000002', 'auth.login.title', 'Sign in', '2024-01-01T00:00:00.000Z', 'e2e')`,
+    `INSERT OR IGNORE INTO label_keys (id, project_id, profile_id, chunk_id, key, value, updated_at, updated_by) VALUES ('e2e00000-0000-4000-8000-000000000005', '${pid}', 'e2e00000-0000-4000-8000-000000000001', 'e2e00000-0000-4000-8000-000000000002', 'auth.login.subtitle', 'Welcome back', '2024-01-01T00:00:00.000Z', 'e2e')`,
+    `INSERT OR IGNORE INTO label_keys (id, project_id, profile_id, chunk_id, key, value, updated_at, updated_by) VALUES ('e2e00000-0000-4000-8000-000000000006', '${pid}', 'e2e00000-0000-4000-8000-000000000001', 'e2e00000-0000-4000-8000-000000000002', 'auth.signup.title', 'Create account', '2024-01-01T00:00:00.000Z', 'e2e')`,
+    `INSERT OR IGNORE INTO label_keys (id, project_id, profile_id, chunk_id, key, value, updated_at, updated_by) VALUES ('e2e00000-0000-4000-8000-000000000007', '${pid}', 'e2e00000-0000-4000-8000-000000000001', 'e2e00000-0000-4000-8000-000000000002', 'app.menu', 'Dashboard', '2024-01-01T00:00:00.000Z', 'e2e')`,
   ];
   for (const sql of seeds) {
     try {

@@ -15,6 +15,32 @@ export async function createExperimentAction(formData: FormData) {
   const allocationRaw = Number(formData.get("allocation") ?? 100);
   const allocation_pct = Math.round(Math.min(100, Math.max(0, allocationRaw)) * 100);
 
+  // Targeting gate
+  const targetingGateRaw = formData.get("targeting_gate") as string | null;
+  const targeting_gate =
+    targetingGateRaw && targetingGateRaw !== "" && targetingGateRaw !== "none"
+      ? targetingGateRaw
+      : null;
+
+  // Statistical config
+  const sigRaw = formData.get("significance_threshold") as string | null;
+  const significance_threshold = sigRaw && sigRaw !== "" ? Number(sigRaw) : 0.05;
+  const minDaysRaw = formData.get("min_runtime_days") as string | null;
+  const min_runtime_days = minDaysRaw && minDaysRaw !== "" ? Number(minDaysRaw) : 0;
+  const minSampleRaw = formData.get("min_sample_size") as string | null;
+  const min_sample_size = minSampleRaw && minSampleRaw !== "" ? Number(minSampleRaw) : 100;
+
+  // Params schema: param_count, param_name_0, param_type_0, ...
+  const paramCount = Number(formData.get("param_count") ?? 0);
+  const params: Record<string, "string" | "bool" | "number"> = {};
+  for (let i = 0; i < paramCount; i++) {
+    const paramName = (formData.get(`param_name_${i}`) as string)?.trim();
+    const paramType = (formData.get(`param_type_${i}`) as string) || "string";
+    if (paramName) {
+      params[paramName] = paramType as "string" | "bool" | "number";
+    }
+  }
+
   // Read dynamic groups submitted by the form (group_name_0, group_weight_0, ...)
   const groupCount = Number(formData.get("group_count") ?? 2);
   const groups =
@@ -33,11 +59,13 @@ export async function createExperimentAction(formData: FormData) {
   await createExperiment(identity, {
     name,
     universe,
+    targeting_gate,
     allocation_pct,
     groups,
-    significance_threshold: 0.05,
-    min_runtime_days: 0,
-    min_sample_size: 100,
+    params,
+    significance_threshold,
+    min_runtime_days,
+    min_sample_size,
     sequential_testing: false,
   });
   redirect("/dashboard/experiments");

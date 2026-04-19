@@ -1,4 +1,4 @@
-import { eq, and, count, sum } from "drizzle-orm";
+import { and, count, eq, isNull, sum } from "drizzle-orm";
 import { ApiError, getDb } from "@shipeasy/core";
 import {
   labelProfiles,
@@ -51,7 +51,10 @@ export async function deleteProfile(identity: AdminIdentity, id: string) {
   const s = await scopedDbSA(identity.projectId);
   const existing = await s.selectWhere(labelProfiles, eq(labelProfiles.id, id));
   if (existing.length === 0) throw new ApiError("Profile not found", 404);
-  await s.delete(labelProfiles).where(eq(labelProfiles.id, id));
+  await s
+    .update(labelProfiles)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(eq(labelProfiles.id, id));
   await writeAudit(identity, "i18n.profile.delete", "label_profile", id);
   return { ok: true };
 }
@@ -89,7 +92,10 @@ export async function listKeys(identity: AdminIdentity, profileId?: string): Pro
       chunkName: labelChunks.name,
     })
     .from(labelKeys)
-    .leftJoin(labelProfiles, eq(labelKeys.profileId, labelProfiles.id))
+    .innerJoin(
+      labelProfiles,
+      and(eq(labelKeys.profileId, labelProfiles.id), isNull(labelProfiles.deletedAt))!,
+    )
     .leftJoin(labelChunks, eq(labelKeys.chunkId, labelChunks.id));
 
   const rows = profileId
@@ -198,10 +204,10 @@ export async function deleteKey(identity: AdminIdentity, id: string) {
 
 export async function listDrafts(identity: AdminIdentity, profileId?: string) {
   const s = scopedDb(identity.projectId);
-  if (profileId) {
-    return s.selectWhere(labelDrafts, eq(labelDrafts.profileId, profileId));
-  }
-  return s.select(labelDrafts);
+  const result = profileId
+    ? await s.selectWhere(labelDrafts, eq(labelDrafts.profileId, profileId))
+    : await s.select(labelDrafts);
+  return result;
 }
 
 export async function createDraft(identity: AdminIdentity, input: unknown) {
@@ -358,7 +364,7 @@ export async function getI18nStats(identity: AdminIdentity) {
     db
       .select({ n: count() })
       .from(labelProfiles)
-      .where(eq(labelProfiles.projectId, identity.projectId))
+      .where(and(eq(labelProfiles.projectId, identity.projectId), isNull(labelProfiles.deletedAt))!)
       .then((r) => r[0]?.n ?? 0),
     db
       .select({ n: count() })

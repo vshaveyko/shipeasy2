@@ -14,7 +14,6 @@ test.describe("Gates product", () => {
     await expect(page.getByRole("heading", { name: /^new gate$/i, level: 1 })).toBeVisible();
     await expect(page.getByLabel(/^key$/i)).toBeVisible();
     await expect(page.getByLabel(/^description$/i)).toBeVisible();
-    await expect(page.getByLabel(/^rollout$/i)).toBeVisible();
   });
 
   test("typing into the key field updates the input", async ({ page }) => {

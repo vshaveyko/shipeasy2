@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type StatCardProps = {
-  label: string;
+  label: ReactNode;
   value: ReactNode;
   hint?: string;
 };

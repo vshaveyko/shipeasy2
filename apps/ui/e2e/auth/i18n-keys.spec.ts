@@ -335,6 +335,7 @@ test.describe("i18n Keys table — draft workflow", () => {
     await page.goto("/dashboard/i18n/drafts");
     const row = page.getByRole("row").filter({ hasText: dName });
     await row.getByRole("button", { name: /^abandon$/i }).click();
+    await expect(row.getByText(/abandoned/i)).toBeVisible();
     await expect(page).toHaveURL(/\/dashboard\/i18n\/drafts$/);
 
     // Now visit keys page — draft dropdown should not contain the draft
@@ -360,7 +361,10 @@ test.describe("i18n full workflow", () => {
     const p = await ctx.newPage();
     await p.goto("/dashboard/i18n/profiles");
     const btn = p.getByRole("button", { name: new RegExp(`delete profile ${pName}`, "i") });
-    if ((await btn.count()) > 0) await btn.click();
+    if ((await btn.count()) > 0) {
+      await btn.click();
+      await expect(btn).not.toBeAttached();
+    }
     await ctx.close();
   });
 
@@ -415,6 +419,12 @@ test.describe("i18n full workflow", () => {
       .filter({ hasText: dName })
       .getByRole("button", { name: /^abandon$/i })
       .click();
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: dName })
+        .getByText(/abandoned/i),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/dashboard\/i18n\/drafts$/);
 
     await page.goto("/dashboard/i18n/keys");
@@ -426,6 +436,9 @@ test.describe("i18n full workflow", () => {
   test("delete profile → its tab disappears from the keys page", async ({ page }) => {
     await page.goto("/dashboard/i18n/profiles");
     await page.getByRole("button", { name: new RegExp(`delete profile ${pName}`, "i") }).click();
+    await expect(
+      page.getByRole("button", { name: new RegExp(`delete profile ${pName}`, "i") }),
+    ).not.toBeAttached();
     await expect(page).toHaveURL(/\/dashboard\/i18n\/profiles$/);
 
     await page.goto("/dashboard/i18n/keys");
@@ -447,7 +460,10 @@ test.describe("i18n Profiles CRUD — keys page integration", () => {
     const p = await ctx.newPage();
     await p.goto("/dashboard/i18n/profiles");
     const btn = p.getByRole("button", { name: new RegExp(`delete profile ${pName}`, "i") });
-    if ((await btn.count()) > 0) await btn.click();
+    if ((await btn.count()) > 0) {
+      await btn.click();
+      await expect(btn).not.toBeAttached();
+    }
     await ctx.close();
   });
 

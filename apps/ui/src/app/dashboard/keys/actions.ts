@@ -7,8 +7,8 @@ import { createKey, revokeKey } from "@/lib/handlers/keys";
 export async function createKeyAction(formData: FormData) {
   const identity = await getIdentity();
   const type = formData.get("type") as string;
-  await createKey(identity, { type });
-  redirect("/dashboard/keys");
+  const result = await createKey(identity, { type });
+  redirect(`/dashboard/keys?new_key=${encodeURIComponent(result.key)}`);
 }
 
 export async function revokeKeyAction(formData: FormData) {

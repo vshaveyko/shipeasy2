@@ -29,7 +29,7 @@ type TopBarProps = {
   planLabel?: string;
 };
 
-export function TopBar({ user, projectName = "Default project", planLabel = "Free" }: TopBarProps) {
+export function TopBar({ user, projectName = "Default project", planLabel }: TopBarProps) {
   const initials =
     user.name
       ?.split(" ")
@@ -54,9 +54,11 @@ export function TopBar({ user, projectName = "Default project", planLabel = "Fre
             )}
           >
             <span className="font-medium">{projectName}</span>
-            <Badge variant="secondary" className="text-[10px]">
-              {planLabel}
-            </Badge>
+            {planLabel && (
+              <Badge variant="secondary" className="text-[10px]">
+                {planLabel}
+              </Badge>
+            )}
             <ChevronsUpDown className="size-3.5 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
@@ -90,7 +92,11 @@ export function TopBar({ user, projectName = "Default project", planLabel = "Fre
               <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />
               <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
             </Avatar>
-            <span className="hidden text-sm font-medium sm:inline">{user.name}</span>
+            <span
+              className="nav-user-name hidden text-sm font-medium sm:inline"
+              data-user-name={user.name ?? ""}
+              aria-hidden="true"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuGroup>

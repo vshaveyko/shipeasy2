@@ -9,13 +9,19 @@ export async function createMetricAction(formData: FormData) {
   const name = formData.get("name") as string;
   const event_name = formData.get("event_name") as string;
   const aggregation = (formData.get("aggregation") as string) || "count_users";
+  const valuePathRaw = formData.get("value_path") as string | null;
+  const value_path = valuePathRaw && valuePathRaw.trim() !== "" ? valuePathRaw.trim() : null;
+  const winsorizeRaw = formData.get("winsorize_pct") as string | null;
+  const winsorize_pct = winsorizeRaw ? Number(winsorizeRaw) : 99;
+  const mdeRaw = formData.get("min_detectable_effect") as string | null;
+  const min_detectable_effect = mdeRaw && mdeRaw.trim() !== "" ? Number(mdeRaw) : null;
   await createMetric(identity, {
     name,
     event_name,
     aggregation,
-    winsorize_pct: 99,
-    value_path: null,
-    min_detectable_effect: null,
+    winsorize_pct,
+    value_path,
+    min_detectable_effect,
   });
   redirect("/dashboard/experiments/metrics");
 }

@@ -84,7 +84,7 @@ export const cliTokens = sqliteTable(
     tokenId: text("token_id").primaryKey(),
     projectId: text("project_id")
       .notNull()
-      .references(() => projects.id),
+      .references(() => projects.id, { onDelete: "cascade" }),
     userEmail: text("user_email").notNull(),
     issuedAt: text("issued_at").notNull(),
     expiresAt: text("expires_at").notNull(),
@@ -119,7 +119,7 @@ export const auditLog = sqliteTable(
     id: text("id").primaryKey(),
     projectId: text("project_id")
       .notNull()
-      .references(() => projects.id, { onDelete: "cascade" }),
+      .references(() => projects.id),
     actorEmail: text("actor_email").notNull(),
     actorType: text("actor_type", { enum: ["user", "cli", "system"] }).notNull(),
     action: text("action").notNull(),
@@ -139,7 +139,9 @@ export const gates = sqliteTable(
   "gates",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     rules: text("rules", { mode: "json" }).$type<GateRule[]>().notNull(),
     rolloutPct: integer("rollout_pct").notNull().default(0),
@@ -147,6 +149,7 @@ export const gates = sqliteTable(
     enabled: integer("enabled").notNull().default(1),
     killswitch: integer("killswitch").notNull().default(0),
     updatedAt: text("updated_at").notNull(),
+    deletedAt: text("deleted_at"),
   },
   (t) => ({
     projectIdx: index("gates_project").on(t.projectId),
@@ -158,10 +161,13 @@ export const configs = sqliteTable(
   "configs",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     valueJson: text("value_json", { mode: "json" }).$type<unknown>().notNull(),
     updatedAt: text("updated_at").notNull(),
+    deletedAt: text("deleted_at"),
   },
   (t) => ({ uniq: uniqueIndex("configs_project_name").on(t.projectId, t.name) }),
 );
@@ -170,11 +176,14 @@ export const universes = sqliteTable(
   "universes",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     unitType: text("unit_type").notNull().default("user_id"),
     holdoutRange: text("holdout_range", { mode: "json" }).$type<[number, number] | null>(),
     createdAt: text("created_at").notNull(),
+    deletedAt: text("deleted_at"),
   },
   (t) => ({
     projectIdx: index("universes_project").on(t.projectId),
@@ -186,7 +195,9 @@ export const experiments = sqliteTable(
   "experiments",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     universe: text("universe").notNull(),
     targetingGate: text("targeting_gate"),
@@ -217,12 +228,15 @@ export const events = sqliteTable(
   "events",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
     properties: text("properties", { mode: "json" }).$type<EventProperty[]>().notNull().default([]),
     pending: integer("pending").notNull().default(0),
     createdAt: text("created_at").notNull(),
+    deletedAt: text("deleted_at"),
   },
   (t) => ({
     projectIdx: index("events_project").on(t.projectId),
@@ -234,7 +248,9 @@ export const metrics = sqliteTable(
   "metrics",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     eventName: text("event_name").notNull(),
     valuePath: text("value_path"),
@@ -246,6 +262,7 @@ export const metrics = sqliteTable(
     winsorizePct: integer("winsorize_pct").notNull().default(99),
     minDetectableEffect: real("min_detectable_effect"),
     updatedAt: text("updated_at").notNull(),
+    deletedAt: text("deleted_at"),
   },
   (t) => ({ uniq: uniqueIndex("metrics_project_name").on(t.projectId, t.name) }),
 );
@@ -328,7 +345,9 @@ export const userAttributes = sqliteTable(
   "user_attributes",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     type: text("type", { enum: ["string", "number", "boolean", "enum", "date"] }).notNull(),
     enumValues: text("enum_values", { mode: "json" }).$type<string[] | null>(),
@@ -336,6 +355,7 @@ export const userAttributes = sqliteTable(
     description: text("description"),
     sdkPath: text("sdk_path"),
     createdAt: text("created_at").notNull(),
+    deletedAt: text("deleted_at"),
   },
   (t) => ({
     projectIdx: index("user_attributes_project").on(t.projectId),
@@ -350,10 +370,13 @@ export const labelProfiles = sqliteTable(
   "label_profiles",
   {
     id: text("id").primaryKey(),
-    projectId: text("project_id").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     defaultChunkId: text("default_chunk_id"),
     createdAt: text("created_at").notNull(),
+    deletedAt: text("deleted_at"),
   },
   (t) => ({
     projectIdx: index("label_profiles_project").on(t.projectId),

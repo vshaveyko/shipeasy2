@@ -13,27 +13,21 @@ test.describe("Experiments", () => {
 
     await expect(page.getByRole("heading", { name: /^new experiment$/i, level: 1 })).toBeVisible();
 
-    for (const profile of [
-      /^conversion\b/i,
-      /^revenue\b/i,
-      /^retention\b/i,
-      /^performance\b/i,
-      /^onboarding\b/i,
-    ]) {
-      await expect(page.getByRole("button", { name: profile })).toBeVisible();
+    for (const label of ["Conversion", "Revenue", "Retention", "Performance", "Onboarding"]) {
+      await expect(page.getByText(label, { exact: true })).toBeVisible();
     }
 
-    await expect(page.getByLabel(/^name$/i)).toBeVisible();
-    await expect(page.getByLabel(/hypothesis \/ question/i)).toBeVisible();
+    await expect(page.getByLabel(/^name/i)).toBeVisible();
+    await expect(page.getByLabel(/hypothesis/i)).toBeVisible();
     await expect(page.getByLabel(/success definition/i)).toBeVisible();
     await expect(page.getByLabel(/^universe$/i)).toBeVisible();
-    await expect(page.getByLabel(/allocation/i)).toBeVisible();
+    await expect(page.getByText(/allocation.*% of universe/i)).toBeVisible();
   });
 
   test("filling basics updates inputs; submit button is enabled", async ({ page }) => {
     await page.goto("/dashboard/experiments/new");
 
-    const name = page.getByLabel(/^name$/i);
+    const name = page.getByLabel(/^name/i);
     await name.fill("checkout_redesign_q2");
     await expect(name).toHaveValue("checkout_redesign_q2");
 

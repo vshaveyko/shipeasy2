@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { createDraft, updateDraft, deleteDraft } from "@/lib/handlers/i18n";
 import type { AdminIdentity } from "@/lib/admin-auth";
@@ -24,6 +25,7 @@ export async function abandonDraftAction(formData: FormData) {
   const identity = await getIdentity();
   const id = formData.get("id") as string;
   await updateDraft(identity, id, { status: "abandoned" });
+  revalidatePath("/dashboard/i18n/keys");
   redirect("/dashboard/i18n/drafts");
 }
 

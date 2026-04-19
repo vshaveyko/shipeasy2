@@ -118,7 +118,7 @@ test.describe("Boolean attribute — create and delete", () => {
 test.describe("Enum attribute — create with values and delete", () => {
   test.describe.configure({ mode: "serial" });
 
-  const name = `e2attr_enum_${RUN}`;
+  const name = `e2attr_en_${RUN}`;
 
   test("create enum attribute with values → enum badge in list", async ({ page }) => {
     await page.goto("/dashboard/experiments/attributes");
@@ -151,7 +151,7 @@ test.describe("Enum attribute — create with values and delete", () => {
 test.describe("Date attribute — create and delete", () => {
   test.describe.configure({ mode: "serial" });
 
-  const name = `e2attr_date_${RUN}`;
+  const name = `e2attr_dt_${RUN}`;
 
   test("create date attribute → date badge", async ({ page }) => {
     await page.goto("/dashboard/experiments/attributes");

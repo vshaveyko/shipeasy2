@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { checkLimit, rebuildFlags, ApiError, getPlan } from "@shipeasy/core";
-import { gates } from "@shipeasy/core/db/schema";
+import { gates, experiments } from "@shipeasy/core/db/schema";
 import { gateCreateSchema, gateUpdateSchema } from "@shipeasy/core/schemas/gates";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnvAsync } from "../env";
@@ -93,7 +93,19 @@ export async function deleteGate(identity: AdminIdentity, id: string) {
   const existing = await s.selectWhere(gates, eq(gates.id, id));
   if (existing.length === 0) throw new ApiError("Gate not found", 404);
 
-  await s.delete(gates).where(eq(gates.id, id));
+  const gate = existing[0];
+  const runningRefs = await s.selectWhere(
+    experiments,
+    and(eq(experiments.targetingGate, gate.name), eq(experiments.status, "running"))!,
+  );
+  if (runningRefs.length > 0) {
+    throw new ApiError(
+      `Gate is used as a targeting gate on ${runningRefs.length} running experiment(s). Stop them first.`,
+      409,
+    );
+  }
+
+  await s.update(gates).set({ deletedAt: new Date().toISOString() }).where(eq(gates.id, id));
   await rebuildFlags(env, identity.projectId, project.plan);
   await writeAudit(identity, "gate.delete", "gate", id);
   return { ok: true };
