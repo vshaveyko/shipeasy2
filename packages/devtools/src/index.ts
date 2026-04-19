@@ -69,13 +69,20 @@ export function loadOnTrigger(opts: DevtoolsOptions = {}, hotkey = "Shift+Alt+S"
   const parts = hotkey.split("+");
   const triggerKey = parts[parts.length - 1];
   const needShift = parts.includes("Shift");
-  const needAlt = parts.includes("Alt");
+  const needAlt = parts.includes("Alt") || parts.includes("Option");
   const needCtrl = parts.includes("Ctrl") || parts.includes("Control");
   const needMeta = parts.includes("Meta") || parts.includes("Cmd");
+  // Match against e.code so Mac Option+letter (which mutates e.key to a
+  // special character like ß/Í) still triggers. Fall back to e.key for
+  // non-letter keys or when only modifier-free combos are used.
+  const triggerCode = /^[a-zA-Z]$/.test(triggerKey) ? `Key${triggerKey.toUpperCase()}` : null;
 
   function onKeyDown(e: KeyboardEvent) {
+    const keyMatches = triggerCode
+      ? e.code === triggerCode
+      : e.key.toLowerCase() === triggerKey.toLowerCase();
     if (
-      e.key === triggerKey &&
+      keyMatches &&
       e.shiftKey === needShift &&
       e.altKey === needAlt &&
       e.ctrlKey === needCtrl &&
