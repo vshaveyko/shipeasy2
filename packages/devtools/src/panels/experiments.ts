@@ -1,6 +1,7 @@
 import { DevtoolsApi } from "../api";
 import { getExpOverride, setExpOverride } from "../overrides";
 import type { ExperimentRecord, UniverseRecord, ShipeasySdkBridge } from "../types";
+import { emptyState } from "./empty";
 
 function bridge(): ShipeasySdkBridge | null {
   return (window as unknown as { __shipeasy?: ShipeasySdkBridge }).__shipeasy ?? null;
@@ -34,35 +35,46 @@ function liveVariant(name: string): string {
     : `<span class="badge badge-draft">not enrolled</span>`;
 }
 
-function renderExperimentsTab(container: Element, experiments: ExperimentRecord[]) {
-  if (experiments.length === 0) {
-    container.innerHTML = `<div class="empty">No experiments found.</div>`;
+function renderExperimentRow(e: ExperimentRecord): string {
+  return `
+    <div class="row">
+      <div style="flex:1;min-width:0">
+        <div class="row-name">${e.name}</div>
+      </div>
+      ${statusBadge(e.status)}
+      ${e.status === "running" ? liveVariant(e.name) : ""}
+      ${e.status === "running" ? variantSelect(e) : ""}
+    </div>`;
+}
+
+function renderUniverseTab(
+  container: HTMLElement,
+  universe: UniverseRecord,
+  experiments: ExperimentRecord[],
+  adminUrl: string,
+): void {
+  // Experiments bound to this universe (matched by name, since that's the FK).
+  const bucket = experiments.filter((e) => e.universe === universe.name);
+
+  if (bucket.length === 0) {
+    container.innerHTML = emptyState({
+      icon: "🧪",
+      title: `No experiments in “${universe.name}” yet`,
+      message: "Launch an experiment in this universe to start measuring impact.",
+      ctaLabel: "Create new experiment",
+      ctaHref: `${adminUrl}/dashboard/experiments/new`,
+    });
     return;
   }
 
-  const running = experiments.filter((e) => e.status === "running");
-  const other = experiments.filter((e) => e.status !== "running");
+  const running = bucket.filter((e) => e.status === "running");
+  const other = bucket.filter((e) => e.status !== "running");
+  const section = (items: ExperimentRecord[], label: string) =>
+    items.length === 0
+      ? ""
+      : `<div class="sec-head">${label}</div>${items.map(renderExperimentRow).join("")}`;
 
-  function renderSection(items: ExperimentRecord[], label: string): string {
-    if (items.length === 0) return "";
-    return `
-      <div class="sec-head">${label}</div>
-      ${items
-        .map(
-          (e) => `
-          <div class="row">
-            <div>
-              <div class="row-name">${e.name}</div>
-            </div>
-            ${statusBadge(e.status)}
-            ${e.status === "running" ? liveVariant(e.name) : ""}
-            ${e.status === "running" ? variantSelect(e) : ""}
-          </div>`,
-        )
-        .join("")}`;
-  }
-
-  container.innerHTML = renderSection(running, "Running") + renderSection(other, "Other");
+  container.innerHTML = section(running, "Running") + section(other, "Other");
 
   container.querySelectorAll<HTMLSelectElement>(".exp-sel").forEach((sel) => {
     sel.addEventListener("change", () => {
@@ -71,26 +83,6 @@ function renderExperimentsTab(container: Element, experiments: ExperimentRecord[
     });
   });
 }
-
-function renderUniversesTab(container: Element, universes: UniverseRecord[]) {
-  if (universes.length === 0) {
-    container.innerHTML = `<div class="empty">No universes found.</div>`;
-    return;
-  }
-  container.innerHTML = universes
-    .map(
-      (u) => `
-      <div class="row">
-        <div style="flex:1;min-width:0">
-          <div class="row-name">${u.name}</div>
-          <div class="row-sub">${u.unitType}${u.holdoutRange ? ` · holdout ${u.holdoutRange[0]}–${u.holdoutRange[1]}%` : ""}</div>
-        </div>
-      </div>`,
-    )
-    .join("");
-}
-
-type Tab = "experiments" | "universes";
 
 export async function renderExperimentsPanel(container: Element, api: DevtoolsApi): Promise<void> {
   container.innerHTML = `<div class="loading">Loading…</div>`;
@@ -104,38 +96,53 @@ export async function renderExperimentsPanel(container: Element, api: DevtoolsAp
     return;
   }
 
-  const state = { activeTab: "experiments" as Tab };
-
-  function renderTabs() {
-    const tabBar = container.querySelector<HTMLDivElement>(".tabs")!;
-    tabBar.querySelectorAll<HTMLButtonElement>(".tab").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.tab === state.activeTab);
+  // No universes = nothing to bucket experiments under. Prompt the user to
+  // create one (experiments cannot exist without a universe).
+  if (universes.length === 0) {
+    container.innerHTML = emptyState({
+      icon: "🌌",
+      title: "No universes yet",
+      message:
+        "Experiments live inside a universe — a named traffic segment with holdout control. Create one to get started.",
+      ctaLabel: "Create a universe",
+      ctaHref: `${api.adminUrl}/dashboard/experiments/universes`,
     });
-    const body = container.querySelector<HTMLDivElement>(".tab-body")!;
-    if (state.activeTab === "experiments") {
-      renderExperimentsTab(body, experiments);
-    } else {
-      renderUniversesTab(body, universes);
-    }
+    return;
   }
 
-  container.innerHTML = `
-    <div class="tabs">
-      <button class="tab active" data-tab="experiments">Experiments</button>
-      <button class="tab" data-tab="universes">Universes</button>
-    </div>
-    <div class="tab-body" style="overflow-y:auto;flex:1"></div>`;
+  const state = { activeUniverse: universes[0].name };
 
-  container.querySelectorAll<HTMLButtonElement>(".tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.activeTab = btn.dataset.tab as Tab;
-      renderTabs();
+  function renderTabs() {
+    const tabs = universes
+      .map(
+        (u) => `
+          <button class="tab${u.name === state.activeUniverse ? " active" : ""}"
+                  data-universe="${u.name}">${u.name}</button>`,
+      )
+      .join("");
+    container.innerHTML = `
+      <div class="tabs scroll">${tabs}</div>
+      <div class="tab-body" style="overflow-y:auto;flex:1"></div>`;
+
+    container.querySelectorAll<HTMLButtonElement>(".tab[data-universe]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.activeUniverse = btn.dataset.universe!;
+        renderTabs();
+      });
     });
-  });
+
+    const body = container.querySelector<HTMLElement>(".tab-body")!;
+    const activeUniverse = universes.find((u) => u.name === state.activeUniverse)!;
+    renderUniverseTab(body, activeUniverse, experiments, api.adminUrl);
+  }
 
   renderTabs();
+
+  // React provider re-publishes bridge state on identify/overrides — rerender
+  // the active tab so live-variant badges stay correct.
   window.addEventListener("se:state:update", () => {
     const body = container.querySelector<HTMLElement>(".tab-body");
-    if (body && state.activeTab === "experiments") renderExperimentsTab(body, experiments);
+    const active = universes.find((u) => u.name === state.activeUniverse);
+    if (body && active) renderUniverseTab(body, active, experiments, api.adminUrl);
   });
 }

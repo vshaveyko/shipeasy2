@@ -138,6 +138,45 @@ export function setI18nProfileOverride(
   emit();
 }
 
+// ── Active i18n draft override ───────────────────────────────────────────────
+
+export function getI18nDraftOverride(): string | null {
+  return read(`${S}i18n_draft`) ?? read(`${L}i18n_draft`);
+}
+
+export function setI18nDraftOverride(
+  draftId: string | null,
+  p: OverridePersistence = "session",
+): void {
+  const key = `${p === "local" ? L : S}i18n_draft`;
+  if (draftId === null) {
+    remove(key);
+  } else {
+    write(key, draftId, p);
+  }
+  emit();
+}
+
+// ── i18n label overrides (per-key text edits from the overlay) ──────────────
+
+export function getI18nLabelOverride(labelKey: string): string | null {
+  return read(`${S}i18n_label_${labelKey}`) ?? read(`${L}i18n_label_${labelKey}`);
+}
+
+export function setI18nLabelOverride(
+  labelKey: string,
+  value: string | null,
+  p: OverridePersistence = "session",
+): void {
+  const k = `${p === "local" ? L : S}i18n_label_${labelKey}`;
+  if (value === null) {
+    remove(k);
+  } else {
+    write(k, value, p);
+  }
+  emit();
+}
+
 // ── Clear all ────────────────────────────────────────────────────────────────
 
 export function clearAllOverrides(): void {

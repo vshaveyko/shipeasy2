@@ -349,6 +349,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     panelInner.innerHTML = `
       ${panelHeader(icon, label)}
       <div class="panel-body" id="se-body"></div>
+      <div class="panel-subfoot" id="se-subfoot"></div>
       <div class="panel-footer">
         <button class="ibtn danger" id="se-signout">Sign out</button>
         <button class="ibtn danger" id="se-clearall">Clear overrides</button>
@@ -366,11 +367,12 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     });
 
     const body = panelInner.querySelector("#se-body")!;
+    const subfoot = panelInner.querySelector("#se-subfoot")! as HTMLElement;
     const renderers: Record<PanelKey, () => Promise<void>> = {
       gates: () => renderGatesPanel(body, api),
       configs: () => renderConfigsPanel(body, api),
       experiments: () => renderExperimentsPanel(body, api),
-      i18n: () => renderI18nPanel(body, api),
+      i18n: () => renderI18nPanel(body, api, subfoot, shadow),
     };
     renderers[key]().catch((err) => {
       body.innerHTML = `<div class="err">${String(err)}</div>`;

@@ -10,7 +10,7 @@ import type {
 
 export class DevtoolsApi {
   constructor(
-    private readonly adminUrl: string,
+    readonly adminUrl: string,
     private readonly token: string,
   ) {}
 

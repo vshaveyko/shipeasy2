@@ -1,6 +1,7 @@
 import { DevtoolsApi } from "../api";
 import { getGateOverride, setGateOverride, clearAllOverrides } from "../overrides";
 import type { GateRecord, ShipeasySdkBridge } from "../types";
+import { emptyState } from "./empty";
 
 function bridge(): ShipeasySdkBridge | null {
   return (window as unknown as { __shipeasy?: ShipeasySdkBridge }).__shipeasy ?? null;
@@ -38,7 +39,13 @@ export async function renderGatesPanel(container: Element, api: DevtoolsApi): Pr
   }
 
   if (gates.length === 0) {
-    container.innerHTML = `<div class="empty">No gates found for this project.</div>`;
+    container.innerHTML = emptyState({
+      icon: "⛳",
+      title: "No gates yet",
+      message: "Feature flags let you gate releases and ramp rollouts safely.",
+      ctaLabel: "Create new gate",
+      ctaHref: `${api.adminUrl}/dashboard/gates/new`,
+    });
     return;
   }
 

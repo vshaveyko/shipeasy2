@@ -30,6 +30,7 @@ const EXPERIMENTS = [
   {
     id: "e1",
     name: "checkout-flow",
+    universe: "web-users",
     status: "running" as const,
     groups: [
       { name: "variant-a", weight: 50 },
@@ -40,6 +41,7 @@ const EXPERIMENTS = [
   {
     id: "e2",
     name: "homepage-hero",
+    universe: "web-users",
     status: "draft" as const,
     groups: [{ name: "variant-a", weight: 100 }],
     updatedAt: "2024-01-01T00:00:00Z",
@@ -318,19 +320,38 @@ test.describe("DevTools — Configs panel", () => {
 // ── Experiments panel ─────────────────────────────────────────────────────────
 
 test.describe("DevTools — Experiments panel", () => {
-  test("lists running and draft experiments in separate sections", async ({ page }) => {
+  test("one tab per universe, active tab lists experiments for that universe", async ({ page }) => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
     await openPanel(page, "Experiments");
-    // Experiments tab is active by default
+
+    // Tabs: one per universe defined in UNIVERSES mock
+    await expect(page.locator('.tab[data-universe="web-users"]')).toBeVisible();
+    await expect(page.locator('.tab[data-universe="beta-cohort"]')).toBeVisible();
+    await expect(page.locator('.tab[data-universe="web-users"].active')).toBeVisible();
+
+    // Both experiments are bound to web-users — they appear in the active tab.
     await expect(page.locator(".sec-head", { hasText: "Running" })).toBeVisible();
     await expect(page.locator(".sec-head", { hasText: "Other" })).toBeVisible();
     await expect(page.getByText("checkout-flow")).toBeVisible();
     await expect(page.getByText("homepage-hero")).toBeVisible();
   });
 
-  test("running experiment shows live variant badge and force-variant select", async ({ page }) => {
+  test("switching to a universe with no experiments shows empty state", async ({ page }) => {
+    await setup(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "Experiments");
+
+    await page.locator('.tab[data-universe="beta-cohort"]').click();
+
+    await expect(page.getByText(/No experiments in .beta-cohort. yet/)).toBeVisible();
+    const cta = page.getByRole("link", { name: /Create new experiment/i });
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/experiments\/new$/);
+  });
+
+  test("running experiment shows force-variant select with default selected", async ({ page }) => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
@@ -365,88 +386,304 @@ test.describe("DevTools — Experiments panel", () => {
     expect(await page.evaluate(() => sessionStorage.getItem("se_exp_checkout-flow"))).toBeNull();
   });
 
-  test("Universes tab lists universes", async ({ page }) => {
-    await setup(page);
+  test("no universes → single empty state prompting Create a universe", async ({ page }) => {
+    await page.addInitScript((s: typeof MOCK_SESSION) => {
+      sessionStorage.setItem("se_dt_session", JSON.stringify(s));
+    }, MOCK_SESSION);
+    await page.route("**/api/admin/experiments", (r) => r.fulfill({ json: [] }));
+    await page.route("**/api/admin/universes", (r) => r.fulfill({ json: [] }));
+
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
     await openPanel(page, "Experiments");
 
-    await page.locator('.tab[data-tab="universes"]').click();
-    await expect(page.getByText("web-users")).toBeVisible();
-    await expect(page.getByText("beta-cohort")).toBeVisible();
+    await expect(page.getByText("No universes yet")).toBeVisible();
+    const cta = page.getByRole("link", { name: /Create a universe/i });
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/experiments\/universes$/);
+    // No per-universe tabs render in this state.
+    await expect(page.locator(".tab[data-universe]")).toHaveCount(0);
   });
 });
 
 // ── i18n panel ────────────────────────────────────────────────────────────────
 
 test.describe("DevTools — i18n panel", () => {
-  test("Labels tab shows in-place editing toggle, profile switcher, and drafts", async ({
-    page,
-  }) => {
+  test("one tab per chunk, active tab shows tree of second-level branches", async ({ page }) => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
     await openPanel(page, "i18n");
-    // Labels tab is active by default
 
-    await expect(page.getByText("Edit labels in page")).toBeVisible();
+    // KEYS mock contains common.save, common.cancel, nav.home → chunks = common, nav
+    await expect(page.locator('.tab[data-chunk="common"]')).toBeVisible();
+    await expect(page.locator('.tab[data-chunk="nav"]')).toBeVisible();
 
-    const sel = page.locator("select#se-profile-sel");
-    await expect(sel).toBeVisible();
-    await expect(sel.locator('option[value="p1"]')).toHaveCount(1);
-    await expect(sel.locator('option[value="p2"]')).toHaveCount(1);
+    // "common" is the first chunk alphabetically and auto-selected.
+    await expect(page.locator('.tab[data-chunk="common"].active')).toBeVisible();
 
-    await expect(page.getByText("Spring release")).toBeVisible();
+    // Tree rows render the second-segment keys (save, cancel) as leaves with values.
+    await expect(page.locator('.tree-row.leaf[data-key="common.save"]')).toBeVisible();
+    await expect(page.locator('.tree-row.leaf[data-key="common.cancel"]')).toBeVisible();
+    // Switching tab renders the nav chunk instead.
+    await page.locator('.tab[data-chunk="nav"]').click();
+    await expect(page.locator('.tree-row.leaf[data-key="nav.home"]')).toBeVisible();
   });
 
-  test("profile override writes to sessionStorage", async ({ page }) => {
+  test("nested chunks render as branches with nested leaf rows", async ({ page }) => {
+    // Add a deeply-nested mock for this test only.
+    const DEEP = [
+      {
+        id: "dk1",
+        key: "checkout.purchase.title",
+        value: "Complete",
+        profileId: "p1",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+      {
+        id: "dk2",
+        key: "checkout.purchase.subtitle",
+        value: "Enter details",
+        profileId: "p1",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+      {
+        id: "dk3",
+        key: "checkout.cart.empty",
+        value: "Empty",
+        profileId: "p1",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+    await setup(page);
+    await page.route("**/api/admin/i18n/keys**", (r) => r.fulfill({ json: DEEP }));
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "i18n");
+
+    await page.locator('.tab[data-chunk="checkout"]').click();
+
+    // Branches "purchase" and "cart" at depth 0
+    await expect(page.locator(".tree-row.branch", { hasText: "purchase" })).toBeVisible();
+    await expect(page.locator(".tree-row.branch", { hasText: "cart" })).toBeVisible();
+    // Leaves at depth 1 with their values
+    await expect(page.locator('.tree-row.leaf[data-key="checkout.purchase.title"]')).toBeVisible();
+    await expect(
+      page.locator('.tree-row.leaf[data-key="checkout.purchase.subtitle"]'),
+    ).toBeVisible();
+    await expect(page.locator('.tree-row.leaf[data-key="checkout.cart.empty"]')).toBeVisible();
+  });
+
+  test("subfoot exposes Edit-labels toggle, profile select and draft select", async ({ page }) => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
     await openPanel(page, "i18n");
 
-    await page.locator("select#se-profile-sel").selectOption("p2");
+    const subfoot = page.locator(".panel-subfoot");
+    await expect(subfoot).toBeVisible();
+    await expect(subfoot.locator("#se-edit-toggle")).toBeVisible();
+    await expect(subfoot.locator("#se-profile-sel")).toBeVisible();
+    await expect(subfoot.locator("#se-draft-sel")).toBeVisible();
 
+    // All three controls live in the footer bar, not in the body.
+    await expect(page.locator(".panel-body #se-edit-toggle")).toHaveCount(0);
+  });
+
+  test("profile select writes to sessionStorage", async ({ page }) => {
+    await setup(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "i18n");
+
+    await page.locator("#se-profile-sel").selectOption("p2");
     expect(await page.evaluate(() => sessionStorage.getItem("se_i18n_profile"))).toBe("p2");
   });
 
-  test("in-place editing toggle adds highlight style to [data-label] elements", async ({
+  test("draft select writes to sessionStorage", async ({ page }) => {
+    await setup(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "i18n");
+
+    await page.locator("#se-draft-sel").selectOption("d1");
+    expect(await page.evaluate(() => sessionStorage.getItem("se_i18n_draft"))).toBe("d1");
+  });
+
+  test("Edit-labels toggle decorates [data-label] elements on the page", async ({ page }) => {
+    await setup(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+
+    // Inject a fake label on the page so the detector has something to target.
+    await page.evaluate(() => {
+      const el = document.createElement("span");
+      el.id = "fake-label";
+      el.setAttribute("data-label", "common.save");
+      el.setAttribute("data-label-desc", "Primary save action");
+      el.textContent = "Save";
+      document.body.appendChild(el);
+    });
+
+    await openPanel(page, "i18n");
+
+    // Before toggle: no decoration class.
+    await expect(page.locator("#fake-label")).not.toHaveClass(/__se_label_target/);
+
+    await page.locator("#se-edit-toggle").click();
+    await expect(page.locator("#se-edit-toggle")).toHaveClass(/on/);
+    await expect(page.locator("#fake-label")).toHaveClass(/__se_label_target/);
+
+    // Toggle off removes the decoration.
+    await page.locator("#se-edit-toggle").click();
+    await expect(page.locator("#fake-label")).not.toHaveClass(/__se_label_target/);
+  });
+
+  test("clicking a decorated label opens the edit popper with current value + description", async ({
     page,
   }) => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
+    await page.evaluate(() => {
+      const el = document.createElement("span");
+      el.id = "fake-label";
+      el.setAttribute("data-label", "common.save");
+      el.setAttribute("data-label-desc", "Primary save action");
+      el.textContent = "Save";
+      // Pin near the top-left so the popper has room to open below.
+      el.style.cssText = "position:fixed;top:40px;left:40px;padding:4px 8px;background:#eee";
+      document.body.appendChild(el);
+    });
+
     await openPanel(page, "i18n");
+    await page.locator("#se-edit-toggle").click();
 
-    await page.locator("#se-inplace-sw").click();
+    await page.locator("#fake-label").click();
 
-    const styleExists = await page.evaluate(
-      () => document.getElementById("__se_inplace_style") !== null,
-    );
-    expect(styleExists).toBe(true);
-
-    await page.locator("#se-inplace-sw").click();
-    const styleGone = await page.evaluate(
-      () => document.getElementById("__se_inplace_style") === null,
-    );
-    expect(styleGone).toBe(true);
+    const popper = page.locator(".label-popper");
+    await expect(popper).toBeVisible();
+    await expect(popper.locator(".lp-key")).toHaveText("common.save");
+    await expect(popper.getByText("Primary save action")).toBeVisible();
+    await expect(popper.locator(".lp-input")).toHaveValue("Save");
   });
 
-  test("Chunks tab lists translation keys grouped by namespace", async ({ page }) => {
+  test("Save in the popper updates the page text and stores an override", async ({ page }) => {
     await setup(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await page.evaluate(() => {
+      const el = document.createElement("span");
+      el.id = "fake-label";
+      el.setAttribute("data-label", "common.save");
+      el.textContent = "Save";
+      el.style.cssText = "position:fixed;top:40px;left:40px;padding:4px 8px;background:#eee";
+      document.body.appendChild(el);
+    });
+
+    await openPanel(page, "i18n");
+    await page.locator("#se-edit-toggle").click();
+    await page.locator("#fake-label").click();
+
+    await page.locator(".label-popper .lp-input").fill("Submit");
+    await page.locator('.label-popper [data-action="save"]').click();
+
+    // Popper closed, DOM text updated, override persisted.
+    await expect(page.locator(".label-popper")).toHaveCount(0);
+    await expect(page.locator("#fake-label")).toHaveText("Submit");
+    expect(await page.evaluate(() => sessionStorage.getItem("se_i18n_label_common.save"))).toBe(
+      "Submit",
+    );
+  });
+
+  test("Reset in the popper restores the original text and clears the override", async ({
+    page,
+  }) => {
+    await setup(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await page.evaluate(() => {
+      const el = document.createElement("span");
+      el.id = "fake-label";
+      el.setAttribute("data-label", "common.save");
+      el.textContent = "Save";
+      el.style.cssText = "position:fixed;top:40px;left:40px;padding:4px 8px;background:#eee";
+      document.body.appendChild(el);
+    });
+
+    await openPanel(page, "i18n");
+    await page.locator("#se-edit-toggle").click();
+
+    // First edit cycle to set the override
+    await page.locator("#fake-label").click();
+    await page.locator(".label-popper .lp-input").fill("Submit");
+    await page.locator('.label-popper [data-action="save"]').click();
+    await expect(page.locator("#fake-label")).toHaveText("Submit");
+
+    // Re-open and reset
+    await page.locator("#fake-label").click();
+    await page.locator('.label-popper [data-action="reset"]').click();
+
+    await expect(page.locator("#fake-label")).toHaveText("Save");
+    expect(
+      await page.evaluate(() => sessionStorage.getItem("se_i18n_label_common.save")),
+    ).toBeNull();
+  });
+});
+
+// ── Empty states ──────────────────────────────────────────────────────────────
+
+test.describe("DevTools — empty states", () => {
+  async function setupEmpty(page: Page): Promise<void> {
+    await page.addInitScript((s: typeof MOCK_SESSION) => {
+      sessionStorage.setItem("se_dt_session", JSON.stringify(s));
+    }, MOCK_SESSION);
+    // Every admin endpoint returns an empty list
+    await page.route("**/api/admin/gates", (r) => r.fulfill({ json: [] }));
+    await page.route("**/api/admin/configs", (r) => r.fulfill({ json: [] }));
+    await page.route("**/api/admin/experiments", (r) => r.fulfill({ json: [] }));
+    await page.route("**/api/admin/universes", (r) => r.fulfill({ json: [] }));
+    await page.route("**/api/admin/i18n/profiles", (r) => r.fulfill({ json: [] }));
+    await page.route("**/api/admin/i18n/drafts", (r) => r.fulfill({ json: [] }));
+    await page.route("**/api/admin/i18n/keys**", (r) => r.fulfill({ json: [] }));
+  }
+
+  test("Gates panel shows empty state with Create new gate CTA", async ({ page }) => {
+    await setupEmpty(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "Gates");
+
+    await expect(page.getByText("No gates yet")).toBeVisible();
+    const cta = page.getByRole("link", { name: /Create new gate/i });
+    await expect(cta).toBeVisible();
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/gates\/new$/);
+    await expect(cta).toHaveAttribute("target", "_blank");
+  });
+
+  test("Configs panel shows empty state with Create new config CTA", async ({ page }) => {
+    await setupEmpty(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "Configs");
+
+    await expect(page.getByText("No configs yet")).toBeVisible();
+    const cta = page.getByRole("link", { name: /Create new config/i });
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/configs\/values\/new$/);
+  });
+
+  // The Experiments panel's no-universes empty state is covered directly in
+  // the Experiments panel describe block (it's now the whole-panel empty
+  // state, not a per-tab one).
+
+  test("i18n panel shows empty state with Create new key CTA", async ({ page }) => {
+    await setupEmpty(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
     await openPanel(page, "i18n");
 
-    await page.locator('.tab[data-tab="chunks"]').click();
-
-    // Namespace section headers
-    await expect(page.locator(".sec-head", { hasText: "common" })).toBeVisible();
-    await expect(page.locator(".sec-head", { hasText: "nav" })).toBeVisible();
-    // Individual keys
-    await expect(page.getByText("common.save")).toBeVisible();
-    await expect(page.getByText("common.cancel")).toBeVisible();
-    await expect(page.getByText("nav.home")).toBeVisible();
+    await expect(page.getByText("No translation keys yet")).toBeVisible();
+    const cta = page.getByRole("link", { name: /Create new key/i });
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/i18n\/keys$/);
   });
 });
 

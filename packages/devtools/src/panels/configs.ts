@@ -1,6 +1,7 @@
 import { DevtoolsApi } from "../api";
 import { getConfigOverride, setConfigOverride } from "../overrides";
 import type { ConfigRecord } from "../types";
+import { emptyState } from "./empty";
 
 function displayValue(v: unknown): string {
   const s = typeof v === "string" ? v : JSON.stringify(v);
@@ -25,7 +26,13 @@ export async function renderConfigsPanel(container: Element, api: DevtoolsApi): 
   }
 
   if (configs.length === 0) {
-    container.innerHTML = `<div class="empty">No configs found for this project.</div>`;
+    container.innerHTML = emptyState({
+      icon: "⚙",
+      title: "No configs yet",
+      message: "Remote config values you can tweak per-session without redeploying.",
+      ctaLabel: "Create new config",
+      ctaHref: `${api.adminUrl}/dashboard/configs/values/new`,
+    });
     return;
   }
 

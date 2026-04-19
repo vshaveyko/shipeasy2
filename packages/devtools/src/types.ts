@@ -31,6 +31,8 @@ export interface ConfigRecord {
 export interface ExperimentRecord {
   id: string;
   name: string;
+  /** Name of the universe this experiment runs in. */
+  universe: string;
   status: "draft" | "running" | "stopped" | "archived";
   groups: Array<{ name: string; weight: number }>;
   updatedAt: string;
