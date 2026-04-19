@@ -70,14 +70,31 @@ export const STYLES = `
 .panel:not(.open)[data-edge="bottom"] { transform: translateY(14px); }
 .panel.open { opacity: 1; pointer-events: auto; }
 
-/* Resize handle — position/size/cursor set by JS */
+/* Resize handle — position/size/cursor set by JS.
+   A centered pill is always visible so the affordance is discoverable. */
 .resize-handle {
   position: absolute;
   z-index: 10;
   background: transparent;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.resize-handle:hover, .resize-handle.dragging { background: rgba(124,58,237,0.25); }
+.resize-handle::before {
+  content: "";
+  background: #64748b;
+  border-radius: 999px;
+  opacity: 0.9;
+  transition: opacity 0.15s, background 0.15s, transform 0.15s;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+}
+.resize-handle[data-dir="ew"]::before { width: 4px;  height: 56px; }
+.resize-handle[data-dir="ns"]::before { width: 56px; height: 4px;  }
+.resize-handle:hover, .resize-handle.dragging { background: rgba(124,58,237,0.18); }
+.resize-handle:hover::before, .resize-handle.dragging::before {
+  background: #a78bfa; opacity: 1; transform: scale(1.15);
+}
 
 /* Panel inner layout */
 .panel-inner {

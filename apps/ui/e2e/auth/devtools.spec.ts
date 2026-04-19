@@ -176,8 +176,17 @@ test.describe("DevTools — activation", () => {
 // ── Auth prompt ───────────────────────────────────────────────────────────────
 
 test.describe("DevTools — auth prompt", () => {
-  test("shows connect prompt when no session is stored", async ({ page }) => {
-    // No addInitScript — session is absent
+  test("shows connect prompt when cross-origin and no session is stored", async ({ page }) => {
+    // Force cross-origin so the device-auth flow is exercised (otherwise the
+    // same-origin default uses the Auth.js session cookie and bypasses auth).
+    await page.addInitScript(() => {
+      (
+        window as unknown as { __se_devtools_config: { adminUrl: string; edgeUrl: string } }
+      ).__se_devtools_config = {
+        adminUrl: "https://app.example-other-origin.test",
+        edgeUrl: "https://edge.example-other-origin.test",
+      };
+    });
     await page.route("**/api/admin/gates", (r) => r.fulfill({ json: GATES }));
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);

@@ -9,15 +9,20 @@ import type {
 } from "./types";
 
 export class DevtoolsApi {
+  private readonly sameOrigin: boolean;
+
   constructor(
     private readonly adminUrl: string,
     private readonly token: string,
-  ) {}
+  ) {
+    this.sameOrigin = isSameOrigin(adminUrl);
+  }
 
   private async get<T>(path: string): Promise<T> {
-    const res = await fetch(`${this.adminUrl}${path}`, {
-      headers: { Authorization: `Bearer ${this.token}` },
-    });
+    const init: RequestInit = this.sameOrigin
+      ? { credentials: "include" }
+      : { headers: { Authorization: `Bearer ${this.token}` } };
+    const res = await fetch(`${this.adminUrl}${path}`, init);
     if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
     const body = await res.json();
     // Unwrap {data:[...]} or plain array
@@ -51,5 +56,14 @@ export class DevtoolsApi {
   keys(profileId?: string): Promise<KeyRecord[]> {
     const qs = profileId ? `?profile_id=${encodeURIComponent(profileId)}` : "";
     return this.get(`/api/admin/i18n/keys${qs}`);
+  }
+}
+
+export function isSameOrigin(url: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch {
+    return false;
   }
 }

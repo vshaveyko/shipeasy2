@@ -1,7 +1,7 @@
 import { STYLES } from "./styles";
 import { loadSession, clearSession, startDeviceAuth } from "./auth";
 import { clearAllOverrides } from "./overrides";
-import { DevtoolsApi } from "./api";
+import { DevtoolsApi, isSameOrigin } from "./api";
 import { renderGatesPanel } from "./panels/gates";
 import { renderConfigsPanel } from "./panels/configs";
 import { renderExperimentsPanel } from "./panels/experiments";
@@ -174,16 +174,17 @@ function applyLayout(
   // ── Resize handle ──────────────────────────────────────────────────────────
   const rs = resizeHandle.style;
   rs.top = rs.bottom = rs.left = rs.right = rs.width = rs.height = "";
+  resizeHandle.dataset.dir = isVert ? "ew" : "ns";
 
   if (isVert) {
-    rs.width = "6px";
+    rs.width = "10px";
     rs.top = "0";
     rs.bottom = "0";
     resizeHandle.style.cursor = "ew-resize";
     if (edge === "right") rs.left = "0";
     else rs.right = "0";
   } else {
-    rs.height = "6px";
+    rs.height = "10px";
     rs.left = "0";
     rs.right = "0";
     resizeHandle.style.cursor = "ns-resize";
@@ -219,7 +220,13 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   // ── State ────────────────────────────────────────────────────────────────────
   let state: OverlayState = loadOverlayState();
   let activeKey: PanelKey | null = null;
-  let session: DevtoolsSession | null = loadSession();
+  // When the admin is on the current origin, the Auth.js session cookie is
+  // already sufficient — skip the device-auth flow and use credentials-include
+  // requests. The sentinel token is ignored by DevtoolsApi in that case.
+  const sameOriginAdmin = isSameOrigin(opts.adminUrl);
+  let session: DevtoolsSession | null = sameOriginAdmin
+    ? { token: "", projectId: "same-origin" }
+    : loadSession();
 
   // ── Initial layout ────────────────────────────────────────────────────────────
   // Defer one frame so getBoundingClientRect is accurate after first paint
