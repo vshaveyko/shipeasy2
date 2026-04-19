@@ -184,8 +184,12 @@ test.describe("DevTools — auth prompt", () => {
 
     await openPanel(page, "Gates");
     await expect(page.getByText("Connect to ShipEasy")).toBeVisible();
-    await expect(page.getByText(/sign in with your shipeasy account/i)).toBeVisible();
+    await expect(page.getByText(/sign in to inspect and override/i)).toBeVisible();
     await expect(page.locator("button#se-connect")).toBeVisible();
+    // Signed-out auth prompt uses centred auth-mode body and has no footer
+    await expect(page.locator(".panel-body.auth-mode")).toBeVisible();
+    await expect(page.getByText("Sign out")).toBeHidden();
+    await expect(page.getByText("Clear overrides")).toBeHidden();
   });
 });
 

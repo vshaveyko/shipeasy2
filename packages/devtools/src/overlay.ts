@@ -379,14 +379,17 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
 
   function renderAuthPrompt(returnTo: PanelKey) {
     const { icon, label } = PANELS[returnTo];
+    // Centred layout, no footer — Sign out / Clear overrides are signed-in only.
     panelInner.innerHTML = `
       ${panelHeader(icon, label)}
-      <div class="panel-body">
+      <div class="panel-body auth-mode">
         <div class="auth-box">
+          <div class="auth-icon">🔐</div>
           <div class="auth-title">Connect to ShipEasy</div>
-          <div class="auth-desc">Sign in with your ShipEasy account to inspect and override feature flags, configs, experiments, and translations.</div>
-          <button class="ibtn pri" id="se-connect" style="width:100%">Connect →</button>
+          <div class="auth-desc">Sign in to inspect and override flags, configs, experiments, and translations.</div>
+          <button class="ibtn pri" id="se-connect">Connect →</button>
           <div class="auth-status" id="se-auth-status"></div>
+          <div class="auth-err" id="se-auth-err"></div>
         </div>
       </div>`;
 
@@ -394,8 +397,11 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     panelInner.querySelector("#se-connect")!.addEventListener("click", async () => {
       const btn = panelInner.querySelector<HTMLButtonElement>("#se-connect")!;
       const status = panelInner.querySelector<HTMLElement>("#se-auth-status")!;
+      const errEl = panelInner.querySelector<HTMLElement>("#se-auth-err")!;
       btn.disabled = true;
-      btn.textContent = "Opening browser…";
+      btn.textContent = "Opening…";
+      status.textContent = "";
+      errEl.textContent = "";
       try {
         session = await startDeviceAuth(opts, () => {
           status.textContent = "Waiting for approval in the opened tab…";
@@ -403,7 +409,8 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         });
         renderPanelContent(returnTo);
       } catch (err) {
-        status.textContent = `Auth failed: ${String(err)}`;
+        errEl.textContent = err instanceof Error ? err.message : String(err);
+        status.textContent = "";
         btn.disabled = false;
         btn.textContent = "Retry";
       }

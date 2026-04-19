@@ -315,18 +315,36 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   padding: 10px 8px 4px;
 }
 
-/* Auth */
+/* Auth \u2014 vertically centered inside panel-body; no footer renders here */
+.panel-body.auth-mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
 .auth-box {
-  padding: 32px 20px;
+  width: 100%;
+  max-width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  align-items: center;
+  gap: 10px;
+  align-items: stretch;
   text-align: center;
 }
-.auth-title { font-size: 15px; font-weight: 700; color: #f1f5f9; }
-.auth-desc  { font-size: 12px; color: #475569; line-height: 1.6; }
-.auth-status { font-size: 11px; color: #64748b; }
+.auth-icon {
+  width: 36px; height: 36px;
+  margin: 0 auto 4px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.auth-title { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+.auth-desc  { font-size: 11.5px; color: #64748b; line-height: 1.5; }
+.auth-status { font-size: 11px; color: #64748b; min-height: 14px; }
+.auth-err    { font-size: 11px; color: #f87171; line-height: 1.4; }
 
 /* States */
 .loading { text-align: center; padding: 24px; color: #334155; font-size: 12px; }
@@ -392,8 +410,8 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
           if (y.origin !== n) return;
           let v = y.data;
           if (!v || v.type !== "se:devtools-auth" || !v.token || !v.projectId) return;
-          let E = { token: v.token, projectId: v.projectId };
-          (Ee(E), u(null, E));
+          let L = { token: v.token, projectId: v.projectId };
+          (Ee(L), u(null, L));
         }
         window.addEventListener("message", f);
         let x = setInterval(() => {
@@ -405,8 +423,8 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       })
     );
   }
-  var $ = "se_l_";
-  function k(e) {
+  var k = "se_l_";
+  function T(e) {
     for (let t of [sessionStorage, localStorage])
       try {
         let n = t.getItem(e);
@@ -425,7 +443,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         t.removeItem(e);
       } catch {}
   }
-  function M() {
+  function O() {
     window.dispatchEvent(new CustomEvent("se:override:change"));
   }
   function B() {
@@ -446,15 +464,15 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       : new URLSearchParams(window.location.search).has("se-devtools");
   }
   function q(e) {
-    let t = k(`se_gate_${e}`) ?? k(`${$}gate_${e}`);
+    let t = T(`se_gate_${e}`) ?? T(`${k}gate_${e}`);
     return t === null ? null : t === "true";
   }
   function te(e, t, n = "session") {
-    let s = `${n === "local" ? $ : "se_"}gate_${e}`;
-    (t === null ? A(s) : _(s, String(t), n), M());
+    let s = `${n === "local" ? k : "se_"}gate_${e}`;
+    (t === null ? A(s) : _(s, String(t), n), O());
   }
   function N(e) {
-    let t = k(`se_config_${e}`) ?? k(`${$}config_${e}`);
+    let t = T(`se_config_${e}`) ?? T(`${k}config_${e}`);
     if (t !== null)
       try {
         return JSON.parse(t);
@@ -463,31 +481,31 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       }
   }
   function U(e, t, n = "session") {
-    let s = `${n === "local" ? $ : "se_"}config_${e}`;
-    (t == null ? A(s) : _(s, JSON.stringify(t), n), M());
+    let s = `${n === "local" ? k : "se_"}config_${e}`;
+    (t == null ? A(s) : _(s, JSON.stringify(t), n), O());
   }
   function ne(e) {
-    return k(`se_exp_${e}`) ?? k(`${$}exp_${e}`);
+    return T(`se_exp_${e}`) ?? T(`${k}exp_${e}`);
   }
   function oe(e, t, n = "session") {
-    let s = `${n === "local" ? $ : "se_"}exp_${e}`;
-    (t === null ? A(s) : _(s, t, n), M());
+    let s = `${n === "local" ? k : "se_"}exp_${e}`;
+    (t === null ? A(s) : _(s, t, n), O());
   }
   function re() {
-    return k("se_i18n_profile") ?? k(`${$}i18n_profile`);
+    return T("se_i18n_profile") ?? T(`${k}i18n_profile`);
   }
   function ie(e, t = "session") {
-    let n = `${t === "local" ? $ : "se_"}i18n_profile`;
-    (e === null ? A(n) : _(n, e, t), M());
+    let n = `${t === "local" ? k : "se_"}i18n_profile`;
+    (e === null ? A(n) : _(n, e, t), O());
   }
   function se() {
     for (let e of [sessionStorage, localStorage])
       try {
         [...Object.keys(e)]
-          .filter((t) => t.startsWith("se_") || t.startsWith($))
+          .filter((t) => t.startsWith("se_") || t.startsWith(k))
           .forEach((t) => e.removeItem(t));
       } catch {}
-    M();
+    O();
   }
   var C = class {
     constructor(t, n) {
@@ -528,14 +546,14 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   function Le() {
     return window.__shipeasy ?? null;
   }
-  function $e(e) {
+  function ke(e) {
     let t = q(e.name),
       n = Le()?.getFlag(e.name);
     return (t !== null ? t : (n ?? e.enabled))
       ? '<span class="badge badge-on">ON</span>'
       : '<span class="badge badge-off">OFF</span>';
   }
-  function ke(e, t) {
+  function $e(e, t) {
     let n = (s) => (t === (s === "on" ? !0 : s === "off" ? !1 : null) ? " sel" : "");
     return `
     <div class="tog" data-gate="${e}">
@@ -566,8 +584,8 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             <div class="row-name">${o.name}</div>
             <div class="row-sub">${o.rolloutPct}% rollout</div>
           </div>
-          ${$e(o)}
-          ${ke(o.name, q(o.name))}
+          ${ke(o)}
+          ${$e(o.name, q(o.name))}
         </div>`,
         )
         .join("")),
@@ -776,10 +794,10 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         r && i.activeTab === "experiments" && de(r, n);
       }));
   }
-  var O = !1,
+  var P = !1,
     D = null;
   function Ae(e) {
-    if (((O = e), D && (D(), (D = null)), !e)) return;
+    if (((P = e), D && (D(), (D = null)), !e)) return;
     let t = document.createElement("style");
     ((t.id = "__se_inplace_style"),
       (t.textContent =
@@ -813,7 +831,7 @@ New value:`,
       (D = () => {
         (document.removeEventListener("click", n, !0),
           document.getElementById("__se_inplace_style")?.remove(),
-          (O = !1));
+          (P = !1));
       }));
   }
   function pe(e, t, n) {
@@ -829,10 +847,10 @@ New value:`,
     <div class="row">
       <div class="row-name">Edit labels in page</div>
       <div class="sw" id="se-inplace-sw">
-        <div class="sw-track${O ? " on" : ""}">
+        <div class="sw-track${P ? " on" : ""}">
           <div class="sw-thumb"></div>
         </div>
-        <span class="sw-label">${O ? "On" : "Off"}</span>
+        <span class="sw-label">${P ? "On" : "Off"}</span>
       </div>
     </div>
 
@@ -860,7 +878,7 @@ New value:`,
     }
   `),
       e.querySelector("#se-inplace-sw")?.addEventListener("click", () => {
-        (Ae(!O), pe(e, t, n));
+        (Ae(!P), pe(e, t, n));
       }),
       e.querySelector("#se-profile-sel")?.addEventListener("change", (o) => {
         let r = o.target.value || null;
@@ -934,9 +952,9 @@ New value:`,
       i18n: { icon: "\u{1F310}", label: "i18n" },
     },
     be = "se_l_overlay",
-    W = 240,
+    j = 240,
     fe = 580,
-    j = 180,
+    W = 180,
     ge = 700,
     me = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
   function De() {
@@ -965,16 +983,16 @@ New value:`,
       a = Math.max(5, Math.min(95, o === "left" || o === "right" ? (t / s) * 100 : (e / n) * 100));
     return { edge: o, offsetPct: a };
   }
-  function P(e, t, n, s) {
+  function R(e, t, n, s) {
     let { edge: i, offsetPct: o, panelWidth: r, panelHeight: a } = s,
       c = window.innerWidth,
       u = window.innerHeight,
       f = i === "left" || i === "right",
-      x = Math.max(W, Math.min(r, c - 80)),
-      S = Math.max(j, Math.min(a, u - 40)),
+      x = Math.max(j, Math.min(r, c - 80)),
+      S = Math.max(W, Math.min(a, u - 40)),
       y = (o / 100) * (f ? u : c),
       v = e.getBoundingClientRect(),
-      E = f ? v.width || 52 : v.height || 52,
+      L = f ? v.width || 52 : v.height || 52,
       l = e.style;
     ((l.top = l.bottom = l.left = l.right = l.transform = ""),
       (l.borderTop = l.borderBottom = l.borderLeft = l.borderRight = ""),
@@ -1017,28 +1035,28 @@ New value:`,
       i === "right")
     ) {
       let d = Math.max(10, Math.min(u - S - 10, y - S / 2));
-      ((p.right = E + "px"),
+      ((p.right = L + "px"),
         (p.top = d + "px"),
         (p.borderRadius = "10px 0 0 10px"),
         (p.borderRight = "none"),
         (p.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
     } else if (i === "left") {
       let d = Math.max(10, Math.min(u - S - 10, y - S / 2));
-      ((p.left = E + "px"),
+      ((p.left = L + "px"),
         (p.top = d + "px"),
         (p.borderRadius = "0 10px 10px 0"),
         (p.borderLeft = "none"),
         (p.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
     } else if (i === "top") {
       let d = Math.max(10, Math.min(c - x - 10, y - x / 2));
-      ((p.top = E + "px"),
+      ((p.top = L + "px"),
         (p.left = d + "px"),
         (p.borderRadius = "0 0 10px 10px"),
         (p.borderTop = "none"),
         (p.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
     } else {
       let d = Math.max(10, Math.min(c - x - 10, y - x / 2));
-      ((p.bottom = E + "px"),
+      ((p.bottom = L + "px"),
         (p.left = d + "px"),
         (p.borderRadius = "10px 10px 0 0"),
         (p.borderBottom = "none"),
@@ -1074,7 +1092,7 @@ New value:`,
     let a = De(),
       c = null,
       u = V();
-    requestAnimationFrame(() => P(s, i, o, a));
+    requestAnimationFrame(() => R(s, i, o, a));
     let f = document.createElement("div");
     ((f.className = "drag-handle"),
       (f.title = "Drag to reposition"),
@@ -1083,8 +1101,8 @@ New value:`,
       f.addEventListener("mousedown", (d) => {
         (d.preventDefault(), f.classList.add("dragging"));
         let b = (g) => {
-            let { edge: h, offsetPct: L } = ze(g.clientX, g.clientY);
-            ((a = { ...a, edge: h, offsetPct: L }), P(s, i, o, a));
+            let { edge: h, offsetPct: E } = ze(g.clientX, g.clientY);
+            ((a = { ...a, edge: h, offsetPct: E }), R(s, i, o, a));
           },
           w = () => {
             (f.classList.remove("dragging"),
@@ -1100,7 +1118,7 @@ New value:`,
       ((g.className = "btn"),
         (g.title = w),
         (g.textContent = b),
-        g.addEventListener("click", () => E(d)),
+        g.addEventListener("click", () => L(d)),
         s.appendChild(g),
         x.set(d, g));
     }
@@ -1110,39 +1128,39 @@ New value:`,
         w = d.clientY,
         g = a.panelWidth,
         h = a.panelHeight,
-        { edge: L } = a,
-        H = (G) => {
+        { edge: E } = a,
+        $ = (G) => {
           let J = G.clientX - b,
             Y = G.clientY - w,
-            T = { ...a };
-          (L === "right" && (T.panelWidth = Math.max(W, Math.min(fe, g - J))),
-            L === "left" && (T.panelWidth = Math.max(W, Math.min(fe, g + J))),
-            L === "top" && (T.panelHeight = Math.max(j, Math.min(ge, h + Y))),
-            L === "bottom" && (T.panelHeight = Math.max(j, Math.min(ge, h - Y))),
-            (a = T),
-            P(s, i, o, a));
+            M = { ...a };
+          (E === "right" && (M.panelWidth = Math.max(j, Math.min(fe, g - J))),
+            E === "left" && (M.panelWidth = Math.max(j, Math.min(fe, g + J))),
+            E === "top" && (M.panelHeight = Math.max(W, Math.min(ge, h + Y))),
+            E === "bottom" && (M.panelHeight = Math.max(W, Math.min(ge, h - Y))),
+            (a = M),
+            R(s, i, o, a));
         },
         F = () => {
           (o.classList.remove("dragging"),
-            document.removeEventListener("mousemove", H),
+            document.removeEventListener("mousemove", $),
             document.removeEventListener("mouseup", F),
             ve(a));
         };
-      (document.addEventListener("mousemove", H), document.addEventListener("mouseup", F));
+      (document.addEventListener("mousemove", $), document.addEventListener("mouseup", F));
     });
-    let S = () => P(s, i, o, a);
+    let S = () => R(s, i, o, a);
     window.addEventListener("resize", S);
     function y(d) {
       ((c = d),
         x.forEach((b, w) => b.classList.toggle("active", w === d)),
         i.classList.add("open"),
-        P(s, i, o, a),
+        R(s, i, o, a),
         p(d));
     }
     function v() {
       (i.classList.remove("open"), x.forEach((d) => d.classList.remove("active")), (c = null));
     }
-    function E(d) {
+    function L(d) {
       c === d ? v() : y(d);
     }
     function l(d, b) {
@@ -1181,35 +1199,42 @@ New value:`,
         i18n: () => ue(h, g),
       })
         [d]()
-        .catch((H) => {
-          h.innerHTML = `<div class="err">${String(H)}</div>`;
+        .catch(($) => {
+          h.innerHTML = `<div class="err">${String($)}</div>`;
         });
     }
     function m(d) {
       let { icon: b, label: w } = K[d];
       ((r.innerHTML = `
       ${l(b, w)}
-      <div class="panel-body">
+      <div class="panel-body auth-mode">
         <div class="auth-box">
+          <div class="auth-icon">\u{1F510}</div>
           <div class="auth-title">Connect to ShipEasy</div>
-          <div class="auth-desc">Sign in with your ShipEasy account to inspect and override feature flags, configs, experiments, and translations.</div>
-          <button class="ibtn pri" id="se-connect" style="width:100%">Connect \u2192</button>
+          <div class="auth-desc">Sign in to inspect and override flags, configs, experiments, and translations.</div>
+          <button class="ibtn pri" id="se-connect">Connect \u2192</button>
           <div class="auth-status" id="se-auth-status"></div>
+          <div class="auth-err" id="se-auth-err"></div>
         </div>
       </div>`),
         r.querySelector("#se-close").addEventListener("click", v),
         r.querySelector("#se-connect").addEventListener("click", async () => {
           let g = r.querySelector("#se-connect"),
-            h = r.querySelector("#se-auth-status");
-          ((g.disabled = !0), (g.textContent = "Opening browser\u2026"));
+            h = r.querySelector("#se-auth-status"),
+            E = r.querySelector("#se-auth-err");
+          ((g.disabled = !0),
+            (g.textContent = "Opening\u2026"),
+            (h.textContent = ""),
+            (E.textContent = ""));
           try {
             ((u = await Q(e, () => {
               ((h.textContent = "Waiting for approval in the opened tab\u2026"),
                 (g.textContent = "Waiting\u2026"));
             })),
               p(d));
-          } catch (L) {
-            ((h.textContent = `Auth failed: ${String(L)}`),
+          } catch ($) {
+            ((E.textContent = $ instanceof Error ? $.message : String($)),
+              (h.textContent = ""),
               (g.disabled = !1),
               (g.textContent = "Retry"));
           }
@@ -1240,16 +1265,16 @@ New value:`,
     }
     return typeof window < "u" ? window.location.origin : "";
   }
-  var R = null;
+  var H = null;
   function xe(e = {}) {
-    if (R || typeof window > "u" || typeof document > "u") return;
+    if (H || typeof window > "u" || typeof document > "u") return;
     B();
     let t = { adminUrl: e.adminUrl ?? Ie() },
       { destroy: n } = he(t);
-    R = n;
+    H = n;
   }
   function Be() {
-    (R?.(), (R = null));
+    (H?.(), (H = null));
   }
   function ye(e = {}, t = "Shift+Alt+S") {
     if (typeof window > "u") return () => {};
@@ -1267,7 +1292,7 @@ New value:`,
         f.altKey === o &&
         f.ctrlKey === r &&
         f.metaKey === a &&
-        (R ? Be() : xe(e));
+        (H ? Be() : xe(e));
     }
     return (window.addEventListener("keydown", u), () => window.removeEventListener("keydown", u));
   }

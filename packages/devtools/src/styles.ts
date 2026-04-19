@@ -309,18 +309,36 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   padding: 10px 8px 4px;
 }
 
-/* Auth */
+/* Auth — vertically centered inside panel-body; no footer renders here */
+.panel-body.auth-mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
 .auth-box {
-  padding: 32px 20px;
+  width: 100%;
+  max-width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  align-items: center;
+  gap: 10px;
+  align-items: stretch;
   text-align: center;
 }
-.auth-title { font-size: 15px; font-weight: 700; color: #f1f5f9; }
-.auth-desc  { font-size: 12px; color: #475569; line-height: 1.6; }
-.auth-status { font-size: 11px; color: #64748b; }
+.auth-icon {
+  width: 36px; height: 36px;
+  margin: 0 auto 4px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.auth-title { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+.auth-desc  { font-size: 11.5px; color: #64748b; line-height: 1.5; }
+.auth-status { font-size: 11px; color: #64748b; min-height: 14px; }
+.auth-err    { font-size: 11px; color: #f87171; line-height: 1.4; }
 
 /* States */
 .loading { text-align: center; padding: 24px; color: #334155; font-size: 12px; }
