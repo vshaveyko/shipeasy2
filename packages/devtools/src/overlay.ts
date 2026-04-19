@@ -1,7 +1,7 @@
 import { STYLES } from "./styles";
 import { loadSession, clearSession, startDeviceAuth } from "./auth";
 import { clearAllOverrides } from "./overrides";
-import { DevtoolsApi, isSameOrigin } from "./api";
+import { DevtoolsApi } from "./api";
 import { renderGatesPanel } from "./panels/gates";
 import { renderConfigsPanel } from "./panels/configs";
 import { renderExperimentsPanel } from "./panels/experiments";
@@ -220,13 +220,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   // ── State ────────────────────────────────────────────────────────────────────
   let state: OverlayState = loadOverlayState();
   let activeKey: PanelKey | null = null;
-  // When the admin is on the current origin, the Auth.js session cookie is
-  // already sufficient — skip the device-auth flow and use credentials-include
-  // requests. The sentinel token is ignored by DevtoolsApi in that case.
-  const sameOriginAdmin = isSameOrigin(opts.adminUrl);
-  let session: DevtoolsSession | null = sameOriginAdmin
-    ? { token: "", projectId: "same-origin" }
-    : loadSession();
+  let session: DevtoolsSession | null = loadSession();
 
   // ── Initial layout ────────────────────────────────────────────────────────────
   // Defer one frame so getBoundingClientRect is accurate after first paint

@@ -9,13 +9,10 @@ interface AutoGlobals {
 }
 
 if (typeof window !== "undefined") {
+  // Config override for non-production deployments (local dev, staging).
+  // Set `window.__se_devtools_config = { adminUrl, edgeUrl }` before this
+  // script runs to point the overlay at a different admin/worker pair.
   const cfg = (window as Window & AutoGlobals).__se_devtools_config ?? {};
-  // Default to same-origin so the overlay works out-of-the-box on the admin
-  // app itself and on local dev. Cross-origin (customer apps) should set
-  // window.__se_devtools_config = { adminUrl, edgeUrl } before this script runs.
-  loadOnTrigger({
-    adminUrl: cfg.adminUrl ?? window.location.origin,
-    edgeUrl: cfg.edgeUrl ?? window.location.origin,
-  });
+  loadOnTrigger(cfg);
   (window as Window & AutoGlobals).__se_devtools_ready = true;
 }
