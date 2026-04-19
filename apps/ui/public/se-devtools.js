@@ -388,15 +388,15 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   async function Q(e, t) {
     let n = new URL(e.adminUrl).origin,
       s = window.location.origin,
-      i = window.open(
+      r = window.open(
         `${e.adminUrl}/devtools-auth?origin=${encodeURIComponent(s)}`,
         "shipeasy-devtools-auth",
         "width=460,height=640,noopener=no",
       );
-    if (!i) throw new Error("Popup blocked. Allow popups for this site and try again.");
+    if (!r) throw new Error("Popup blocked. Allow popups for this site and try again.");
     return (
       t(),
-      new Promise((o, r) => {
+      new Promise((o, i) => {
         let c = !1;
         function u(y, v) {
           c ||
@@ -404,7 +404,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             window.removeEventListener("message", f),
             clearInterval(x),
             clearTimeout(S),
-            y ? r(y) : o(v));
+            y ? i(y) : o(v));
         }
         function f(y) {
           if (y.origin !== n) return;
@@ -415,7 +415,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         }
         window.addEventListener("message", f);
         let x = setInterval(() => {
-            i.closed && !c && u(new Error("Sign-in window closed before approval."));
+            r.closed && !c && u(new Error("Sign-in window closed before approval."));
           }, 500),
           S = setTimeout(() => {
             u(new Error("Sign-in timed out after 10 minutes."));
@@ -423,7 +423,7 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       })
     );
   }
-  var k = "se_l_";
+  var $ = "se_l_";
   function T(e) {
     for (let t of [sessionStorage, localStorage])
       try {
@@ -464,15 +464,15 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       : new URLSearchParams(window.location.search).has("se-devtools");
   }
   function q(e) {
-    let t = T(`se_gate_${e}`) ?? T(`${k}gate_${e}`);
+    let t = T(`se_gate_${e}`) ?? T(`${$}gate_${e}`);
     return t === null ? null : t === "true";
   }
   function te(e, t, n = "session") {
-    let s = `${n === "local" ? k : "se_"}gate_${e}`;
+    let s = `${n === "local" ? $ : "se_"}gate_${e}`;
     (t === null ? A(s) : _(s, String(t), n), O());
   }
   function N(e) {
-    let t = T(`se_config_${e}`) ?? T(`${k}config_${e}`);
+    let t = T(`se_config_${e}`) ?? T(`${$}config_${e}`);
     if (t !== null)
       try {
         return JSON.parse(t);
@@ -481,28 +481,28 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       }
   }
   function U(e, t, n = "session") {
-    let s = `${n === "local" ? k : "se_"}config_${e}`;
+    let s = `${n === "local" ? $ : "se_"}config_${e}`;
     (t == null ? A(s) : _(s, JSON.stringify(t), n), O());
   }
   function ne(e) {
-    return T(`se_exp_${e}`) ?? T(`${k}exp_${e}`);
+    return T(`se_exp_${e}`) ?? T(`${$}exp_${e}`);
   }
   function oe(e, t, n = "session") {
-    let s = `${n === "local" ? k : "se_"}exp_${e}`;
+    let s = `${n === "local" ? $ : "se_"}exp_${e}`;
     (t === null ? A(s) : _(s, t, n), O());
   }
   function re() {
-    return T("se_i18n_profile") ?? T(`${k}i18n_profile`);
+    return T("se_i18n_profile") ?? T(`${$}i18n_profile`);
   }
   function ie(e, t = "session") {
-    let n = `${t === "local" ? k : "se_"}i18n_profile`;
+    let n = `${t === "local" ? $ : "se_"}i18n_profile`;
     (e === null ? A(n) : _(n, e, t), O());
   }
   function se() {
     for (let e of [sessionStorage, localStorage])
       try {
         [...Object.keys(e)]
-          .filter((t) => t.startsWith("se_") || t.startsWith(k))
+          .filter((t) => t.startsWith("se_") || t.startsWith($))
           .forEach((t) => e.removeItem(t));
       } catch {}
     O();
@@ -516,7 +516,18 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       let n = await fetch(`${this.adminUrl}${t}`, {
         headers: { Authorization: `Bearer ${this.token}` },
       });
-      if (!n.ok) throw new Error(`${t} \u2192 HTTP ${n.status}`);
+      if (!n.ok) {
+        let r = "";
+        try {
+          let o = await n.json();
+          r = o.detail ?? o.error ?? "";
+        } catch {
+          try {
+            r = (await n.text()).slice(0, 200);
+          } catch {}
+        }
+        throw new Error(`${t} \u2192 HTTP ${n.status}${r ? ` \u2014 ${r}` : ""}`);
+      }
       let s = await n.json();
       return Array.isArray(s) ? s : (s.data ?? s);
     }
@@ -546,14 +557,14 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   function Le() {
     return window.__shipeasy ?? null;
   }
-  function ke(e) {
+  function $e(e) {
     let t = q(e.name),
       n = Le()?.getFlag(e.name);
     return (t !== null ? t : (n ?? e.enabled))
       ? '<span class="badge badge-on">ON</span>'
       : '<span class="badge badge-off">OFF</span>';
   }
-  function $e(e, t) {
+  function ke(e, t) {
     let n = (s) => (t === (s === "on" ? !0 : s === "off" ? !1 : null) ? " sel" : "");
     return `
     <div class="tog" data-gate="${e}">
@@ -584,22 +595,22 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
             <div class="row-name">${o.name}</div>
             <div class="row-sub">${o.rolloutPct}% rollout</div>
           </div>
-          ${ke(o)}
-          ${$e(o.name, q(o.name))}
+          ${$e(o)}
+          ${ke(o.name, q(o.name))}
         </div>`,
         )
         .join("")),
         e.querySelectorAll(".tog-btn").forEach((o) => {
           o.addEventListener("click", () => {
-            let r = o.closest("[data-gate]").dataset.gate,
+            let i = o.closest("[data-gate]").dataset.gate,
               a = o.dataset.v;
-            (te(r, a === "default" ? null : a === "on"), s());
+            (te(i, a === "default" ? null : a === "on"), s());
           });
         }));
     }
     s();
-    let i = () => s();
-    window.addEventListener("se:state:update", i);
+    let r = () => s();
+    window.addEventListener("se:state:update", r);
   }
   function Te(e) {
     let t = typeof e == "string" ? e : JSON.stringify(e);
@@ -622,67 +633,67 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       return;
     }
     let s = new Set();
-    function i() {
+    function r() {
       ((e.innerHTML = n
-        .map((r) => {
-          let a = N(r.name),
-            c = a !== void 0 ? a : r.valueJson,
-            u = s.has(r.name);
+        .map((i) => {
+          let a = N(i.name),
+            c = a !== void 0 ? a : i.valueJson,
+            u = s.has(i.name);
           return `
-          <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${r.name}">
+          <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${i.name}">
             <div style="display:flex;align-items:center;gap:8px">
-              <div class="row-name">${r.name}</div>
-              ${Me(r.name)}
-              ${u ? `<button class="ibtn cancel-edit" data-name="${r.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${r.name}">edit</button>`}
+              <div class="row-name">${i.name}</div>
+              ${Me(i.name)}
+              ${u ? `<button class="ibtn cancel-edit" data-name="${i.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${i.name}">edit</button>`}
             </div>
             ${
               u
                 ? `
-                <textarea class="editor" data-name="${r.name}" rows="3">${JSON.stringify(c, null, 2)}</textarea>
+                <textarea class="editor" data-name="${i.name}" rows="3">${JSON.stringify(c, null, 2)}</textarea>
                 <div class="edit-row">
-                  <button class="ibtn pri save-session" data-name="${r.name}">Save (session)</button>
-                  <button class="ibtn save-local" data-name="${r.name}">Save (local)</button>
-                  ${a !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${r.name}">clear</button>` : ""}
+                  <button class="ibtn pri save-session" data-name="${i.name}">Save (session)</button>
+                  <button class="ibtn save-local" data-name="${i.name}">Save (local)</button>
+                  ${a !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${i.name}">clear</button>` : ""}
                 </div>`
                 : `<div class="mono val-display">${Te(c)}</div>`
             }
           </div>`;
         })
         .join("")),
-        e.querySelectorAll(".edit-btn").forEach((r) => {
-          r.addEventListener("click", () => {
-            (s.add(r.dataset.name), i());
+        e.querySelectorAll(".edit-btn").forEach((i) => {
+          i.addEventListener("click", () => {
+            (s.add(i.dataset.name), r());
           });
         }),
-        e.querySelectorAll(".cancel-edit").forEach((r) => {
-          r.addEventListener("click", () => {
-            (s.delete(r.dataset.name), i());
+        e.querySelectorAll(".cancel-edit").forEach((i) => {
+          i.addEventListener("click", () => {
+            (s.delete(i.dataset.name), r());
           });
         }));
-      function o(r, a) {
-        let c = r.dataset.name,
+      function o(i, a) {
+        let c = i.dataset.name,
           u = e.querySelector(`textarea[data-name="${c}"]`);
         if (u)
           try {
             let f = JSON.parse(u.value);
-            (U(c, f, a), s.delete(c), i());
+            (U(c, f, a), s.delete(c), r());
           } catch {
             u.style.borderColor = "#f87171";
           }
       }
-      (e.querySelectorAll(".save-session").forEach((r) => {
-        r.addEventListener("click", () => o(r, "session"));
+      (e.querySelectorAll(".save-session").forEach((i) => {
+        i.addEventListener("click", () => o(i, "session"));
       }),
-        e.querySelectorAll(".save-local").forEach((r) => {
-          r.addEventListener("click", () => o(r, "local"));
+        e.querySelectorAll(".save-local").forEach((i) => {
+          i.addEventListener("click", () => o(i, "local"));
         }),
-        e.querySelectorAll(".clear-ov").forEach((r) => {
-          r.addEventListener("click", () => {
-            (U(r.dataset.name, null), s.delete(r.dataset.name), i());
+        e.querySelectorAll(".clear-ov").forEach((i) => {
+          i.addEventListener("click", () => {
+            (U(i.dataset.name, null), s.delete(i.dataset.name), r());
           });
         }));
     }
-    i();
+    r();
   }
   function Oe() {
     return window.__shipeasy ?? null;
@@ -692,10 +703,10 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
   }
   function Re(e) {
     let t = ne(e.name),
-      n = ["control", ...e.groups.map((i) => i.name)],
+      n = ["control", ...e.groups.map((r) => r.name)],
       s = [
         `<option value="" ${t === null ? "selected" : ""}>default</option>`,
-        ...n.map((i) => `<option value="${i}" ${t === i ? "selected" : ""}>${i}</option>`),
+        ...n.map((r) => `<option value="${r}" ${t === r ? "selected" : ""}>${r}</option>`),
       ].join("");
     return `<select class="sel-input exp-sel" data-name="${e.name}">${s}</select>`;
   }
@@ -714,11 +725,11 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
     }
     let n = t.filter((o) => o.status === "running"),
       s = t.filter((o) => o.status !== "running");
-    function i(o, r) {
+    function r(o, i) {
       return o.length === 0
         ? ""
         : `
-      <div class="sec-head">${r}</div>
+      <div class="sec-head">${i}</div>
       ${o
         .map(
           (a) => `
@@ -733,11 +744,11 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         )
         .join("")}`;
     }
-    ((e.innerHTML = i(n, "Running") + i(s, "Other")),
+    ((e.innerHTML = r(n, "Running") + r(s, "Other")),
       e.querySelectorAll(".exp-sel").forEach((o) => {
         o.addEventListener("change", () => {
-          let r = o.dataset.name;
-          oe(r, o.value || null);
+          let i = o.dataset.name;
+          oe(i, o.value || null);
         });
       }));
   }
@@ -763,19 +774,19 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
     let n, s;
     try {
       [n, s] = await Promise.all([t.experiments(), t.universes()]);
-    } catch (r) {
-      e.innerHTML = `<div class="err">Failed to load: ${String(r)}</div>`;
+    } catch (i) {
+      e.innerHTML = `<div class="err">Failed to load: ${String(i)}</div>`;
       return;
     }
-    let i = { activeTab: "experiments" };
+    let r = { activeTab: "experiments" };
     function o() {
       e.querySelector(".tabs")
         .querySelectorAll(".tab")
         .forEach((c) => {
-          c.classList.toggle("active", c.dataset.tab === i.activeTab);
+          c.classList.toggle("active", c.dataset.tab === r.activeTab);
         });
       let a = e.querySelector(".tab-body");
-      i.activeTab === "experiments" ? de(a, n) : _e(a, s);
+      r.activeTab === "experiments" ? de(a, n) : _e(a, s);
     }
     ((e.innerHTML = `
     <div class="tabs">
@@ -783,15 +794,15 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
       <button class="tab" data-tab="universes">Universes</button>
     </div>
     <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
-      e.querySelectorAll(".tab").forEach((r) => {
-        r.addEventListener("click", () => {
-          ((i.activeTab = r.dataset.tab), o());
+      e.querySelectorAll(".tab").forEach((i) => {
+        i.addEventListener("click", () => {
+          ((r.activeTab = i.dataset.tab), o());
         });
       }),
       o(),
       window.addEventListener("se:state:update", () => {
-        let r = e.querySelector(".tab-body");
-        r && i.activeTab === "experiments" && de(r, n);
+        let i = e.querySelector(".tab-body");
+        i && r.activeTab === "experiments" && de(i, n);
       }));
   }
   var P = !1,
@@ -804,17 +815,17 @@ textarea.editor:focus { border-color: #7c3aed; outline: none; }
         "[data-label] { outline: 2px dashed #7c3aed !important; outline-offset: 2px !important; cursor: pointer !important; }"),
       document.head.appendChild(t));
     function n(s) {
-      let i = s.target.closest("[data-label]");
-      if (!i) return;
+      let r = s.target.closest("[data-label]");
+      if (!r) return;
       (s.preventDefault(), s.stopPropagation());
-      let o = i.dataset.label ?? "",
-        r = i.dataset.labelDesc ?? "",
-        a = i.textContent ?? "",
+      let o = r.dataset.label ?? "",
+        i = r.dataset.labelDesc ?? "",
+        a = r.textContent ?? "",
         c = prompt(
           `Edit label "${o}"${
-            r
+            i
               ? `
-${r}`
+${i}`
               : ""
           }
 Current: ${a}
@@ -824,7 +835,7 @@ New value:`,
         );
       c !== null &&
         c !== a &&
-        ((i.textContent = c),
+        ((r.textContent = c),
         window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: o, value: c } })));
     }
     (document.addEventListener("click", n, !0),
@@ -836,7 +847,7 @@ New value:`,
   }
   function pe(e, t, n) {
     let s = re(),
-      i = [
+      r = [
         '<option value="">Default</option>',
         ...t.map(
           (o) => `<option value="${o.id}" ${s === o.id ? "selected" : ""}>${o.name}</option>`,
@@ -857,7 +868,7 @@ New value:`,
     <div class="sec-head">Profile</div>
     <div class="row">
       <div class="row-name">Active profile</div>
-      <select class="sel-input" id="se-profile-sel">${i}</select>
+      <select class="sel-input" id="se-profile-sel">${r}</select>
     </div>
 
     <div class="sec-head">Drafts</div>
@@ -881,8 +892,8 @@ New value:`,
         (Ae(!P), pe(e, t, n));
       }),
       e.querySelector("#se-profile-sel")?.addEventListener("change", (o) => {
-        let r = o.target.value || null;
-        ie(r);
+        let i = o.target.value || null;
+        ie(i);
       }));
   }
   function Ce(e, t) {
@@ -892,14 +903,14 @@ New value:`,
     }
     let n = new Map();
     for (let s of t) {
-      let i = s.key.includes(".") ? s.key.split(".")[0] : "(root)";
-      (n.has(i) || n.set(i, []), n.get(i).push(s));
+      let r = s.key.includes(".") ? s.key.split(".")[0] : "(root)";
+      (n.has(r) || n.set(r, []), n.get(r).push(s));
     }
     e.innerHTML = Array.from(n.entries())
       .map(
-        ([s, i]) => `
-      <div class="sec-head">${s} <span style="color:#334155;font-weight:400">(${i.length})</span></div>
-      ${i
+        ([s, r]) => `
+      <div class="sec-head">${s} <span style="color:#334155;font-weight:400">(${r.length})</span></div>
+      ${r
         .map(
           (o) => `
         <div class="row">
@@ -915,22 +926,22 @@ New value:`,
   }
   async function ue(e, t) {
     e.innerHTML = '<div class="loading">Loading i18n data\u2026</div>';
-    let n, s, i;
+    let n, s, r;
     try {
-      [n, s, i] = await Promise.all([t.profiles(), t.drafts(), t.keys()]);
+      [n, s, r] = await Promise.all([t.profiles(), t.drafts(), t.keys()]);
     } catch (a) {
       e.innerHTML = `<div class="err">Failed to load i18n data: ${String(a)}</div>`;
       return;
     }
     let o = { activeTab: "labels" };
-    function r() {
+    function i() {
       e.querySelector(".tabs")
         .querySelectorAll(".tab")
         .forEach((u) => {
           u.classList.toggle("active", u.dataset.tab === o.activeTab);
         });
       let c = e.querySelector(".tab-body");
-      o.activeTab === "labels" ? pe(c, n, s) : Ce(c, i);
+      o.activeTab === "labels" ? pe(c, n, s) : Ce(c, r);
     }
     ((e.innerHTML = `
     <div class="tabs">
@@ -940,10 +951,10 @@ New value:`,
     <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
       e.querySelectorAll(".tab").forEach((a) => {
         a.addEventListener("click", () => {
-          ((o.activeTab = a.dataset.tab), r());
+          ((o.activeTab = a.dataset.tab), i());
         });
       }),
-      r());
+      i());
   }
   var K = {
       gates: { icon: "\u26F3", label: "Gates" },
@@ -972,23 +983,23 @@ New value:`,
   function ze(e, t) {
     let n = window.innerWidth,
       s = window.innerHeight,
-      i = [
+      r = [
         [n - e, "right"],
         [e, "left"],
         [t, "top"],
         [s - t, "bottom"],
       ];
-    i.sort((c, u) => c[0] - u[0]);
-    let o = i[0][1],
+    r.sort((c, u) => c[0] - u[0]);
+    let o = r[0][1],
       a = Math.max(5, Math.min(95, o === "left" || o === "right" ? (t / s) * 100 : (e / n) * 100));
     return { edge: o, offsetPct: a };
   }
   function R(e, t, n, s) {
-    let { edge: i, offsetPct: o, panelWidth: r, panelHeight: a } = s,
+    let { edge: r, offsetPct: o, panelWidth: i, panelHeight: a } = s,
       c = window.innerWidth,
       u = window.innerHeight,
-      f = i === "left" || i === "right",
-      x = Math.max(j, Math.min(r, c - 80)),
+      f = r === "left" || r === "right",
+      x = Math.max(j, Math.min(i, c - 80)),
       S = Math.max(W, Math.min(a, u - 40)),
       y = (o / 100) * (f ? u : c),
       v = e.getBoundingClientRect(),
@@ -998,21 +1009,21 @@ New value:`,
       (l.borderTop = l.borderBottom = l.borderLeft = l.borderRight = ""),
       (l.flexDirection = f ? "column" : "row"),
       (l.padding = f ? "8px 6px" : "6px 8px"),
-      i === "right"
+      r === "right"
         ? ((l.right = "0"),
           (l.top = `${o}%`),
           (l.transform = "translateY(-50%)"),
           (l.borderRadius = "10px 0 0 10px"),
           (l.borderRight = "none"),
           (l.boxShadow = "-3px 0 16px rgba(0,0,0,0.45)"))
-        : i === "left"
+        : r === "left"
           ? ((l.left = "0"),
             (l.top = `${o}%`),
             (l.transform = "translateY(-50%)"),
             (l.borderRadius = "0 10px 10px 0"),
             (l.borderLeft = "none"),
             (l.boxShadow = "3px 0 16px rgba(0,0,0,0.45)"))
-          : i === "top"
+          : r === "top"
             ? ((l.top = "0"),
               (l.left = `${o}%`),
               (l.transform = "translateX(-50%)"),
@@ -1031,8 +1042,8 @@ New value:`,
       (p.borderTop = p.borderBottom = p.borderLeft = p.borderRight = ""),
       (p.width = x + "px"),
       (p.height = S + "px"),
-      (t.dataset.edge = i),
-      i === "right")
+      (t.dataset.edge = r),
+      r === "right")
     ) {
       let d = Math.max(10, Math.min(u - S - 10, y - S / 2));
       ((p.right = L + "px"),
@@ -1040,14 +1051,14 @@ New value:`,
         (p.borderRadius = "10px 0 0 10px"),
         (p.borderRight = "none"),
         (p.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
-    } else if (i === "left") {
+    } else if (r === "left") {
       let d = Math.max(10, Math.min(u - S - 10, y - S / 2));
       ((p.left = L + "px"),
         (p.top = d + "px"),
         (p.borderRadius = "0 10px 10px 0"),
         (p.borderLeft = "none"),
         (p.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
-    } else if (i === "top") {
+    } else if (r === "top") {
       let d = Math.max(10, Math.min(c - x - 10, y - x / 2));
       ((p.top = L + "px"),
         (p.left = d + "px"),
@@ -1070,12 +1081,12 @@ New value:`,
           (m.top = "0"),
           (m.bottom = "0"),
           (n.style.cursor = "ew-resize"),
-          i === "right" ? (m.left = "0") : (m.right = "0"))
+          r === "right" ? (m.left = "0") : (m.right = "0"))
         : ((m.height = "10px"),
           (m.left = "0"),
           (m.right = "0"),
           (n.style.cursor = "ns-resize"),
-          i === "top" ? (m.bottom = "0") : (m.top = "0")));
+          r === "top" ? (m.bottom = "0") : (m.top = "0")));
   }
   function he(e) {
     let t = document.createElement("div");
@@ -1083,16 +1094,16 @@ New value:`,
     let n = t.attachShadow({ mode: "open" });
     n.innerHTML = `<style>${X}</style><div id="toolbar"></div><div id="panel"></div>`;
     let s = n.getElementById("toolbar"),
-      i = n.getElementById("panel");
-    ((s.className = "toolbar"), (i.className = "panel"));
+      r = n.getElementById("panel");
+    ((s.className = "toolbar"), (r.className = "panel"));
     let o = document.createElement("div");
-    ((o.className = "resize-handle"), i.appendChild(o));
-    let r = document.createElement("div");
-    ((r.className = "panel-inner"), i.appendChild(r));
+    ((o.className = "resize-handle"), r.appendChild(o));
+    let i = document.createElement("div");
+    ((i.className = "panel-inner"), r.appendChild(i));
     let a = De(),
       c = null,
       u = V();
-    requestAnimationFrame(() => R(s, i, o, a));
+    requestAnimationFrame(() => R(s, r, o, a));
     let f = document.createElement("div");
     ((f.className = "drag-handle"),
       (f.title = "Drag to reposition"),
@@ -1102,7 +1113,7 @@ New value:`,
         (d.preventDefault(), f.classList.add("dragging"));
         let b = (g) => {
             let { edge: h, offsetPct: E } = ze(g.clientX, g.clientY);
-            ((a = { ...a, edge: h, offsetPct: E }), R(s, i, o, a));
+            ((a = { ...a, edge: h, offsetPct: E }), R(s, r, o, a));
           },
           w = () => {
             (f.classList.remove("dragging"),
@@ -1129,7 +1140,7 @@ New value:`,
         g = a.panelWidth,
         h = a.panelHeight,
         { edge: E } = a,
-        $ = (G) => {
+        k = (G) => {
           let J = G.clientX - b,
             Y = G.clientY - w,
             M = { ...a };
@@ -1138,27 +1149,27 @@ New value:`,
             E === "top" && (M.panelHeight = Math.max(W, Math.min(ge, h + Y))),
             E === "bottom" && (M.panelHeight = Math.max(W, Math.min(ge, h - Y))),
             (a = M),
-            R(s, i, o, a));
+            R(s, r, o, a));
         },
         F = () => {
           (o.classList.remove("dragging"),
-            document.removeEventListener("mousemove", $),
+            document.removeEventListener("mousemove", k),
             document.removeEventListener("mouseup", F),
             ve(a));
         };
-      (document.addEventListener("mousemove", $), document.addEventListener("mouseup", F));
+      (document.addEventListener("mousemove", k), document.addEventListener("mouseup", F));
     });
-    let S = () => R(s, i, o, a);
+    let S = () => R(s, r, o, a);
     window.addEventListener("resize", S);
     function y(d) {
       ((c = d),
         x.forEach((b, w) => b.classList.toggle("active", w === d)),
-        i.classList.add("open"),
-        R(s, i, o, a),
+        r.classList.add("open"),
+        R(s, r, o, a),
         p(d));
     }
     function v() {
-      (i.classList.remove("open"), x.forEach((d) => d.classList.remove("active")), (c = null));
+      (r.classList.remove("open"), x.forEach((d) => d.classList.remove("active")), (c = null));
     }
     function L(d) {
       c === d ? v() : y(d);
@@ -1177,21 +1188,21 @@ New value:`,
         return;
       }
       let g = new C(e.adminUrl, u.token);
-      ((r.innerHTML = `
+      ((i.innerHTML = `
       ${l(b, w)}
       <div class="panel-body" id="se-body"></div>
       <div class="panel-footer">
         <button class="ibtn danger" id="se-signout">Sign out</button>
         <button class="ibtn danger" id="se-clearall">Clear overrides</button>
       </div>`),
-        r.querySelector("#se-close").addEventListener("click", v),
-        r.querySelector("#se-signout").addEventListener("click", () => {
+        i.querySelector("#se-close").addEventListener("click", v),
+        i.querySelector("#se-signout").addEventListener("click", () => {
           (Z(), (u = null), m(d));
         }),
-        r.querySelector("#se-clearall").addEventListener("click", () => {
+        i.querySelector("#se-clearall").addEventListener("click", () => {
           (se(), p(d));
         }));
-      let h = r.querySelector("#se-body");
+      let h = i.querySelector("#se-body");
       ({
         gates: () => ae(h, g),
         configs: () => le(h, g),
@@ -1199,13 +1210,13 @@ New value:`,
         i18n: () => ue(h, g),
       })
         [d]()
-        .catch(($) => {
-          h.innerHTML = `<div class="err">${String($)}</div>`;
+        .catch((k) => {
+          h.innerHTML = `<div class="err">${String(k)}</div>`;
         });
     }
     function m(d) {
       let { icon: b, label: w } = K[d];
-      ((r.innerHTML = `
+      ((i.innerHTML = `
       ${l(b, w)}
       <div class="panel-body auth-mode">
         <div class="auth-box">
@@ -1217,11 +1228,11 @@ New value:`,
           <div class="auth-err" id="se-auth-err"></div>
         </div>
       </div>`),
-        r.querySelector("#se-close").addEventListener("click", v),
-        r.querySelector("#se-connect").addEventListener("click", async () => {
-          let g = r.querySelector("#se-connect"),
-            h = r.querySelector("#se-auth-status"),
-            E = r.querySelector("#se-auth-err");
+        i.querySelector("#se-close").addEventListener("click", v),
+        i.querySelector("#se-connect").addEventListener("click", async () => {
+          let g = i.querySelector("#se-connect"),
+            h = i.querySelector("#se-auth-status"),
+            E = i.querySelector("#se-auth-err");
           ((g.disabled = !0),
             (g.textContent = "Opening\u2026"),
             (h.textContent = ""),
@@ -1232,8 +1243,8 @@ New value:`,
                 (g.textContent = "Waiting\u2026"));
             })),
               p(d));
-          } catch ($) {
-            ((E.textContent = $ instanceof Error ? $.message : String($)),
+          } catch (k) {
+            ((E.textContent = k instanceof Error ? k.message : String(k)),
               (h.textContent = ""),
               (g.disabled = !1),
               (g.textContent = "Retry"));
@@ -1281,16 +1292,16 @@ New value:`,
     (B(), ee() && xe(e));
     let n = t.split("+"),
       s = n[n.length - 1],
-      i = n.includes("Shift"),
+      r = n.includes("Shift"),
       o = n.includes("Alt") || n.includes("Option"),
-      r = n.includes("Ctrl") || n.includes("Control"),
+      i = n.includes("Ctrl") || n.includes("Control"),
       a = n.includes("Meta") || n.includes("Cmd"),
       c = /^[a-zA-Z]$/.test(s) ? `Key${s.toUpperCase()}` : null;
     function u(f) {
       (c ? f.code === c : f.key.toLowerCase() === s.toLowerCase()) &&
-        f.shiftKey === i &&
+        f.shiftKey === r &&
         f.altKey === o &&
-        f.ctrlKey === r &&
+        f.ctrlKey === i &&
         f.metaKey === a &&
         (H ? Be() : xe(e));
     }

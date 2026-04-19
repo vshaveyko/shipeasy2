@@ -44,7 +44,12 @@ export function errorResponse(err: unknown): Response {
       },
     );
   }
-  console.error("admin api error:", err);
   const message = err instanceof Error ? err.message : String(err);
-  return Response.json({ error: "Internal server error", detail: message }, { status: 500 });
+  const stack = err instanceof Error ? err.stack : undefined;
+  // Log to CF logpush / wrangler tail with full stack for post-mortem.
+  console.error("admin api error:", message, stack);
+  return Response.json(
+    { error: "Internal server error", detail: message, stack: stack?.split("\n").slice(0, 6) },
+    { status: 500 },
+  );
 }

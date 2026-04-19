@@ -18,9 +18,23 @@ export class DevtoolsApi {
     const res = await fetch(`${this.adminUrl}${path}`, {
       headers: { Authorization: `Bearer ${this.token}` },
     });
-    if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
+    if (!res.ok) {
+      // Surface the server's detail field (http.ts errorResponse puts the real
+      // exception message here) so users don't just see "HTTP 500" with no clue.
+      let detail = "";
+      try {
+        const body = (await res.json()) as { error?: string; detail?: string };
+        detail = body.detail ?? body.error ?? "";
+      } catch {
+        try {
+          detail = (await res.text()).slice(0, 200);
+        } catch {
+          /* ignore */
+        }
+      }
+      throw new Error(`${path} → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
+    }
     const body = await res.json();
-    // Unwrap {data:[...]} or plain array
     return (Array.isArray(body) ? body : ((body as { data: T }).data ?? body)) as T;
   }
 
