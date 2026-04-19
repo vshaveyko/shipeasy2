@@ -1,13 +1,29 @@
 "use client";
 
+import { Suspense } from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Logo } from "@shipeasy/shared/Logo";
 
-export default function SignInPage() {
+/**
+ * Only permit same-origin relative paths as post-signin destinations, so a
+ * malicious link like ?callbackUrl=https://evil.com cannot use us as an
+ * open redirector.
+ */
+function safeCallback(raw: string | null): string {
+  if (!raw) return "/dashboard";
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
+  return "/dashboard";
+}
+
+function SignInForm() {
+  const search = useSearchParams();
+  const callbackUrl = safeCallback(search.get("callbackUrl"));
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
@@ -27,7 +43,7 @@ export default function SignInPage() {
             <Button
               className="w-full"
               variant="outline"
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("google", { callbackUrl })}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -60,7 +76,7 @@ export default function SignInPage() {
             <Button
               className="w-full"
               variant="outline"
-              onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("github", { callbackUrl })}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -86,5 +102,13 @@ export default function SignInPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInForm />
+    </Suspense>
   );
 }
