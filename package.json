@@ -14,7 +14,10 @@
     "test": "turbo test",
     "type-check": "turbo type-check",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "migrate": "pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote",
+    "deploy": "pnpm build && pnpm migrate && pnpm --filter @shipeasy/worker deploy && pnpm --filter @shipeasy/ui deploy",
+    "deploy:docs": "pnpm --filter @shipeasy/docs deploy"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs}": [
