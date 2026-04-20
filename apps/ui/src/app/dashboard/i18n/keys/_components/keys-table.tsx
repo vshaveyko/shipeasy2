@@ -214,7 +214,15 @@ function buildFlatRows(
     if (loadingPaths.has(sec.prefix) && !tree) {
       rows.push({ kind: "loading", path: sec.prefix, depth: 1 });
     } else if (tree) {
-      flattenSubtree(rows, tree, 1, expanded);
+      // Every key in this section starts with `sec.prefix.` so the built tree
+      // has exactly one root node whose segment equals the section prefix.
+      // Rendering that root would duplicate the section title — descend one
+      // level and use its children instead.
+      const nodesToRender =
+        tree.length === 1 && tree[0].segment === sec.prefix && tree[0].children.length > 0
+          ? tree[0].children
+          : tree;
+      flattenSubtree(rows, nodesToRender, 1, expanded);
       if (page && page.keys.length < page.total) {
         rows.push({
           kind: "load-more",
@@ -695,6 +703,55 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     estimateSize: () => 36,
     overscan: 8,
   });
+
+  // ── Sticky section tracking ────────────────────────────────────────────────
+  // Indices of section-header rows (depth-0 folders) in the flat list.
+  const sectionFolderIndices = useMemo(() => {
+    const out: number[] = [];
+    for (let i = 0; i < flatRows.length; i++) {
+      const r = flatRows[i];
+      if (r.kind === "folder" && r.depth === 0) out.push(i);
+    }
+    return out;
+  }, [flatRows]);
+
+  // Index of the section that should be pinned at the top of the scroll area.
+  const [pinnedIdx, setPinnedIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf = 0;
+    const update = () => {
+      const scrollTop = el.scrollTop;
+      let found: number | null = null;
+      for (const idx of sectionFolderIndices) {
+        // getOffsetForIndex returns [offset, align]; fall back to estimate.
+        const offset =
+          (
+            rowVirtualizer as unknown as {
+              getOffsetForIndex?: (i: number) => [number, string];
+            }
+          ).getOffsetForIndex?.(idx)?.[0] ?? idx * 36;
+        if (offset <= scrollTop + 0.5) found = idx;
+        else break;
+      }
+      setPinnedIdx(found);
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        update();
+      });
+    };
+    update();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [sectionFolderIndices, rowVirtualizer]);
 
   // ── Row renderer ───────────────────────────────────────────────────────────
   // Shared column template keeps header + all row types aligned like a real table.
@@ -1204,7 +1261,16 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           </div>
 
           {/* Virtual scroll body */}
-          <div ref={scrollRef} className="max-h-[calc(100vh-22rem)] overflow-auto">
+          <div ref={scrollRef} className="relative max-h-[calc(100vh-22rem)] overflow-auto">
+            {/* Sticky pinned section — floats at top while scrolling through the section's content */}
+            {pinnedIdx !== null && flatRows[pinnedIdx]?.kind === "folder" && (
+              <div
+                className="sticky top-0 z-10 bg-background shadow-[0_1px_0_0_hsl(var(--border))]"
+                style={{ marginBottom: -36 }}
+              >
+                {renderRow(flatRows[pinnedIdx])}
+              </div>
+            )}
             <div style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}>
               {rowVirtualizer.getVirtualItems().map((vItem) => (
                 <div
