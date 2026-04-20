@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { addExperimentMetricAction } from "./actions";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 type Role = "guardrail" | "secondary";
 
@@ -36,6 +37,7 @@ function AttachForm({
   role: Role;
   onCancel: () => void;
 }) {
+  const { t } = useShipEasyI18n();
   return (
     <form
       action={addExperimentMetricAction}
@@ -45,7 +47,7 @@ function AttachForm({
       <input type="hidden" name="experiment_id" value={experimentId} />
       <input type="hidden" name="role" value={role} />
       <div className="grid gap-1.5">
-        <Label htmlFor="attach-metric">Metric</Label>
+        <Label htmlFor="attach-metric">{t("app.dashboard.experiments._id.metric")}</Label>
         <select
           id="attach-metric"
           name="metric_id"
@@ -59,10 +61,10 @@ function AttachForm({
         </select>
       </div>
       <Button size="sm" type="submit">
-        Attach
+        {t("app.dashboard.experiments._id.attach")}
       </Button>
       <Button size="sm" variant="ghost" type="button" onClick={onCancel}>
-        Cancel
+        {t("common.cancel")}
       </Button>
     </form>
   );
@@ -74,6 +76,7 @@ export function MetricsPanel({
   guardrailMetrics,
   secondaryMetrics,
 }: Props) {
+  const { t } = useShipEasyI18n();
   const [openRole, setOpenRole] = useState<Role | null>(null);
 
   const guardrailIds = new Set(guardrailMetrics.map((m) => m.metricId));
@@ -85,8 +88,10 @@ export function MetricsPanel({
     <>
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>Guardrails</CardTitle>
-          <CardDescription>Metrics we never want to regress.</CardDescription>
+          <CardTitle>{t("app.dashboard.experiments._id.guardrails")}</CardTitle>
+          <CardDescription>
+            {t("app.dashboard.experiments._id.metrics_we_never_want_to_regress")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-2">
           {guardrailMetrics.length > 0 ? (
@@ -98,17 +103,19 @@ export function MetricsPanel({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">None attached.</p>
+            <p className="text-sm text-muted-foreground">
+              {t("app.dashboard.experiments._id.none_attached")}
+            </p>
           )}
           {openRole === null && (
             <Button
-              aria-label="Add guardrail"
+              aria-label={t("app.dashboard.experiments._id.add_guardrail")}
               size="sm"
               variant="outline"
               type="button"
               onClick={() => setOpenRole("guardrail")}
             >
-              Attach
+              {t("app.dashboard.experiments._id.attach")}
             </Button>
           )}
           {openRole === "guardrail" && (
@@ -124,8 +131,10 @@ export function MetricsPanel({
 
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>Secondary metrics</CardTitle>
-          <CardDescription>Optional observational metrics.</CardDescription>
+          <CardTitle>{t("app.dashboard.experiments._id.secondary_metrics")}</CardTitle>
+          <CardDescription>
+            {t("app.dashboard.experiments._id.optional_observational_metrics")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-2">
           {secondaryMetrics.length > 0 ? (
@@ -137,17 +146,19 @@ export function MetricsPanel({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">None attached.</p>
+            <p className="text-sm text-muted-foreground">
+              {t("app.dashboard.experiments._id.none_attached")}
+            </p>
           )}
           {openRole === null && (
             <Button
-              aria-label="Add secondary"
+              aria-label={t("app.dashboard.experiments._id.add_secondary")}
               size="sm"
               variant="outline"
               type="button"
               onClick={() => setOpenRole("secondary")}
             >
-              Attach
+              {t("app.dashboard.experiments._id.attach")}
             </Button>
           )}
           {openRole === "secondary" && (

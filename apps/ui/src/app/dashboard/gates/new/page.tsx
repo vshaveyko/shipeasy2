@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { cn } from "@/lib/utils";
 import { createGateAction } from "../actions";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 const PROFILES = [
   {
@@ -42,6 +43,7 @@ const PROFILES = [
 ] as const;
 
 export default function NewGatePage() {
+  const { t } = useShipEasyI18n();
   const [selectedProfile, setSelectedProfile] = useState<string>("rollout");
   const [rolloutPct, setRolloutPct] = useState(10);
   const [killswitch, setKillswitch] = useState(false);
@@ -60,11 +62,13 @@ export default function NewGatePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="New gate"
-        description="A gate is a named boolean rollout rule. Pick a profile to pre-fill defaults."
+        title={t("common.new_gate")}
+        description={t(
+          "app.dashboard.gates.new.a_gate_is_a_named_boolean_rollout_rule_pick_a_profile_to_pre",
+        )}
         actions={
           <LinkButton variant="ghost" size="sm" href="/dashboard/gates">
-            Cancel
+            {t("common.cancel")}
           </LinkButton>
         }
       />
@@ -72,9 +76,11 @@ export default function NewGatePage() {
       {/* Quick profiles */}
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>Quick setup</CardTitle>
+          <CardTitle>{t("app.dashboard.gates.new.quick_setup")}</CardTitle>
           <CardDescription>
-            Choose a pattern — we&apos;ll pre-fill the rollout and targeting defaults.
+            {t(
+              "app.dashboard.gates.new.choose_a_pattern_we_apos_ll_pre_fill_the_rollout_and_targeti",
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -111,36 +117,45 @@ export default function NewGatePage() {
         {/* Basics */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Basics</CardTitle>
-            <CardDescription>Identify the gate and what it controls.</CardDescription>
+            <CardTitle>{t("common.basics")}</CardTitle>
+            <CardDescription>
+              {t("app.dashboard.gates.new.identify_the_gate_and_what_it_controls")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="gate-key">Key</Label>
+              <Label htmlFor="gate-key">{t("common.key")}</Label>
               <div className="flex rounded-lg border focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                 <span className="flex items-center rounded-l-lg bg-muted px-3 text-sm text-muted-foreground border-r">
-                  flag_
+                  {t("app.dashboard.gates.new.flag")}
                 </span>
                 <Input
                   id="gate-key"
                   name="key"
-                  placeholder="new_checkout_flow"
+                  placeholder={t("app.dashboard.gates.new.new_checkout_flow")}
                   className="font-mono rounded-l-none border-0 shadow-none focus-visible:ring-0"
                   required
                   pattern="[a-z0-9][a-z0-9_\-]{0,59}"
-                  title="Lowercase letters, digits, _ or -; max 64 chars total"
+                  title={t(
+                    "app.dashboard.gates.new.lowercase_letters_digits_or_max_64_chars_total",
+                  )}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Used in SDK as <code className="font-mono">getGate(&apos;flag_...&apos;)</code>
+                {t("app.dashboard.gates.new.used_in_sdk_as")}{" "}
+                <code className="font-mono">
+                  {t("app.dashboard.gates.new.getgate_apos_flag_apos")}
+                </code>
               </p>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="gate-description">Description</Label>
+              <Label htmlFor="gate-description">{t("common.description")}</Label>
               <Input
                 id="gate-description"
                 name="description"
-                placeholder="Rolls out the redesigned checkout to % of users"
+                placeholder={t(
+                  "app.dashboard.gates.new.rolls_out_the_redesigned_checkout_to_of_users",
+                )}
               />
             </div>
           </CardContent>
@@ -149,13 +164,15 @@ export default function NewGatePage() {
         {/* Rollout */}
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle>Rollout percentage</CardTitle>
-            <CardDescription>Percentage of eligible users who see this gate as ON.</CardDescription>
+            <CardTitle>{t("app.dashboard.gates.new.rollout_percentage")}</CardTitle>
+            <CardDescription>
+              {t("app.dashboard.gates.new.percentage_of_eligible_users_who_see_this_gate_as_on")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-3">
               <div className="flex items-center justify-between">
-                <Label>Percentage</Label>
+                <Label>{t("app.dashboard.gates.new.percentage")}</Label>
                 <span className="text-2xl font-semibold tabular-nums">{rolloutPct}%</span>
               </div>
               <input
@@ -174,23 +191,25 @@ export default function NewGatePage() {
               </div>
               <div className="flex justify-between text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="inline-block size-2 rounded-full bg-foreground" /> ON
+                  <span className="inline-block size-2 rounded-full bg-foreground" />{" "}
+                  {t("common.on")}
                 </span>
                 <span className="flex items-center gap-1">
-                  OFF <span className="inline-block size-2 rounded-full bg-muted-foreground/40" />
+                  {t("app.dashboard.gates.new.off")}{" "}
+                  <span className="inline-block size-2 rounded-full bg-muted-foreground/40" />
                 </span>
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="gate-default">Default (no match)</Label>
+              <Label htmlFor="gate-default">{t("app.dashboard.gates.new.default_no_match")}</Label>
               <select
                 id="gate-default"
                 name="default"
                 className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 defaultValue="off"
               >
-                <option value="off">Off (false)</option>
-                <option value="on">On (true)</option>
+                <option value="off">{t("app.dashboard.gates.new.off_false")}</option>
+                <option value="on">{t("app.dashboard.gates.new.on_true")}</option>
               </select>
             </div>
           </CardContent>
@@ -199,19 +218,22 @@ export default function NewGatePage() {
         {/* Targeting rules */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Targeting rules</CardTitle>
+            <CardTitle>{t("common.targeting_rules")}</CardTitle>
             <CardDescription>
-              Rules evaluated in order — first match wins. Overrides the rollout % for matched
-              users.
+              {t(
+                "app.dashboard.gates.new.rules_evaluated_in_order_first_match_wins_overrides_the_roll",
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="rounded-lg border border-dashed p-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Rules builder attaches once the gate is saved.
+                {t("app.dashboard.gates.new.rules_builder_attaches_once_the_gate_is_saved")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Match on user ID, email, plan, country, or any custom attribute.
+                {t(
+                  "app.dashboard.gates.new.match_on_user_id_email_plan_country_or_any_custom_attribute",
+                )}
               </p>
             </div>
           </CardContent>
@@ -220,9 +242,9 @@ export default function NewGatePage() {
         {/* Killswitch */}
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle>Force off</CardTitle>
+            <CardTitle>{t("app.dashboard.gates.new.force_off")}</CardTitle>
             <CardDescription>
-              Force the gate OFF for everyone, overriding all rules.
+              {t("app.dashboard.gates.new.force_the_gate_off_for_everyone_overriding_all_rules")}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -239,9 +261,11 @@ export default function NewGatePage() {
                 <div className="absolute left-0.5 top-0.5 size-5 rounded-full bg-background shadow transition-transform peer-checked:translate-x-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">Enable killswitch</span>
+                <span className="text-sm font-medium">
+                  {t("app.dashboard.gates.new.enable_killswitch")}
+                </span>
                 <span className="text-xs text-muted-foreground">
-                  Gate returns false for all users
+                  {t("app.dashboard.gates.new.gate_returns_false_for_all_users")}
                 </span>
               </div>
             </label>
@@ -250,10 +274,10 @@ export default function NewGatePage() {
 
         <div className="col-span-full flex justify-end gap-2">
           <LinkButton variant="ghost" size="sm" href="/dashboard/gates">
-            Cancel
+            {t("common.cancel")}
           </LinkButton>
           <Button size="sm" type="submit">
-            Create gate
+            {t("common.create_gate")}
           </Button>
         </div>
       </form>

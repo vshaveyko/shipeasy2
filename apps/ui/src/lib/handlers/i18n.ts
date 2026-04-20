@@ -1,4 +1,4 @@
-import { and, count, eq, isNull, sum } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, sum } from "drizzle-orm";
 import { ApiError, getDb } from "@shipeasy/core";
 import {
   labelProfiles,
@@ -198,6 +198,19 @@ export async function deleteKey(identity: AdminIdentity, id: string) {
   await s.delete(labelKeys).where(eq(labelKeys.id, id));
   await writeAudit(identity, "i18n.key.delete", "label_key", id);
   return { ok: true };
+}
+
+export async function bulkDeleteKeys(identity: AdminIdentity, ids: string[]) {
+  if (ids.length === 0) return { deleted: 0 };
+  const s = await scopedDbSA(identity.projectId);
+  const existing = await s.selectWhere(labelKeys, inArray(labelKeys.id, ids));
+  if (existing.length === 0) throw new ApiError("No matching keys found", 404);
+  await s.delete(labelKeys).where(inArray(labelKeys.id, ids));
+  await writeAudit(identity, "i18n.key.bulk_delete", "label_key", null, {
+    count: existing.length,
+    ids: existing.map((k) => k.id),
+  });
+  return { deleted: existing.length };
 }
 
 // ── Drafts ────────────────────────────────────────────────────────────────────

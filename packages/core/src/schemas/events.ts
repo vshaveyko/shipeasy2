@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const eventNameSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_\-.]{0,127}$/);
+export const eventNameSchema = z.string().regex(/^[a-zA-Z0-9_][a-zA-Z0-9_\-.]{0,127}$/);
 
 export const eventPropertySchema = z.object({
   name: z.string().min(1).max(64),

@@ -109,6 +109,12 @@ importers:
       '@shipeasy/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@shipeasy/devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
+      '@shipeasy/i18n-react':
+        specifier: workspace:*
+        version: link:../../packages/i18n-react
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared

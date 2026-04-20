@@ -15,15 +15,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PRODUCTS, getProductFromPath } from "@/lib/products";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 export function ProductSwitcher() {
+  const { t } = useShipEasyI18n();
   const pathname = usePathname();
   const current = getProductFromPath(pathname);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Switch product"
+        aria-label={t("components.dashboard.switch_product")}
         className={cn(
           "flex w-full items-center gap-2 rounded-md border bg-background px-2.5 py-2 text-left text-sm transition-colors",
           "hover:bg-muted/60",
@@ -45,9 +47,11 @@ export function ProductSwitcher() {
               <ChevronsUpDown className="size-4" />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-medium text-foreground">Choose a product</span>
+              <span className="truncate font-medium text-foreground">
+                {t("components.dashboard.choose_a_product")}
+              </span>
               <span className="truncate text-[11px] text-muted-foreground">
-                Feature flags · A/B tests · i18n
+                {t("components.dashboard.feature_flags_a_b_tests_i18n")}
               </span>
             </span>
           </>
@@ -57,7 +61,7 @@ export function ProductSwitcher() {
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            Products
+            {t("components.dashboard.products")}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {PRODUCTS.map((p) => {

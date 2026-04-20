@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Logo } from "@shipeasy/shared/Logo";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 /**
  * Only permit same-origin relative paths as post-signin destinations, so a
@@ -21,6 +22,7 @@ function safeCallback(raw: string | null): string {
 }
 
 function SignInForm() {
+  const { t } = useShipEasyI18n();
   const search = useSearchParams();
   const callbackUrl = safeCallback(search.get("callbackUrl"));
 
@@ -30,14 +32,14 @@ function SignInForm() {
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl">
             <Logo className="size-8" />
-            ShipEasy
+            {t("common.shipeasy")}
           </Link>
         </div>
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Welcome back</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+            <CardTitle>{t("app.welcome_back")}</CardTitle>
+            <CardDescription>{t("app.sign_in_to_your_account_to_continue")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
@@ -63,13 +65,13 @@ function SignInForm() {
                   fill="#EA4335"
                 />
               </svg>
-              Continue with Google
+              {t("app.continue_with_google")}
             </Button>
 
             <div className="relative">
               <Separator />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                or
+                {t("common.or")}
               </span>
             </div>
 
@@ -84,20 +86,20 @@ function SignInForm() {
                   fill="currentColor"
                 />
               </svg>
-              Continue with GitHub
+              {t("app.continue_with_github")}
             </Button>
           </CardContent>
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          By signing in you agree to our{" "}
+          {t("app.by_signing_in_you_agree_to_our")}{" "}
           <a
             href="https://docs.shipeasy.ai/terms"
             target="_blank"
             rel="noreferrer"
             className="underline hover:text-foreground"
           >
-            Terms of Service
+            {t("app.terms_of_service")}
           </a>
         </p>
       </div>

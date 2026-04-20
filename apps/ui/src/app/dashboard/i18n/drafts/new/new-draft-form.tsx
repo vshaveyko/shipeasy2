@@ -7,31 +7,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { createDraftAction } from "../actions";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 interface Props {
   profiles: { id: string; name: string }[];
 }
 
 export function NewDraftForm({ profiles }: Props) {
+  const { t } = useShipEasyI18n();
   const [name, setName] = useState("");
 
   return (
     <form action={createDraftAction} className="max-w-lg">
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>Draft details</CardTitle>
+          <CardTitle>{t("app.dashboard.i18n.drafts.draft_details")}</CardTitle>
           <CardDescription>
-            Give the draft a descriptive name and pick the target profile. Translators and AI tools
-            will propose values for the keys in that profile.
+            {t(
+              "app.dashboard.i18n.drafts.give_the_draft_a_descriptive_name_and_pick_the_target_profil",
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="draft-name">Name</Label>
+            <Label htmlFor="draft-name">{t("common.name")}</Label>
             <Input
               id="draft-name"
               name="name"
-              placeholder="fr-translations-q2"
+              placeholder={t("app.dashboard.i18n.drafts.fr_translations_q2")}
               required
               autoFocus
               value={name}
@@ -40,17 +43,17 @@ export function NewDraftForm({ profiles }: Props) {
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="draft-profile">Target profile</Label>
+            <Label htmlFor="draft-profile">{t("app.dashboard.i18n.drafts.target_profile")}</Label>
             {profiles.length === 0 ? (
               <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-                No profiles yet.{" "}
+                {t("common.no_profiles_yet")}{" "}
                 <LinkButton
                   variant="link"
                   size="sm"
                   className="-ml-1 h-auto p-0"
                   href="/dashboard/i18n/profiles/new"
                 >
-                  Create one first.
+                  {t("app.dashboard.i18n.drafts.create_one_first")}
                 </LinkButton>
               </div>
             ) : (
@@ -61,7 +64,7 @@ export function NewDraftForm({ profiles }: Props) {
                   required
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
-                  <option value="">Select a profile…</option>
+                  <option value="">{t("app.dashboard.i18n.drafts.select_a_profile")}</option>
                   {profiles.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -69,14 +72,14 @@ export function NewDraftForm({ profiles }: Props) {
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  No profiles yet?{" "}
+                  {t("common.no_profiles_yet")}{" "}
                   <LinkButton
                     variant="link"
                     size="sm"
                     className="-ml-1 h-auto p-0 text-xs"
                     href="/dashboard/i18n/profiles/new"
                   >
-                    Create one first.
+                    {t("app.dashboard.i18n.drafts.create_one_first")}
                   </LinkButton>
                 </p>
               </>
@@ -85,10 +88,10 @@ export function NewDraftForm({ profiles }: Props) {
 
           <div className="flex justify-end gap-2 pt-2">
             <LinkButton variant="ghost" size="sm" href="/dashboard/i18n/drafts">
-              Cancel
+              {t("common.cancel")}
             </LinkButton>
             <Button size="sm" type="submit" disabled={!name.trim()}>
-              Create draft
+              {t("app.dashboard.i18n.drafts.create_draft")}
             </Button>
           </div>
         </CardContent>

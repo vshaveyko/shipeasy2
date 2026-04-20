@@ -7,4 +7,6 @@ export interface CoreEnv {
   CF_ZONE_ID?: string;
   CF_API_TOKEN?: string;
   FLAGS_DOMAIN?: string;
+  // When set to "0", disables in-process KV cache (useful for integration tests).
+  FLAGS_CACHE_TTL_MS?: string;
 }

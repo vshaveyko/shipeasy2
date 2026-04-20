@@ -16,13 +16,13 @@ import type { AuthedContext } from "../lib/auth";
 export async function handleBootstrap(c: AuthedContext) {
   const key = c.get("key");
   const header = c.req.header("X-User-Context");
-  if (!header) return c.text("Missing X-User-Context", 400);
-
-  let user: User;
-  try {
-    user = JSON.parse(atob(header)) as User;
-  } catch {
-    return c.text("X-User-Context must be base64-encoded JSON", 400);
+  let user: User = {};
+  if (header) {
+    try {
+      user = JSON.parse(atob(header)) as User;
+    } catch {
+      return c.text("X-User-Context must be base64-encoded JSON", 400);
+    }
   }
 
   const [flagsBlob, expsBlob] = await Promise.all([
@@ -55,5 +55,9 @@ export async function handleBootstrap(c: AuthedContext) {
     if (result) experiments[name] = result;
   }
 
-  return c.json({ flags, configs, experiments });
+  const etag = `"${flagsBlob.version}-${expsBlob.version}"`;
+  return new Response(JSON.stringify({ flags, configs, experiments }), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ETag: etag },
+  });
 }

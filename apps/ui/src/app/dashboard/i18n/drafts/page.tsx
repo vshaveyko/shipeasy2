@@ -49,7 +49,7 @@ export default async function I18nDraftsPage() {
         }
       />
 
-      {drafts.length === 0 ? (
+      {drafts.filter((d) => d.status === "open").length === 0 && (
         <EmptyState
           icon={PencilLine}
           title="No drafts in flight"
@@ -60,7 +60,8 @@ export default async function I18nDraftsPage() {
             </LinkButton>
           }
         />
-      ) : (
+      )}
+      {drafts.length > 0 && (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>

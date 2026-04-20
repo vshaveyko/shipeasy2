@@ -4,8 +4,10 @@ import type { ComponentProps, MouseEvent } from "react";
 import { signOut } from "next-auth/react";
 
 import { cn } from "@/lib/utils";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 export function SignOutButton({ className, onClick, ...props }: ComponentProps<"div">) {
+  const { t } = useShipEasyI18n();
   return (
     <div
       {...props}
@@ -15,7 +17,7 @@ export function SignOutButton({ className, onClick, ...props }: ComponentProps<"
         if (!e.defaultPrevented) void signOut({ callbackUrl: "/" });
       }}
     >
-      Sign out
+      {t("components.dashboard.sign_out")}
     </div>
   );
 }

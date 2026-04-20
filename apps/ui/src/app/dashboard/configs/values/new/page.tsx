@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { cn } from "@/lib/utils";
 import { createConfigAction } from "../actions";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 const VALUE_TYPES = [
   { id: "string", label: "String", emoji: "Aa", description: "Text value, same for all users" },
@@ -21,17 +22,20 @@ const VALUE_TYPES = [
 type ValueType = (typeof VALUE_TYPES)[number]["id"];
 
 export default function NewConfigValuePage() {
+  const { t } = useShipEasyI18n();
   const [valueType, setValueType] = useState<ValueType>("string");
   const [preview, setPreview] = useState("");
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="New config"
-        description="A dynamic config stores a value your SDKs fetch without a redeploy."
+        title={t("app.dashboard.configs.values.new.new_config")}
+        description={t(
+          "app.dashboard.configs.values.new.a_dynamic_config_stores_a_value_your_sdks_fetch_without_a_re",
+        )}
         actions={
           <LinkButton variant="ghost" size="sm" href="/dashboard/configs/values">
-            Cancel
+            {t("common.cancel")}
           </LinkButton>
         }
       />
@@ -39,9 +43,11 @@ export default function NewConfigValuePage() {
       {/* Type selector */}
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>Value type</CardTitle>
+          <CardTitle>{t("app.dashboard.configs.values.new.value_type")}</CardTitle>
           <CardDescription>
-            All users receive the same value — use Gates for per-user targeting.
+            {t(
+              "app.dashboard.configs.values.new.all_users_receive_the_same_value_use_gates_for_per_user_targ",
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 pt-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -81,31 +87,38 @@ export default function NewConfigValuePage() {
         {/* Basics */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Basics</CardTitle>
-            <CardDescription>Identify the config and its purpose.</CardDescription>
+            <CardTitle>{t("common.basics")}</CardTitle>
+            <CardDescription>
+              {t("app.dashboard.configs.values.new.identify_the_config_and_its_purpose")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="config-key">Key</Label>
+              <Label htmlFor="config-key">{t("common.key")}</Label>
               <Input
                 id="config-key"
                 name="key"
-                placeholder="pricing_thresholds"
+                placeholder={t("app.dashboard.configs.values.new.pricing_thresholds")}
                 className="font-mono"
                 required
                 pattern="[a-z0-9][a-z0-9_\-]{0,63}"
-                title="Lowercase letters, digits, _ or -; max 64 chars"
+                title={t("common.lowercase_letters_digits_or_max_64_chars")}
               />
               <p className="text-xs text-muted-foreground">
-                Used in SDK as <code className="font-mono">getConfig(&apos;...&apos;)</code>
+                {t("app.dashboard.configs.values.new.used_in_sdk_as")}{" "}
+                <code className="font-mono">
+                  {t("app.dashboard.configs.values.new.getconfig_apos_apos")}
+                </code>
               </p>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="config-description">Description</Label>
+              <Label htmlFor="config-description">{t("common.description")}</Label>
               <Input
                 id="config-description"
                 name="description"
-                placeholder="Tiered pricing thresholds for plan upgrades"
+                placeholder={t(
+                  "app.dashboard.configs.values.new.tiered_pricing_thresholds_for_plan_upgrades",
+                )}
               />
             </div>
           </CardContent>
@@ -114,21 +127,29 @@ export default function NewConfigValuePage() {
         {/* Environment */}
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle>Environment</CardTitle>
-            <CardDescription>Where this config value lives.</CardDescription>
+            <CardTitle>{t("app.dashboard.configs.values.new.environment")}</CardTitle>
+            <CardDescription>
+              {t("app.dashboard.configs.values.new.where_this_config_value_lives")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="config-env">Environment</Label>
+              <Label htmlFor="config-env">
+                {t("app.dashboard.configs.values.new.environment")}
+              </Label>
               <select
                 id="config-env"
                 name="env"
                 className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 defaultValue="production"
               >
-                <option value="development">Development</option>
-                <option value="staging">Staging</option>
-                <option value="production">Production</option>
+                <option value="development">
+                  {t("app.dashboard.configs.values.new.development")}
+                </option>
+                <option value="staging">{t("app.dashboard.configs.values.new.staging")}</option>
+                <option value="production">
+                  {t("app.dashboard.configs.values.new.production")}
+                </option>
               </select>
             </div>
           </CardContent>
@@ -137,20 +158,22 @@ export default function NewConfigValuePage() {
         {/* Default value */}
         <Card className="lg:col-span-3">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Default value</CardTitle>
+            <CardTitle>{t("app.dashboard.configs.values.new.default_value")}</CardTitle>
             <CardDescription>
-              The value returned when no targeting rule matches. All users receive this value.
+              {t(
+                "app.dashboard.configs.values.new.the_value_returned_when_no_targeting_rule_matches_all_users_",
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="config-value">Value</Label>
+              <Label htmlFor="config-value">{t("app.dashboard.configs.values.new.value")}</Label>
               {valueType === "string" && (
                 <Input
                   id="config-value"
                   name="value"
                   type="text"
-                  placeholder="my string value"
+                  placeholder={t("app.dashboard.configs.values.new.my_string_value")}
                   value={preview}
                   onChange={(e) => setPreview(e.target.value)}
                 />
@@ -198,7 +221,7 @@ export default function NewConfigValuePage() {
             {preview && (
               <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-3">
                 <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  All users receive
+                  {t("app.dashboard.configs.values.new.all_users_receive")}
                 </p>
                 <code className="font-mono text-sm">
                   {valueType === "string" ? `"${preview}"` : preview}
@@ -210,10 +233,10 @@ export default function NewConfigValuePage() {
 
         <div className="col-span-full flex justify-end gap-2">
           <LinkButton variant="ghost" size="sm" href="/dashboard/configs/values">
-            Cancel
+            {t("common.cancel")}
           </LinkButton>
           <Button size="sm" type="submit">
-            Create config
+            {t("app.dashboard.configs.values.new.create_config")}
           </Button>
         </div>
       </form>

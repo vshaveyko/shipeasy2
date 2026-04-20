@@ -23,6 +23,7 @@ export interface Experiment {
 export interface ExperimentAssignment {
   group: string;
   params: Record<string, unknown>;
+  inExperiment: boolean;
 }
 
 export function evalExperiment(
@@ -53,7 +54,7 @@ export function evalExperiment(
     const g = exp.groups[i];
     cumulative += g.weight;
     if (groupHash < cumulative || i === exp.groups.length - 1) {
-      return { group: g.name, params: g.params };
+      return { group: g.name, params: g.params, inExperiment: true };
     }
   }
   return null;

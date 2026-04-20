@@ -22,24 +22,30 @@ const expsCache = new Map<string, { data: ExpsBlob; expiry: number }>();
 const catalogCache = new Map<string, { data: Set<string>; expiry: number }>();
 
 export async function getFlags(env: CoreEnv, projectId: string): Promise<FlagsBlob> {
-  const hit = flagsCache.get(projectId);
-  if (hit && Date.now() < hit.expiry) return hit.data;
+  const ttl = env.FLAGS_CACHE_TTL_MS !== undefined ? Number(env.FLAGS_CACHE_TTL_MS) : 10_000;
+  if (ttl > 0) {
+    const hit = flagsCache.get(projectId);
+    if (hit && Date.now() < hit.expiry) return hit.data;
+  }
   if (!env.FLAGS_KV) throw new Error("FLAGS_KV binding missing");
   const raw = await env.FLAGS_KV.get(`${projectId}:flags`);
   if (!raw) throw new Error(`No flags for project ${projectId}`);
   const data = JSON.parse(raw) as FlagsBlob;
-  flagsCache.set(projectId, { data, expiry: Date.now() + 10_000 });
+  if (ttl > 0) flagsCache.set(projectId, { data, expiry: Date.now() + ttl });
   return data;
 }
 
 export async function getExperiments(env: CoreEnv, projectId: string): Promise<ExpsBlob> {
-  const hit = expsCache.get(projectId);
-  if (hit && Date.now() < hit.expiry) return hit.data;
+  const ttl = env.FLAGS_CACHE_TTL_MS !== undefined ? Number(env.FLAGS_CACHE_TTL_MS) : 10_000;
+  if (ttl > 0) {
+    const hit = expsCache.get(projectId);
+    if (hit && Date.now() < hit.expiry) return hit.data;
+  }
   if (!env.FLAGS_KV) throw new Error("FLAGS_KV binding missing");
   const raw = await env.FLAGS_KV.get(`${projectId}:experiments`);
   if (!raw) throw new Error(`No experiments for project ${projectId}`);
   const data = JSON.parse(raw) as ExpsBlob;
-  expsCache.set(projectId, { data, expiry: Date.now() + 10_000 });
+  if (ttl > 0) expsCache.set(projectId, { data, expiry: Date.now() + ttl });
   return data;
 }
 
@@ -57,11 +63,14 @@ export function clearCaches(projectId?: string): void {
 }
 
 export async function getCatalog(env: CoreEnv, projectId: string): Promise<Set<string>> {
-  const hit = catalogCache.get(projectId);
-  if (hit && Date.now() < hit.expiry) return hit.data;
+  const ttl = env.FLAGS_CACHE_TTL_MS !== undefined ? Number(env.FLAGS_CACHE_TTL_MS) : 60_000;
+  if (ttl > 0) {
+    const hit = catalogCache.get(projectId);
+    if (hit && Date.now() < hit.expiry) return hit.data;
+  }
   if (!env.FLAGS_KV) return new Set<string>();
   const raw = await env.FLAGS_KV.get(`${projectId}:catalog`);
   const names = raw ? new Set<string>(JSON.parse(raw) as string[]) : new Set<string>();
-  catalogCache.set(projectId, { data: names, expiry: Date.now() + 60_000 });
+  if (ttl > 0) catalogCache.set(projectId, { data: names, expiry: Date.now() + ttl });
   return names;
 }

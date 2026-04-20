@@ -49,7 +49,10 @@ export async function checkLimit(
   let n = 0;
   switch (resource) {
     case "flags": {
-      const row = await db.select({ n: count() }).from(gates).where(eq(gates.projectId, projectId));
+      const row = await db
+        .select({ n: count() })
+        .from(gates)
+        .where(and(eq(gates.projectId, projectId), isNull(gates.deletedAt)));
       n = row[0]?.n ?? 0;
       break;
     }
@@ -57,7 +60,7 @@ export async function checkLimit(
       const row = await db
         .select({ n: count() })
         .from(configs)
-        .where(eq(configs.projectId, projectId));
+        .where(and(eq(configs.projectId, projectId), isNull(configs.deletedAt)));
       n = row[0]?.n ?? 0;
       break;
     }
@@ -73,7 +76,7 @@ export async function checkLimit(
       const row = await db
         .select({ n: count() })
         .from(universes)
-        .where(eq(universes.projectId, projectId));
+        .where(and(eq(universes.projectId, projectId), isNull(universes.deletedAt)));
       n = row[0]?.n ?? 0;
       break;
     }
@@ -81,7 +84,7 @@ export async function checkLimit(
       const row = await db
         .select({ n: count() })
         .from(metrics)
-        .where(eq(metrics.projectId, projectId));
+        .where(and(eq(metrics.projectId, projectId), isNull(metrics.deletedAt)));
       n = row[0]?.n ?? 0;
       break;
     }
@@ -89,7 +92,7 @@ export async function checkLimit(
       const row = await db
         .select({ n: count() })
         .from(events)
-        .where(eq(events.projectId, projectId));
+        .where(and(eq(events.projectId, projectId), isNull(events.deletedAt)));
       n = row[0]?.n ?? 0;
       break;
     }

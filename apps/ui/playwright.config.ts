@@ -10,7 +10,7 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
 const WORKER_PORT = Number(process.env.WORKER_PORT ?? 8787);
 export const WORKER_BASE_URL = process.env.WORKER_BASE_URL ?? `http://localhost:${WORKER_PORT}`;
 const WORKER_DIR = path.resolve(__dirname, "../../packages/worker");
-const WORKER_PERSIST = path.resolve(__dirname, ".wrangler");
+const WORKER_PERSIST = path.resolve(__dirname, ".wrangler/state");
 
 const AUTH_STATE_FILE = path.join(__dirname, "e2e/.auth/user.json");
 

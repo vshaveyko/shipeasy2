@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { deleteKey, updateKey, upsertDraftKey } from "@/lib/handlers/i18n";
+import { bulkDeleteKeys, deleteKey, updateKey, upsertDraftKey } from "@/lib/handlers/i18n";
 import type { AdminIdentity } from "@/lib/admin-auth";
 
 async function getIdentity(): Promise<AdminIdentity> {
@@ -18,6 +18,15 @@ export async function deleteKeyAction(formData: FormData) {
   const id = formData.get("id") as string;
   await deleteKey(identity, id);
   revalidatePath("/dashboard/i18n/keys");
+}
+
+export async function bulkDeleteKeysAction(formData: FormData) {
+  const identity = await getIdentity();
+  const ids = formData.getAll("ids").map((v) => String(v));
+  if (ids.length === 0) return { deleted: 0 };
+  const result = await bulkDeleteKeys(identity, ids);
+  revalidatePath("/dashboard/i18n/keys");
+  return result;
 }
 
 export async function updateKeyAction(formData: FormData) {

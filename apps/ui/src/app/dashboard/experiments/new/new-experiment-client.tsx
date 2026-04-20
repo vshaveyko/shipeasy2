@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { cn } from "@/lib/utils";
 import { createExperimentAction } from "../actions";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 const PROFILES = [
   {
@@ -75,6 +76,7 @@ interface Props {
 }
 
 export default function NewExperimentClient({ gates }: Props) {
+  const { t } = useShipEasyI18n();
   const [selectedProfile, setSelectedProfile] = useState("conversion");
   const [allocation, setAllocation] = useState(100);
   const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
@@ -129,11 +131,13 @@ export default function NewExperimentClient({ gates }: Props) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="New experiment"
-        description="Define a hypothesis, split your traffic, and pre-register your goal metric."
+        title={t("app.dashboard.experiments.new.new_experiment")}
+        description={t(
+          "app.dashboard.experiments.new.define_a_hypothesis_split_your_traffic_and_pre_register_your",
+        )}
         actions={
           <LinkButton variant="ghost" size="sm" href="/dashboard/experiments">
-            Cancel
+            {t("common.cancel")}
           </LinkButton>
         }
       />
@@ -141,9 +145,11 @@ export default function NewExperimentClient({ gates }: Props) {
       {/* Quick profiles */}
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>Quick setup</CardTitle>
+          <CardTitle>{t("app.dashboard.experiments.new.quick_setup")}</CardTitle>
           <CardDescription>
-            Pick a template: pre-fills metric type, aggregation, and guardrails.
+            {t(
+              "app.dashboard.experiments.new.pick_a_template_pre_fills_metric_type_aggregation_and_guardr",
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -186,43 +192,56 @@ export default function NewExperimentClient({ gates }: Props) {
         {/* Basics */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Basics</CardTitle>
-            <CardDescription>Identify the experiment and frame the hypothesis.</CardDescription>
+            <CardTitle>{t("common.basics")}</CardTitle>
+            <CardDescription>
+              {t("app.dashboard.experiments.new.identify_the_experiment_and_frame_the_hypothesis")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
               <Label htmlFor="exp-key">
-                Name <span className="text-muted-foreground">(slug)</span>
+                {t("common.name")}{" "}
+                <span className="text-muted-foreground">
+                  {t("app.dashboard.experiments.new.slug")}
+                </span>
               </Label>
               <div className="flex rounded-lg border focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                 <span className="flex items-center rounded-l-lg bg-muted px-3 text-sm text-muted-foreground border-r">
-                  exp_
+                  {t("app.dashboard.experiments.new.exp")}
                 </span>
                 <Input
                   id="exp-key"
                   name="name"
-                  placeholder="checkout_redesign_q2"
+                  placeholder={t("app.dashboard.experiments.new.checkout_redesign_q2")}
                   className="font-mono rounded-l-none border-0 shadow-none focus-visible:ring-0"
                   required
                   pattern="[a-z0-9][a-z0-9_\-]{0,59}"
-                  title="Lowercase letters, digits, _ or -; max 64 chars total"
+                  title={t(
+                    "app.dashboard.experiments.new.lowercase_letters_digits_or_max_64_chars_total",
+                  )}
                 />
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="exp-question">Hypothesis</Label>
+              <Label htmlFor="exp-question">{t("app.dashboard.experiments.new.hypothesis")}</Label>
               <Input
                 id="exp-question"
                 name="question"
-                placeholder="Does the new checkout increase completed purchases?"
+                placeholder={t(
+                  "app.dashboard.experiments.new.does_the_new_checkout_increase_completed_purchases",
+                )}
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="exp-success">Success definition</Label>
+              <Label htmlFor="exp-success">
+                {t("app.dashboard.experiments.new.success_definition")}
+              </Label>
               <Input
                 id="exp-success"
                 name="success"
-                placeholder="Conversion rate up ≥ 2pp with no load-time regression"
+                placeholder={t(
+                  "app.dashboard.experiments.new.conversion_rate_up_2pp_with_no_load_time_regression",
+                )}
               />
             </div>
           </CardContent>
@@ -231,33 +250,39 @@ export default function NewExperimentClient({ gates }: Props) {
         {/* Universe */}
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle>Universe</CardTitle>
-            <CardDescription>Which users are eligible for this experiment.</CardDescription>
+            <CardTitle>{t("app.dashboard.experiments.new.universe")}</CardTitle>
+            <CardDescription>
+              {t("app.dashboard.experiments.new.which_users_are_eligible_for_this_experiment")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="exp-universe">Universe</Label>
+              <Label htmlFor="exp-universe">{t("app.dashboard.experiments.new.universe")}</Label>
               <select
                 id="exp-universe"
                 name="universe"
                 className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 defaultValue="default"
               >
-                <option value="default">default (no holdout)</option>
+                <option value="default">
+                  {t("app.dashboard.experiments.new.default_no_holdout")}
+                </option>
               </select>
               <p className="text-xs text-muted-foreground">
-                Holdouts are configured on the universe, not the experiment.
+                {t(
+                  "app.dashboard.experiments.new.holdouts_are_configured_on_the_universe_not_the_experiment",
+                )}
               </p>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="exp-gate">Targeting gate</Label>
+              <Label htmlFor="exp-gate">{t("app.dashboard.experiments.new.targeting_gate")}</Label>
               <select
                 id="exp-gate"
                 name="targeting_gate"
                 className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 defaultValue=""
               >
-                <option value="">None (all users)</option>
+                <option value="">{t("app.dashboard.experiments.new.none_all_users")}</option>
                 {gates.map((g) => (
                   <option key={g.id} value={g.name}>
                     {g.name}
@@ -265,7 +290,7 @@ export default function NewExperimentClient({ gates }: Props) {
                 ))}
               </select>
               <p className="text-xs text-muted-foreground">
-                Only users who pass this gate are enrolled.
+                {t("app.dashboard.experiments.new.only_users_who_pass_this_gate_are_enrolled")}
               </p>
             </div>
           </CardContent>
@@ -274,15 +299,19 @@ export default function NewExperimentClient({ gates }: Props) {
         {/* Traffic split */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Traffic split</CardTitle>
+            <CardTitle>{t("app.dashboard.experiments.new.traffic_split")}</CardTitle>
             <CardDescription>
-              Allocation % of the universe. Groups split that traffic evenly.
+              {t(
+                "app.dashboard.experiments.new.allocation_of_the_universe_groups_split_that_traffic_evenly",
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="exp-allocation">Allocation (% of universe)</Label>
+                <Label htmlFor="exp-allocation">
+                  {t("app.dashboard.experiments.new.allocation_of_universe")}
+                </Label>
                 <span className="text-xl font-semibold tabular-nums">{allocation}%</span>
               </div>
               <input
@@ -299,8 +328,8 @@ export default function NewExperimentClient({ gates }: Props) {
             {/* Groups */}
             <div className="space-y-2">
               <div className="grid grid-cols-[1fr_auto_auto] gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground px-1">
-                <span>Group name</span>
-                <span className="w-12 text-center">Split</span>
+                <span>{t("app.dashboard.experiments.new.group_name")}</span>
+                <span className="w-12 text-center">{t("app.dashboard.experiments.new.split")}</span>
                 <span className="w-6" />
               </div>
               {groups.map((g, idx) => (
@@ -365,7 +394,7 @@ export default function NewExperimentClient({ gates }: Props) {
                 onClick={addGroup}
                 className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
               >
-                + Add variant
+                {t("app.dashboard.experiments.new.add_variant")}
               </button>
             </div>
           </CardContent>
@@ -374,12 +403,16 @@ export default function NewExperimentClient({ gates }: Props) {
         {/* Statistical power */}
         <Card>
           <CardHeader className="border-b pb-4">
-            <CardTitle>Statistical power</CardTitle>
-            <CardDescription>Estimated runtime at α=0.05.</CardDescription>
+            <CardTitle>{t("app.dashboard.experiments.new.statistical_power")}</CardTitle>
+            <CardDescription>
+              {t("app.dashboard.experiments.new.estimated_runtime_at_0_05")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="pc-daily-users">Daily users</Label>
+              <Label htmlFor="pc-daily-users">
+                {t("app.dashboard.experiments.new.daily_users")}
+              </Label>
               <Input
                 id="pc-daily-users"
                 type="number"
@@ -391,15 +424,21 @@ export default function NewExperimentClient({ gates }: Props) {
             </div>
             <div className="rounded-lg bg-muted/50 p-4 space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Users/day</span>
+                <span className="text-muted-foreground">
+                  {t("app.dashboard.experiments.new.users_day")}
+                </span>
                 <span className="font-medium">{dailyUsers !== "" ? dailyUsersNum : "—"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Days needed</span>
+                <span className="text-muted-foreground">
+                  {t("app.dashboard.experiments.new.days_needed")}
+                </span>
                 <span className="font-medium">{daysNeeded !== null ? daysNeeded : "—"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Confidence</span>
+                <span className="text-muted-foreground">
+                  {t("app.dashboard.experiments.new.confidence")}
+                </span>
                 <span className="font-medium">80%</span>
               </div>
               <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -407,7 +446,9 @@ export default function NewExperimentClient({ gates }: Props) {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Add a goal metric and set MDE to get precise estimates.
+              {t(
+                "app.dashboard.experiments.new.add_a_goal_metric_and_set_mde_to_get_precise_estimates",
+              )}
             </p>
           </CardContent>
         </Card>
@@ -415,15 +456,19 @@ export default function NewExperimentClient({ gates }: Props) {
         {/* Statistical config */}
         <Card className="lg:col-span-2">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Statistical config</CardTitle>
+            <CardTitle>{t("app.dashboard.experiments.new.statistical_config")}</CardTitle>
             <CardDescription>
-              Confidence level, minimum running days, and sample size requirements.
+              {t(
+                "app.dashboard.experiments.new.confidence_level_minimum_running_days_and_sample_size_requir",
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="grid gap-1.5">
-                <Label htmlFor="exp-sig-threshold">Significance level (α)</Label>
+                <Label htmlFor="exp-sig-threshold">
+                  {t("app.dashboard.experiments.new.significance_level")}
+                </Label>
                 <Input
                   id="exp-sig-threshold"
                   name="significance_threshold"
@@ -436,7 +481,9 @@ export default function NewExperimentClient({ gates }: Props) {
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="exp-min-days">Minimum running days</Label>
+                <Label htmlFor="exp-min-days">
+                  {t("app.dashboard.experiments.new.minimum_running_days")}
+                </Label>
                 <Input
                   id="exp-min-days"
                   name="min_runtime_days"
@@ -448,7 +495,9 @@ export default function NewExperimentClient({ gates }: Props) {
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="exp-min-sample">Min sample size</Label>
+                <Label htmlFor="exp-min-sample">
+                  {t("app.dashboard.experiments.new.min_sample_size")}
+                </Label>
                 <Input
                   id="exp-min-sample"
                   name="min_sample_size"
@@ -465,9 +514,11 @@ export default function NewExperimentClient({ gates }: Props) {
         {/* Params schema */}
         <Card className="lg:col-span-3">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Params</CardTitle>
+            <CardTitle>{t("app.dashboard.experiments.new.params")}</CardTitle>
             <CardDescription>
-              Optional typed parameters each group can carry (e.g. button_color: string).
+              {t(
+                "app.dashboard.experiments.new.optional_typed_parameters_each_group_can_carry_e_g_button_co",
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
@@ -477,7 +528,7 @@ export default function NewExperimentClient({ gates }: Props) {
                   name={`param_name_${idx}`}
                   value={p.name}
                   onChange={(e) => updateParam(idx, "name", e.target.value)}
-                  placeholder="param name"
+                  placeholder={t("app.dashboard.experiments.new.param_name")}
                   className="font-mono"
                 />
                 <select
@@ -486,9 +537,9 @@ export default function NewExperimentClient({ gates }: Props) {
                   onChange={(e) => updateParam(idx, "type", e.target.value)}
                   className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
-                  <option value="string">string</option>
-                  <option value="number">number</option>
-                  <option value="bool">bool</option>
+                  <option value="string">{t("app.dashboard.experiments.new.string")}</option>
+                  <option value="number">{t("app.dashboard.experiments.new.number")}</option>
+                  <option value="bool">{t("app.dashboard.experiments.new.bool")}</option>
                 </select>
                 <button
                   type="button"
@@ -504,7 +555,7 @@ export default function NewExperimentClient({ gates }: Props) {
               onClick={addParam}
               className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
             >
-              + Add param
+              {t("app.dashboard.experiments.new.add_param")}
             </button>
           </CardContent>
         </Card>
@@ -512,9 +563,11 @@ export default function NewExperimentClient({ gates }: Props) {
         {/* Metrics */}
         <Card className="lg:col-span-3">
           <CardHeader className="border-b pb-4">
-            <CardTitle>Metrics</CardTitle>
+            <CardTitle>{t("app.dashboard.experiments.new.metrics")}</CardTitle>
             <CardDescription>
-              One goal metric (pre-register) plus guardrails and optional secondary metrics.
+              {t(
+                "app.dashboard.experiments.new.one_goal_metric_pre_register_plus_guardrails_and_optional_se",
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -525,11 +578,14 @@ export default function NewExperimentClient({ gates }: Props) {
                 </span>
                 <span className="font-mono">{profile.metric}</span>
                 <span className="text-muted-foreground text-xs">
-                  pre-filled from {profile.label} template
+                  {t("app.dashboard.experiments.new.pre_filled_from")} {profile.label}{" "}
+                  {t("app.dashboard.experiments.new.template")}
                 </span>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                Add guardrail and secondary metrics after saving the experiment.
+                {t(
+                  "app.dashboard.experiments.new.add_guardrail_and_secondary_metrics_after_saving_the_experim",
+                )}
               </p>
             </div>
           </CardContent>
@@ -537,10 +593,10 @@ export default function NewExperimentClient({ gates }: Props) {
 
         <div className="col-span-full flex justify-end gap-2">
           <LinkButton variant="ghost" size="sm" href="/dashboard/experiments">
-            Cancel
+            {t("common.cancel")}
           </LinkButton>
           <Button size="sm" type="submit">
-            Save draft
+            {t("app.dashboard.experiments.new.save_draft")}
           </Button>
         </div>
       </form>

@@ -7,6 +7,7 @@ import {
   listDevtoolsProjectsAction,
   type ProjectOption,
 } from "./actions";
+import { useShipEasyI18n } from "@shipeasy/i18n-react";
 
 interface Props {
   /** Origin of the opener window; restricts postMessage target. */
@@ -17,6 +18,7 @@ interface Props {
 type Phase = "loading" | "ready" | "pending" | "success" | "error";
 
 export function ApproveButton({ origin, email }: Props) {
+  const { t } = useShipEasyI18n();
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
   const [projectList, setProjectList] = useState<ProjectOption[]>([]);
@@ -62,13 +64,17 @@ export function ApproveButton({ origin, email }: Props) {
   }
 
   if (phase === "loading") {
-    return <p className="text-muted-foreground text-center text-sm">Loading projects…</p>;
+    return (
+      <p className="text-muted-foreground text-center text-sm">
+        {t("app.devtools-auth.loading_projects")}
+      </p>
+    );
   }
 
   if (phase === "success") {
     return (
       <p className="text-center text-sm text-muted-foreground">
-        Connected. You can close this window.
+        {t("app.devtools-auth.connected_you_can_close_this_window")}
       </p>
     );
   }
@@ -76,7 +82,7 @@ export function ApproveButton({ origin, email }: Props) {
   if (projectList.length === 0) {
     return (
       <p className="text-muted-foreground text-center text-sm">
-        No projects found for <strong>{email}</strong>.
+        {t("app.devtools-auth.no_projects_found_for")} <strong>{email}</strong>.
       </p>
     );
   }
@@ -85,9 +91,9 @@ export function ApproveButton({ origin, email }: Props) {
     <div className="space-y-4">
       <div>
         <label className="text-muted-foreground mb-2 block text-xs font-semibold tracking-wider uppercase">
-          Choose a project
+          {t("app.devtools-auth.choose_a_project")}
         </label>
-        <div className="space-y-1.5" role="radiogroup" aria-label="Projects">
+        <div className="space-y-1.5" role="radiogroup" aria-label={t("app.devtools-auth.projects")}>
           {projectList.map((p) => (
             <label
               key={p.id}
@@ -113,7 +119,9 @@ export function ApproveButton({ origin, email }: Props) {
       </div>
 
       <Button className="w-full" onClick={onApprove} disabled={phase === "pending" || !selected}>
-        {phase === "pending" ? "Connecting…" : `Approve as ${email}`}
+        {phase === "pending"
+          ? t("common.connecting")
+          : t("app.devtools-auth.approve_as", { email })}
       </Button>
       {error && <p className="text-destructive text-center text-xs">{error}</p>}
     </div>
