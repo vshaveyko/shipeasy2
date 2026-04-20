@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull, sum } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, like, or, sum } from "drizzle-orm";
 import { ApiError, getDb } from "@shipeasy/core";
 import {
   labelProfiles,
@@ -74,7 +74,11 @@ export type KeyRow = {
   chunkName: string | null;
 };
 
-export async function listKeys(identity: AdminIdentity, profileId?: string): Promise<KeyRow[]> {
+export async function listKeys(
+  identity: AdminIdentity,
+  profileId?: string,
+  prefix?: string,
+): Promise<KeyRow[]> {
   const env = getEnv();
   const db = getDb(env.DB);
 
@@ -98,13 +102,39 @@ export async function listKeys(identity: AdminIdentity, profileId?: string): Pro
     )
     .leftJoin(labelChunks, eq(labelKeys.chunkId, labelChunks.id));
 
-  const rows = profileId
-    ? await q.where(
-        and(eq(labelKeys.projectId, identity.projectId), eq(labelKeys.profileId, profileId)),
-      )
-    : await q.where(eq(labelKeys.projectId, identity.projectId));
+  const projectFilter = eq(labelKeys.projectId, identity.projectId);
+  const profileFilter = profileId ? eq(labelKeys.profileId, profileId) : undefined;
+  // prefix matches "prefix" exactly (no dot) or "prefix.*" (subtree)
+  const prefixFilter = prefix
+    ? or(eq(labelKeys.key, prefix), like(labelKeys.key, `${prefix}.%`))
+    : undefined;
 
+  const rows = await q.where(and(projectFilter, profileFilter, prefixFilter));
   return rows as KeyRow[];
+}
+
+/** Top-level sections for a profile (first dot-segment of each key → count). */
+export async function listKeySections(
+  identity: AdminIdentity,
+  profileId: string,
+): Promise<{ prefix: string; count: number }[]> {
+  const env = getEnv();
+  // Raw D1 query — Drizzle has no expression-level CASE in GROUP BY yet.
+  const result = await env.DB.prepare(
+    `SELECT
+       CASE WHEN instr(key, '.') > 0
+            THEN substr(key, 1, instr(key, '.') - 1)
+            ELSE key
+       END AS prefix,
+       count(*) AS cnt
+     FROM label_keys
+     WHERE project_id = ?1 AND profile_id = ?2
+     GROUP BY prefix
+     ORDER BY prefix`,
+  )
+    .bind(identity.projectId, profileId)
+    .all<{ prefix: string; cnt: number }>();
+  return (result.results ?? []).map((r) => ({ prefix: r.prefix, count: r.cnt }));
 }
 
 export async function upsertKeys(identity: AdminIdentity, input: unknown) {

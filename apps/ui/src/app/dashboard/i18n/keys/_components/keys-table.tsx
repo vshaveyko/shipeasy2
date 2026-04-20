@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useRef, useCallback, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ChevronRight,
   ChevronDown,
@@ -10,6 +11,7 @@ import {
   Check,
   X,
   ChevronsUpDown,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,10 +28,11 @@ import type { BulkAction } from "./bulk-actions";
 import { BulkActionsBar } from "./bulk-actions-bar";
 import { RowCheckbox } from "./row-checkbox";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 type Profile = { id: string; name: string };
 type Draft = { id: string; name: string; profileId: string; status: string };
+type Section = { prefix: string; count: number };
 
 interface TreeNode {
   segment: string;
@@ -46,7 +49,21 @@ interface EditState {
   isDraft: boolean;
 }
 
-// ── Tree builder ──────────────────────────────────────────────────────────────
+// Flat rows fed to the virtualizer
+type FlatRow =
+  | {
+      kind: "folder";
+      path: string;
+      segment: string;
+      depth: number;
+      isOpen: boolean;
+      leafCount: number;
+      loaded: boolean;
+    }
+  | { kind: "leaf"; node: TreeNode; depth: number }
+  | { kind: "loading"; path: string; depth: number };
+
+// ── Tree helpers ───────────────────────────────────────────────────────────────
 
 function buildTree(keys: KeyRow[]): TreeNode[] {
   type Internal = {
@@ -55,121 +72,326 @@ function buildTree(keys: KeyRow[]): TreeNode[] {
     childMap: Map<string, Internal>;
     leaf: KeyRow | null;
   };
-
   const rootMap = new Map<string, Internal>();
-
   for (const key of keys) {
-    const segments = key.key.split(".");
+    const segs = key.key.split(".");
     let cur = rootMap;
-    for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i];
-      const path = segments.slice(0, i + 1).join(".");
+    for (let i = 0; i < segs.length; i++) {
+      const seg = segs[i];
+      const path = segs.slice(0, i + 1).join(".");
       if (!cur.has(seg)) cur.set(seg, { segment: seg, path, childMap: new Map(), leaf: null });
       const node = cur.get(seg)!;
-      if (i === segments.length - 1) node.leaf = key;
+      if (i === segs.length - 1) node.leaf = key;
       cur = node.childMap;
     }
   }
-
-  function materialize(map: Map<string, Internal>): TreeNode[] {
+  function mat(map: Map<string, Internal>): TreeNode[] {
     return Array.from(map.values()).map((n) => {
-      const children = materialize(n.childMap);
-      const leafCount = (n.leaf ? 1 : 0) + children.reduce((s, c) => s + c.leafCount, 0);
-      return { segment: n.segment, path: n.path, children, leaf: n.leaf, leafCount };
+      const children = mat(n.childMap);
+      return {
+        segment: n.segment,
+        path: n.path,
+        children,
+        leaf: n.leaf,
+        leafCount: (n.leaf ? 1 : 0) + children.reduce((s, c) => s + c.leafCount, 0),
+      };
     });
   }
-
-  return materialize(rootMap);
+  return mat(rootMap);
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function flattenSubtree(
+  rows: FlatRow[],
+  nodes: TreeNode[],
+  depth: number,
+  expanded: Set<string>,
+  search: string,
+): void {
+  for (const node of nodes) {
+    const hasKids = node.children.length > 0;
+    if (hasKids) {
+      const isOpen = expanded.has(node.path);
+      rows.push({
+        kind: "folder",
+        path: node.path,
+        segment: node.segment,
+        depth,
+        isOpen,
+        leafCount: node.leafCount,
+        loaded: true,
+      });
+      if (isOpen) flattenSubtree(rows, node.children, depth + 1, expanded, search);
+    } else if (node.leaf) {
+      if (
+        !search ||
+        node.leaf.key.toLowerCase().includes(search) ||
+        node.leaf.value.toLowerCase().includes(search)
+      ) {
+        rows.push({ kind: "leaf", node, depth });
+      }
+    }
+  }
+}
+
+function buildFlatRows(
+  sections: Section[],
+  sectionTrees: Map<string, TreeNode[]>,
+  expanded: Set<string>,
+  loadingPaths: Set<string>,
+  search: string,
+): FlatRow[] {
+  const rows: FlatRow[] = [];
+  for (const sec of sections) {
+    const isOpen = expanded.has(sec.prefix);
+    const tree = sectionTrees.get(sec.prefix);
+    rows.push({
+      kind: "folder",
+      path: sec.prefix,
+      segment: sec.prefix,
+      depth: 0,
+      isOpen,
+      leafCount: sec.count,
+      loaded: !!tree,
+    });
+    if (isOpen) {
+      if (loadingPaths.has(sec.prefix)) {
+        rows.push({ kind: "loading", path: sec.prefix, depth: 1 });
+      } else if (tree) {
+        flattenSubtree(rows, tree, 1, expanded, search);
+      }
+    }
+  }
+  return rows;
+}
+
+// Collect all leaf KeyRow objects visible in flatRows
+function visibleLeaves(rows: FlatRow[]): KeyRow[] {
+  const out: KeyRow[] = [];
+  for (const r of rows) {
+    if (r.kind === "leaf" && r.node.leaf) out.push(r.node.leaf);
+  }
+  return out;
+}
+
+// All leaf IDs under a section (from its tree)
+function leafIdsInTree(nodes: TreeNode[]): string[] {
+  const out: string[] = [];
+  const walk = (n: TreeNode) => {
+    if (n.leaf) out.push(n.leaf.id);
+    for (const c of n.children) walk(c);
+  };
+  for (const n of nodes) walk(n);
+  return out;
+}
+
+function nodeSelection(node: TreeNode, selected: Set<string>): "none" | "some" | "all" {
+  const ids = leafIdsInTree([node]);
+  if (!ids.length) return "none";
+  let hit = 0;
+  for (const id of ids) if (selected.has(id)) hit++;
+  if (hit === 0) return "none";
+  if (hit === ids.length) return "all";
+  return "some";
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
 
 interface Props {
   profiles: Profile[];
   drafts: Draft[];
-  keysByProfile: Record<string, KeyRow[]>;
   draftKeysByDraft: Record<string, DraftKeyRow[]>;
 }
 
-export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }: Props) {
+export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   const { t } = useShipEasyI18n();
   const router = useRouter();
+
   const [profileId, setProfileId] = useState<string | null>(profiles[0]?.id ?? null);
   const [draftId, setDraftId] = useState<string | null>(null);
+
+  // ── Sections + lazy tree data ──────────────────────────────────────────────
+  // sections by profileId
+  const [sectionsByProfile, setSectionsByProfile] = useState<Map<string, Section[]>>(new Map());
+  // loaded key trees by profileId/prefix key ("profileId:prefix")
+  const [sectionTrees, setSectionTrees] = useState<Map<string, TreeNode[]>>(new Map());
+  // currently fetching
+  const [loadingPaths, setLoadingPaths] = useState<Set<string>>(new Set());
+  const [loadingSections, setLoadingSections] = useState(false);
+
+  // ── UI state ───────────────────────────────────────────────────────────────
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<EditState | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
-  const keys = useMemo(
-    () => (profileId ? (keysByProfile[profileId] ?? []) : []),
-    [profileId, keysByProfile],
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // ── Derived section key ────────────────────────────────────────────────────
+  const treeKey = useCallback((prefix: string) => `${profileId}:${prefix}`, [profileId]);
+
+  const sections = profileId ? (sectionsByProfile.get(profileId) ?? []) : [];
+
+  // ── Load sections for current profile ─────────────────────────────────────
+  useEffect(() => {
+    if (!profileId) return;
+    if (sectionsByProfile.has(profileId)) return;
+    setLoadingSections(true);
+    fetch(`/api/admin/i18n/keys/sections?profile_id=${profileId}`)
+      .then((r) => r.json() as Promise<Section[]>)
+      .then((data) => {
+        setSectionsByProfile((prev) => new Map(prev).set(profileId, data));
+      })
+      .catch(console.error)
+      .finally(() => setLoadingSections(false));
+  }, [profileId, sectionsByProfile]);
+
+  // ── Load keys for a section on expand ─────────────────────────────────────
+  const loadSection = useCallback(
+    (prefix: string) => {
+      const key = treeKey(prefix);
+      if (sectionTrees.has(key) || loadingPaths.has(prefix)) return;
+      setLoadingPaths((prev) => new Set(prev).add(prefix));
+      fetch(`/api/admin/i18n/keys?profile_id=${profileId}&prefix=${encodeURIComponent(prefix)}`)
+        .then((r) => r.json() as Promise<KeyRow[]>)
+        .then((keys) => {
+          setSectionTrees((prev) => new Map(prev).set(key, buildTree(keys)));
+        })
+        .catch(console.error)
+        .finally(() =>
+          setLoadingPaths((prev) => {
+            const next = new Set(prev);
+            next.delete(prefix);
+            return next;
+          }),
+        );
+    },
+    [profileId, sectionTrees, loadingPaths, treeKey],
   );
 
+  // When search is non-empty, load all sections that aren't loaded yet
+  useEffect(() => {
+    if (!search.trim() || !profileId || !sections.length) return;
+    for (const sec of sections) {
+      const key = treeKey(sec.prefix);
+      if (!sectionTrees.has(key) && !loadingPaths.has(sec.prefix)) {
+        loadSection(sec.prefix);
+      }
+    }
+  }, [search, profileId, sections, sectionTrees, loadingPaths, treeKey, loadSection]);
+
+  // Re-load trees for sections that are expanded but whose cached tree was
+  // invalidated (e.g. after a bulk-delete clears the section cache).
+  useEffect(() => {
+    if (!profileId || !sections.length) return;
+    for (const path of expanded) {
+      const topLevel = path.split(".")[0];
+      const key = treeKey(topLevel);
+      if (!sectionTrees.has(key) && !loadingPaths.has(topLevel)) {
+        loadSection(topLevel);
+      }
+    }
+  }, [profileId, sections, expanded, sectionTrees, loadingPaths, treeKey, loadSection]);
+
+  // ── Effective expanded: when searching, open everything loaded ─────────────
+  const effectiveExpanded = useMemo(() => {
+    if (!search.trim()) return expanded;
+    // Open all sections + all sub-folders inside loaded trees
+    const all = new Set<string>();
+    for (const sec of sections) {
+      all.add(sec.prefix);
+      const tree = sectionTrees.get(treeKey(sec.prefix));
+      if (tree) {
+        const collectFolders = (nodes: TreeNode[]) => {
+          for (const n of nodes) {
+            if (n.children.length > 0) {
+              all.add(n.path);
+              collectFolders(n.children);
+            }
+          }
+        };
+        collectFolders(tree);
+      }
+    }
+    return all;
+  }, [search, expanded, sections, sectionTrees, treeKey]);
+
+  // ── Flat rows for virtualizer ───────────────────────────────────────────────
+  const flatRows = useMemo(
+    () =>
+      buildFlatRows(
+        sections,
+        new Map(
+          Array.from(sectionTrees.entries())
+            .filter(([k]) => k.startsWith(`${profileId}:`))
+            .map(([k, v]) => [k.slice(profileId!.length + 1), v]),
+        ),
+        effectiveExpanded,
+        loadingPaths,
+        search,
+      ),
+    [sections, sectionTrees, effectiveExpanded, loadingPaths, search, profileId],
+  );
+
+  const visLeaves = useMemo(() => visibleLeaves(flatRows), [flatRows]);
+
+  // ── Draft helpers ──────────────────────────────────────────────────────────
   const draftKeys = useMemo(
     () => (draftId ? (draftKeysByDraft[draftId] ?? []) : []),
     [draftId, draftKeysByDraft],
   );
-
   const draftKeyMap = useMemo(() => new Map(draftKeys.map((dk) => [dk.key, dk])), [draftKeys]);
-
-  const filteredKeys = useMemo(() => {
-    if (!search.trim()) return keys;
-    const q = search.toLowerCase();
-    return keys.filter((k) => k.key.toLowerCase().includes(q) || k.value.toLowerCase().includes(q));
-  }, [keys, search]);
-
-  const tree = useMemo(() => buildTree(filteredKeys), [filteredKeys]);
-
-  // When searching, expand everything automatically
-  const allPaths = useMemo(() => {
-    const paths = new Set<string>();
-    function collect(nodes: TreeNode[]) {
-      for (const n of nodes) {
-        if (n.children.length > 0) {
-          paths.add(n.path);
-          collect(n.children);
-        }
-      }
-    }
-    collect(tree);
-    return paths;
-  }, [tree]);
-
-  const effectiveExpanded = search.trim() ? allPaths : expanded;
 
   const profileDrafts = useMemo(
     () => drafts.filter((d) => d.profileId === profileId && d.status === "open"),
     [drafts, profileId],
   );
 
-  function toggle(path: string) {
+  // ── Expand / collapse ──────────────────────────────────────────────────────
+  function toggleFolder(path: string, isSection: boolean) {
+    const willOpen = !effectiveExpanded.has(path);
     setExpanded((prev) => {
       const next = new Set(prev);
       next.has(path) ? next.delete(path) : next.add(path);
       return next;
     });
+    if (willOpen && isSection) loadSection(path);
   }
 
   function expandAll() {
-    setExpanded(new Set(allPaths));
+    const all = new Set<string>();
+    for (const sec of sections) {
+      all.add(sec.prefix);
+      loadSection(sec.prefix);
+      const tree = sectionTrees.get(treeKey(sec.prefix));
+      if (tree) {
+        const cf = (nodes: TreeNode[]) => {
+          for (const n of nodes) {
+            if (n.children.length > 0) {
+              all.add(n.path);
+              cf(n.children);
+            }
+          }
+        };
+        cf(tree);
+      }
+    }
+    setExpanded(all);
   }
 
   function collapseAll() {
     setExpanded(new Set());
   }
 
+  // ── Editing ────────────────────────────────────────────────────────────────
   function startEdit(leaf: KeyRow) {
     const dk = draftKeyMap.get(leaf.key);
     const value = draftId ? (dk?.value ?? leaf.value) : leaf.value;
     setEditing({ keyId: leaf.id, key: leaf.key, value, isDraft: !!draftId });
   }
-
   function cancelEdit() {
     setEditing(null);
   }
-
   function commitEdit() {
     if (!editing) return;
     const { keyId, key, value, isDraft } = editing;
@@ -190,30 +412,7 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
     });
   }
 
-  // ── Selection helpers ─────────────────────────────────────────────────────
-
-  // Descendant leaf IDs for a subtree — used for folder-level checkbox toggles
-  // and tri-state rendering.
-  function leafIdsUnder(node: TreeNode): string[] {
-    const out: string[] = [];
-    const walk = (n: TreeNode) => {
-      if (n.leaf) out.push(n.leaf.id);
-      for (const c of n.children) walk(c);
-    };
-    walk(node);
-    return out;
-  }
-
-  function nodeSelection(node: TreeNode): "none" | "some" | "all" {
-    const ids = leafIdsUnder(node);
-    if (ids.length === 0) return "none";
-    let hit = 0;
-    for (const id of ids) if (selected.has(id)) hit++;
-    if (hit === 0) return "none";
-    if (hit === ids.length) return "all";
-    return "some";
-  }
-
+  // ── Selection ──────────────────────────────────────────────────────────────
   function toggleLeaf(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -223,13 +422,25 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
   }
 
   function toggleNode(node: TreeNode) {
-    const ids = leafIdsUnder(node);
-    if (ids.length === 0) return;
+    const ids = leafIdsInTree([node]);
     setSelected((prev) => {
       const next = new Set(prev);
-      const allSelected = ids.every((id) => next.has(id));
-      if (allSelected) for (const id of ids) next.delete(id);
-      else for (const id of ids) next.add(id);
+      const allSel = ids.every((id) => next.has(id));
+      if (allSel) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function toggleSection(prefix: string) {
+    const key = treeKey(prefix);
+    const tree = sectionTrees.get(key) ?? [];
+    const ids = leafIdsInTree(tree);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const allSel = ids.every((id) => next.has(id));
+      if (allSel) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
       return next;
     });
   }
@@ -239,12 +450,15 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
   }
 
   const selectedKeys = useMemo(
-    () => filteredKeys.filter((k) => selected.has(k.id)),
-    [filteredKeys, selected],
+    () => visLeaves.filter((k) => selected.has(k.id)),
+    [visLeaves, selected],
   );
 
-  // Registry. Adding another bulk action (export, move-to-chunk, bulk-translate)
-  // means appending one more entry here — nothing in the table or the bar changes.
+  // select-all header: only operates on currently visible leaves
+  const allVisibleSelected = visLeaves.length > 0 && visLeaves.every((k) => selected.has(k.id));
+  const someVisibleSelected = visLeaves.some((k) => selected.has(k.id));
+
+  // ── Bulk actions ───────────────────────────────────────────────────────────
   const bulkActions = useMemo<BulkAction<KeyRow>[]>(
     () => [
       {
@@ -258,225 +472,285 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
           const fd = new FormData();
           for (const k of items) fd.append("ids", k.id);
           await bulkDeleteKeysAction(fd);
+          // Invalidate loaded trees for affected sections so they reload
+          const affectedPrefixes = new Set(items.map((k) => k.key.split(".")[0]));
+          setSectionTrees((prev) => {
+            const next = new Map(prev);
+            for (const p of affectedPrefixes) next.delete(treeKey(p));
+            return next;
+          });
+          setSectionsByProfile((prev) => {
+            const next = new Map(prev);
+            next.delete(profileId!);
+            return next;
+          });
           router.refresh();
         },
       },
     ],
-    [router],
+    [router, treeKey, profileId],
   );
 
-  // ── Row renderer ──────────────────────────────────────────────────────────
+  // ── Virtualizer ────────────────────────────────────────────────────────────
+  const rowVirtualizer = useVirtualizer({
+    count: flatRows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 40,
+    overscan: 8,
+  });
 
-  function renderNodes(nodes: TreeNode[], depth: number): React.ReactNode {
-    return nodes.map((node) => {
-      const isOpen = effectiveExpanded.has(node.path);
-      const hasKids = node.children.length > 0;
-      const isEditing = editing?.keyId === node.leaf?.id;
-      const draftKey = node.leaf ? draftKeyMap.get(node.leaf.key) : undefined;
-      const hasDraft = !!draftKey;
-      const sel = nodeSelection(node);
+  // ── Row renderer ───────────────────────────────────────────────────────────
 
-      return (
-        <div key={node.path}>
-          <div
-            className={cn(
-              "group flex min-h-10 items-start border-b last:border-0",
-              isEditing ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-muted/30",
-            )}
-          >
-            {/* Indent spacer */}
-            <div className="shrink-0" style={{ width: depth * 20 }} />
+  function renderFolderRow(row: Extract<FlatRow, { kind: "folder" }>) {
+    const { path, segment, depth, isOpen, leafCount, loaded } = row;
+    const isSection = depth === 0;
 
-            {/* Checkbox */}
-            <div className="flex size-8 shrink-0 items-center justify-center">
-              <RowCheckbox
-                checked={sel === "all"}
-                indeterminate={sel === "some"}
-                onChange={() =>
-                  node.leaf && !hasKids ? toggleLeaf(node.leaf.id) : toggleNode(node)
-                }
-                ariaLabel={
-                  hasKids
-                    ? `Select subtree ${node.path}`
-                    : `Select key ${node.leaf?.key ?? node.path}`
-                }
-              />
-            </div>
+    // For section-level selection
+    const sectionKey = treeKey(depth === 0 ? path : path.split(".")[0]);
+    const sectionTree = sectionTrees.get(sectionKey) ?? [];
 
-            {/* Chevron */}
-            <div className="flex size-8 shrink-0 items-center justify-center">
-              {hasKids && (
-                <button
-                  onClick={() => toggle(node.path)}
-                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  aria-label={isOpen ? "Collapse" : "Expand"}
-                >
-                  {isOpen ? (
-                    <ChevronDown className="size-3.5" />
-                  ) : (
-                    <ChevronRight className="size-3.5" />
-                  )}
-                </button>
-              )}
-            </div>
+    // Determine checkbox state for this folder
+    let sel: "none" | "some" | "all" = "none";
+    if (loaded && !isSection) {
+      // find node in its parent tree
+      const parentKey = treeKey(path.split(".")[0]);
+      const tree = sectionTrees.get(parentKey) ?? [];
+      const findNode = (nodes: TreeNode[]): TreeNode | null => {
+        for (const n of nodes) {
+          if (n.path === path) return n;
+          const found = findNode(n.children);
+          if (found) return found;
+        }
+        return null;
+      };
+      const node = findNode(tree);
+      if (node) sel = nodeSelection(node, selected);
+    } else if (isSection && sectionTree.length > 0) {
+      const ids = leafIdsInTree(sectionTree);
+      const hit = ids.filter((id) => selected.has(id)).length;
+      sel = hit === 0 ? "none" : hit === ids.length ? "all" : "some";
+    }
 
-            {/* Key segment */}
-            <button
-              className={cn(
-                "flex min-w-0 shrink-0 flex-col py-2.5 pr-4 text-left",
-                hasKids ? "w-44 cursor-pointer" : "w-40 cursor-default",
-              )}
-              onClick={() => hasKids && toggle(node.path)}
-              title={node.path}
-            >
-              <span
-                className={cn(
-                  "truncate font-mono text-xs",
-                  hasKids ? "font-semibold text-foreground" : "text-muted-foreground",
-                )}
-              >
-                {node.segment}
-                {hasKids && (
-                  <span className="ml-1.5 font-normal text-muted-foreground/50">
-                    {node.leafCount}
-                  </span>
-                )}
-              </span>
-              {node.leaf?.description && !hasKids && (
-                <span className="mt-0.5 truncate text-[10px] text-muted-foreground/50">
-                  {node.leaf.description}
-                </span>
-              )}
-            </button>
-
-            {/* Value area (leaves only) */}
-            {!hasKids && node.leaf ? (
-              <div className="flex min-w-0 flex-1 flex-col py-2 pr-2">
-                {/* Published reference shown only in draft mode */}
-                {draftId && (
-                  <div className="mb-1.5 flex items-baseline gap-1.5">
-                    <span className="shrink-0 font-mono text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40">
-                      ref
-                    </span>
-                    <span className="line-clamp-2 break-all text-xs text-muted-foreground/60">
-                      {node.leaf.value || <em>{t("common.empty")}</em>}
-                    </span>
-                  </div>
-                )}
-
-                {/* Editable value */}
-                {isEditing ? (
-                  <textarea
-                    autoFocus
-                    value={editing!.value}
-                    rows={2}
-                    onChange={(e) =>
-                      setEditing((prev) => (prev ? { ...prev, value: e.target.value } : prev))
+    return (
+      <div className="flex min-h-10 items-center border-b last:border-0 hover:bg-muted/30">
+        <div className="shrink-0" style={{ width: depth * 20 }} />
+        {/* Checkbox */}
+        <div className="flex size-8 shrink-0 items-center justify-center">
+          {loaded || (isSection && sectionTree.length > 0) ? (
+            <RowCheckbox
+              checked={sel === "all"}
+              indeterminate={sel === "some"}
+              onChange={() => {
+                if (isSection) {
+                  toggleSection(path);
+                } else {
+                  // Find the node in its section tree and toggle it
+                  const parentKey = treeKey(path.split(".")[0]);
+                  const tree = sectionTrees.get(parentKey) ?? [];
+                  const findNode = (nodes: TreeNode[]): TreeNode | null => {
+                    for (const n of nodes) {
+                      if (n.path === path) return n;
+                      const f = findNode(n.children);
+                      if (f) return f;
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") cancelEdit();
-                      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) commitEdit();
-                    }}
-                    className="w-full resize-none rounded-md border border-ring bg-background px-2 py-1.5 text-sm leading-snug outline-none ring-2 ring-ring/20 focus:ring-ring/40"
-                  />
-                ) : (
-                  <button
-                    onClick={() => startEdit(node.leaf!)}
-                    className="min-h-5 rounded px-1.5 py-0.5 -ml-1.5 text-left text-sm hover:bg-muted/60"
-                    title={t("app.dashboard.i18n.keys._components.click_to_edit")}
-                  >
-                    {draftId ? (
-                      hasDraft ? (
-                        <span className="break-all leading-snug">{draftKey!.value}</span>
-                      ) : (
-                        <span className="italic text-muted-foreground/40">
-                          {t("app.dashboard.i18n.keys._components.click_to_translate")}
-                        </span>
-                      )
-                    ) : node.leaf.value ? (
-                      <span className="break-all leading-snug">{node.leaf.value}</span>
-                    ) : (
-                      <span className="italic text-muted-foreground/40">{t("common.empty")}</span>
-                    )}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex-1" />
-            )}
-
-            {/* Draft dot */}
-            {draftId && !hasKids && hasDraft && !isEditing && (
-              <div className="flex shrink-0 items-center py-3 pr-1">
-                <div
-                  className="size-1.5 rounded-full bg-amber-400 dark:bg-amber-500"
-                  title={t("app.dashboard.i18n.keys._components.draft_value_exists")}
-                />
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex shrink-0 items-center gap-0.5 py-2 pr-1.5">
-              {!hasKids && isEditing ? (
-                <>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    onClick={commitEdit}
-                    disabled={isPending}
-                    aria-label={t("app.dashboard.i18n.keys._components.save_ctrl_enter")}
-                    title={t("app.dashboard.i18n.keys._components.save_ctrl_enter")}
-                  >
-                    <Check className="size-3.5 text-green-600 dark:text-green-400" />
-                  </Button>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    onClick={cancelEdit}
-                    aria-label={t("app.dashboard.i18n.keys._components.cancel_esc")}
-                    title={t("app.dashboard.i18n.keys._components.cancel_esc")}
-                  >
-                    <X className="size-3.5" />
-                  </Button>
-                </>
-              ) : !hasKids && node.leaf ? (
-                <>
-                  {draftId && (
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      disabled
-                      title={t("app.dashboard.i18n.keys._components.translate_with_ai_coming_soon")}
-                      className="opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <Sparkles className="size-3 text-violet-500" />
-                    </Button>
-                  )}
-                  <form action={deleteKeyAction}>
-                    <input type="hidden" name="id" value={node.leaf.id} />
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      type="submit"
-                      aria-label={`Delete ${node.leaf.key}`}
-                      className="opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <Trash2 className="size-3 text-destructive" />
-                    </Button>
-                  </form>
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Recursive children */}
-          {hasKids && isOpen && renderNodes(node.children, depth + 1)}
+                    return null;
+                  };
+                  const node = findNode(tree);
+                  if (node) toggleNode(node);
+                }
+              }}
+              ariaLabel={`Select subtree ${path}`}
+            />
+          ) : (
+            <div className="size-3.5" />
+          )}
         </div>
-      );
-    });
+        {/* Chevron */}
+        <button
+          onClick={() => toggleFolder(path, isSection)}
+          className="flex size-8 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label={isOpen ? "Collapse" : "Expand"}
+        >
+          {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+        </button>
+        {/* Label */}
+        <button
+          onClick={() => toggleFolder(path, isSection)}
+          className="min-w-0 flex-1 py-2.5 text-left"
+        >
+          <span className="font-mono text-xs font-semibold text-foreground">
+            {segment}
+            <span className="ml-1.5 font-normal text-muted-foreground/50">{leafCount}</span>
+          </span>
+        </button>
+      </div>
+    );
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  function renderLeafRow(row: Extract<FlatRow, { kind: "leaf" }>) {
+    const { node, depth } = row;
+    const leaf = node.leaf!;
+    const isEditing = editing?.keyId === leaf.id;
+    const draftKey = draftKeyMap.get(leaf.key);
+    const hasDraft = !!draftKey;
+    const sel = selected.has(leaf.id);
+
+    return (
+      <div
+        className={cn(
+          "group flex min-h-10 items-start border-b last:border-0",
+          isEditing ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-muted/30",
+        )}
+      >
+        <div className="shrink-0" style={{ width: depth * 20 }} />
+        {/* Checkbox */}
+        <div className="flex size-8 shrink-0 items-center justify-center">
+          <RowCheckbox
+            checked={sel}
+            onChange={() => toggleLeaf(leaf.id)}
+            ariaLabel={`Select key ${leaf.key}`}
+          />
+        </div>
+        {/* No chevron — align with folder rows */}
+        <div className="size-8 shrink-0" />
+        {/* Key */}
+        <button className="w-40 shrink-0 cursor-default py-2.5 pr-4 text-left" title={leaf.key}>
+          <span className="truncate font-mono text-xs text-muted-foreground">{node.segment}</span>
+          {leaf.description && (
+            <span className="mt-0.5 block truncate text-[10px] text-muted-foreground/50">
+              {leaf.description}
+            </span>
+          )}
+        </button>
+        {/* Value */}
+        <div className="flex min-w-0 flex-1 flex-col py-2 pr-2">
+          {draftId && (
+            <div className="mb-1.5 flex items-baseline gap-1.5">
+              <span className="shrink-0 font-mono text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40">
+                ref
+              </span>
+              <span className="line-clamp-2 break-all text-xs text-muted-foreground/60">
+                {leaf.value || <em>{t("common.empty")}</em>}
+              </span>
+            </div>
+          )}
+          {isEditing ? (
+            <textarea
+              autoFocus
+              value={editing!.value}
+              rows={2}
+              onChange={(e) =>
+                setEditing((prev) => (prev ? { ...prev, value: e.target.value } : prev))
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Escape") cancelEdit();
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) commitEdit();
+              }}
+              className="w-full resize-none rounded-md border border-ring bg-background px-2 py-1.5 text-sm leading-snug outline-none ring-2 ring-ring/20 focus:ring-ring/40"
+            />
+          ) : (
+            <button
+              onClick={() => startEdit(leaf)}
+              className="-ml-1.5 min-h-5 rounded px-1.5 py-0.5 text-left text-sm hover:bg-muted/60"
+              title={t("app.dashboard.i18n.keys._components.click_to_edit")}
+            >
+              {draftId ? (
+                hasDraft ? (
+                  <span className="break-all leading-snug">{draftKey!.value}</span>
+                ) : (
+                  <span className="italic text-muted-foreground/40">
+                    {t("app.dashboard.i18n.keys._components.click_to_translate")}
+                  </span>
+                )
+              ) : leaf.value ? (
+                <span className="break-all leading-snug">{leaf.value}</span>
+              ) : (
+                <span className="italic text-muted-foreground/40">{t("common.empty")}</span>
+              )}
+            </button>
+          )}
+        </div>
+        {/* Draft dot */}
+        {draftId && hasDraft && !isEditing && (
+          <div className="flex shrink-0 items-center py-3 pr-1">
+            <div
+              className="size-1.5 rounded-full bg-amber-400 dark:bg-amber-500"
+              title={t("app.dashboard.i18n.keys._components.draft_value_exists")}
+            />
+          </div>
+        )}
+        {/* Actions */}
+        <div className="flex shrink-0 items-center gap-0.5 py-2 pr-1.5">
+          {isEditing ? (
+            <>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                onClick={commitEdit}
+                disabled={isPending}
+                aria-label={t("app.dashboard.i18n.keys._components.save_ctrl_enter")}
+                title={t("app.dashboard.i18n.keys._components.save_ctrl_enter")}
+              >
+                <Check className="size-3.5 text-green-600 dark:text-green-400" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                onClick={cancelEdit}
+                aria-label={t("app.dashboard.i18n.keys._components.cancel_esc")}
+                title={t("app.dashboard.i18n.keys._components.cancel_esc")}
+              >
+                <X className="size-3.5" />
+              </Button>
+            </>
+          ) : (
+            <>
+              {draftId && (
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  disabled
+                  title={t("app.dashboard.i18n.keys._components.translate_with_ai_coming_soon")}
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <Sparkles className="size-3 text-violet-500" />
+                </Button>
+              )}
+              <form action={deleteKeyAction}>
+                <input type="hidden" name="id" value={leaf.id} />
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  type="submit"
+                  aria-label={`Delete ${leaf.key}`}
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <Trash2 className="size-3 text-destructive" />
+                </Button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderRow(row: FlatRow): React.ReactNode {
+    if (row.kind === "folder") return renderFolderRow(row);
+    if (row.kind === "leaf") return renderLeafRow(row);
+    // loading
+    return (
+      <div
+        className="flex min-h-10 items-center border-b px-4 text-xs text-muted-foreground"
+        style={{ paddingLeft: row.depth * 20 + 32 }}
+      >
+        <Loader2 className="mr-2 size-3 animate-spin" />
+        Loading…
+      </div>
+    );
+  }
+
+  // ── Empty / missing profile ────────────────────────────────────────────────
 
   if (profiles.length === 0) {
     return (
@@ -490,9 +764,11 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
     );
   }
 
+  // ── Main render ────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-4">
-      {/* ── Profile tabs + Draft selector ── */}
+      {/* ── Profile tabs + draft selector ── */}
       <div className="flex flex-wrap items-center gap-1.5 border-b pb-3">
         <div className="flex flex-wrap gap-1">
           {profiles.map((p) => (
@@ -503,6 +779,7 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
                 setDraftId(null);
                 setEditing(null);
                 setSelected(new Set());
+                setExpanded(new Set());
               }}
               className={cn(
                 "rounded-lg px-3 py-1 font-mono text-xs font-medium transition-colors",
@@ -587,8 +864,10 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
         </button>
 
         <span className="text-xs text-muted-foreground">
-          {filteredKeys.length} {filteredKeys.length === 1 ? t("common.key") : t("common.keys")}
+          {sections.reduce((s, sec) => s + sec.count, 0)} {t("common.keys")}
         </span>
+
+        {loadingSections && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
 
         {draftId && (
           <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
@@ -598,35 +877,33 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
         )}
       </div>
 
-      {/* ── Bulk actions (visible only when selection is non-empty) ── */}
+      {/* ── Bulk actions bar ── */}
       <BulkActionsBar selected={selectedKeys} actions={bulkActions} onClear={clearSelection} />
 
-      {/* ── Table ── */}
+      {/* ── Virtual table ── */}
       {!profileId ? (
         <div className="rounded-lg border py-12 text-center text-sm text-muted-foreground">
           {t("app.dashboard.i18n.keys._components.select_a_profile_above")}
         </div>
-      ) : filteredKeys.length === 0 ? (
+      ) : loadingSections && sections.length === 0 ? (
+        <div className="flex items-center justify-center rounded-lg border py-12">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : sections.length === 0 ? (
         <div className="rounded-lg border py-12 text-center text-sm text-muted-foreground">
-          {search.trim()
-            ? t("app.dashboard.i18n.keys._components.no_keys_match_your_filter")
-            : t("app.dashboard.i18n.keys._components.no_keys_for_this_profile")}
+          {t("app.dashboard.i18n.keys._components.no_keys_for_this_profile")}
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border text-sm">
           {/* Header */}
-          <div className="flex items-center gap-0 border-b bg-muted/50">
+          <div className="flex items-center border-b bg-muted/50">
             <div className="flex w-8 shrink-0 items-center justify-center">
               <RowCheckbox
-                checked={filteredKeys.length > 0 && filteredKeys.every((k) => selected.has(k.id))}
-                indeterminate={
-                  filteredKeys.some((k) => selected.has(k.id)) &&
-                  !filteredKeys.every((k) => selected.has(k.id))
+                checked={allVisibleSelected}
+                indeterminate={someVisibleSelected && !allVisibleSelected}
+                onChange={() =>
+                  setSelected(allVisibleSelected ? new Set() : new Set(visLeaves.map((k) => k.id)))
                 }
-                onChange={() => {
-                  const allSelected = filteredKeys.every((k) => selected.has(k.id));
-                  setSelected(allSelected ? new Set() : new Set(filteredKeys.map((k) => k.id)));
-                }}
                 ariaLabel="Select all visible keys"
               />
             </div>
@@ -647,10 +924,30 @@ export function KeysTable({ profiles, drafts, keysByProfile, draftKeysByDraft }:
                 "Value"
               )}
             </div>
-            <div className="w-16 shrink-0 py-2.5 pr-1.5 text-right text-xs font-medium text-muted-foreground" />
+            <div className="w-16 shrink-0" />
           </div>
 
-          {renderNodes(tree, 0)}
+          {/* Virtual scroll body */}
+          <div ref={scrollRef} className="max-h-[calc(100vh-22rem)] overflow-auto">
+            <div style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}>
+              {rowVirtualizer.getVirtualItems().map((vItem) => (
+                <div
+                  key={vItem.key}
+                  data-index={vItem.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${vItem.start}px)`,
+                  }}
+                >
+                  {renderRow(flatRows[vItem.index])}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

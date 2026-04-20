@@ -61,20 +61,16 @@ test.describe("i18n keys — bulk selection + delete", () => {
   async function openProfile(page: import("@playwright/test").Page) {
     await page.goto("/dashboard/i18n/keys");
     await page.getByRole("button", { name: profileName, exact: true }).click();
-    // Select-all checkbox is the canonical "tree is rendered" marker —
-    // plain-English label I control, no i18n indirection.
+    // Wait for table header — appears once sections load from the API.
     await expect(page.getByLabel("Select all visible keys")).toBeVisible();
-    // Click every leaf's enclosing folder chevron to reveal leaves. We can't
-    // rely on the "Expand all" button because its title flows through t().
-    // The RowCheckbox for each folder row appears only after expand, so loop
-    // until every leaf checkbox is visible. Two clicks covers a 2-level tree.
-    for (let i = 0; i < 3; i++) {
+    // Each expand chevron click may trigger a lazy fetch. Wait for network
+    // idle after each click so the loaded sub-tree is rendered before we look
+    // for the next set of chevrons. Four passes covers a 2-level tree.
+    for (let i = 0; i < 4; i++) {
       const folderChevrons = page.locator('button[aria-label="Expand"]');
-      const n = await folderChevrons.count();
-      if (n === 0) break;
-      for (let c = 0; c < n; c++) {
-        await folderChevrons.nth(0).click();
-      }
+      if ((await folderChevrons.count()) === 0) break;
+      await folderChevrons.nth(0).click();
+      await page.waitForLoadState("networkidle");
     }
   }
 

@@ -3,7 +3,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { Languages } from "lucide-react";
 
 import { auth } from "@/auth";
-import { listProfiles, listKeys, listDrafts, listDraftKeys } from "@/lib/handlers/i18n";
+import { listProfiles, listDrafts, listDraftKeys } from "@/lib/handlers/i18n";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LinkButton } from "@/components/ui/link-button";
@@ -19,18 +19,10 @@ export default async function I18nKeysPage() {
     source: "jwt" as const,
   };
 
-  const [profiles, allKeys, drafts] = await Promise.all([
+  const [profiles, drafts] = await Promise.all([
     listProfiles(identity).catch(() => []),
-    listKeys(identity).catch(() => []),
     listDrafts(identity).catch(() => []),
   ]);
-
-  // Group published keys by profileId
-  const keysByProfile: Record<string, (typeof allKeys)[number][]> = {};
-  for (const key of allKeys) {
-    if (!keysByProfile[key.profileId]) keysByProfile[key.profileId] = [];
-    keysByProfile[key.profileId].push(key);
-  }
 
   const openDrafts = drafts.filter((d) => d.status === "open");
   const draftKeysByDraft: Record<string, Awaited<ReturnType<typeof listDraftKeys>>> = {};
@@ -78,12 +70,7 @@ export default async function I18nKeysPage() {
         }
       />
 
-      <KeysTable
-        profiles={profiles}
-        drafts={openDrafts}
-        keysByProfile={keysByProfile}
-        draftKeysByDraft={draftKeysByDraft}
-      />
+      <KeysTable profiles={profiles} drafts={openDrafts} draftKeysByDraft={draftKeysByDraft} />
     </div>
   );
 }
