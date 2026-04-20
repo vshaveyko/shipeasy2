@@ -39,6 +39,7 @@ type Section = {
   soleKey: string | null;
   soleValue: string | null;
   soleDescription: string | null;
+  soleVariables: string[] | null;
   soleProfileId: string | null;
   soleChunkId: string | null;
   soleUpdatedAt: string | null;
@@ -174,6 +175,7 @@ function buildFlatRows(
         key: sec.soleKey,
         value: sec.soleValue ?? "",
         description: sec.soleDescription ?? null,
+        variables: sec.soleVariables,
         updatedAt: sec.soleUpdatedAt ?? "",
         updatedBy: sec.soleUpdatedBy ?? "",
         profileId: sec.soleProfileId ?? "",
@@ -613,6 +615,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           key: sec.soleKey,
           value: sec.soleValue ?? "",
           description: sec.soleDescription ?? null,
+          variables: sec.soleVariables,
           updatedAt: sec.soleUpdatedAt ?? "",
           updatedBy: sec.soleUpdatedBy ?? "",
           profileId: sec.soleProfileId ?? "",

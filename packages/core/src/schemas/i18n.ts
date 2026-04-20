@@ -14,6 +14,9 @@ export const keyPushItemSchema = z.object({
   key: z.string().min(1).max(256),
   value: z.string(),
   description: z.string().optional(),
+  // Optional explicit list of variable names in the value's {{var}} placeholders.
+  // If omitted the server auto-derives it from the value to keep old clients working.
+  variables: z.array(z.string().min(1).max(64)).max(32).optional(),
 });
 
 export const keysPushSchema = z.object({
@@ -25,6 +28,7 @@ export const keysPushSchema = z.object({
 export const keyUpdateSchema = z.object({
   value: z.string(),
   description: z.string().optional(),
+  variables: z.array(z.string().min(1).max(64)).max(32).optional(),
 });
 
 export const draftCreateSchema = z.object({

@@ -66,6 +66,7 @@ export type KeyRow = {
   key: string;
   value: string;
   description: string | null;
+  variables: string[] | null;
   updatedAt: string;
   updatedBy: string;
   profileId: string;
@@ -73,6 +74,25 @@ export type KeyRow = {
   chunkId: string;
   chunkName: string | null;
 };
+
+// Extract {{var}} placeholders from a value. Dedupes and preserves first-seen order.
+function extractVariables(value: string): string[] {
+  const out: string[] = [];
+  const re = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(value)) !== null) {
+    if (!out.includes(m[1])) out.push(m[1]);
+  }
+  return out;
+}
+
+// Resolve the final `variables` list: caller-supplied list if present, else
+// auto-derived from the value's {{var}} placeholders. Returns null for "none"
+// so we store `null` instead of `[]` to save JSON overhead on plain keys.
+function resolveVariables(value: string, explicit: string[] | undefined): string[] | null {
+  const raw = explicit ?? extractVariables(value);
+  return raw.length > 0 ? raw : null;
+}
 
 export type KeysPage = { keys: KeyRow[]; total: number };
 
@@ -93,6 +113,7 @@ export async function listKeys(
       key: labelKeys.key,
       value: labelKeys.value,
       description: labelKeys.description,
+      variables: labelKeys.variables,
       updatedAt: labelKeys.updatedAt,
       updatedBy: labelKeys.updatedBy,
       profileId: labelKeys.profileId,
@@ -137,6 +158,7 @@ export type KeySection = {
   soleKey: string | null;
   soleValue: string | null;
   soleDescription: string | null;
+  soleVariables: string[] | null;
   soleProfileId: string | null;
   soleChunkId: string | null;
   soleUpdatedAt: string | null;
@@ -163,6 +185,7 @@ export async function listKeySections(
        CASE WHEN count(*) = 1 THEN key         ELSE NULL END AS sole_key,
        CASE WHEN count(*) = 1 THEN value       ELSE NULL END AS sole_value,
        CASE WHEN count(*) = 1 THEN description ELSE NULL END AS sole_description,
+       CASE WHEN count(*) = 1 THEN variables   ELSE NULL END AS sole_variables,
        CASE WHEN count(*) = 1 THEN profile_id  ELSE NULL END AS sole_profile_id,
        CASE WHEN count(*) = 1 THEN chunk_id    ELSE NULL END AS sole_chunk_id,
        CASE WHEN count(*) = 1 THEN updated_at  ELSE NULL END AS sole_updated_at,
@@ -180,6 +203,7 @@ export async function listKeySections(
       sole_key: string | null;
       sole_value: string | null;
       sole_description: string | null;
+      sole_variables: string | null;
       sole_profile_id: string | null;
       sole_chunk_id: string | null;
       sole_updated_at: string | null;
@@ -192,6 +216,7 @@ export async function listKeySections(
     soleKey: r.sole_key,
     soleValue: r.sole_value,
     soleDescription: r.sole_description,
+    soleVariables: r.sole_variables ? (JSON.parse(r.sole_variables) as string[]) : null,
     soleProfileId: r.sole_profile_id,
     soleChunkId: r.sole_chunk_id,
     soleUpdatedAt: r.sole_updated_at,
@@ -231,6 +256,7 @@ export async function upsertKeys(identity: AdminIdentity, input: unknown) {
   let upserted = 0;
 
   for (const item of parsed.keys) {
+    const vars = resolveVariables(item.value, item.variables);
     await db
       .insert(labelKeys)
       .values({
@@ -241,6 +267,7 @@ export async function upsertKeys(identity: AdminIdentity, input: unknown) {
         key: item.key,
         value: item.value,
         description: item.description ?? null,
+        variables: vars,
         updatedAt: now,
         updatedBy: identity.actorEmail,
       })
@@ -249,6 +276,7 @@ export async function upsertKeys(identity: AdminIdentity, input: unknown) {
         set: {
           value: item.value,
           description: item.description ?? null,
+          variables: vars,
           updatedAt: now,
           updatedBy: identity.actorEmail,
         },
@@ -269,11 +297,14 @@ export async function updateKey(identity: AdminIdentity, id: string, input: unkn
   const existing = await s.selectWhere(labelKeys, eq(labelKeys.id, id));
   if (existing.length === 0) throw new ApiError("Key not found", 404);
 
+  const vars = resolveVariables(parsed.value, parsed.variables);
+
   await s
     .update(labelKeys)
     .set({
       value: parsed.value,
       description: parsed.description ?? null,
+      variables: vars,
       updatedAt: new Date().toISOString(),
       updatedBy: identity.actorEmail,
     })
@@ -378,6 +409,7 @@ export type DraftKeyRow = {
   key: string;
   value: string;
   description: string | null;
+  variables: string[] | null;
   updatedBy: string;
   updatedAt: string;
 };
@@ -406,6 +438,7 @@ export async function upsertDraftKey(
   const env = await getEnvAsync();
   const db = getDb(env.DB);
   const now = new Date().toISOString();
+  const vars = resolveVariables(value, undefined);
 
   await db
     .insert(labelDraftKeys)
@@ -416,6 +449,7 @@ export async function upsertDraftKey(
       key,
       value,
       description: description ?? null,
+      variables: vars,
       updatedBy: identity.actorEmail,
       updatedAt: now,
     })
@@ -424,6 +458,7 @@ export async function upsertDraftKey(
       set: {
         value,
         description: description ?? null,
+        variables: vars,
         updatedBy: identity.actorEmail,
         updatedAt: now,
       },
