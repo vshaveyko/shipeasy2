@@ -74,16 +74,20 @@ export type KeyRow = {
   chunkName: string | null;
 };
 
+export type KeysPage = { keys: KeyRow[]; total: number };
+
 export async function listKeys(
   identity: AdminIdentity,
   profileId?: string,
   prefix?: string,
   search?: string,
-): Promise<KeyRow[]> {
+  limit = 200,
+  offset = 0,
+): Promise<KeysPage> {
   const env = getEnv();
   const db = getDb(env.DB);
 
-  const q = db
+  const baseSelect = db
     .select({
       id: labelKeys.id,
       key: labelKeys.key,
@@ -112,8 +116,17 @@ export async function listKeys(
     ? or(like(labelKeys.key, `%${search}%`), like(labelKeys.value, `%${search}%`))
     : undefined;
 
-  const rows = await q.where(and(projectFilter, profileFilter, prefixFilter, searchFilter));
-  return rows as KeyRow[];
+  const where = and(projectFilter, profileFilter, prefixFilter, searchFilter);
+
+  const [rows, countRows] = await Promise.all([
+    baseSelect.where(where).limit(limit).offset(offset),
+    db
+      .select({ n: count() })
+      .from(labelKeys)
+      .where(and(projectFilter, profileFilter, prefixFilter, searchFilter)),
+  ]);
+
+  return { keys: rows as KeyRow[], total: countRows[0]?.n ?? 0 };
 }
 
 export type KeySection = {

@@ -21,7 +21,9 @@ export default async function I18nProfilesPage() {
 
   const [profiles, allKeys] = await Promise.all([
     listProfiles(identity).catch(() => []),
-    listKeys(identity).catch(() => []),
+    listKeys(identity)
+      .then((p) => p.keys)
+      .catch(() => []),
   ]);
 
   const keyCountByProfile: Record<string, number> = {};

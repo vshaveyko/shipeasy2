@@ -8,7 +8,9 @@ export async function GET(req: Request) {
   const profileId = url.searchParams.get("profile_id") ?? undefined;
   const prefix = url.searchParams.get("prefix") ?? undefined;
   const search = url.searchParams.get("q") ?? undefined;
-  return withAdmin(req, (identity) => listKeys(identity, profileId, prefix, search));
+  const limit = Number(url.searchParams.get("limit") ?? 200);
+  const offset = Number(url.searchParams.get("offset") ?? 0);
+  return withAdmin(req, (identity) => listKeys(identity, profileId, prefix, search, limit, offset));
 }
 
 export async function POST(req: Request) {

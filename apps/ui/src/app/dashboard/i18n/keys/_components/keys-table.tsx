@@ -72,7 +72,8 @@ type FlatRow =
       loaded: boolean;
     }
   | { kind: "leaf"; node: TreeNode; depth: number; displayKey?: string }
-  | { kind: "loading"; path: string; depth: number };
+  | { kind: "loading"; path: string; depth: number }
+  | { kind: "load-more"; prefix: string; depth: number; loaded: number; total: number };
 
 // ── Tree helpers ───────────────────────────────────────────────────────────────
 
@@ -157,13 +158,16 @@ function flattenSubtree(
 function buildFlatRows(
   sections: Section[],
   sectionTrees: Map<string, TreeNode[]>,
+  sectionPages: Map<string, { keys: KeyRow[]; total: number }>,
   expanded: Set<string>,
   loadingPaths: Set<string>,
 ): FlatRow[] {
+  // Section folder rows are rendered in the nav panel above — only emit content.
   const rows: FlatRow[] = [];
   for (const sec of sections) {
-    // Single-key sections: the sole key's data is embedded in the sections
-    // response — render it directly as a leaf without any extra fetch.
+    if (!expanded.has(sec.prefix)) continue;
+
+    // Single-key sections: sole key data is embedded — render directly.
     if (sec.count === 1 && sec.soleId && sec.soleKey) {
       const soleKeyRow: KeyRow = {
         id: sec.soleId,
@@ -187,22 +191,21 @@ function buildFlatRows(
       rows.push({ kind: "leaf", node: soleNode, depth: 0, displayKey: sec.soleKey });
       continue;
     }
-    const isOpen = expanded.has(sec.prefix);
+
     const tree = sectionTrees.get(sec.prefix);
-    rows.push({
-      kind: "folder",
-      path: sec.prefix,
-      segment: sec.prefix,
-      depth: 0,
-      isOpen,
-      leafCount: sec.count,
-      loaded: !!tree,
-    });
-    if (isOpen) {
-      if (loadingPaths.has(sec.prefix)) {
-        rows.push({ kind: "loading", path: sec.prefix, depth: 1 });
-      } else if (tree) {
-        flattenSubtree(rows, tree, 1, expanded);
+    const page = sectionPages.get(sec.prefix);
+    if (loadingPaths.has(sec.prefix)) {
+      rows.push({ kind: "loading", path: sec.prefix, depth: 0 });
+    } else if (tree) {
+      flattenSubtree(rows, tree, 0, expanded);
+      if (page && page.keys.length < page.total) {
+        rows.push({
+          kind: "load-more",
+          prefix: sec.prefix,
+          depth: 0,
+          loaded: page.keys.length,
+          total: page.total,
+        });
       }
     }
   }
@@ -289,8 +292,16 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   // ── Sections + lazy tree data ──────────────────────────────────────────────
   // sections by profileId
   const [sectionsByProfile, setSectionsByProfile] = useState<Map<string, Section[]>>(new Map());
-  // loaded key trees by profileId/prefix key ("profileId:prefix")
-  const [sectionTrees, setSectionTrees] = useState<Map<string, TreeNode[]>>(new Map());
+  // paginated key pages by "profileId:prefix"
+  const [sectionPages, setSectionPages] = useState<Map<string, { keys: KeyRow[]; total: number }>>(
+    new Map(),
+  );
+  // derived trees — kept in sync with sectionPages
+  const sectionTrees = useMemo(() => {
+    const map = new Map<string, TreeNode[]>();
+    for (const [k, page] of sectionPages) map.set(k, buildTree(page.keys));
+    return map;
+  }, [sectionPages]);
   // currently fetching
   const [loadingPaths, setLoadingPaths] = useState<Set<string>>(new Set());
   const [loadingSections, setLoadingSections] = useState(false);
@@ -325,9 +336,11 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       return;
     }
     setSearchLoading(true);
-    fetch(`/api/admin/i18n/keys?profile_id=${profileId}&q=${encodeURIComponent(debouncedSearch)}`)
-      .then((r) => r.json() as Promise<KeyRow[]>)
-      .then((data) => setSearchResults(data))
+    fetch(
+      `/api/admin/i18n/keys?profile_id=${profileId}&q=${encodeURIComponent(debouncedSearch)}&limit=500`,
+    )
+      .then((r) => r.json() as Promise<{ keys: KeyRow[]; total: number }>)
+      .then((data) => setSearchResults(data.keys))
       .catch(console.error)
       .finally(() => setSearchLoading(false));
   }, [debouncedSearch, profileId]);
@@ -348,14 +361,26 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
 
   // ── Load keys for a section on expand ─────────────────────────────────────
   const loadSection = useCallback(
-    (prefix: string) => {
+    (prefix: string, offset = 0) => {
       const key = treeKey(prefix);
-      if (sectionTrees.has(key) || loadingPaths.has(prefix)) return;
+      if (loadingPaths.has(prefix)) return;
+      if (offset === 0 && sectionPages.has(key)) return;
       setLoadingPaths((prev) => new Set(prev).add(prefix));
-      fetch(`/api/admin/i18n/keys?profile_id=${profileId}&prefix=${encodeURIComponent(prefix)}`)
-        .then((r) => r.json() as Promise<KeyRow[]>)
-        .then((keys) => {
-          setSectionTrees((prev) => new Map(prev).set(key, buildTree(keys)));
+      fetch(
+        `/api/admin/i18n/keys?profile_id=${profileId}&prefix=${encodeURIComponent(prefix)}&limit=200&offset=${offset}`,
+      )
+        .then((r) => r.json() as Promise<{ keys: KeyRow[]; total: number }>)
+        .then((page) => {
+          setSectionPages((prev) => {
+            const existing = prev.get(key);
+            if (offset > 0 && existing) {
+              return new Map(prev).set(key, {
+                keys: [...existing.keys, ...page.keys],
+                total: page.total,
+              });
+            }
+            return new Map(prev).set(key, page);
+          });
         })
         .catch(console.error)
         .finally(() =>
@@ -366,7 +391,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           }),
         );
     },
-    [profileId, sectionTrees, loadingPaths, treeKey],
+    [profileId, sectionPages, loadingPaths, treeKey],
   );
 
   // Re-load trees for sections that are expanded but whose cache was invalidated.
@@ -382,6 +407,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   }, [profileId, sections, expanded, sectionTrees, loadingPaths, treeKey, loadSection]);
 
   // ── Flat rows for virtualizer ───────────────────────────────────────────────
+  // Strip the "profileId:" prefix so buildFlatRows gets clean "prefix → tree" maps.
   const profileTreesMap = useMemo(
     () =>
       new Map(
@@ -392,12 +418,22 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     [sectionTrees, profileId],
   );
 
+  const profilePagesMap = useMemo(
+    () =>
+      new Map(
+        Array.from(sectionPages.entries())
+          .filter(([k]) => k.startsWith(`${profileId}:`))
+          .map(([k, v]) => [k.slice(profileId!.length + 1), v]),
+      ),
+    [sectionPages, profileId],
+  );
+
   const flatRows = useMemo(
     () =>
       searchResults !== null
         ? buildSearchFlatRows(searchResults)
-        : buildFlatRows(sections, profileTreesMap, expanded, loadingPaths),
-    [searchResults, sections, profileTreesMap, expanded, loadingPaths],
+        : buildFlatRows(sections, profileTreesMap, profilePagesMap, expanded, loadingPaths),
+    [searchResults, sections, profileTreesMap, profilePagesMap, expanded, loadingPaths],
   );
 
   const visLeaves = useMemo(() => visibleLeaves(flatRows), [flatRows]);
@@ -499,13 +535,63 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     });
   }
 
-  function toggleSection(prefix: string) {
-    const key = treeKey(prefix);
+  function toggleSection(sec: Section) {
+    // Single-key section: use the embedded sole id directly.
+    if (sec.count === 1 && sec.soleId) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(sec.soleId!)) next.delete(sec.soleId!);
+        else next.add(sec.soleId!);
+        return next;
+      });
+      return;
+    }
+    const key = treeKey(sec.prefix);
     const tree = sectionTrees.get(key) ?? [];
     const ids = leafIdsInTree(tree);
+    const page = sectionPages.get(key);
+    const fullyLoaded = page && page.keys.length >= page.total;
+    if (!fullyLoaded && page && page.keys.length < page.total) {
+      // Load remaining pages, then select — fire async without blocking UI.
+      const loadAll = async () => {
+        let offset = page.keys.length;
+        while (offset < page.total) {
+          await new Promise<void>((resolve) => {
+            fetch(
+              `/api/admin/i18n/keys?profile_id=${profileId}&prefix=${encodeURIComponent(sec.prefix)}&limit=200&offset=${offset}`,
+            )
+              .then((r) => r.json() as Promise<{ keys: KeyRow[]; total: number }>)
+              .then((p) => {
+                setSectionPages((prev) => {
+                  const ex = prev.get(key);
+                  return new Map(prev).set(key, {
+                    keys: ex ? [...ex.keys, ...p.keys] : p.keys,
+                    total: p.total,
+                  });
+                });
+                offset += p.keys.length;
+              })
+              .catch(console.error)
+              .finally(resolve);
+          });
+        }
+        // After all pages loaded, select all.
+        setSectionPages((snapshot) => {
+          const all = leafIdsInTree(buildTree((snapshot.get(key) ?? { keys: [] }).keys));
+          setSelected((prev) => {
+            const next = new Set(prev);
+            all.forEach((id) => next.add(id));
+            return next;
+          });
+          return snapshot;
+        });
+      };
+      void loadAll();
+      return;
+    }
     setSelected((prev) => {
       const next = new Set(prev);
-      const allSel = ids.every((id) => next.has(id));
+      const allSel = ids.length > 0 && ids.every((id) => next.has(id));
       if (allSel) ids.forEach((id) => next.delete(id));
       else ids.forEach((id) => next.add(id));
       return next;
@@ -516,9 +602,35 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     setSelected(new Set());
   }
 
+  // All loaded keys for the current profile (including from collapsed sections).
+  const allLoadedKeys = useMemo(() => {
+    const out: KeyRow[] = [];
+    // Sole-key sections — use embedded data.
+    for (const sec of sections) {
+      if (sec.count === 1 && sec.soleId && sec.soleKey) {
+        out.push({
+          id: sec.soleId,
+          key: sec.soleKey,
+          value: sec.soleValue ?? "",
+          description: sec.soleDescription ?? null,
+          updatedAt: sec.soleUpdatedAt ?? "",
+          updatedBy: sec.soleUpdatedBy ?? "",
+          profileId: sec.soleProfileId ?? "",
+          profileName: null,
+          chunkId: sec.soleChunkId ?? "",
+          chunkName: null,
+        });
+      }
+    }
+    for (const page of profilePagesMap.values()) {
+      for (const k of page.keys) out.push(k);
+    }
+    return out;
+  }, [sections, profilePagesMap]);
+
   const selectedKeys = useMemo(
-    () => visLeaves.filter((k) => selected.has(k.id)),
-    [visLeaves, selected],
+    () => allLoadedKeys.filter((k) => selected.has(k.id)),
+    [allLoadedKeys, selected],
   );
 
   // select-all header: only operates on currently visible leaves
@@ -539,9 +651,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           const fd = new FormData();
           for (const k of items) fd.append("ids", k.id);
           await bulkDeleteKeysAction(fd);
-          // Invalidate loaded trees for affected sections so they reload
+          // Invalidate loaded pages for affected sections so they reload
           const affectedPrefixes = new Set(items.map((k) => k.key.split(".")[0]));
-          setSectionTrees((prev) => {
+          setSectionPages((prev) => {
             const next = new Map(prev);
             for (const p of affectedPrefixes) next.delete(treeKey(p));
             return next;
@@ -609,7 +721,8 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
               indeterminate={sel === "some"}
               onChange={() => {
                 if (isSection) {
-                  toggleSection(path);
+                  const sec = sections.find((s) => s.prefix === path);
+                  if (sec) toggleSection(sec);
                 } else {
                   // Find the node in its section tree and toggle it
                   const parentKey = treeKey(path.split(".")[0]);
@@ -807,6 +920,22 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   function renderRow(row: FlatRow): React.ReactNode {
     if (row.kind === "folder") return renderFolderRow(row);
     if (row.kind === "leaf") return renderLeafRow(row);
+    if (row.kind === "load-more") {
+      return (
+        <div
+          className="flex min-h-10 items-center border-b px-4 text-xs text-muted-foreground"
+          style={{ paddingLeft: row.depth * 20 + 16 }}
+        >
+          <button
+            onClick={() => loadSection(row.prefix, row.loaded)}
+            className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-muted hover:text-foreground"
+          >
+            {loadingPaths.has(row.prefix) ? <Loader2 className="size-3 animate-spin" /> : null}
+            Load more ({row.loaded} / {row.total})
+          </button>
+        </div>
+      );
+    }
     // loading
     return (
       <div
@@ -977,6 +1106,51 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border text-sm">
+          {/* ── Sections nav panel (always visible) ── */}
+          {!debouncedSearch && sections.length > 0 && (
+            <div className="flex flex-wrap gap-1 border-b bg-muted/30 px-3 py-2">
+              {sections.map((sec) => {
+                const isOpen = expanded.has(sec.prefix);
+                const key = treeKey(sec.prefix);
+                const tree = sectionTrees.get(key) ?? [];
+                const ids = sec.count === 1 && sec.soleId ? [sec.soleId] : leafIdsInTree(tree);
+                const hit = ids.filter((id) => selected.has(id)).length;
+                const selState: "none" | "some" | "all" =
+                  hit === 0 ? "none" : hit === ids.length && ids.length > 0 ? "all" : "some";
+                return (
+                  <div
+                    key={sec.prefix}
+                    className={cn(
+                      "flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors",
+                      isOpen
+                        ? "border-primary/30 bg-primary/5 text-foreground"
+                        : "border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <RowCheckbox
+                      checked={selState === "all"}
+                      indeterminate={selState === "some"}
+                      onChange={() => toggleSection(sec)}
+                      ariaLabel={`Select section ${sec.prefix}`}
+                    />
+                    <button
+                      onClick={() => toggleFolder(sec.prefix, true)}
+                      className="flex items-center gap-1"
+                    >
+                      <span className="font-mono font-medium">{sec.prefix}</span>
+                      <span className="text-muted-foreground/50">{sec.count}</span>
+                      {isOpen ? (
+                        <ChevronDown className="size-3 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="size-3 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex items-center border-b bg-muted/50">
             <div className="flex w-8 shrink-0 items-center justify-center">
