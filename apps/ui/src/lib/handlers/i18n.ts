@@ -116,28 +116,74 @@ export async function listKeys(
   return rows as KeyRow[];
 }
 
+export type KeySection = {
+  prefix: string;
+  count: number;
+  /** Only set when count === 1 — lets the UI render the leaf without a second fetch. */
+  soleId: string | null;
+  soleKey: string | null;
+  soleValue: string | null;
+  soleDescription: string | null;
+  soleProfileId: string | null;
+  soleChunkId: string | null;
+  soleUpdatedAt: string | null;
+  soleUpdatedBy: string | null;
+};
+
 /** Top-level sections for a profile (first dot-segment of each key → count). */
 export async function listKeySections(
   identity: AdminIdentity,
   profileId: string,
-): Promise<{ prefix: string; count: number }[]> {
+): Promise<KeySection[]> {
   const env = getEnv();
   // Raw D1 query — Drizzle has no expression-level CASE in GROUP BY yet.
+  // When a section has exactly one key we piggy-back its full data so the UI
+  // can render a leaf row without a second network round-trip.
   const result = await env.DB.prepare(
     `SELECT
        CASE WHEN instr(key, '.') > 0
             THEN substr(key, 1, instr(key, '.') - 1)
             ELSE key
        END AS prefix,
-       count(*) AS cnt
+       count(*) AS cnt,
+       CASE WHEN count(*) = 1 THEN id          ELSE NULL END AS sole_id,
+       CASE WHEN count(*) = 1 THEN key         ELSE NULL END AS sole_key,
+       CASE WHEN count(*) = 1 THEN value       ELSE NULL END AS sole_value,
+       CASE WHEN count(*) = 1 THEN description ELSE NULL END AS sole_description,
+       CASE WHEN count(*) = 1 THEN profile_id  ELSE NULL END AS sole_profile_id,
+       CASE WHEN count(*) = 1 THEN chunk_id    ELSE NULL END AS sole_chunk_id,
+       CASE WHEN count(*) = 1 THEN updated_at  ELSE NULL END AS sole_updated_at,
+       CASE WHEN count(*) = 1 THEN updated_by  ELSE NULL END AS sole_updated_by
      FROM label_keys
      WHERE project_id = ?1 AND profile_id = ?2
      GROUP BY prefix
      ORDER BY prefix`,
   )
     .bind(identity.projectId, profileId)
-    .all<{ prefix: string; cnt: number }>();
-  return (result.results ?? []).map((r) => ({ prefix: r.prefix, count: r.cnt }));
+    .all<{
+      prefix: string;
+      cnt: number;
+      sole_id: string | null;
+      sole_key: string | null;
+      sole_value: string | null;
+      sole_description: string | null;
+      sole_profile_id: string | null;
+      sole_chunk_id: string | null;
+      sole_updated_at: string | null;
+      sole_updated_by: string | null;
+    }>();
+  return (result.results ?? []).map((r) => ({
+    prefix: r.prefix,
+    count: r.cnt,
+    soleId: r.sole_id,
+    soleKey: r.sole_key,
+    soleValue: r.sole_value,
+    soleDescription: r.sole_description,
+    soleProfileId: r.sole_profile_id,
+    soleChunkId: r.sole_chunk_id,
+    soleUpdatedAt: r.sole_updated_at,
+    soleUpdatedBy: r.sole_updated_by,
+  }));
 }
 
 export async function upsertKeys(identity: AdminIdentity, input: unknown) {

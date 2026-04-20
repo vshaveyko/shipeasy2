@@ -32,7 +32,18 @@ import { RowCheckbox } from "./row-checkbox";
 
 type Profile = { id: string; name: string };
 type Draft = { id: string; name: string; profileId: string; status: string };
-type Section = { prefix: string; count: number };
+type Section = {
+  prefix: string;
+  count: number;
+  soleId: string | null;
+  soleKey: string | null;
+  soleValue: string | null;
+  soleDescription: string | null;
+  soleProfileId: string | null;
+  soleChunkId: string | null;
+  soleUpdatedAt: string | null;
+  soleUpdatedBy: string | null;
+};
 
 interface TreeNode {
   segment: string;
@@ -151,35 +162,29 @@ function buildFlatRows(
 ): FlatRow[] {
   const rows: FlatRow[] = [];
   for (const sec of sections) {
-    // Single-key sections: skip the folder and show the leaf directly (or a
-    // loading placeholder until the tree arrives).
-    if (sec.count === 1) {
-      const tree = sectionTrees.get(sec.prefix);
-      if (loadingPaths.has(sec.prefix)) {
-        rows.push({ kind: "loading", path: sec.prefix, depth: 0 });
-      } else if (tree) {
-        // Find the single leaf and emit it at depth 0 with the full key shown.
-        const nodes = tree;
-        let singleLeafNode: TreeNode | null = null;
-        for (const n of nodes) {
-          const found = findSingleLeaf(n);
-          if (found) {
-            singleLeafNode = found;
-            break;
-          }
-        }
-        if (singleLeafNode?.leaf) {
-          rows.push({
-            kind: "leaf",
-            node: singleLeafNode,
-            depth: 0,
-            displayKey: singleLeafNode.leaf.key,
-          });
-        }
-      } else {
-        // Tree not yet loaded — show loading placeholder
-        rows.push({ kind: "loading", path: sec.prefix, depth: 0 });
-      }
+    // Single-key sections: the sole key's data is embedded in the sections
+    // response — render it directly as a leaf without any extra fetch.
+    if (sec.count === 1 && sec.soleId && sec.soleKey) {
+      const soleKeyRow: KeyRow = {
+        id: sec.soleId,
+        key: sec.soleKey,
+        value: sec.soleValue ?? "",
+        description: sec.soleDescription ?? null,
+        updatedAt: sec.soleUpdatedAt ?? "",
+        updatedBy: sec.soleUpdatedBy ?? "",
+        profileId: sec.soleProfileId ?? "",
+        profileName: null,
+        chunkId: sec.soleChunkId ?? "",
+        chunkName: null,
+      };
+      const soleNode: TreeNode = {
+        segment: sec.soleKey.split(".").pop() ?? sec.soleKey,
+        path: sec.soleKey,
+        children: [],
+        leaf: soleKeyRow,
+        leafCount: 1,
+      };
+      rows.push({ kind: "leaf", node: soleNode, depth: 0, displayKey: sec.soleKey });
       continue;
     }
     const isOpen = expanded.has(sec.prefix);
@@ -336,15 +341,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       .then((r) => r.json() as Promise<Section[]>)
       .then((data) => {
         setSectionsByProfile((prev) => new Map(prev).set(profileId, data));
-        // Auto-load trees for single-key sections — they render as leaves
-        // directly and never go through the expand/collapse flow.
-        for (const sec of data) {
-          if (sec.count === 1) loadSection(sec.prefix);
-        }
       })
       .catch(console.error)
       .finally(() => setLoadingSections(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, sectionsByProfile]);
 
   // ── Load keys for a section on expand ─────────────────────────────────────
