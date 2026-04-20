@@ -60,10 +60,19 @@ type FlatRow =
       leafCount: number;
       loaded: boolean;
     }
-  | { kind: "leaf"; node: TreeNode; depth: number }
+  | { kind: "leaf"; node: TreeNode; depth: number; displayKey?: string }
   | { kind: "loading"; path: string; depth: number };
 
 // ── Tree helpers ───────────────────────────────────────────────────────────────
+
+function findSingleLeaf(node: TreeNode): TreeNode | null {
+  if (node.leaf) return node;
+  for (const child of node.children) {
+    const found = findSingleLeaf(child);
+    if (found) return found;
+  }
+  return null;
+}
 
 function buildTree(keys: KeyRow[]): TreeNode[] {
   type Internal = {
@@ -109,6 +118,14 @@ function flattenSubtree(
   for (const node of nodes) {
     const hasKids = node.children.length > 0;
     if (hasKids) {
+      // Collapse folders that contain exactly one key — show the leaf directly.
+      if (node.leafCount === 1) {
+        const single = findSingleLeaf(node);
+        if (single?.leaf) {
+          rows.push({ kind: "leaf", node: single, depth, displayKey: single.leaf.key });
+          continue;
+        }
+      }
       const isOpen = expanded.has(node.path);
       rows.push({
         kind: "folder",
@@ -134,6 +151,37 @@ function buildFlatRows(
 ): FlatRow[] {
   const rows: FlatRow[] = [];
   for (const sec of sections) {
+    // Single-key sections: skip the folder and show the leaf directly (or a
+    // loading placeholder until the tree arrives).
+    if (sec.count === 1) {
+      const tree = sectionTrees.get(sec.prefix);
+      if (loadingPaths.has(sec.prefix)) {
+        rows.push({ kind: "loading", path: sec.prefix, depth: 0 });
+      } else if (tree) {
+        // Find the single leaf and emit it at depth 0 with the full key shown.
+        const nodes = tree;
+        let singleLeafNode: TreeNode | null = null;
+        for (const n of nodes) {
+          const found = findSingleLeaf(n);
+          if (found) {
+            singleLeafNode = found;
+            break;
+          }
+        }
+        if (singleLeafNode?.leaf) {
+          rows.push({
+            kind: "leaf",
+            node: singleLeafNode,
+            depth: 0,
+            displayKey: singleLeafNode.leaf.key,
+          });
+        }
+      } else {
+        // Tree not yet loaded — show loading placeholder
+        rows.push({ kind: "loading", path: sec.prefix, depth: 0 });
+      }
+      continue;
+    }
     const isOpen = expanded.has(sec.prefix);
     const tree = sectionTrees.get(sec.prefix);
     rows.push({
@@ -162,6 +210,13 @@ function buildSearchFlatRows(keys: KeyRow[]): FlatRow[] {
   function expand(nodes: TreeNode[], depth: number) {
     for (const node of nodes) {
       if (node.children.length > 0) {
+        if (node.leafCount === 1) {
+          const single = findSingleLeaf(node);
+          if (single?.leaf) {
+            rows.push({ kind: "leaf", node: single, depth, displayKey: single.leaf.key });
+            continue;
+          }
+        }
         rows.push({
           kind: "folder",
           path: node.path,
@@ -281,9 +336,15 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       .then((r) => r.json() as Promise<Section[]>)
       .then((data) => {
         setSectionsByProfile((prev) => new Map(prev).set(profileId, data));
+        // Auto-load trees for single-key sections — they render as leaves
+        // directly and never go through the expand/collapse flow.
+        for (const sec of data) {
+          if (sec.count === 1) loadSection(sec.prefix);
+        }
       })
       .catch(console.error)
       .finally(() => setLoadingSections(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, sectionsByProfile]);
 
   // ── Load keys for a section on expand ─────────────────────────────────────
@@ -595,7 +656,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   }
 
   function renderLeafRow(row: Extract<FlatRow, { kind: "leaf" }>) {
-    const { node, depth } = row;
+    const { node, depth, displayKey } = row;
     const leaf = node.leaf!;
     const isEditing = editing?.keyId === leaf.id;
     const draftKey = draftKeyMap.get(leaf.key);
@@ -622,7 +683,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         <div className="size-8 shrink-0" />
         {/* Key */}
         <button className="w-40 shrink-0 cursor-default py-2.5 pr-4 text-left" title={leaf.key}>
-          <span className="truncate font-mono text-xs text-muted-foreground">{node.segment}</span>
+          <span className="truncate font-mono text-xs text-muted-foreground">
+            {displayKey ?? node.segment}
+          </span>
           {leaf.description && (
             <span className="mt-0.5 block truncate text-[10px] text-muted-foreground/50">
               {leaf.description}
