@@ -419,6 +419,9 @@ export const labelKeys = sqliteTable(
     key: text("key").notNull(),
     value: text("value").notNull(),
     description: text("description"),
+    // JSON array of variable names extracted from the value's {{var}} placeholders.
+    // `null` = no variables detected; `[]` = explicitly none (normalized).
+    variables: text("variables", { mode: "json" }).$type<string[] | null>(),
     updatedAt: text("updated_at").notNull(),
     updatedBy: text("updated_by").notNull(),
   },
@@ -465,6 +468,7 @@ export const labelDraftKeys = sqliteTable(
     key: text("key").notNull(),
     value: text("value").notNull(),
     description: text("description"),
+    variables: text("variables", { mode: "json" }).$type<string[] | null>(),
     updatedBy: text("updated_by").notNull(),
     updatedAt: text("updated_at").notNull(),
   },

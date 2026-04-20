@@ -15,6 +15,20 @@
       "when": 1776397456895,
       "tag": "0001_far_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776500000000,
+      "tag": "0002_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1776658952086,
+      "tag": "0003_label_keys_variables",
+      "breakpoints": true
     }
   ]
 }
