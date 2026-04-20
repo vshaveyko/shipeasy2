@@ -164,12 +164,10 @@ function buildFlatRows(
   expanded: Set<string>,
   loadingPaths: Set<string>,
 ): FlatRow[] {
-  // Section folder rows are rendered in the nav panel above — only emit content.
   const rows: FlatRow[] = [];
   for (const sec of sections) {
-    if (!expanded.has(sec.prefix)) continue;
-
-    // Single-key sections: sole key data is embedded — render directly.
+    // Single-key sections: sole data is embedded — render as a leaf directly,
+    // no folder wrapper, no fetch needed.
     if (sec.count === 1 && sec.soleId && sec.soleKey) {
       const soleKeyRow: KeyRow = {
         id: sec.soleId,
@@ -195,17 +193,33 @@ function buildFlatRows(
       continue;
     }
 
+    const isOpen = expanded.has(sec.prefix);
     const tree = sectionTrees.get(sec.prefix);
+
+    // Section header row — a depth-0 folder in the tree table.
+    rows.push({
+      kind: "folder",
+      path: sec.prefix,
+      segment: sec.prefix,
+      depth: 0,
+      isOpen,
+      leafCount: sec.count,
+      loaded: !!tree,
+    });
+
+    if (!isOpen) continue;
+
+    // Expanded section content.
     const page = sectionPages.get(sec.prefix);
-    if (loadingPaths.has(sec.prefix)) {
-      rows.push({ kind: "loading", path: sec.prefix, depth: 0 });
+    if (loadingPaths.has(sec.prefix) && !tree) {
+      rows.push({ kind: "loading", path: sec.prefix, depth: 1 });
     } else if (tree) {
-      flattenSubtree(rows, tree, 0, expanded);
+      flattenSubtree(rows, tree, 1, expanded);
       if (page && page.keys.length < page.total) {
         rows.push({
           kind: "load-more",
           prefix: sec.prefix,
-          depth: 0,
+          depth: 1,
           loaded: page.keys.length,
           total: page.total,
         });
@@ -714,7 +728,13 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     }
 
     return (
-      <div className={cn(ROW_GRID, "min-h-9 border-b last:border-0 hover:bg-muted/30")}>
+      <div
+        className={cn(
+          ROW_GRID,
+          "min-h-9 border-b last:border-0 hover:bg-muted/30",
+          isSection && "border-b bg-muted/40 font-semibold",
+        )}
+      >
         {/* Checkbox */}
         <div className="flex h-9 items-center justify-center">
           {loaded || (isSection && sectionTree.length > 0) ? (
@@ -758,10 +778,17 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           className="flex h-9 min-w-0 items-center pr-4 text-left"
           style={{ paddingLeft: Math.max(0, depth - 1) * 16 }}
         >
-          <span className="truncate font-mono text-xs font-semibold text-foreground">
+          <span
+            className={cn(
+              "truncate font-mono",
+              isSection
+                ? "text-xs font-semibold text-foreground"
+                : "text-xs font-medium text-foreground/90",
+            )}
+          >
             {segment}
           </span>
-          <span className="ml-1.5 shrink-0 font-mono text-[11px] text-muted-foreground/50">
+          <span className="ml-1.5 shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground/60">
             {leafCount}
           </span>
         </button>
@@ -942,17 +969,28 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     if (row.kind === "folder") return renderFolderRow(row);
     if (row.kind === "leaf") return renderLeafRow(row);
     if (row.kind === "load-more") {
+      const pageSize = 200;
+      const currentPage = Math.ceil(row.loaded / pageSize);
+      const totalPages = Math.ceil(row.total / pageSize);
+      const loading = loadingPaths.has(row.prefix);
       return (
-        <div className={cn(ROW_GRID, "min-h-9 border-b last:border-0")}>
+        <div className={cn(ROW_GRID, "min-h-9 border-b bg-muted/20 last:border-0")}>
           <div />
           <div />
-          <div className="flex h-9 items-center">
+          <div
+            className="flex h-9 items-center gap-2 text-[11px] text-muted-foreground"
+            style={{ paddingLeft: Math.max(0, row.depth - 1) * 16 }}
+          >
+            <span>
+              Page {currentPage} of {totalPages} · {row.loaded} / {row.total}
+            </span>
             <button
               onClick={() => loadSection(row.prefix, row.loaded)}
-              className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              disabled={loading}
+              className="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
-              {loadingPaths.has(row.prefix) ? <Loader2 className="size-3 animate-spin" /> : null}
-              Load more ({row.loaded} / {row.total})
+              {loading ? <Loader2 className="size-3 animate-spin" /> : null}
+              Next →
             </button>
           </div>
           <div />
@@ -1133,51 +1171,6 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border text-sm">
-          {/* ── Sections nav strip (single-line, scrolls horizontally) ── */}
-          {!debouncedSearch && sections.length > 0 && (
-            <div className="flex gap-1 overflow-x-auto border-b bg-muted/30 px-3 py-1.5">
-              {sections.map((sec) => {
-                const isOpen = expanded.has(sec.prefix);
-                const key = treeKey(sec.prefix);
-                const tree = sectionTrees.get(key) ?? [];
-                const ids = sec.count === 1 && sec.soleId ? [sec.soleId] : leafIdsInTree(tree);
-                const hit = ids.filter((id) => selected.has(id)).length;
-                const selState: "none" | "some" | "all" =
-                  hit === 0 ? "none" : hit === ids.length && ids.length > 0 ? "all" : "some";
-                return (
-                  <div
-                    key={sec.prefix}
-                    className={cn(
-                      "flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs transition-colors",
-                      isOpen
-                        ? "border-primary/30 bg-primary/5 text-foreground"
-                        : "border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
-                    )}
-                  >
-                    <RowCheckbox
-                      checked={selState === "all"}
-                      indeterminate={selState === "some"}
-                      onChange={() => toggleSection(sec)}
-                      ariaLabel={`Select section ${sec.prefix}`}
-                    />
-                    <button
-                      onClick={() => toggleFolder(sec.prefix, true)}
-                      className="flex items-center gap-1"
-                    >
-                      <span className="font-mono font-medium">{sec.prefix}</span>
-                      <span className="text-muted-foreground/50">{sec.count}</span>
-                      {isOpen ? (
-                        <ChevronDown className="size-3 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="size-3 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
           {/* Header */}
           <div className={cn(ROW_GRID, "border-b bg-muted/50")}>
             <div className="flex h-9 items-center justify-center">
