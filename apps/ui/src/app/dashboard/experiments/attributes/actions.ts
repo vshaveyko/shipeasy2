@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getIdentity } from "@/lib/server-action";
-import { createAttribute, deleteAttribute } from "@/lib/handlers/attributes";
+import { createAttribute, deleteAttribute, bulkDeleteAttributes } from "@/lib/handlers/attributes";
 
 export async function createAttributeAction(formData: FormData) {
   const identity = await getIdentity();
@@ -25,4 +25,9 @@ export async function deleteAttributeAction(formData: FormData) {
   const id = formData.get("id") as string;
   await deleteAttribute(identity, id);
   redirect("/dashboard/experiments/attributes");
+}
+
+export async function bulkDeleteAttributesAction(ids: string[]) {
+  const identity = await getIdentity();
+  await bulkDeleteAttributes(identity, ids);
 }

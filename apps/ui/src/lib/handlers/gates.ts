@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { checkLimit, rebuildFlags, ApiError, getPlan } from "@shipeasy/core";
 import { gates, experiments } from "@shipeasy/core/db/schema";
 import { gateCreateSchema, gateUpdateSchema } from "@shipeasy/core/schemas/gates";
@@ -109,4 +109,20 @@ export async function deleteGate(identity: AdminIdentity, id: string) {
   await rebuildFlags(env, identity.projectId, project.plan);
   await writeAudit(identity, "gate.delete", "gate", id);
   return { ok: true };
+}
+
+export async function bulkDeleteGates(identity: AdminIdentity, ids: string[]) {
+  if (ids.length === 0) return { deleted: 0 };
+  const project = await loadProject(identity.projectId);
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
+  const existing = await s.selectWhere(gates, inArray(gates.id, ids));
+  if (existing.length === 0) throw new ApiError("No matching gates found", 404);
+  await s.update(gates).set({ deletedAt: new Date().toISOString() }).where(inArray(gates.id, ids));
+  await rebuildFlags(env, identity.projectId, project.plan);
+  await writeAudit(identity, "gate.bulk_delete", "gate", null, {
+    count: existing.length,
+    ids: existing.map((g) => g.id),
+  });
+  return { deleted: existing.length };
 }

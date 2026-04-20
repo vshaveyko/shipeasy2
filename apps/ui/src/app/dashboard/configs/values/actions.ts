@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getIdentity } from "@/lib/server-action";
-import { createConfig, deleteConfig } from "@/lib/handlers/configs";
+import { createConfig, deleteConfig, bulkDeleteConfigs } from "@/lib/handlers/configs";
 
 export async function createConfigAction(formData: FormData) {
   const identity = await getIdentity();
@@ -34,4 +34,9 @@ export async function deleteConfigAction(formData: FormData) {
   const id = formData.get("id") as string;
   await deleteConfig(identity, id);
   redirect("/dashboard/configs/values");
+}
+
+export async function bulkDeleteConfigsAction(ids: string[]) {
+  const identity = await getIdentity();
+  await bulkDeleteConfigs(identity, ids);
 }

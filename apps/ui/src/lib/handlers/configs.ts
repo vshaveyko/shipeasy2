@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { checkLimit, rebuildFlags, ApiError, getPlan } from "@shipeasy/core";
 import { configs } from "@shipeasy/core/db/schema";
 import { configCreateSchema, configUpdateSchema } from "@shipeasy/core/schemas/configs";
@@ -76,4 +76,23 @@ export async function deleteConfig(identity: AdminIdentity, id: string) {
   await rebuildFlags(env, identity.projectId, project.plan);
   await writeAudit(identity, "config.delete", "config", id);
   return { ok: true };
+}
+
+export async function bulkDeleteConfigs(identity: AdminIdentity, ids: string[]) {
+  if (ids.length === 0) return { deleted: 0 };
+  const project = await loadProject(identity.projectId);
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
+  const existing = await s.selectWhere(configs, inArray(configs.id, ids));
+  if (existing.length === 0) throw new ApiError("No matching configs found", 404);
+  await s
+    .update(configs)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(inArray(configs.id, ids));
+  await rebuildFlags(env, identity.projectId, project.plan);
+  await writeAudit(identity, "config.bulk_delete", "config", null, {
+    count: existing.length,
+    ids: existing.map((c) => c.id),
+  });
+  return { deleted: existing.length };
 }

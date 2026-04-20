@@ -3,10 +3,11 @@ import { auth } from "@/auth";
 import { listMetrics } from "@/lib/handlers/metrics";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { SelectableList } from "@/components/dashboard/selectable-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricForm } from "./metric-form";
-import { deleteMetricAction } from "./actions";
+import { deleteMetricAction, bulkDeleteMetricsAction } from "./actions";
 
 const AGG_TYPES = [
   {
@@ -56,32 +57,31 @@ export default async function MetricsPage() {
           description="Define a metric by picking an event, an aggregation type, and (optionally) a filter."
         />
       ) : (
-        <div className="rounded-lg border">
-          {metrics.map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center justify-between border-b px-4 py-3 last:border-0"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-sm font-medium">{m.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {m.aggregation} on {m.eventName}
-                </span>
-              </div>
-              <form action={deleteMetricAction}>
-                <input type="hidden" name="id" value={m.id} />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  type="submit"
-                  className="text-destructive hover:text-destructive"
-                >
-                  Delete
-                </Button>
-              </form>
+        <SelectableList
+          items={metrics}
+          onBulkDelete={bulkDeleteMetricsAction}
+          renderContent={(m) => (
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm font-medium">{m.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {m.aggregation} on {m.eventName}
+              </span>
             </div>
-          ))}
-        </div>
+          )}
+          renderActions={(m) => (
+            <form action={deleteMetricAction}>
+              <input type="hidden" name="id" value={m.id} />
+              <Button
+                size="sm"
+                variant="ghost"
+                type="submit"
+                className="text-destructive hover:text-destructive"
+              >
+                Delete
+              </Button>
+            </form>
+          )}
+        />
       )}
 
       <Card>

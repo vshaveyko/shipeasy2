@@ -3,10 +3,11 @@ import { auth } from "@/auth";
 import { listGates } from "@/lib/handlers/gates";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { SelectableList } from "@/components/dashboard/selectable-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
-import { deleteGateAction, enableGateAction } from "./actions";
+import { deleteGateAction, enableGateAction, bulkDeleteGatesAction } from "./actions";
 
 export default async function GatesPage() {
   const session = await auth();
@@ -48,44 +49,43 @@ export default async function GatesPage() {
           }
         />
       ) : (
-        <div className="rounded-lg border">
-          {gates.map((gate) => (
-            <div
-              key={gate.id}
-              className="flex items-center justify-between border-b px-4 py-3 last:border-0"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-sm font-medium">{gate.name}</span>
-                <Badge variant={gate.enabled ? "default" : "secondary"}>
-                  {gate.enabled ? "enabled" : "disabled"}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <LinkButton size="sm" variant="ghost" href={`/dashboard/configs/gates/${gate.id}`}>
-                  Edit
-                </LinkButton>
-                <form action={enableGateAction}>
-                  <input type="hidden" name="id" value={gate.id} />
-                  <input type="hidden" name="enabled" value={gate.enabled ? "false" : "true"} />
-                  <Button size="sm" variant="ghost" type="submit">
-                    {gate.enabled ? "Disable" : "Enable"}
-                  </Button>
-                </form>
-                <form action={deleteGateAction}>
-                  <input type="hidden" name="id" value={gate.id} />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    type="submit"
-                    className="text-destructive hover:text-destructive"
-                  >
-                    Delete
-                  </Button>
-                </form>
-              </div>
+        <SelectableList
+          items={gates}
+          onBulkDelete={bulkDeleteGatesAction}
+          renderContent={(gate) => (
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm font-medium">{gate.name}</span>
+              <Badge variant={gate.enabled ? "default" : "secondary"}>
+                {gate.enabled ? "enabled" : "disabled"}
+              </Badge>
             </div>
-          ))}
-        </div>
+          )}
+          renderActions={(gate) => (
+            <>
+              <LinkButton size="sm" variant="ghost" href={`/dashboard/configs/gates/${gate.id}`}>
+                Edit
+              </LinkButton>
+              <form action={enableGateAction}>
+                <input type="hidden" name="id" value={gate.id} />
+                <input type="hidden" name="enabled" value={gate.enabled ? "false" : "true"} />
+                <Button size="sm" variant="ghost" type="submit">
+                  {gate.enabled ? "Disable" : "Enable"}
+                </Button>
+              </form>
+              <form action={deleteGateAction}>
+                <input type="hidden" name="id" value={gate.id} />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  type="submit"
+                  className="text-destructive hover:text-destructive"
+                >
+                  Delete
+                </Button>
+              </form>
+            </>
+          )}
+        />
       )}
     </div>
   );

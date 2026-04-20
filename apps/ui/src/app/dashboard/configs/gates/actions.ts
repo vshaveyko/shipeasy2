@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getIdentity } from "@/lib/server-action";
-import { createGate, deleteGate, setGateEnabled } from "@/lib/handlers/gates";
+import { createGate, deleteGate, setGateEnabled, bulkDeleteGates } from "@/lib/handlers/gates";
 
 export async function createGateAction(formData: FormData) {
   const identity = await getIdentity();
@@ -24,4 +24,9 @@ export async function enableGateAction(formData: FormData) {
   const enabled = formData.get("enabled") === "true";
   await setGateEnabled(identity, id, enabled);
   redirect("/dashboard/configs/gates");
+}
+
+export async function bulkDeleteGatesAction(ids: string[]) {
+  const identity = await getIdentity();
+  await bulkDeleteGates(identity, ids);
 }

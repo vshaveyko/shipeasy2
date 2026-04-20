@@ -3,10 +3,11 @@ import { auth } from "@/auth";
 import { listAttributes } from "@/lib/handlers/attributes";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { SelectableList } from "@/components/dashboard/selectable-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AttributeForm } from "./attribute-form";
-import { deleteAttributeAction } from "./actions";
+import { deleteAttributeAction, bulkDeleteAttributesAction } from "./actions";
 
 export default async function AttributesPage() {
   const session = await auth();
@@ -41,30 +42,29 @@ export default async function AttributesPage() {
           description="Declaring an attribute lets you reference it in targeting rules without typos, with the right data type."
         />
       ) : (
-        <div className="rounded-lg border">
-          {attributes.map((attr) => (
-            <div
-              key={attr.id}
-              className="flex items-center justify-between border-b px-4 py-3 last:border-0"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-sm font-medium">{attr.name}</span>
-                <Badge variant="secondary">{attr.type}</Badge>
-              </div>
-              <form action={deleteAttributeAction}>
-                <input type="hidden" name="id" value={attr.id} />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  type="submit"
-                  className="text-destructive hover:text-destructive"
-                >
-                  Delete
-                </Button>
-              </form>
+        <SelectableList
+          items={attributes}
+          onBulkDelete={bulkDeleteAttributesAction}
+          renderContent={(attr) => (
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm font-medium">{attr.name}</span>
+              <Badge variant="secondary">{attr.type}</Badge>
             </div>
-          ))}
-        </div>
+          )}
+          renderActions={(attr) => (
+            <form action={deleteAttributeAction}>
+              <input type="hidden" name="id" value={attr.id} />
+              <Button
+                size="sm"
+                variant="ghost"
+                type="submit"
+                className="text-destructive hover:text-destructive"
+              >
+                Delete
+              </Button>
+            </form>
+          )}
+        />
       )}
     </div>
   );

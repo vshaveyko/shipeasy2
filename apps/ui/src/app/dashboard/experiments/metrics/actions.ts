@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getIdentity } from "@/lib/server-action";
-import { createMetric, deleteMetric } from "@/lib/handlers/metrics";
+import { createMetric, deleteMetric, bulkDeleteMetrics } from "@/lib/handlers/metrics";
 
 export async function createMetricAction(formData: FormData) {
   const identity = await getIdentity();
@@ -31,4 +31,9 @@ export async function deleteMetricAction(formData: FormData) {
   const id = formData.get("id") as string;
   await deleteMetric(identity, id);
   redirect("/dashboard/experiments/metrics");
+}
+
+export async function bulkDeleteMetricsAction(ids: string[]) {
+  const identity = await getIdentity();
+  await bulkDeleteMetrics(identity, ids);
 }

@@ -3,9 +3,10 @@ import { auth } from "@/auth";
 import { listConfigs } from "@/lib/handlers/configs";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { SelectableList } from "@/components/dashboard/selectable-list";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
-import { deleteConfigAction } from "./actions";
+import { deleteConfigAction, bulkDeleteConfigsAction } from "./actions";
 
 export default async function ConfigValuesPage() {
   const session = await auth();
@@ -47,27 +48,24 @@ export default async function ConfigValuesPage() {
           }
         />
       ) : (
-        <div className="rounded-lg border">
-          {configs.map((cfg) => (
-            <div
-              key={cfg.id}
-              className="flex items-center justify-between border-b px-4 py-3 last:border-0"
-            >
-              <span className="font-mono text-sm font-medium">{cfg.name}</span>
-              <form action={deleteConfigAction}>
-                <input type="hidden" name="id" value={cfg.id} />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  type="submit"
-                  className="text-destructive hover:text-destructive"
-                >
-                  Delete
-                </Button>
-              </form>
-            </div>
-          ))}
-        </div>
+        <SelectableList
+          items={configs}
+          onBulkDelete={bulkDeleteConfigsAction}
+          renderContent={(cfg) => <span className="font-mono text-sm font-medium">{cfg.name}</span>}
+          renderActions={(cfg) => (
+            <form action={deleteConfigAction}>
+              <input type="hidden" name="id" value={cfg.id} />
+              <Button
+                size="sm"
+                variant="ghost"
+                type="submit"
+                className="text-destructive hover:text-destructive"
+              >
+                Delete
+              </Button>
+            </form>
+          )}
+        />
       )}
     </div>
   );

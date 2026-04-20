@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { checkLimit, rebuildCatalog, ApiError, getPlan } from "@shipeasy/core";
 import { events, metrics } from "@shipeasy/core/db/schema";
 import {
@@ -105,4 +105,22 @@ export async function deleteEvent(identity: AdminIdentity, id: string) {
   await rebuildCatalog(env, identity.projectId);
   await writeAudit(identity, "event.delete", "event", id);
   return { ok: true };
+}
+
+export async function bulkDeleteEvents(identity: AdminIdentity, ids: string[]) {
+  if (ids.length === 0) return { deleted: 0 };
+  const env = await getEnvAsync();
+  const s = await scopedDbSA(identity.projectId);
+  const existing = await s.selectWhere(events, inArray(events.id, ids));
+  if (existing.length === 0) throw new ApiError("No matching events found", 404);
+  await s
+    .update(events)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(inArray(events.id, ids));
+  await rebuildCatalog(env, identity.projectId);
+  await writeAudit(identity, "event.bulk_delete", "event", null, {
+    count: existing.length,
+    ids: existing.map((e) => e.id),
+  });
+  return { deleted: existing.length };
 }

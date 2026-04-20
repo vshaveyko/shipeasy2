@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { ApiError } from "@shipeasy/core";
 import { userAttributes } from "@shipeasy/core/db/schema";
 import { attributeCreateSchema, attributeUpdateSchema } from "@shipeasy/core/schemas/attributes";
@@ -72,4 +72,20 @@ export async function deleteAttribute(identity: AdminIdentity, id: string) {
     .where(eq(userAttributes.id, id));
   await writeAudit(identity, "attribute.delete", "attribute", id);
   return { ok: true };
+}
+
+export async function bulkDeleteAttributes(identity: AdminIdentity, ids: string[]) {
+  if (ids.length === 0) return { deleted: 0 };
+  const s = await scopedDbSA(identity.projectId);
+  const existing = await s.selectWhere(userAttributes, inArray(userAttributes.id, ids));
+  if (existing.length === 0) throw new ApiError("No matching attributes found", 404);
+  await s
+    .update(userAttributes)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(inArray(userAttributes.id, ids));
+  await writeAudit(identity, "attribute.bulk_delete", "attribute", null, {
+    count: existing.length,
+    ids: existing.map((a) => a.id),
+  });
+  return { deleted: existing.length };
 }

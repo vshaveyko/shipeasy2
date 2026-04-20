@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { checkLimit, ApiError, getPlan, getDb } from "@shipeasy/core";
 import { metrics, events, experimentMetrics, experiments } from "@shipeasy/core/db/schema";
 import { metricCreateSchema, metricUpdateSchema } from "@shipeasy/core/schemas/metrics";
@@ -100,4 +100,20 @@ export async function deleteMetric(identity: AdminIdentity, id: string) {
   await s.update(metrics).set({ deletedAt: new Date().toISOString() }).where(eq(metrics.id, id));
   await writeAudit(identity, "metric.delete", "metric", id);
   return { ok: true };
+}
+
+export async function bulkDeleteMetrics(identity: AdminIdentity, ids: string[]) {
+  if (ids.length === 0) return { deleted: 0 };
+  const s = await scopedDbSA(identity.projectId);
+  const existing = await s.selectWhere(metrics, inArray(metrics.id, ids));
+  if (existing.length === 0) throw new ApiError("No matching metrics found", 404);
+  await s
+    .update(metrics)
+    .set({ deletedAt: new Date().toISOString() })
+    .where(inArray(metrics.id, ids));
+  await writeAudit(identity, "metric.bulk_delete", "metric", null, {
+    count: existing.length,
+    ids: existing.map((m) => m.id),
+  });
+  return { deleted: existing.length };
 }
