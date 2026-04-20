@@ -105,7 +105,6 @@ function flattenSubtree(
   nodes: TreeNode[],
   depth: number,
   expanded: Set<string>,
-  search: string,
 ): void {
   for (const node of nodes) {
     const hasKids = node.children.length > 0;
@@ -120,15 +119,9 @@ function flattenSubtree(
         leafCount: node.leafCount,
         loaded: true,
       });
-      if (isOpen) flattenSubtree(rows, node.children, depth + 1, expanded, search);
+      if (isOpen) flattenSubtree(rows, node.children, depth + 1, expanded);
     } else if (node.leaf) {
-      if (
-        !search ||
-        node.leaf.key.toLowerCase().includes(search) ||
-        node.leaf.value.toLowerCase().includes(search)
-      ) {
-        rows.push({ kind: "leaf", node, depth });
-      }
+      rows.push({ kind: "leaf", node, depth });
     }
   }
 }
@@ -138,7 +131,6 @@ function buildFlatRows(
   sectionTrees: Map<string, TreeNode[]>,
   expanded: Set<string>,
   loadingPaths: Set<string>,
-  search: string,
 ): FlatRow[] {
   const rows: FlatRow[] = [];
   for (const sec of sections) {
@@ -157,10 +149,35 @@ function buildFlatRows(
       if (loadingPaths.has(sec.prefix)) {
         rows.push({ kind: "loading", path: sec.prefix, depth: 1 });
       } else if (tree) {
-        flattenSubtree(rows, tree, 1, expanded, search);
+        flattenSubtree(rows, tree, 1, expanded);
       }
     }
   }
+  return rows;
+}
+
+// Search results: tree fully expanded (backend already filtered)
+function buildSearchFlatRows(keys: KeyRow[]): FlatRow[] {
+  const rows: FlatRow[] = [];
+  function expand(nodes: TreeNode[], depth: number) {
+    for (const node of nodes) {
+      if (node.children.length > 0) {
+        rows.push({
+          kind: "folder",
+          path: node.path,
+          segment: node.segment,
+          depth,
+          isOpen: true,
+          leafCount: node.leafCount,
+          loaded: true,
+        });
+        expand(node.children, depth + 1);
+      } else if (node.leaf) {
+        rows.push({ kind: "leaf", node, depth });
+      }
+    }
+  }
+  expand(buildTree(keys), 0);
   return rows;
 }
 
@@ -220,7 +237,10 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<KeyRow[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
@@ -231,6 +251,26 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   const treeKey = useCallback((prefix: string) => `${profileId}:${prefix}`, [profileId]);
 
   const sections = profileId ? (sectionsByProfile.get(profileId) ?? []) : [];
+
+  // ── Debounce search input ──────────────────────────────────────────────────
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // ── Backend search ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!debouncedSearch.trim() || !profileId) {
+      setSearchResults(null);
+      return;
+    }
+    setSearchLoading(true);
+    fetch(`/api/admin/i18n/keys?profile_id=${profileId}&q=${encodeURIComponent(debouncedSearch)}`)
+      .then((r) => r.json() as Promise<KeyRow[]>)
+      .then((data) => setSearchResults(data))
+      .catch(console.error)
+      .finally(() => setSearchLoading(false));
+  }, [debouncedSearch, profileId]);
 
   // ── Load sections for current profile ─────────────────────────────────────
   useEffect(() => {
@@ -269,19 +309,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     [profileId, sectionTrees, loadingPaths, treeKey],
   );
 
-  // When search is non-empty, load all sections that aren't loaded yet
-  useEffect(() => {
-    if (!search.trim() || !profileId || !sections.length) return;
-    for (const sec of sections) {
-      const key = treeKey(sec.prefix);
-      if (!sectionTrees.has(key) && !loadingPaths.has(sec.prefix)) {
-        loadSection(sec.prefix);
-      }
-    }
-  }, [search, profileId, sections, sectionTrees, loadingPaths, treeKey, loadSection]);
-
-  // Re-load trees for sections that are expanded but whose cached tree was
-  // invalidated (e.g. after a bulk-delete clears the section cache).
+  // Re-load trees for sections that are expanded but whose cache was invalidated.
   useEffect(() => {
     if (!profileId || !sections.length) return;
     for (const path of expanded) {
@@ -293,44 +321,23 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     }
   }, [profileId, sections, expanded, sectionTrees, loadingPaths, treeKey, loadSection]);
 
-  // ── Effective expanded: when searching, open everything loaded ─────────────
-  const effectiveExpanded = useMemo(() => {
-    if (!search.trim()) return expanded;
-    // Open all sections + all sub-folders inside loaded trees
-    const all = new Set<string>();
-    for (const sec of sections) {
-      all.add(sec.prefix);
-      const tree = sectionTrees.get(treeKey(sec.prefix));
-      if (tree) {
-        const collectFolders = (nodes: TreeNode[]) => {
-          for (const n of nodes) {
-            if (n.children.length > 0) {
-              all.add(n.path);
-              collectFolders(n.children);
-            }
-          }
-        };
-        collectFolders(tree);
-      }
-    }
-    return all;
-  }, [search, expanded, sections, sectionTrees, treeKey]);
-
   // ── Flat rows for virtualizer ───────────────────────────────────────────────
+  const profileTreesMap = useMemo(
+    () =>
+      new Map(
+        Array.from(sectionTrees.entries())
+          .filter(([k]) => k.startsWith(`${profileId}:`))
+          .map(([k, v]) => [k.slice(profileId!.length + 1), v]),
+      ),
+    [sectionTrees, profileId],
+  );
+
   const flatRows = useMemo(
     () =>
-      buildFlatRows(
-        sections,
-        new Map(
-          Array.from(sectionTrees.entries())
-            .filter(([k]) => k.startsWith(`${profileId}:`))
-            .map(([k, v]) => [k.slice(profileId!.length + 1), v]),
-        ),
-        effectiveExpanded,
-        loadingPaths,
-        search,
-      ),
-    [sections, sectionTrees, effectiveExpanded, loadingPaths, search, profileId],
+      searchResults !== null
+        ? buildSearchFlatRows(searchResults)
+        : buildFlatRows(sections, profileTreesMap, expanded, loadingPaths),
+    [searchResults, sections, profileTreesMap, expanded, loadingPaths],
   );
 
   const visLeaves = useMemo(() => visibleLeaves(flatRows), [flatRows]);
@@ -349,7 +356,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
 
   // ── Expand / collapse ──────────────────────────────────────────────────────
   function toggleFolder(path: string, isSection: boolean) {
-    const willOpen = !effectiveExpanded.has(path);
+    const willOpen = !expanded.has(path);
     setExpanded((prev) => {
       const next = new Set(prev);
       next.has(path) ? next.delete(path) : next.add(path);
@@ -780,6 +787,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                 setEditing(null);
                 setSelected(new Set());
                 setExpanded(new Set());
+                setSearchInput("");
+                setDebouncedSearch("");
+                setSearchResults(null);
               }}
               className={cn(
                 "rounded-lg px-3 py-1 font-mono text-xs font-medium transition-colors",
@@ -847,8 +857,8 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           <input
             type="text"
             placeholder={t("app.dashboard.i18n.keys._components.filter_keys")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="h-7 w-52 rounded-lg border border-input bg-transparent pl-7 pr-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20"
           />
         </div>
@@ -867,7 +877,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           {sections.reduce((s, sec) => s + sec.count, 0)} {t("common.keys")}
         </span>
 
-        {loadingSections && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
+        {(loadingSections || searchLoading) && (
+          <Loader2 className="size-3 animate-spin text-muted-foreground" />
+        )}
 
         {draftId && (
           <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
@@ -884,6 +896,14 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       {!profileId ? (
         <div className="rounded-lg border py-12 text-center text-sm text-muted-foreground">
           {t("app.dashboard.i18n.keys._components.select_a_profile_above")}
+        </div>
+      ) : searchLoading && searchResults === null ? (
+        <div className="flex items-center justify-center rounded-lg border py-12">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : debouncedSearch && searchResults?.length === 0 ? (
+        <div className="rounded-lg border py-12 text-center text-sm text-muted-foreground">
+          No keys match &ldquo;{debouncedSearch}&rdquo;
         </div>
       ) : loadingSections && sections.length === 0 ? (
         <div className="flex items-center justify-center rounded-lg border py-12">

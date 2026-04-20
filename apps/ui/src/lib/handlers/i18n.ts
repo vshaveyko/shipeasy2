@@ -78,6 +78,7 @@ export async function listKeys(
   identity: AdminIdentity,
   profileId?: string,
   prefix?: string,
+  search?: string,
 ): Promise<KeyRow[]> {
   const env = getEnv();
   const db = getDb(env.DB);
@@ -104,12 +105,14 @@ export async function listKeys(
 
   const projectFilter = eq(labelKeys.projectId, identity.projectId);
   const profileFilter = profileId ? eq(labelKeys.profileId, profileId) : undefined;
-  // prefix matches "prefix" exactly (no dot) or "prefix.*" (subtree)
   const prefixFilter = prefix
     ? or(eq(labelKeys.key, prefix), like(labelKeys.key, `${prefix}.%`))
     : undefined;
+  const searchFilter = search
+    ? or(like(labelKeys.key, `%${search}%`), like(labelKeys.value, `%${search}%`))
+    : undefined;
 
-  const rows = await q.where(and(projectFilter, profileFilter, prefixFilter));
+  const rows = await q.where(and(projectFilter, profileFilter, prefixFilter, searchFilter));
   return rows as KeyRow[];
 }
 

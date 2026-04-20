@@ -7,7 +7,8 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const profileId = url.searchParams.get("profile_id") ?? undefined;
   const prefix = url.searchParams.get("prefix") ?? undefined;
-  return withAdmin(req, (identity) => listKeys(identity, profileId, prefix));
+  const search = url.searchParams.get("q") ?? undefined;
+  return withAdmin(req, (identity) => listKeys(identity, profileId, prefix, search));
 }
 
 export async function POST(req: Request) {
