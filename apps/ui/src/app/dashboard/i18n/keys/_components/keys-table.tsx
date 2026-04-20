@@ -678,24 +678,23 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   const rowVirtualizer = useVirtualizer({
     count: flatRows.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 40,
+    estimateSize: () => 36,
     overscan: 8,
   });
 
   // ── Row renderer ───────────────────────────────────────────────────────────
+  // Shared column template keeps header + all row types aligned like a real table.
+  const ROW_GRID = "grid grid-cols-[32px_32px_minmax(0,300px)_minmax(0,1fr)_80px] items-start";
 
   function renderFolderRow(row: Extract<FlatRow, { kind: "folder" }>) {
     const { path, segment, depth, isOpen, leafCount, loaded } = row;
     const isSection = depth === 0;
 
-    // For section-level selection
     const sectionKey = treeKey(depth === 0 ? path : path.split(".")[0]);
     const sectionTree = sectionTrees.get(sectionKey) ?? [];
 
-    // Determine checkbox state for this folder
     let sel: "none" | "some" | "all" = "none";
     if (loaded && !isSection) {
-      // find node in its parent tree
       const parentKey = treeKey(path.split(".")[0]);
       const tree = sectionTrees.get(parentKey) ?? [];
       const findNode = (nodes: TreeNode[]): TreeNode | null => {
@@ -715,10 +714,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     }
 
     return (
-      <div className="flex min-h-10 items-center border-b last:border-0 hover:bg-muted/30">
-        <div className="shrink-0" style={{ width: depth * 20 }} />
+      <div className={cn(ROW_GRID, "min-h-9 border-b last:border-0 hover:bg-muted/30")}>
         {/* Checkbox */}
-        <div className="flex size-8 shrink-0 items-center justify-center">
+        <div className="flex h-9 items-center justify-center">
           {loaded || (isSection && sectionTree.length > 0) ? (
             <RowCheckbox
               checked={sel === "all"}
@@ -728,7 +726,6 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                   const sec = sections.find((s) => s.prefix === path);
                   if (sec) toggleSection(sec);
                 } else {
-                  // Find the node in its section tree and toggle it
                   const parentKey = treeKey(path.split(".")[0]);
                   const tree = sectionTrees.get(parentKey) ?? [];
                   const findNode = (nodes: TreeNode[]): TreeNode | null => {
@@ -745,28 +742,33 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
               }}
               ariaLabel={`Select subtree ${path}`}
             />
-          ) : (
-            <div className="size-3.5" />
-          )}
+          ) : null}
         </div>
         {/* Chevron */}
         <button
           onClick={() => toggleFolder(path, isSection)}
-          className="flex size-8 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="flex h-9 items-center justify-center rounded text-muted-foreground hover:text-foreground"
           aria-label={isOpen ? "Collapse" : "Expand"}
         >
           {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
         </button>
-        {/* Label */}
+        {/* Key col — folder label with depth indent */}
         <button
           onClick={() => toggleFolder(path, isSection)}
-          className="min-w-0 flex-1 py-2.5 text-left"
+          className="flex h-9 min-w-0 items-center pr-4 text-left"
+          style={{ paddingLeft: Math.max(0, depth - 1) * 16 }}
         >
-          <span className="font-mono text-xs font-semibold text-foreground">
+          <span className="truncate font-mono text-xs font-semibold text-foreground">
             {segment}
-            <span className="ml-1.5 font-normal text-muted-foreground/50">{leafCount}</span>
+          </span>
+          <span className="ml-1.5 shrink-0 font-mono text-[11px] text-muted-foreground/50">
+            {leafCount}
           </span>
         </button>
+        {/* Value col — empty for folders */}
+        <div />
+        {/* Actions col — empty */}
+        <div />
       </div>
     );
   }
@@ -782,43 +784,49 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     return (
       <div
         className={cn(
-          "group flex min-h-10 items-start border-b last:border-0",
+          ROW_GRID,
+          "group min-h-9 border-b last:border-0",
           isEditing ? "bg-blue-50/60 dark:bg-blue-950/20" : "hover:bg-muted/30",
         )}
       >
-        <div className="shrink-0" style={{ width: depth * 20 }} />
         {/* Checkbox */}
-        <div className="flex size-8 shrink-0 items-center justify-center">
+        <div className="flex h-9 items-center justify-center">
           <RowCheckbox
             checked={sel}
             onChange={() => toggleLeaf(leaf.id)}
             ariaLabel={`Select key ${leaf.key}`}
           />
         </div>
-        {/* No chevron — align with folder rows */}
-        <div className="size-8 shrink-0" />
+        {/* Chevron slot — empty */}
+        <div />
         {/* Key */}
-        <div className="w-40 shrink-0 py-2.5 pr-4" title={leaf.key}>
-          <span className="block truncate font-mono text-xs text-muted-foreground">
-            {displayKey ?? node.segment}
+        <div
+          className="flex min-w-0 flex-col py-2 pr-4"
+          style={{ paddingLeft: Math.max(0, depth - 1) * 16 }}
+          title={leaf.key}
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-mono text-xs text-foreground">
+              {displayKey ?? node.segment}
+            </span>
+            {leaf.variables && leaf.variables.length > 0 && (
+              <span
+                className="inline-flex shrink-0 items-center gap-0.5 rounded bg-violet-500/10 px-1 py-px text-[10px] font-mono text-violet-700 dark:text-violet-300"
+                title={`Variables: ${leaf.variables.join(", ")}`}
+              >
+                <Braces className="size-2.5" />
+                {leaf.variables.length}
+              </span>
+            )}
           </span>
           {leaf.description && (
-            <span className="mt-0.5 block truncate text-[10px] text-muted-foreground/50">
+            <span className="mt-0.5 truncate text-[10px] text-muted-foreground/60">
               {leaf.description}
-            </span>
-          )}
-          {leaf.variables && leaf.variables.length > 0 && (
-            <span
-              className="mt-0.5 flex items-center gap-1 text-[10px] text-violet-600/80 dark:text-violet-400/80"
-              title={`Variables: ${leaf.variables.join(", ")}`}
-            >
-              <Braces className="size-2.5 shrink-0" />
-              <span className="truncate font-mono">{leaf.variables.join(", ")}</span>
             </span>
           )}
         </div>
         {/* Value */}
-        <div className="flex min-w-0 flex-1 flex-col py-2 pr-2">
+        <div className="flex min-w-0 flex-col py-2 pr-2">
           {draftId && (
             <div className="mb-1.5 flex items-baseline gap-1.5">
               <span className="shrink-0 font-mono text-[9px] font-medium uppercase tracking-wider text-muted-foreground/40">
@@ -864,18 +872,18 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
               )}
             </button>
           )}
-        </div>
-        {/* Draft dot */}
-        {draftId && hasDraft && !isEditing && (
-          <div className="flex shrink-0 items-center py-3 pr-1">
-            <div
-              className="size-1.5 rounded-full bg-amber-400 dark:bg-amber-500"
+          {draftId && hasDraft && !isEditing && (
+            <span
+              className="mt-1 inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400"
               title={t("app.dashboard.i18n.keys._components.draft_value_exists")}
-            />
-          </div>
-        )}
+            >
+              <span className="size-1.5 rounded-full bg-amber-400 dark:bg-amber-500" />
+              draft
+            </span>
+          )}
+        </div>
         {/* Actions */}
-        <div className="flex shrink-0 items-center gap-0.5 py-2 pr-1.5">
+        <div className="flex h-9 items-center justify-end gap-0.5 pr-1.5">
           {isEditing ? (
             <>
               <Button
@@ -935,28 +943,34 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     if (row.kind === "leaf") return renderLeafRow(row);
     if (row.kind === "load-more") {
       return (
-        <div
-          className="flex min-h-10 items-center border-b px-4 text-xs text-muted-foreground"
-          style={{ paddingLeft: row.depth * 20 + 16 }}
-        >
-          <button
-            onClick={() => loadSection(row.prefix, row.loaded)}
-            className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-muted hover:text-foreground"
-          >
-            {loadingPaths.has(row.prefix) ? <Loader2 className="size-3 animate-spin" /> : null}
-            Load more ({row.loaded} / {row.total})
-          </button>
+        <div className={cn(ROW_GRID, "min-h-9 border-b last:border-0")}>
+          <div />
+          <div />
+          <div className="flex h-9 items-center">
+            <button
+              onClick={() => loadSection(row.prefix, row.loaded)}
+              className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              {loadingPaths.has(row.prefix) ? <Loader2 className="size-3 animate-spin" /> : null}
+              Load more ({row.loaded} / {row.total})
+            </button>
+          </div>
+          <div />
+          <div />
         </div>
       );
     }
     // loading
     return (
-      <div
-        className="flex min-h-10 items-center border-b px-4 text-xs text-muted-foreground"
-        style={{ paddingLeft: row.depth * 20 + 32 }}
-      >
-        <Loader2 className="mr-2 size-3 animate-spin" />
-        Loading…
+      <div className={cn(ROW_GRID, "min-h-9 border-b last:border-0")}>
+        <div />
+        <div />
+        <div className="flex h-9 items-center text-xs text-muted-foreground">
+          <Loader2 className="mr-2 size-3 animate-spin" />
+          Loading…
+        </div>
+        <div />
+        <div />
       </div>
     );
   }
@@ -1119,9 +1133,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border text-sm">
-          {/* ── Sections nav panel (always visible) ── */}
+          {/* ── Sections nav strip (single-line, scrolls horizontally) ── */}
           {!debouncedSearch && sections.length > 0 && (
-            <div className="flex flex-wrap gap-1 border-b bg-muted/30 px-3 py-2">
+            <div className="flex gap-1 overflow-x-auto border-b bg-muted/30 px-3 py-1.5">
               {sections.map((sec) => {
                 const isOpen = expanded.has(sec.prefix);
                 const key = treeKey(sec.prefix);
@@ -1134,7 +1148,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                   <div
                     key={sec.prefix}
                     className={cn(
-                      "flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors",
+                      "flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs transition-colors",
                       isOpen
                         ? "border-primary/30 bg-primary/5 text-foreground"
                         : "border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
@@ -1165,8 +1179,8 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           )}
 
           {/* Header */}
-          <div className="flex items-center border-b bg-muted/50">
-            <div className="flex w-8 shrink-0 items-center justify-center">
+          <div className={cn(ROW_GRID, "border-b bg-muted/50")}>
+            <div className="flex h-9 items-center justify-center">
               <RowCheckbox
                 checked={allVisibleSelected}
                 indeterminate={someVisibleSelected && !allVisibleSelected}
@@ -1176,11 +1190,11 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                 ariaLabel="Select all visible keys"
               />
             </div>
-            <div className="w-8 shrink-0" />
-            <div className="w-40 shrink-0 py-2.5 pr-4 text-xs font-medium text-muted-foreground">
+            <div />
+            <div className="flex h-9 items-center pr-4 text-xs font-medium text-muted-foreground">
               {t("common.key")}
             </div>
-            <div className="flex-1 py-2.5 text-xs font-medium text-muted-foreground">
+            <div className="flex h-9 items-center text-xs font-medium text-muted-foreground">
               {draftId ? (
                 <span>
                   <span className="text-muted-foreground/50">
@@ -1193,7 +1207,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                 "Value"
               )}
             </div>
-            <div className="w-16 shrink-0" />
+            <div />
           </div>
 
           {/* Virtual scroll body */}
