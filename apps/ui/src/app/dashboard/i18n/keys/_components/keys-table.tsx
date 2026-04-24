@@ -123,37 +123,49 @@ function buildTree(keys: KeyRow[]): TreeNode[] {
   return mat(rootMap);
 }
 
+/**
+ * Emit folders (nested categories) first, then leaves (non-categorized keys),
+ * recursively. Single-leaf folders still collapse to their leaf and sort with
+ * the leaves at the current depth.
+ */
 function flattenSubtree(
   rows: FlatRow[],
   nodes: TreeNode[],
   depth: number,
   expanded: Set<string>,
 ): void {
+  const folders: TreeNode[] = [];
+  const leaves: TreeNode[] = [];
   for (const node of nodes) {
-    const hasKids = node.children.length > 0;
-    if (hasKids) {
-      // Collapse folders that contain exactly one key — show the leaf directly.
-      if (node.leafCount === 1) {
-        const single = findSingleLeaf(node);
-        if (single?.leaf) {
-          rows.push({ kind: "leaf", node: single, depth, displayKey: single.leaf.key });
-          continue;
-        }
+    const rendersAsFolder = node.children.length > 0 && node.leafCount > 1;
+    if (rendersAsFolder) folders.push(node);
+    else leaves.push(node);
+  }
+  folders.sort((a, b) => a.segment.localeCompare(b.segment));
+  leaves.sort((a, b) => (a.leaf?.key ?? a.path).localeCompare(b.leaf?.key ?? b.path));
+
+  for (const node of folders) {
+    const isOpen = expanded.has(node.path);
+    rows.push({
+      kind: "folder",
+      path: node.path,
+      segment: node.segment,
+      depth,
+      isOpen,
+      leafCount: node.leafCount,
+      loaded: true,
+    });
+    if (isOpen) flattenSubtree(rows, node.children, depth + 1, expanded);
+  }
+  for (const node of leaves) {
+    if (node.children.length > 0 && node.leafCount === 1) {
+      const single = findSingleLeaf(node);
+      if (single?.leaf) {
+        rows.push({ kind: "leaf", node: single, depth, displayKey: single.leaf.key });
+        continue;
       }
-      const isOpen = expanded.has(node.path);
-      rows.push({
-        kind: "folder",
-        path: node.path,
-        segment: node.segment,
-        depth,
-        isOpen,
-        leafCount: node.leafCount,
-        loaded: true,
-      });
-      if (isOpen) flattenSubtree(rows, node.children, depth + 1, expanded);
-    } else if (node.leaf) {
-      rows.push({ kind: "leaf", node, depth });
     }
+    if (node.leaf) rows.push({ kind: "leaf", node, depth });
   }
 }
 
@@ -165,7 +177,18 @@ function buildFlatRows(
   loadingPaths: Set<string>,
 ): FlatRow[] {
   const rows: FlatRow[] = [];
+  // Top-level ordering: multi-key sections (folders) first, then single-key
+  // sections that render as leaves. Alphabetical within each group.
+  const folderSections: Section[] = [];
+  const leafSections: Section[] = [];
   for (const sec of sections) {
+    if (sec.count === 1 && sec.soleId && sec.soleKey) leafSections.push(sec);
+    else folderSections.push(sec);
+  }
+  folderSections.sort((a, b) => a.prefix.localeCompare(b.prefix));
+  leafSections.sort((a, b) => (a.soleKey ?? a.prefix).localeCompare(b.soleKey ?? b.prefix));
+  const orderedSections = [...folderSections, ...leafSections];
+  for (const sec of orderedSections) {
     // Single-key sections: sole data is embedded — render as a leaf directly,
     // no folder wrapper, no fetch needed.
     if (sec.count === 1 && sec.soleId && sec.soleKey) {
@@ -237,32 +260,42 @@ function buildFlatRows(
   return rows;
 }
 
-// Search results: tree fully expanded (backend already filtered)
+// Search results: tree fully expanded (backend already filtered). Same
+// folders-before-leaves recursive ordering as flattenSubtree.
 function buildSearchFlatRows(keys: KeyRow[]): FlatRow[] {
   const rows: FlatRow[] = [];
   function expand(nodes: TreeNode[], depth: number) {
+    const folders: TreeNode[] = [];
+    const leaves: TreeNode[] = [];
     for (const node of nodes) {
-      if (node.children.length > 0) {
-        if (node.leafCount === 1) {
-          const single = findSingleLeaf(node);
-          if (single?.leaf) {
-            rows.push({ kind: "leaf", node: single, depth, displayKey: single.leaf.key });
-            continue;
-          }
+      const rendersAsFolder = node.children.length > 0 && node.leafCount > 1;
+      if (rendersAsFolder) folders.push(node);
+      else leaves.push(node);
+    }
+    folders.sort((a, b) => a.segment.localeCompare(b.segment));
+    leaves.sort((a, b) => (a.leaf?.key ?? a.path).localeCompare(b.leaf?.key ?? b.path));
+
+    for (const node of folders) {
+      rows.push({
+        kind: "folder",
+        path: node.path,
+        segment: node.segment,
+        depth,
+        isOpen: true,
+        leafCount: node.leafCount,
+        loaded: true,
+      });
+      expand(node.children, depth + 1);
+    }
+    for (const node of leaves) {
+      if (node.children.length > 0 && node.leafCount === 1) {
+        const single = findSingleLeaf(node);
+        if (single?.leaf) {
+          rows.push({ kind: "leaf", node: single, depth, displayKey: single.leaf.key });
+          continue;
         }
-        rows.push({
-          kind: "folder",
-          path: node.path,
-          segment: node.segment,
-          depth,
-          isOpen: true,
-          leafCount: node.leafCount,
-          loaded: true,
-        });
-        expand(node.children, depth + 1);
-      } else if (node.leaf) {
-        rows.push({ kind: "leaf", node, depth });
       }
+      if (node.leaf) rows.push({ kind: "leaf", node, depth });
     }
   }
   expand(buildTree(keys), 0);
