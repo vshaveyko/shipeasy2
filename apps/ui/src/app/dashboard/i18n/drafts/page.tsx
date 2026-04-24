@@ -7,17 +7,13 @@ import { listDrafts, listProfiles } from "@/lib/handlers/i18n";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/link-button";
 import { abandonDraftAction, deleteDraftAction } from "./actions";
 
-const STATUS_BADGE: Record<
-  string,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
-> = {
-  open: { label: "Open", variant: "default" },
-  merged: { label: "Merged", variant: "secondary" },
-  abandoned: { label: "Abandoned", variant: "outline" },
+const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  open: { label: "OPEN", cls: "se-badge se-badge-live" },
+  merged: { label: "MERGED", cls: "se-badge se-badge-completed" },
+  abandoned: { label: "ABANDONED", cls: "se-badge" },
 };
 
 export default async function I18nDraftsPage() {
@@ -37,9 +33,14 @@ export default async function I18nDraftsPage() {
   const profileMap: Record<string, string> = {};
   for (const p of profiles) profileMap[p.id] = p.name;
 
+  const open = drafts.filter((d) => d.status === "open").length;
+  const merged = drafts.filter((d) => d.status === "merged").length;
+  const abandoned = drafts.filter((d) => d.status === "abandoned").length;
+
   return (
     <div className="space-y-6">
       <PageHeader
+        kicker={`${open} open · ${merged} merged · ${abandoned} abandoned`}
         title="Drafts"
         description="Unpublished translation drafts. Review AI-generated translations and tweak copy before promoting to a profile."
         actions={
@@ -88,7 +89,10 @@ export default async function I18nDraftsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={badge.variant}>{badge.label}</Badge>
+                      <span className={badge.cls}>
+                        <span className="dot" />
+                        {badge.label}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{draft.createdBy}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">

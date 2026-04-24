@@ -58,9 +58,12 @@ export default async function I18nKeysPage() {
     );
   }
 
+  const totalDraftKeys = Object.values(draftKeysByDraft).reduce((acc, arr) => acc + arr.length, 0);
+
   return (
     <div className="space-y-6">
       <PageHeader
+        kicker={`${profiles.length} profile${profiles.length === 1 ? "" : "s"} · ${openDrafts.length} open draft${openDrafts.length === 1 ? "" : "s"} · ${totalDraftKeys} pending key${totalDraftKeys === 1 ? "" : "s"}`}
         title="Label keys"
         description="Manage translation keys across profiles and drafts. Click any value to edit inline."
         actions={

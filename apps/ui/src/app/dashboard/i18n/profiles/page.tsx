@@ -31,9 +31,12 @@ export default async function I18nProfilesPage() {
     keyCountByProfile[k.profileId] = (keyCountByProfile[k.profileId] ?? 0) + 1;
   }
 
+  const totalKeys = Object.values(keyCountByProfile).reduce((a, b) => a + b, 0);
+
   return (
     <div className="space-y-6">
       <PageHeader
+        kicker={`${profiles.length} profile${profiles.length === 1 ? "" : "s"} · ${totalKeys} total key${totalKeys === 1 ? "" : "s"}`}
         title="Profiles"
         description="Locale + environment groupings like en:prod or fr:staging. A profile is a versioned manifest of label chunks."
         actions={
