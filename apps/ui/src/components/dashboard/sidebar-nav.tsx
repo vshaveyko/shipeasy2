@@ -22,28 +22,28 @@ function NavItemLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isActive(pathname, item);
   const Icon = item.icon;
   const className = cn(
-    "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+    "relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
     active
-      ? "bg-muted font-medium text-foreground"
-      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+      ? "bg-[color-mix(in_oklab,var(--se-accent)_10%,transparent)] text-foreground before:absolute before:left-[-12px] before:top-1/2 before:h-3.5 before:w-[3px] before:-translate-y-1/2 before:rounded before:bg-[var(--se-accent)]"
+      : "text-muted-foreground hover:bg-[var(--se-bg-2)] hover:text-foreground",
   );
   return item.external ? (
     <a href={item.href} className={className} target="_blank" rel="noreferrer">
-      <Icon className="size-4 shrink-0" />
-      <span>{item.label}</span>
+      <Icon className="size-3.5 shrink-0" />
+      <span className="flex-1">{item.label}</span>
     </a>
   ) : (
     <Link href={item.href} className={className}>
-      <Icon className="size-4 shrink-0" />
-      <span>{item.label}</span>
+      <Icon className="size-3.5 shrink-0" />
+      <span className="flex-1">{item.label}</span>
     </Link>
   );
 }
 
 function Group({ group, pathname }: { group: NavGroup; pathname: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="px-2 text-[0.7rem] font-medium tracking-wider text-muted-foreground uppercase">
+    <div className="flex flex-col gap-0.5">
+      <div className="px-2.5 pt-2 pb-1 font-mono text-[10px] font-normal uppercase tracking-[0.08em] text-[var(--se-fg-4)]">
         {group.title}
       </div>
       <ul className="flex flex-col gap-0.5">
@@ -61,8 +61,6 @@ export function SidebarNav() {
   const pathname = usePathname();
   const current = getProductFromPath(pathname);
 
-  // On shared nav pages (settings, keys, docs) — avoid surfacing product names so
-  // page-scoped assertions in tests don't pick up sidebar noise.
   const isSharedNavPage = SHARED_NAV.items.some(
     (item) => pathname === item.href || (!item.external && pathname.startsWith(`${item.href}/`)),
   );
@@ -84,10 +82,10 @@ export function SidebarNav() {
         ];
 
   return (
-    <nav className="flex h-full flex-col gap-6 p-4 text-sm">
+    <nav className="flex h-full flex-col gap-3 p-3 text-sm">
       <ProductSwitcher />
 
-      <div className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-1 flex-col gap-2">
         {groups.map((group) => (
           <Group key={group.title} group={group} pathname={pathname} />
         ))}

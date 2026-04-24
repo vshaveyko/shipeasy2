@@ -74,7 +74,7 @@ describe("POST /admin/gates", () => {
   it("writes flags blob to KV", async () => {
     await createGate("kv_gate");
     const kv = mockEnv.FLAGS_KV as unknown as MemoryKV;
-    const blob = JSON.parse(kv.store.get(`${TEST_PROJECT_ID}:flags`)!);
+    const blob = JSON.parse(kv.store.get(`${TEST_PROJECT_ID}:prod:flags`)!);
     expect(blob.gates).toHaveProperty("kv_gate");
   });
 });

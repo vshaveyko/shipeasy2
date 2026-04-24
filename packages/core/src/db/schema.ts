@@ -157,6 +157,11 @@ export const gates = sqliteTable(
   }),
 );
 
+export const CONFIG_ENVS = ["dev", "staging", "prod"] as const;
+export type ConfigEnv = (typeof CONFIG_ENVS)[number];
+export const CONFIG_VALUE_TYPES = ["string", "number", "boolean", "object", "array"] as const;
+export type ConfigValueType = (typeof CONFIG_VALUE_TYPES)[number];
+
 export const configs = sqliteTable(
   "configs",
   {
@@ -165,11 +170,61 @@ export const configs = sqliteTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    valueJson: text("value_json", { mode: "json" }).$type<unknown>().notNull(),
+    description: text("description"),
+    valueType: text("value_type", { enum: CONFIG_VALUE_TYPES }).notNull().default("object"),
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
   (t) => ({ uniq: uniqueIndex("configs_project_name").on(t.projectId, t.name) }),
+);
+
+/** Per-(config, env) published value history. `version` is monotonic per (configId, env).
+ *  `projectId` is denormalized so scopedDb can enforce project scoping without a join. */
+export const configValues = sqliteTable(
+  "config_values",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    configId: text("config_id")
+      .notNull()
+      .references(() => configs.id, { onDelete: "cascade" }),
+    env: text("env", { enum: CONFIG_ENVS }).notNull(),
+    valueJson: text("value_json", { mode: "json" }).$type<unknown>().notNull(),
+    version: integer("version").notNull(),
+    publishedAt: text("published_at").notNull(),
+    publishedBy: text("published_by").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("config_values_project").on(t.projectId),
+    configEnvIdx: index("config_values_config_env").on(t.configId, t.env, t.version),
+    uniq: uniqueIndex("config_values_config_env_version").on(t.configId, t.env, t.version),
+  }),
+);
+
+/** Open, unpublished draft — at most one per (configId, env). */
+export const configDrafts = sqliteTable(
+  "config_drafts",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    configId: text("config_id")
+      .notNull()
+      .references(() => configs.id, { onDelete: "cascade" }),
+    env: text("env", { enum: CONFIG_ENVS }).notNull(),
+    valueJson: text("value_json", { mode: "json" }).$type<unknown>().notNull(),
+    baseVersion: integer("base_version").notNull(),
+    authorEmail: text("author_email").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("config_drafts_project").on(t.projectId),
+    uniq: uniqueIndex("config_drafts_config_env").on(t.configId, t.env),
+  }),
 );
 
 export const universes = sqliteTable(

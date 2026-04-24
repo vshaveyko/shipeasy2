@@ -360,7 +360,7 @@ describe("FlagsClientBrowser", () => {
     await client.identify({ user_id: "u1" });
     expect(client.getFlag("my_flag")).toBe(true);
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://x/sdk/evaluate",
+      "http://x/sdk/evaluate?env=prod",
       expect.objectContaining({ method: "POST" }),
     );
   });

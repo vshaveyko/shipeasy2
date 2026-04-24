@@ -7,6 +7,8 @@ import { getDb, type Db } from "./index";
 import {
   gates,
   configs,
+  configValues,
+  configDrafts,
   universes,
   experiments,
   experimentMetrics,
@@ -31,6 +33,8 @@ import {
 export type ScopedTable =
   | typeof gates
   | typeof configs
+  | typeof configValues
+  | typeof configDrafts
   | typeof universes
   | typeof experiments
   | typeof events

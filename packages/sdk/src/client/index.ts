@@ -281,16 +281,21 @@ function getOrCreateAnonId(): string {
 
 // ---- FlagsClientBrowser ----
 
+export type FlagsClientBrowserEnv = "dev" | "staging" | "prod";
+
 export interface FlagsClientBrowserOptions {
   sdkKey: string;
   baseUrl?: string;
   autoGuardrails?: boolean;
+  /** Which published env to read values from. Defaults to "prod". */
+  env?: FlagsClientBrowserEnv;
 }
 
 export class FlagsClientBrowser {
   private readonly sdkKey: string;
   private readonly baseUrl: string;
   private readonly autoGuardrails: boolean;
+  private readonly env: FlagsClientBrowserEnv;
   private evalResult: EvalResponse | null = null;
   private anonId: string;
   private userId = "";
@@ -300,6 +305,7 @@ export class FlagsClientBrowser {
   constructor(opts: FlagsClientBrowserOptions) {
     this.sdkKey = opts.sdkKey;
     this.baseUrl = (opts.baseUrl ?? "https://edge.shipeasy.dev").replace(/\/$/, "");
+    this.env = opts.env ?? "prod";
     this.autoGuardrails = opts.autoGuardrails !== false;
     this.anonId = getOrCreateAnonId();
     this.buffer = new EventBuffer(`${this.baseUrl}/collect`, this.sdkKey);
@@ -315,7 +321,7 @@ export class FlagsClientBrowser {
       await this.buffer.alias(this.anonId, this.userId);
     }
 
-    const res = await fetch(`${this.baseUrl}/sdk/evaluate`, {
+    const res = await fetch(`${this.baseUrl}/sdk/evaluate?env=${this.env}`, {
       method: "POST",
       headers: { "X-SDK-Key": this.sdkKey, "Content-Type": "application/json" },
       body: JSON.stringify({ user }),

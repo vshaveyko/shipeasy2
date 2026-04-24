@@ -1,9 +1,11 @@
 // KV read helpers with module-scope caches.
 
 import type { CoreEnv } from "../env";
+import { CONFIG_ENVS, type ConfigEnv } from "../db/schema";
 
 export interface FlagsBlob {
   blobFormat?: number;
+  env?: ConfigEnv;
   version: string;
   plan: string;
   gates: Record<string, unknown>;
@@ -21,17 +23,36 @@ const flagsCache = new Map<string, { data: FlagsBlob; expiry: number }>();
 const expsCache = new Map<string, { data: ExpsBlob; expiry: number }>();
 const catalogCache = new Map<string, { data: Set<string>; expiry: number }>();
 
-export async function getFlags(env: CoreEnv, projectId: string): Promise<FlagsBlob> {
+function flagsCacheKey(projectId: string, env: ConfigEnv): string {
+  return `${projectId}:${env}`;
+}
+
+function isConfigEnv(value: string | undefined | null): value is ConfigEnv {
+  return (
+    value !== undefined && value !== null && (CONFIG_ENVS as readonly string[]).includes(value)
+  );
+}
+
+export function resolveEnv(input: string | undefined | null): ConfigEnv {
+  return isConfigEnv(input) ? input : "prod";
+}
+
+export async function getFlags(
+  env: CoreEnv,
+  projectId: string,
+  targetEnv: ConfigEnv = "prod",
+): Promise<FlagsBlob> {
   const ttl = env.FLAGS_CACHE_TTL_MS !== undefined ? Number(env.FLAGS_CACHE_TTL_MS) : 10_000;
+  const cacheKey = flagsCacheKey(projectId, targetEnv);
   if (ttl > 0) {
-    const hit = flagsCache.get(projectId);
+    const hit = flagsCache.get(cacheKey);
     if (hit && Date.now() < hit.expiry) return hit.data;
   }
   if (!env.FLAGS_KV) throw new Error("FLAGS_KV binding missing");
-  const raw = await env.FLAGS_KV.get(`${projectId}:flags`);
-  if (!raw) throw new Error(`No flags for project ${projectId}`);
+  const raw = await env.FLAGS_KV.get(`${projectId}:${targetEnv}:flags`);
+  if (!raw) throw new Error(`No flags for project ${projectId} (env=${targetEnv})`);
   const data = JSON.parse(raw) as FlagsBlob;
-  if (ttl > 0) flagsCache.set(projectId, { data, expiry: Date.now() + ttl });
+  if (ttl > 0) flagsCache.set(cacheKey, { data, expiry: Date.now() + ttl });
   return data;
 }
 
@@ -52,7 +73,7 @@ export async function getExperiments(env: CoreEnv, projectId: string): Promise<E
 /** Clears all in-process KV caches. Intended for tests. */
 export function clearCaches(projectId?: string): void {
   if (projectId) {
-    flagsCache.delete(projectId);
+    for (const envName of CONFIG_ENVS) flagsCache.delete(flagsCacheKey(projectId, envName));
     expsCache.delete(projectId);
     catalogCache.delete(projectId);
   } else {

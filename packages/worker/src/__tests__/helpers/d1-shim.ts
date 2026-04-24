@@ -26,16 +26,45 @@ CREATE TABLE IF NOT EXISTS gates (
   salt TEXT NOT NULL,
   enabled INTEGER NOT NULL DEFAULT 1,
   killswitch INTEGER NOT NULL DEFAULT 0,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS configs (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL,
   name TEXT NOT NULL,
+  description TEXT,
+  value_type TEXT NOT NULL DEFAULT 'object',
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS config_values (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  config_id TEXT NOT NULL,
+  env TEXT NOT NULL,
   value_json TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  published_at TEXT NOT NULL,
+  published_by TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS config_values_config_env ON config_values (config_id, env, version);
+CREATE UNIQUE INDEX IF NOT EXISTS config_values_config_env_version ON config_values (config_id, env, version);
+
+CREATE TABLE IF NOT EXISTS config_drafts (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  config_id TEXT NOT NULL,
+  env TEXT NOT NULL,
+  value_json TEXT NOT NULL,
+  base_version INTEGER NOT NULL,
+  author_email TEXT NOT NULL,
+  created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE UNIQUE INDEX IF NOT EXISTS config_drafts_config_env ON config_drafts (config_id, env);
 
 CREATE TABLE IF NOT EXISTS universes (
   id TEXT PRIMARY KEY,
@@ -43,7 +72,8 @@ CREATE TABLE IF NOT EXISTS universes (
   name TEXT NOT NULL,
   unit_type TEXT NOT NULL DEFAULT 'user_id',
   holdout_range TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  deleted_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS experiments (
@@ -75,7 +105,8 @@ CREATE TABLE IF NOT EXISTS events (
   description TEXT,
   properties TEXT NOT NULL DEFAULT '[]',
   pending INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  deleted_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_aliases (

@@ -7,6 +7,7 @@ interface FlaglabVueOptions {
   sdkKey: string;
   baseUrl?: string;
   autoGuardrails?: boolean;
+  env?: "dev" | "staging" | "prod";
 }
 
 interface FlaglabContext {

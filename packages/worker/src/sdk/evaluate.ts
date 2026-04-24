@@ -5,6 +5,7 @@ import {
   evalGate,
   getExperiments,
   getFlags,
+  resolveEnv,
   type Experiment,
   type ExperimentAssignment,
   type Gate,
@@ -21,8 +22,9 @@ export async function handleEvaluate(c: AuthedContext) {
   const body = (await c.req.json().catch(() => ({}))) as EvaluateRequest;
   const user: User = body.user ?? {};
 
+  const targetEnv = resolveEnv(c.req.query("env"));
   const [flagsBlob, expsBlob] = await Promise.all([
-    getFlags(c.env, key.project_id),
+    getFlags(c.env, key.project_id, targetEnv),
     getExperiments(c.env, key.project_id),
   ]);
 

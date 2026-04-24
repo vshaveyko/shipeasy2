@@ -40,11 +40,13 @@ test.describe("Gates product", () => {
 });
 
 test.describe("Configs product", () => {
-  test("values listing renders empty state with create CTA", async ({ page }) => {
+  test("values landing renders the tree shell with empty state or first config", async ({
+    page,
+  }) => {
     await page.goto("/dashboard/configs/values");
-
-    await expect(page.getByRole("heading", { name: /^dynamic configs$/i, level: 1 })).toBeVisible();
-    await expect(page.getByText(/no configs yet/i)).toBeVisible();
+    // Either the empty-state heading (no configs) or a redirect to /values/[id].
+    // The tree + search input is present in both cases.
+    await expect(page.getByPlaceholder(/search configs/i)).toBeVisible();
   });
 
   test("new-config form renders and cancels back to values list", async ({ page }) => {
@@ -57,6 +59,6 @@ test.describe("Configs product", () => {
       .getByRole("link", { name: /^cancel$/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/configs\/values$/);
+    await expect(page).toHaveURL(/\/dashboard\/configs\/values\/?$/);
   });
 });

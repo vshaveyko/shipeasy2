@@ -32,8 +32,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <aside className="hidden w-60 shrink-0 overflow-y-auto border-r bg-sidebar text-sidebar-foreground md:block">
           <SidebarNav />
         </aside>
-        <main className="flex-1 overflow-y-auto bg-muted/30">
-          <div className="mx-auto w-full max-w-6xl px-6 py-8">{children}</div>
+        <main className="flex-1 overflow-y-auto bg-[var(--se-bg)]">
+          <div className="mx-auto flex min-h-full w-full max-w-[1280px] flex-col px-6 py-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

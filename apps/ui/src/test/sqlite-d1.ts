@@ -8,6 +8,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS = [
   join(__dirname, "../../../../packages/worker/migrations/0000_groovy_sunspot.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0001_far_wendigo.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0002_soft_delete.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0003_label_keys_variables.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0004_configs_env_versioning.sql"),
 ];
 
 class SqliteStatement {

@@ -173,14 +173,19 @@ function evalGateInternal(gate: Gate, user: User): boolean {
 
 // ---- FlagsClient ----
 
+export type FlagsClientEnv = "dev" | "staging" | "prod";
+
 export interface FlagsClientOptions {
   apiKey: string;
   baseUrl?: string;
+  /** Which published env to read values from. Defaults to "prod". */
+  env?: FlagsClientEnv;
 }
 
 export class FlagsClient {
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private readonly env: FlagsClientEnv;
   private flagsBlob: FlagsBlob | null = null;
   private expsBlob: ExpsBlob | null = null;
   private flagsEtag: string | null = null;
@@ -192,6 +197,7 @@ export class FlagsClient {
   constructor(opts: FlagsClientOptions) {
     this.apiKey = opts.apiKey;
     this.baseUrl = (opts.baseUrl ?? "https://edge.shipeasy.dev").replace(/\/$/, "");
+    this.env = opts.env ?? "prod";
   }
 
   async init(): Promise<void> {
@@ -235,7 +241,7 @@ export class FlagsClient {
   private async fetchFlags(): Promise<number | null> {
     const headers: Record<string, string> = { "X-SDK-Key": this.apiKey };
     if (this.flagsEtag) headers["If-None-Match"] = this.flagsEtag;
-    const res = await globalThis.fetch(`${this.baseUrl}/sdk/flags`, { headers });
+    const res = await globalThis.fetch(`${this.baseUrl}/sdk/flags?env=${this.env}`, { headers });
     const interval = Number(res.headers.get("X-Poll-Interval") ?? "30") || 30;
     if (res.status === 304) return interval;
     if (!res.ok) throw new Error(`/sdk/flags returned ${res.status}`);

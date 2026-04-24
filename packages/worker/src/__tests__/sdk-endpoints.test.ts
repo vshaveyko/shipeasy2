@@ -60,6 +60,37 @@ async function fetchApp(r: Request, env: WorkerEnv): Promise<Response> {
 // WorkerEnv type needed for fetchApp signature.
 import type { WorkerEnv } from "../env";
 
+/** Seed a config row with an initial v1 published value in every env. */
+async function seedConfig(
+  env: WorkerEnv,
+  opts: { id: string; projectId: string; name: string; value: unknown },
+): Promise<void> {
+  const now = new Date().toISOString();
+  await env
+    .DB!.prepare(
+      "INSERT INTO configs (id, project_id, name, value_type, updated_at) VALUES (?, ?, ?, ?, ?)",
+    )
+    .bind(opts.id, opts.projectId, opts.name, "object", now)
+    .run();
+  for (const envName of ["dev", "staging", "prod"] as const) {
+    await env
+      .DB!.prepare(
+        "INSERT INTO config_values (id, project_id, config_id, env, value_json, version, published_at, published_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .bind(
+        `${opts.id}-${envName}`,
+        opts.projectId,
+        opts.id,
+        envName,
+        JSON.stringify(opts.value),
+        1,
+        now,
+        "test@shipeasy.dev",
+      )
+      .run();
+  }
+}
+
 // ── /sdk/flags ────────────────────────────────────────────────────────────────
 
 describe("GET /sdk/flags", () => {
@@ -218,18 +249,12 @@ describe("GET /sdk/flags", () => {
   });
 
   it("string config appears in flags blob", async () => {
-    await t.env
-      .DB!.prepare(
-        "INSERT INTO configs (id, project_id, name, value_json, updated_at) VALUES (?, ?, ?, ?, ?)",
-      )
-      .bind(
-        `c1-${t.projectId}`,
-        t.projectId,
-        "button_label",
-        JSON.stringify("Buy now"),
-        new Date().toISOString(),
-      )
-      .run();
+    await seedConfig(t.env, {
+      id: `c1-${t.projectId}`,
+      projectId: t.projectId,
+      name: "button_label",
+      value: "Buy now",
+    });
 
     await rebuildFlags(t.env, t.projectId, "free");
 
@@ -240,18 +265,12 @@ describe("GET /sdk/flags", () => {
 
   it("object config round-trips correctly", async () => {
     const obj = { threshold: 0.9, mode: "aggressive" };
-    await t.env
-      .DB!.prepare(
-        "INSERT INTO configs (id, project_id, name, value_json, updated_at) VALUES (?, ?, ?, ?, ?)",
-      )
-      .bind(
-        `c2-${t.projectId}`,
-        t.projectId,
-        "algo_config",
-        JSON.stringify(obj),
-        new Date().toISOString(),
-      )
-      .run();
+    await seedConfig(t.env, {
+      id: `c2-${t.projectId}`,
+      projectId: t.projectId,
+      name: "algo_config",
+      value: obj,
+    });
 
     await rebuildFlags(t.env, t.projectId, "free");
 
@@ -403,18 +422,12 @@ describe("POST /sdk/evaluate", () => {
   });
 
   it("string config appears in evaluate response", async () => {
-    await t.env
-      .DB!.prepare(
-        "INSERT INTO configs (id, project_id, name, value_json, updated_at) VALUES (?, ?, ?, ?, ?)",
-      )
-      .bind(
-        `ce1-${t.projectId}`,
-        t.projectId,
-        "api_version",
-        JSON.stringify("v2"),
-        new Date().toISOString(),
-      )
-      .run();
+    await seedConfig(t.env, {
+      id: `ce1-${t.projectId}`,
+      projectId: t.projectId,
+      name: "api_version",
+      value: "v2",
+    });
 
     await rebuildFlags(t.env, t.projectId, "free");
     await rebuildExperiments(t.env, t.projectId);

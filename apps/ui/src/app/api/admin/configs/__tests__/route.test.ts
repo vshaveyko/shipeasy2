@@ -64,11 +64,15 @@ describe("POST /admin/configs", () => {
     expect((await POST(req("POST", "/api/admin/configs", { value: "x" }))).status).toBe(422);
   });
 
-  it("writes flags blob to KV", async () => {
+  it("writes per-env flags blobs to KV", async () => {
     await createConfig("kv_cfg", true);
     const kv = mockEnv.FLAGS_KV as unknown as MemoryKV;
-    const blob = JSON.parse(kv.store.get(`${TEST_PROJECT_ID}:flags`)!);
-    expect(blob.configs).toHaveProperty("kv_cfg");
+    for (const envName of ["dev", "staging", "prod"] as const) {
+      const blob = JSON.parse(kv.store.get(`${TEST_PROJECT_ID}:${envName}:flags`)!);
+      expect(blob.configs).toHaveProperty("kv_cfg");
+      expect(blob.configs.kv_cfg.value).toBe(true);
+      expect(blob.env).toBe(envName);
+    }
   });
 });
 
@@ -91,15 +95,21 @@ describe("GET /admin/configs/:id", () => {
 });
 
 describe("PATCH /admin/configs/:id", () => {
-  it("updates value", async () => {
+  it("updates value across all envs by creating a new version", async () => {
     const { id } = await createConfig("patchable", "old");
     await PATCH(req("PATCH", `/api/admin/configs/${id}`, { value: "new" }), {
       params: Promise.resolve({ id }),
     });
     const row = (await (
       await GET_ONE(req("GET", `/api/admin/configs/${id}`), { params: Promise.resolve({ id }) })
-    ).json()) as { valueJson: unknown };
-    expect(row.valueJson).toBe("new");
+    ).json()) as {
+      values: Record<string, unknown>;
+      envs: Record<string, { version: number }>;
+    };
+    expect(row.values.prod).toBe("new");
+    expect(row.values.dev).toBe("new");
+    expect(row.values.staging).toBe("new");
+    expect(row.envs.prod.version).toBe(2);
   });
 
   it("returns 404 for unknown id", async () => {

@@ -10,6 +10,7 @@ export * from "./kv/purge";
 export * from "./kv/rebuild";
 export * from "./db/scoped";
 export { getDb, type Db } from "./db";
+export { CONFIG_ENVS, CONFIG_VALUE_TYPES, type ConfigEnv, type ConfigValueType } from "./db/schema";
 export * from "./eval/gate";
 export * from "./eval/experiment";
 export { getHashFn, murmur3_v1, type HashFn } from "./eval/hash";

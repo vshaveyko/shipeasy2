@@ -25,8 +25,12 @@ export async function createConfigAction(formData: FormData) {
     }
   }
 
-  await createConfig(identity, { name, value: value ?? "" });
-  redirect("/dashboard/configs/values");
+  const created = await createConfig(identity, {
+    name,
+    valueType: (valueType as "string" | "number" | "boolean" | "object" | "array") ?? undefined,
+    value: value ?? "",
+  });
+  redirect(`/dashboard/configs/values/${created.id}`);
 }
 
 export async function deleteConfigAction(formData: FormData) {
