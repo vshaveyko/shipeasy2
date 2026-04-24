@@ -35,8 +35,14 @@ export function BulkActionsBar<T>({ selected, actions, onClear }: Props<T>) {
   }
 
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-2 rounded-lg border bg-background px-3 py-2 shadow-sm">
-      <span className="text-xs font-medium">{selected.length} selected</span>
+    <div
+      className="sticky top-0 z-10 flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 py-2"
+      style={{ boxShadow: "var(--se-shadow-1)" }}
+    >
+      <span className="se-badge se-badge-live" aria-label={`${selected.length} selected`}>
+        <span className="dot" />
+        {selected.length} SELECTED
+      </span>
       <Button
         size="xs"
         variant="ghost"

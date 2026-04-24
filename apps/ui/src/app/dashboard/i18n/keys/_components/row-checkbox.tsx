@@ -31,7 +31,7 @@ export function RowCheckbox({ checked, indeterminate, onChange, ariaLabel, class
       onChange={onChange}
       aria-label={ariaLabel}
       className={cn(
-        "size-3.5 shrink-0 cursor-pointer rounded border-input accent-primary",
+        "size-3.5 shrink-0 cursor-pointer rounded border-[var(--se-line-2)] bg-[var(--se-bg-2)] accent-[var(--se-accent)]",
         className,
       )}
     />
