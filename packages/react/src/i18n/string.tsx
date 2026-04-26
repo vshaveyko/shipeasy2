@@ -6,6 +6,8 @@ interface ShipEasyI18nStringProps extends HTMLAttributes<HTMLElement> {
   variables?: Record<string, string | number>;
   desc?: string;
   as?: string;
+  /** Fallback text rendered when no translation is loaded for the key. */
+  defaultValue?: string;
 }
 
 export function ShipEasyI18nString({
@@ -13,10 +15,14 @@ export function ShipEasyI18nString({
   variables,
   desc,
   as: Tag = "span",
+  defaultValue,
   ...rest
 }: ShipEasyI18nStringProps) {
   const { t } = useShipEasyI18n();
-  // Use createElement to avoid polymorphic JSX type-narrowing issues
+  const translated = t(labelKey, variables);
+  // The i18n shim returns the key itself when no profile is loaded; show
+  // the declared defaultValue instead so SSR renders human copy.
+  const text = translated === labelKey && defaultValue ? defaultValue : translated;
   return React.createElement(
     Tag,
     {
@@ -25,6 +31,6 @@ export function ShipEasyI18nString({
       "data-label-desc": desc,
       ...rest,
     },
-    t(labelKey, variables),
+    text,
   );
 }

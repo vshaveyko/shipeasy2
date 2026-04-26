@@ -202,7 +202,7 @@ Two new workspace packages, both following [12-sdk-reference.md](../experiment-p
 - `packages/i18n-sdk` — dual server/client build via tsup, conditional exports (`node` → `dist/server`, `browser` → `dist/client`). Server-side helpers fetch the manifest at SSR time and inline strings into the HTML; client-side wraps the loader for hydration. Zod is an optional peer dep, same as the existing SDK.
 - `packages/i18n-loader` — produces the three embeddable artifacts (`loader.js`, `editor-trigger.js`, `editor.js`) via tsup. Build output is uploaded to R2 at `cdn/i18n/loader/{semver}/loader.js` during release; the worker's `/sdk/i18n/loader.js` route 302s to the current pinned version.
 
-Framework-specific wrappers (`@shipeasy/i18n-react`, `@shipeasy/i18n-vue`, etc.) are **explicitly deferred** to the differentiators phase.
+Framework-specific wrappers (`@shipeasy/react`, `@shipeasy/i18n-vue`, etc.) are **explicitly deferred** to the differentiators phase.
 
 ---
 
@@ -320,7 +320,7 @@ Drafts schema, draft UI, `shipeasy i18n translate` (Anthropic call from CLI), dr
 
 ### Phase 7 — Differentiators (ongoing)
 
-MCP tools, framework-specific SDK packages (`@shipeasy/i18n-react`, etc.), full codemod matrix, AI discovery `/.well-known/i18n.json`, Claude Code skills bundle. Independently orderable.
+MCP tools, framework-specific SDK packages (`@shipeasy/react`, etc.), full codemod matrix, AI discovery `/.well-known/i18n.json`, Claude Code skills bundle. Independently orderable.
 
 ---
 

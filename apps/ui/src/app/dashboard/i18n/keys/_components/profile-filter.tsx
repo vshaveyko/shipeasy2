@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useShipEasyI18n } from "@shipeasy/i18n-react";
+import { useShipEasyI18n } from "@shipeasy/react";
 
 type Profile = { id: string; name: string };
 

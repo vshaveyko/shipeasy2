@@ -25,33 +25,54 @@ export const metadata: Metadata = {
   description: "Ship faster with the tools you need",
 };
 
-// Design is dark-first — force dark so every surface adopts the new palette
-// regardless of OS preference or previously-persisted light theme.
-const themeInitScript = `
-(function () {
-  var root = document.documentElement;
-  root.classList.add('dark');
-  root.dataset.theme = 'dark';
-  root.style.colorScheme = 'dark';
-  try { localStorage.setItem('theme', 'dark'); } catch (_) {}
-})();
-`;
+/*
+  Design is dark-first — we render `<html class="dark">` server-side so the
+  page is already dark on first paint. No init script means no chrome-
+  extension-induced hydration mismatch (Dashlane et al. inject siblings into
+  <head> and break a React-managed inline <script> at that position).
+*/
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const i18nKey = process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY;
+  const i18nProfile = process.env.NEXT_PUBLIC_SHIPEASY_I18N_PROFILE;
+  const i18nApi = process.env.NEXT_PUBLIC_SHIPEASY_API_URL ?? "https://api.shipeasy.ai";
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
+    <html
+      lang="en"
+      className="dark"
+      data-theme="dark"
+      style={{ colorScheme: "dark" }}
+      suppressHydrationWarning
+    >
+      {/*
+        suppressHydrationWarning on <head>/<body> tolerates third-party
+        browser extensions (Dashlane, 1Password, LastPass, …) that inject
+        siblings into these elements before React hydrates. The i18n
+        loader is rendered as a plain <script> so the browser fetches it
+        immediately without going through React's hydration tracking.
+      */}
+      <head suppressHydrationWarning>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
         {children}
+        {i18nKey && i18nProfile ? (
+          <Script
+            id="se-i18n-loader"
+            strategy="beforeInteractive"
+            src={`${i18nApi}/sdk/i18n/loader.js`}
+            data-key={i18nKey}
+            data-profile={i18nProfile}
+          />
+        ) : null}
         <Script src="/se-devtools.js" strategy="afterInteractive" />
       </body>
     </html>

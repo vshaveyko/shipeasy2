@@ -49,7 +49,7 @@ export function ShipeasyProvider({
   useEffect(() => {
     initFromUrl();
     if (isDevtoolsRequested()) {
-      loadDevtools(adminUrl, baseUrl).catch(() => {});
+      loadDevtools(adminUrl, baseUrl);
     }
   }, []); // intentional: run once on mount
 
@@ -74,7 +74,7 @@ export function ShipeasyProvider({
       ) {
         if (!loaded) {
           loaded = true;
-          loadDevtools(adminUrl, baseUrl).catch(() => {});
+          loadDevtools(adminUrl, baseUrl);
         } else {
           // Toggle visibility by calling the exposed toggle API
           (
@@ -130,11 +130,17 @@ export function ShipeasyProvider({
       name: string,
       defaultParams: P,
       decode?: (raw: unknown) => P,
+      variants?: Record<string, Partial<P>>,
     ): ExperimentResult<P> => {
       void overrideSeed;
       const ov = getExpOverride(name);
       if (ov !== null) {
-        return { inExperiment: true, group: ov, params: defaultParams };
+        // URL forces this variant. If the caller declared the variant's
+        // params inline, merge them on top of the defaults so the rendered
+        // copy matches the override; otherwise just flip the group name.
+        const variantParams = variants?.[ov];
+        const params = variantParams ? { ...defaultParams, ...variantParams } : defaultParams;
+        return { inExperiment: true, group: ov, params };
       }
       return (
         clientRef.current?.getExperiment(name, defaultParams, decode) ?? {
@@ -183,14 +189,22 @@ interface DevtoolsMod {
   destroy(): void;
 }
 
-async function loadDevtools(adminUrl?: string, baseUrl?: string): Promise<void> {
-  // Runtime specifier prevents bundlers from statically resolving + inlining devtools.
-  const id = "@shipeasy/devtools";
-   
-  const mod = (await import(/* @vite-ignore */ id)) as DevtoolsMod;
+/**
+ * Activate the devtools overlay. Customers either:
+ *   1. Drop a `<script src="…/se-devtools.js">` tag (admin host serves it).
+ *      The IIFE bundle self-installs and handles its own hotkey + URL flag.
+ *      In that case `__shipeasy_devtools_global` is exposed and we just call init().
+ *   2. Bundle `@shipeasy/devtools` directly. Then they should call its init
+ *      themselves — we don't dynamic-import here because bundlers (Turbopack,
+ *      webpack) can't reliably ignore a dynamic import expression even with
+ *      magic comments, and standalone bundles already wire their own hotkey.
+ */
+function loadDevtools(adminUrl?: string, baseUrl?: string): void {
+  const wGlobal = window as unknown as { __shipeasy_devtools_global?: DevtoolsMod };
+  const mod = wGlobal.__shipeasy_devtools_global;
+  if (!mod) return; // No global: customer must mount devtools themselves.
   mod.init({ adminUrl, edgeUrl: baseUrl });
 
-  // Expose toggle so the hotkey can show/hide after first load
   const w = window as unknown as { __shipeasy_devtools?: { toggle: () => void } };
   if (!w.__shipeasy_devtools) {
     let visible = true;

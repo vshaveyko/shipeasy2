@@ -7,7 +7,7 @@ import {
   listDevtoolsProjectsAction,
   type ProjectOption,
 } from "./actions";
-import { useShipEasyI18n } from "@shipeasy/i18n-react";
+import { useShipEasyI18n } from "@shipeasy/react";
 
 interface Props {
   /** Origin of the opener window; restricts postMessage target. */

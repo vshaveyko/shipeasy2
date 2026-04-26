@@ -1,21 +1,22 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Power,
-  SlidersHorizontal,
-  FlaskConical,
-  LineChart,
-  Terminal,
-} from "lucide-react";
+import { ArrowRight, Power, SlidersHorizontal, FlaskConical, LineChart } from "lucide-react";
 
 import { auth } from "@/auth";
 import { BrandMark } from "@/components/dashboard/brand-mark";
 import { RotatingVerb } from "./landing-hero";
+import { LandingProviders } from "./landing/providers";
+import { LandingNavLinks } from "./landing/landing-nav-links";
+import { LandingHeroTagline } from "./landing/landing-hero-tagline";
+import { LandingPricing } from "./landing/landing-pricing";
+import { LandingInstall } from "./landing/landing-install";
+import { LandingHeroStats } from "./landing/landing-hero-stats";
 
 export default async function LandingPage() {
   const session = await auth();
+  const sdkKey = process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "";
+  const edgeUrl = process.env.NEXT_PUBLIC_SHIPEASY_EDGE_URL;
 
-  return (
+  const content = (
     <div className="relative min-h-screen overflow-hidden bg-[var(--se-bg)] text-foreground">
       {/* Grid background — masked to the top center */}
       <div
@@ -39,22 +40,7 @@ export default async function LandingPage() {
             <BrandMark size={22} />
             Shipeasy
           </Link>
-          <nav className="hidden items-center gap-7 text-[13.5px] text-[var(--se-fg-2)] md:flex">
-            <a href="#features" className="hover:text-foreground">
-              Features
-            </a>
-            <a href="#install" className="hover:text-foreground">
-              Install
-            </a>
-            <a
-              href="https://docs.shipeasy.ai"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-foreground"
-            >
-              Docs
-            </a>
-          </nav>
+          <LandingNavLinks />
           <div className="flex items-center gap-2.5">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1 font-mono text-[11px] text-[var(--se-fg-2)]">
               <span
@@ -119,10 +105,7 @@ export default async function LandingPage() {
             it.
           </h1>
 
-          <p className="mx-auto mt-6 max-w-[58ch] text-center text-[17px] leading-[1.5] text-[var(--se-fg-2)]">
-            Killswitches, dynamic configs, experiments, and auto-collected metrics — all driven by
-            one-line MCP commands from your Claude editor.
-          </p>
+          <LandingHeroTagline />
 
           <div className="mt-7 flex justify-center gap-2.5">
             <Link
@@ -145,17 +128,7 @@ export default async function LandingPage() {
             </a>
           </div>
 
-          <div className="mt-5 flex justify-center gap-6 font-mono text-[11.5px] text-[var(--se-fg-3)]">
-            <span>
-              <b className="font-medium text-[var(--se-fg-2)]">&lt;8ms</b> p50 evaluation
-            </span>
-            <span>
-              <b className="font-medium text-[var(--se-fg-2)]">3 envs</b> dev · staging · prod
-            </span>
-            <span>
-              <b className="font-medium text-[var(--se-fg-2)]">MCP</b> first
-            </span>
-          </div>
+          <LandingHeroStats />
 
           {/* Split canvas: chat left, experiment card right */}
           <div
@@ -383,57 +356,9 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* MCP install in 3 steps */}
-      <section id="install" className="relative z-[1] px-7 py-24">
-        <div className="mx-auto max-w-[1240px]">
-          <div className="mx-auto mb-12 max-w-[62ch] text-center">
-            <div className="t-caps dim-2 mb-3">Install in seconds</div>
-            <h2 className="text-[40px] font-medium tracking-[-0.02em] leading-[1.08]">
-              Three steps from zero to first experiment
-            </h2>
-          </div>
-          <ol className="grid gap-4 md:grid-cols-3">
-            {[
-              {
-                n: "01",
-                t: "Sign in with GitHub",
-                d: "One OAuth hop. Project + SDK keys auto-provisioned on first login.",
-              },
-              {
-                n: "02",
-                t: "Install the Claude MCP",
-                d: "Run `claude mcp install shipeasy`. Done — Claude has your workspace in scope.",
-              },
-              {
-                n: "03",
-                t: "Ask Claude to ship",
-                d: "“Try 3-step checkout, ramp to 50%.” The MCP wires the SDK, rolls out, reports.",
-              },
-            ].map((s) => (
-              <li
-                key={s.n}
-                className="flex flex-col gap-3 rounded-[12px] border border-[var(--se-line)] p-6"
-                style={{ background: "var(--se-bg-1)" }}
-              >
-                <div className="font-mono text-[11px] tracking-[0.08em] text-[var(--se-fg-4)]">
-                  STEP {s.n}
-                </div>
-                <div className="text-[17px] font-medium tracking-[-0.01em]">{s.t}</div>
-                <div className="text-[13px] leading-[1.55] text-[var(--se-fg-2)]">{s.d}</div>
-              </li>
-            ))}
-          </ol>
+      <LandingPricing />
 
-          <div
-            className="mx-auto mt-10 flex max-w-[640px] items-center gap-3 rounded-[10px] border border-[var(--se-line-2)] px-4 py-3 font-mono text-[13px]"
-            style={{ background: "var(--se-bg-2)" }}
-          >
-            <Terminal className="size-3.5 text-[var(--se-fg-3)]" />
-            <span className="text-[var(--se-fg-3)]">$</span>
-            <span className="text-foreground">claude mcp install shipeasy</span>
-          </div>
-        </div>
-      </section>
+      <LandingInstall />
 
       {/* Footer */}
       <footer
@@ -455,5 +380,17 @@ export default async function LandingPage() {
 
       <style>{`@keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }`}</style>
     </div>
+  );
+
+  if (!sdkKey) {
+    // No client SDK key configured — render without provider so the landing
+    // page still works in dev/build environments without ShipEasy creds.
+    return content;
+  }
+
+  return (
+    <LandingProviders sdkKey={sdkKey} edgeUrl={edgeUrl}>
+      {content}
+    </LandingProviders>
   );
 }

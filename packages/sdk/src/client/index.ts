@@ -291,6 +291,25 @@ export interface FlagsClientBrowserOptions {
   env?: FlagsClientBrowserEnv;
 }
 
+/**
+ * Read `?se_exp_<name>=<group>` (and legacy `?se-exp-<name>=…`) URL params
+ * and project them into the wire shape `/sdk/evaluate` expects. The worker
+ * trusts these and bypasses normal allocation for the named experiments.
+ */
+function readExperimentOverridesFromUrl(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const out: Record<string, string> = {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const [k, v] of params) {
+      if (!v || v === "default" || v === "none") continue;
+      if (k.startsWith("se_exp_")) out[k.slice("se_exp_".length)] = v;
+      else if (k.startsWith("se-exp-")) out[k.slice("se-exp-".length)] = v;
+    }
+  } catch {}
+  return out;
+}
+
 export class FlagsClientBrowser {
   private readonly sdkKey: string;
   private readonly baseUrl: string;
@@ -324,7 +343,7 @@ export class FlagsClientBrowser {
     const res = await fetch(`${this.baseUrl}/sdk/evaluate?env=${this.env}`, {
       method: "POST",
       headers: { "X-SDK-Key": this.sdkKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ user }),
+      body: JSON.stringify({ user, experiment_overrides: readExperimentOverridesFromUrl() }),
     });
     if (!res.ok) throw new Error(`/sdk/evaluate returned ${res.status}`);
     this.evalResult = (await res.json()) as EvalResponse;

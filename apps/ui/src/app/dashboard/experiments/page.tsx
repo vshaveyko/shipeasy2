@@ -2,6 +2,7 @@ import { FlaskConical, Search, Play, Square } from "lucide-react";
 
 import { auth } from "@/auth";
 import { listExperiments } from "@/lib/handlers/experiments";
+import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
@@ -34,6 +35,23 @@ export default async function ExperimentsPage() {
   const running = experiments.filter((e) => e.status === "running").length;
   const drafts = experiments.filter((e) => e.status === "draft").length;
   const stopped = experiments.filter((e) => e.status === "stopped").length;
+
+  if (experiments.length === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Experiments"
+          description="Run A/B tests on metrics with guardrails. Results compute daily once an experiment starts."
+          actions={
+            <LinkButton size="sm" href="/dashboard/experiments/new">
+              New experiment
+            </LinkButton>
+          }
+        />
+        <HeroEmptyState kind="experiments" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

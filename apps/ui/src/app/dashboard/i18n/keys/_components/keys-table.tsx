@@ -24,7 +24,7 @@ import {
   upsertDraftKeyAction,
   deleteKeyAction,
 } from "../actions";
-import { useShipEasyI18n } from "@shipeasy/i18n-react";
+import { useShipEasyI18n } from "@shipeasy/react";
 import type { BulkAction } from "./bulk-actions";
 import { BulkActionsBar } from "./bulk-actions-bar";
 import { RowCheckbox } from "./row-checkbox";

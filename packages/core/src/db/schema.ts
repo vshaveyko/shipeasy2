@@ -42,6 +42,34 @@ export const projects = sqliteTable("projects", {
   updatedAt: text("updated_at").notNull(),
 });
 
+export type ProjectMemberRole = "admin" | "editor" | "viewer";
+export type ProjectMemberStatus = "active" | "pending" | "removed";
+
+export const projectMembers = sqliteTable(
+  "project_members",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role", { enum: ["admin", "editor", "viewer"] })
+      .notNull()
+      .default("editor"),
+    status: text("status", { enum: ["active", "pending", "removed"] })
+      .notNull()
+      .default("pending"),
+    invitedByEmail: text("invited_by_email").notNull(),
+    invitedAt: text("invited_at").notNull(),
+    acceptedAt: text("accepted_at"),
+    removedAt: text("removed_at"),
+  },
+  (t) => ({
+    projectIdx: index("project_members_project").on(t.projectId, t.status),
+    projectEmailUniq: uniqueIndex("project_members_project_email").on(t.projectId, t.email),
+  }),
+);
+
 export const sdkKeys = sqliteTable(
   "sdk_keys",
   {

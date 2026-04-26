@@ -1,6 +1,7 @@
 import {
   Activity,
   FlaskConical,
+  FolderKanban,
   Gauge,
   Globe2,
   KeyRound,
@@ -14,6 +15,7 @@ import {
   FileText,
   FolderTree,
   PencilLine,
+  Users,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
@@ -174,6 +176,8 @@ export const PRODUCTS: Product[] = [
 export const SHARED_NAV: NavGroup = {
   title: "Project",
   items: [
+    { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
+    { href: "/dashboard/team", label: "Team", icon: Users },
     { href: "/dashboard/keys", label: "SDK Keys", icon: KeyRound },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
     {

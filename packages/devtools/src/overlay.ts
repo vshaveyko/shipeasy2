@@ -1,6 +1,11 @@
 import { STYLES } from "./styles";
 import { loadSession, clearSession, startDeviceAuth } from "./auth";
-import { clearAllOverrides } from "./overrides";
+import {
+  clearAllOverrides,
+  applyOverridesToUrlAndReload,
+  buildOverrideUrl,
+  snapshotOverridesFromStorage,
+} from "./overrides";
 import { DevtoolsApi } from "./api";
 import { renderGatesPanel } from "./panels/gates";
 import { renderConfigsPanel } from "./panels/configs";
@@ -18,11 +23,21 @@ interface OverlayState {
   panelHeight: number; // panel main-axis size (px)
 }
 
+// Hand-rolled lucide-style icons (same `currentColor` SVGs the rest of the
+// dashboard uses) so the overlay matches the design system without pulling
+// the lucide-react runtime into the IIFE bundle.
+const ICON_GATES = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>`;
+const ICON_CONFIGS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>`;
+const ICON_EXPERIMENTS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>`;
+const ICON_I18N = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>`;
+const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
+const ICON_DRAG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>`;
+
 const PANELS: Record<PanelKey, { icon: string; label: string }> = {
-  gates: { icon: "⛳", label: "Gates" },
-  configs: { icon: "⚙", label: "Configs" },
-  experiments: { icon: "🧪", label: "Experiments" },
-  i18n: { icon: "🌐", label: "i18n" },
+  gates: { icon: ICON_GATES, label: "Gates" },
+  configs: { icon: ICON_CONFIGS, label: "Configs" },
+  experiments: { icon: ICON_EXPERIMENTS, label: "Experiments" },
+  i18n: { icon: ICON_I18N, label: "Translations" },
 };
 
 const OVERLAY_KEY = "se_l_overlay";
@@ -230,7 +245,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   const dragHandle = document.createElement("div");
   dragHandle.className = "drag-handle";
   dragHandle.title = "Drag to reposition";
-  dragHandle.textContent = "⠿";
+  dragHandle.innerHTML = ICON_DRAG;
   toolbar.appendChild(dragHandle);
 
   dragHandle.addEventListener("mousedown", (e) => {
@@ -261,7 +276,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     const btn = document.createElement("button");
     btn.className = "btn";
     btn.title = label;
-    btn.textContent = icon;
+    btn.innerHTML = icon;
     btn.addEventListener("click", () => togglePanel(key));
     toolbar.appendChild(btn);
     buttons.set(key, btn);
@@ -329,10 +344,18 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   }
 
   function panelHeader(icon: string, label: string): string {
+    const origin = typeof window !== "undefined" && window.location ? window.location.host : "";
+    const sub = origin ? `<span class="sub">${origin}</span>` : "";
     return `
       <div class="panel-head">
-        <span class="panel-title">${icon} ${label}</span>
-        <button class="close" id="se-close">✕</button>
+        <span class="mk"></span>
+        <span class="panel-title">
+          <span class="panel-title-icon">${icon}</span>
+          <span class="panel-title-label">${label}</span>
+          ${sub}
+        </span>
+        <span class="live"><span class="dot"></span>LIVE</span>
+        <button class="close" id="se-close" aria-label="Close">${ICON_CLOSE}</button>
       </div>`;
   }
 
@@ -351,6 +374,9 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       <div class="panel-body" id="se-body"></div>
       <div class="panel-subfoot" id="se-subfoot"></div>
       <div class="panel-footer">
+        <span class="foot-status"><span class="dot"></span><span>SDK <b>connected</b></span></span>
+        <button class="ibtn" id="se-share" title="Build a URL that applies the current overrides for any visitor">Share URL</button>
+        <button class="ibtn" id="se-apply-url" title="Persist current overrides to the address bar and reload">Apply via URL</button>
         <button class="ibtn danger" id="se-signout">Sign out</button>
         <button class="ibtn danger" id="se-clearall">Clear overrides</button>
       </div>`;
@@ -364,6 +390,21 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     panelInner.querySelector("#se-clearall")!.addEventListener("click", () => {
       clearAllOverrides();
       renderPanelContent(key);
+    });
+    panelInner.querySelector("#se-apply-url")!.addEventListener("click", () => {
+      applyOverridesToUrlAndReload();
+    });
+    panelInner.querySelector("#se-share")!.addEventListener("click", async () => {
+      const url = buildOverrideUrl({ ...snapshotOverridesFromStorage(), openDevtools: true });
+      try {
+        await navigator.clipboard.writeText(url);
+        const btn = panelInner.querySelector("#se-share") as HTMLButtonElement;
+        const prev = btn.textContent;
+        btn.textContent = "Copied ✓";
+        setTimeout(() => (btn.textContent = prev), 1500);
+      } catch {
+        prompt("Copy this URL:", url);
+      }
     });
 
     const body = panelInner.querySelector("#se-body")!;

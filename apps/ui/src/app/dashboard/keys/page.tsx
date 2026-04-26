@@ -1,7 +1,8 @@
-import { KeyRound } from "lucide-react";
+import { KeyRound, Zap } from "lucide-react";
 import { auth } from "@/auth";
 import { listKeys } from "@/lib/handlers/keys";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,28 @@ export default async function KeysPage({
     } catch {
       // DB not available in dev without wrangler
     }
+  }
+
+  if (keys.length === 0 && !new_key) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="SDK Keys"
+          description="Keys authenticate SDKs against your project. We show raw tokens once — store them securely."
+        />
+        <HeroEmptyState
+          kind="keys"
+          extraAction={
+            <form action={createKeyAction}>
+              <input type="hidden" name="type" value="server" />
+              <Button size="lg" type="submit" className="h-10 px-4 text-[14px]">
+                <Zap className="size-3.5" /> Create your first key
+              </Button>
+            </form>
+          }
+        />
+      </div>
+    );
   }
 
   return (

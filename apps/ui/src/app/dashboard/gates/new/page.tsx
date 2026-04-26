@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { cn } from "@/lib/utils";
 import { createGateAction } from "../actions";
-import { useShipEasyI18n } from "@shipeasy/i18n-react";
+import { useShipEasyI18n } from "@shipeasy/react";
 
 const PROFILES = [
   {

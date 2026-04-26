@@ -13,7 +13,11 @@ export {
   getI18nProfileOverride,
   setI18nProfileOverride,
   clearAllOverrides,
+  buildOverrideUrl,
+  snapshotOverridesFromStorage,
+  applyOverridesToUrlAndReload,
 } from "./overrides";
+export type { OverrideUrlInput } from "./overrides";
 
 /**
  * Origin of the <script src="…/se-devtools.js"> tag that bootstrapped this

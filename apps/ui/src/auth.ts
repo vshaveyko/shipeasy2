@@ -28,6 +28,25 @@ declare module "next-auth/jwt" {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google, GitHub],
   session: { strategy: "jwt", maxAge: 15 * 60 },
+  /*
+    A stale auth.js session cookie (e.g. left over from a prior AUTH_SECRET)
+    surfaces as a recurring JWTSessionError on every server render. The
+    session is already null when this happens, so the user-facing behavior
+    is just "you're not logged in" — but the noisy stack trace fills the
+    console and the Next dev overlay. Demote it to a debug log; the cookie
+    self-heals on the next sign-in.
+  */
+  logger: {
+    error(error) {
+      const code = (error as { type?: string; message?: string })?.type ?? "";
+      const msg = (error as { message?: string })?.message ?? "";
+      if (code === "JWTSessionError" || msg.includes("no matching decryption secret")) return;
+      // eslint-disable-next-line no-console
+      console.error("[auth]", error);
+    },
+    warn() {},
+    debug() {},
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) token.id = user.id;

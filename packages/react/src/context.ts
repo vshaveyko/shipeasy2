@@ -10,6 +10,7 @@ export interface ShipeasyContextValue {
     name: string,
     defaultParams: P,
     decode?: (raw: unknown) => P,
+    variants?: Record<string, Partial<P>>,
   ): ExperimentResult<P>;
   track(event: string, props?: Record<string, unknown>): void;
 }
@@ -21,7 +22,7 @@ const defaultCtx: ShipeasyContextValue = {
   identify: async () => {},
   getFlag: () => false,
   getConfig: () => undefined,
-  getExperiment: (_n, def) => ({ inExperiment: false, group: "control", params: def }),
+  getExperiment: (_n, def, _d, _v) => ({ inExperiment: false, group: "control", params: def }),
   track: noop,
 };
 

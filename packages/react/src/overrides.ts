@@ -1,54 +1,70 @@
 /**
- * Read-only view of the override storage written by @shipeasy/devtools.
- * Storage key format MUST stay in sync with packages/devtools/src/overrides.ts.
+ * URL-only override reader, consumed by the React provider's
+ * useFlag / useConfig / useExperiment hooks. No storage layer — the
+ * single source of truth is `window.location.search`. This must stay in
+ * sync with packages/devtools/src/overrides.ts.
  */
 
-const S = "se_"; // sessionStorage prefix
-const L = "se_l_"; // localStorage prefix
+const TRUE_RX = /^(true|on|1|yes)$/i;
+const FALSE_RX = /^(false|off|0|no)$/i;
 
-function read(key: string): string | null {
-  for (const store of [sessionStorage, localStorage]) {
+function parseBool(raw: string): boolean | null {
+  if (TRUE_RX.test(raw)) return true;
+  if (FALSE_RX.test(raw)) return false;
+  return null;
+}
+
+function decodeConfigValue(raw: string): unknown {
+  if (raw.startsWith("b64:")) {
     try {
-      const v = store.getItem(key);
-      if (v !== null) return v;
-    } catch {}
+      const json = atob(raw.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(json);
+    } catch {
+      return raw;
+    }
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function readParam(canonical: string, legacy?: string): string | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const direct = params.get(canonical);
+  if (direct !== null) return direct;
+  if (legacy) {
+    const legacyVal = params.get(legacy);
+    if (legacyVal !== null) return legacyVal;
   }
   return null;
 }
 
-/** Capture ?se-gate-X, ?se-config-X, ?se-exp-X URL params into sessionStorage. */
-export function initFromUrl(): void {
-  if (typeof window === "undefined") return;
-  const params = new URLSearchParams(window.location.search);
-  for (const [k, v] of params) {
-    try {
-      if (k.startsWith("se-gate-")) sessionStorage.setItem(`${S}gate_${k.slice(8)}`, v);
-      else if (k.startsWith("se-config-")) sessionStorage.setItem(`${S}config_${k.slice(10)}`, v);
-      else if (k.startsWith("se-exp-")) sessionStorage.setItem(`${S}exp_${k.slice(7)}`, v);
-    } catch {}
-  }
-}
+/** No-op kept for API compatibility — URL is the source of truth. */
+export function initFromUrl(): void {}
 
 export function isDevtoolsRequested(): boolean {
   if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).has("se-devtools");
+  const p = new URLSearchParams(window.location.search);
+  return p.has("se") || p.has("se_devtools") || p.has("se-devtools");
 }
 
 export function getGateOverride(name: string): boolean | null {
-  const v = read(`${S}gate_${name}`) ?? read(`${L}gate_${name}`);
-  return v === null ? null : v === "true";
+  const v =
+    readParam(`se_ks_${name}`) ?? readParam(`se_gate_${name}`) ?? readParam(`se-gate-${name}`);
+  return v === null ? null : parseBool(v);
 }
 
 export function getConfigOverride(name: string): unknown {
-  const v = read(`${S}config_${name}`) ?? read(`${L}config_${name}`);
+  const v = readParam(`se_config_${name}`, `se-config-${name}`);
   if (v === null) return undefined;
-  try {
-    return JSON.parse(v);
-  } catch {
-    return v;
-  }
+  return decodeConfigValue(v);
 }
 
 export function getExpOverride(name: string): string | null {
-  return read(`${S}exp_${name}`) ?? read(`${L}exp_${name}`);
+  const v = readParam(`se_exp_${name}`, `se-exp-${name}`);
+  if (v === null || v === "" || v === "default" || v === "none") return null;
+  return v;
 }

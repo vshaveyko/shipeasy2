@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createMetricAction } from "./actions";
-import { useShipEasyI18n } from "@shipeasy/i18n-react";
+import { useShipEasyI18n } from "@shipeasy/react";
 
 export function MetricForm() {
   const { t } = useShipEasyI18n();

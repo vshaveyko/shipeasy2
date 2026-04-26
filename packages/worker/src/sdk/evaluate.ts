@@ -15,6 +15,13 @@ import type { AuthedContext } from "../lib/auth";
 
 interface EvaluateRequest {
   user?: User;
+  /**
+   * Caller-supplied per-experiment group overrides (typically driven by URL
+   * params handled by the SDK). When set, we skip allocation/holdout/group
+   * hashing and force the named variant if it exists. Affects only this
+   * request — no DB / KV mutation.
+   */
+  experiment_overrides?: Record<string, string>;
 }
 
 export async function handleEvaluate(c: AuthedContext) {
@@ -46,8 +53,20 @@ export async function handleEvaluate(c: AuthedContext) {
     string,
     { holdout_range?: [number, number] | null }
   >;
+  const expOverrides = body.experiment_overrides ?? {};
   for (const [name, exp] of Object.entries(expsMap)) {
     if (exp.status !== "running") continue;
+
+    // Forced variant from caller — short-circuits the eval pipeline.
+    const forcedGroup = expOverrides[name];
+    if (forcedGroup) {
+      const group = exp.groups.find((g) => g.name === forcedGroup);
+      if (group) {
+        experiments[name] = { group: group.name, params: group.params, inExperiment: true };
+        continue;
+      }
+    }
+
     const universe = universesMap[exp.universe];
     const holdout = universe?.holdout_range ?? null;
     const result = evalExperiment(exp, user, flags, holdout);

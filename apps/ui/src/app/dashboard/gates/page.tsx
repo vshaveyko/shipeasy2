@@ -2,6 +2,7 @@ import { Search, Shield, MoreHorizontal } from "lucide-react";
 
 import { auth } from "@/auth";
 import { listGates } from "@/lib/handlers/gates";
+import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
@@ -27,6 +28,23 @@ export default async function GatesPage() {
   const total = gates.length;
   const enabled = gates.filter((g) => g.enabled).length;
   const paused = total - enabled;
+
+  if (total === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Gates"
+          description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 10ms."
+          actions={
+            <LinkButton size="sm" href="/dashboard/gates/new">
+              New gate
+            </LinkButton>
+          }
+        />
+        <HeroEmptyState kind="gates" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

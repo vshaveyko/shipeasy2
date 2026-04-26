@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
-import { useShipEasyI18n } from "@shipeasy/i18n-react";
+import { useShipEasyI18n } from "@shipeasy/react";
 
 function safeCallback(raw: string | null): string {
   if (!raw) return "/dashboard";

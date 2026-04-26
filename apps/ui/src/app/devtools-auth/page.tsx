@@ -56,38 +56,42 @@ export default async function DevtoolsAuthPage({ searchParams }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-bold">
-            <Logo className="size-8" />
-            ShipEasy
-          </Link>
-        </div>
+    // The page renders inside a 460×640 popup. Tight vertical rhythm + a
+    // single "max" wrapper keeps the whole flow visible without scrolling
+    // even on the narrowest authorization windows.
+    <div className="flex min-h-[100dvh] flex-col items-center justify-start gap-3 px-3 py-4 sm:justify-center sm:gap-5 sm:py-8">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-base font-semibold sm:gap-2 sm:text-xl"
+      >
+        <Logo className="size-5 sm:size-7" />
+        ShipEasy
+      </Link>
 
-        <Card>
-          <CardHeader className="text-center">
-            <div className="bg-muted mx-auto mb-2 flex size-10 items-center justify-center rounded-full">
-              <Terminal className="size-5" />
-            </div>
-            <CardTitle>Authorize DevTools access</CardTitle>
-            <CardDescription>
-              ShipEasy DevTools from{" "}
-              <code className="font-mono text-xs">{new URL(origin).host}</code> is requesting access
-              to your project.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ApproveButton origin={origin} email={user.email} />
-            <p className="text-muted-foreground text-center text-xs">
-              Not you?{" "}
-              <Link href="/auth/signin" className="hover:text-foreground underline">
-                Sign in with a different account
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="w-full max-w-[360px] sm:max-w-sm">
+        <CardHeader className="space-y-1 px-4 pb-2 pt-4 text-center sm:px-6 sm:pb-3 sm:pt-6">
+          <div className="bg-muted mx-auto flex size-8 items-center justify-center rounded-full sm:size-10">
+            <Terminal className="size-4 sm:size-5" />
+          </div>
+          <CardTitle className="text-base sm:text-lg">Authorize DevTools access</CardTitle>
+          <CardDescription className="text-[12px] leading-snug sm:text-sm">
+            ShipEasy DevTools from{" "}
+            <code className="font-mono text-[11px] break-all sm:text-xs">
+              {new URL(origin).host}
+            </code>{" "}
+            is requesting access to your project.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 px-4 pb-4 sm:space-y-3 sm:px-6 sm:pb-6">
+          <ApproveButton origin={origin} email={user.email} />
+          <p className="text-muted-foreground text-center text-[11px] sm:text-xs">
+            Not you?{" "}
+            <Link href="/auth/signin" className="hover:text-foreground underline">
+              Sign in with a different account
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

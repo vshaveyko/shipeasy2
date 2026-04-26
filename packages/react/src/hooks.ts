@@ -18,13 +18,20 @@ export function useConfig<T = unknown>(name: string, decode?: (raw: unknown) => 
 /**
  * Returns the experiment result for the current user, respecting devtools overrides.
  * Automatically records an exposure event.
+ *
+ * Pass `variants` to declare each group's full param shape inline. URL-driven
+ * experiment overrides (`?se_exp_<name>=<group>`) will swap to the named
+ * variant's params client-side, so the demo works without round-tripping
+ * the override through the worker. When the user is naturally enrolled the
+ * server-side params still win.
  */
 export function useExperiment<P extends Record<string, unknown>>(
   name: string,
   defaultParams: P,
   decode?: (raw: unknown) => P,
+  variants?: Record<string, Partial<P>>,
 ): ExperimentResult<P> {
-  return useShipeasy().getExperiment(name, defaultParams, decode);
+  return useShipeasy().getExperiment(name, defaultParams, decode, variants);
 }
 
 /** Returns a stable `track` function bound to the current SDK client. */

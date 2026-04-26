@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PRODUCTS, getProductFromPath } from "@/lib/products";
-import { useShipEasyI18n } from "@shipeasy/i18n-react";
+import { useShipEasyI18n } from "@shipeasy/react";
 
 export function ProductSwitcher() {
   const { t } = useShipEasyI18n();

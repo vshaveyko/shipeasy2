@@ -35,7 +35,7 @@ Root directory: repo root (monorepo).
 **Build command:**
 
 ```
-pnpm install --frozen-lockfile && pnpm --filter @shipeasy/i18n-react build && pnpm --filter @shipeasy/devtools build && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote && pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build
+pnpm install --frozen-lockfile && pnpm --filter @shipeasy/react build && pnpm --filter @shipeasy/devtools build && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote && pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build
 ```
 
 **Deploy command:**
