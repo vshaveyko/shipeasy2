@@ -16,6 +16,8 @@
     "dist"
   ],
   "scripts": {
+    "// build": "Build @shipeasy/sdk first so its /client subpath types resolve during our DTS step. Cloudflare Workers Builds runs `pnpm --filter @shipeasy/react build` directly (no turbo topology), so this prebuild guarantees a clean-checkout build succeeds.",
+    "prebuild": "pnpm --filter @shipeasy/sdk build",
     "build": "tsup",
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit"
