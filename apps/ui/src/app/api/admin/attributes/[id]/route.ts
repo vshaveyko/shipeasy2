@@ -1,5 +1,5 @@
 import { getAttribute, updateAttribute, deleteAttribute } from "@/lib/handlers/attributes";
-import { withAdmin, readJson } from "@/lib/handlers/http";
+import { withAdmin, readJson, corsPreflight } from "@/lib/handlers/http";
 
 export const runtime = "nodejs";
 
@@ -17,4 +17,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return withAdmin(req, (idt) => deleteAttribute(idt, id));
+}
+
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
 }

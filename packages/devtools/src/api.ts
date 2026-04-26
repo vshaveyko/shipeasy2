@@ -1,7 +1,12 @@
 import type {
+  AttachmentUploadResult,
+  BugCreateInput,
+  BugRecord,
   ConfigRecord,
   DraftRecord,
   ExperimentRecord,
+  FeatureRequestCreateInput,
+  FeatureRequestRecord,
   GateRecord,
   KeyRecord,
   ProfileRecord,
@@ -11,7 +16,7 @@ import type {
 export class DevtoolsApi {
   constructor(
     readonly adminUrl: string,
-    private readonly token: string,
+    public readonly token: string,
   ) {}
 
   private async get<T>(path: string): Promise<T> {
@@ -83,6 +88,79 @@ export class DevtoolsApi {
 
   drafts(): Promise<DraftRecord[]> {
     return this.get("/api/admin/i18n/drafts");
+  }
+
+  private async post<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(`${this.adminUrl}${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const json = (await res.json()) as { error?: string; detail?: string };
+        detail = json.detail ?? json.error ?? "";
+      } catch {
+        try {
+          detail = (await res.text()).slice(0, 200);
+        } catch {
+          /* ignore */
+        }
+      }
+      throw new Error(`${path} → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
+    }
+    return (await res.json()) as T;
+  }
+
+  bugs(): Promise<BugRecord[]> {
+    return this.get("/api/admin/bugs");
+  }
+
+  createBug(input: BugCreateInput): Promise<{ id: string }> {
+    return this.post("/api/admin/bugs", input);
+  }
+
+  featureRequests(): Promise<FeatureRequestRecord[]> {
+    return this.get("/api/admin/feature-requests");
+  }
+
+  createFeatureRequest(input: FeatureRequestCreateInput): Promise<{ id: string }> {
+    return this.post("/api/admin/feature-requests", input);
+  }
+
+  async uploadAttachment(args: {
+    reportKind: "bug" | "feature_request";
+    reportId: string;
+    kind: "screenshot" | "recording" | "file";
+    filename: string;
+    blob: Blob;
+  }): Promise<AttachmentUploadResult> {
+    const fd = new FormData();
+    fd.append("reportKind", args.reportKind);
+    fd.append("reportId", args.reportId);
+    fd.append("kind", args.kind);
+    fd.append("filename", args.filename);
+    fd.append("file", args.blob, args.filename);
+    const res = await fetch(`${this.adminUrl}/api/admin/reports/attachments`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.token}` },
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const json = (await res.json()) as { error?: string };
+        detail = json.error ?? "";
+      } catch {
+        /* ignore */
+      }
+      throw new Error(`upload failed → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
+    }
+    return (await res.json()) as AttachmentUploadResult;
   }
 
   async keys(profileId?: string): Promise<KeyRecord[]> {

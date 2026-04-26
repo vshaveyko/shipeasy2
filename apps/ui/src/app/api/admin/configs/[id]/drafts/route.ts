@@ -1,5 +1,5 @@
 import { saveDraft, discardDraft } from "@/lib/handlers/configs";
-import { withAdmin, readJson } from "@/lib/handlers/http";
+import { withAdmin, readJson, corsPreflight } from "@/lib/handlers/http";
 
 export const runtime = "nodejs";
 
@@ -13,4 +13,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const { id } = await params;
   const body = await readJson(req);
   return withAdmin(req, (idt) => discardDraft(idt, id, body));
+}
+
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
 }

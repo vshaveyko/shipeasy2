@@ -1,5 +1,5 @@
 import { updateKey, deleteKey } from "@/lib/handlers/i18n";
-import { withAdmin, readJson } from "@/lib/handlers/http";
+import { withAdmin, readJson, corsPreflight } from "@/lib/handlers/http";
 
 export const runtime = "nodejs";
 
@@ -12,4 +12,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return withAdmin(req, (identity) => deleteKey(identity, id));
+}
+
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
 }

@@ -1,5 +1,5 @@
 import { listDrafts, createDraft } from "@/lib/handlers/i18n";
-import { withAdmin, withAdminCreated, readJson } from "@/lib/handlers/http";
+import { withAdmin, withAdminCreated, readJson, corsPreflight } from "@/lib/handlers/http";
 
 export const runtime = "nodejs";
 
@@ -12,4 +12,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const body = await readJson(req);
   return withAdminCreated(req, (identity) => createDraft(identity, body));
+}
+
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
 }

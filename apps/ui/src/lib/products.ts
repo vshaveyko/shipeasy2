@@ -8,6 +8,8 @@ import {
   LayoutDashboard,
   Languages,
   Layers,
+  Lightbulb,
+  Bug,
   Radio,
   Settings,
   ToggleLeft,
@@ -19,7 +21,7 @@ import {
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
-export type ProductId = "gates" | "configs" | "experiments" | "i18n";
+export type ProductId = "gates" | "configs" | "experiments" | "i18n" | "feedback";
 
 export type NavItem = {
   href: string;
@@ -43,6 +45,8 @@ export type Product = {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   /** URL prefix that identifies this product. */
   basePath: string;
+  /** Additional URL prefixes that should resolve to this product. */
+  extraPaths?: string[];
   /** Landing page to route users to when they pick this product. */
   rootHref: string;
   nav: NavGroup[];
@@ -171,6 +175,28 @@ export const PRODUCTS: Product[] = [
       },
     ],
   },
+  {
+    id: "feedback",
+    name: "Feedback",
+    tagline: "Bug reports & feature requests from the in-page nub",
+    icon: Bug,
+    basePath: "/dashboard/bugs",
+    extraPaths: ["/dashboard/feature-requests"],
+    rootHref: "/dashboard/bugs",
+    nav: [
+      {
+        title: "Inbox",
+        items: [
+          { href: "/dashboard/bugs", label: "Bugs", icon: Bug },
+          {
+            href: "/dashboard/feature-requests",
+            label: "Feature requests",
+            icon: Lightbulb,
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 export const SHARED_NAV: NavGroup = {
@@ -191,7 +217,10 @@ export const SHARED_NAV: NavGroup = {
 
 export function getProductFromPath(pathname: string): Product | null {
   return (
-    PRODUCTS.find((p) => pathname === p.basePath || pathname.startsWith(`${p.basePath}/`)) ?? null
+    PRODUCTS.find((p) => {
+      const paths = [p.basePath, ...(p.extraPaths ?? [])];
+      return paths.some((bp) => pathname === bp || pathname.startsWith(`${bp}/`));
+    }) ?? null
   );
 }
 

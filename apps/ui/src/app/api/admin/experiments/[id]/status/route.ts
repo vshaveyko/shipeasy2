@@ -1,5 +1,5 @@
 import { setExperimentStatus } from "@/lib/handlers/experiments";
-import { withAdmin, readJson } from "@/lib/handlers/http";
+import { withAdmin, readJson, corsPreflight } from "@/lib/handlers/http";
 import { experimentStatusUpdateSchema } from "@shipeasy/core/schemas/experiments";
 
 export const runtime = "nodejs";
@@ -9,4 +9,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = await readJson(req);
   const parsed = experimentStatusUpdateSchema.parse(body);
   return withAdmin(req, (idt) => setExperimentStatus(idt, id, parsed.status));
+}
+
+export function OPTIONS(req: Request) {
+  return corsPreflight(req);
 }

@@ -11,9 +11,11 @@ import { renderGatesPanel } from "./panels/gates";
 import { renderConfigsPanel } from "./panels/configs";
 import { renderExperimentsPanel } from "./panels/experiments";
 import { renderI18nPanel } from "./panels/i18n";
+import { renderBugsPanel } from "./panels/bugs";
+import { renderFeatureRequestsPanel } from "./panels/feature-requests";
 import type { DevtoolsOptions, DevtoolsSession } from "./types";
 
-type PanelKey = "gates" | "configs" | "experiments" | "i18n";
+type PanelKey = "gates" | "configs" | "experiments" | "i18n" | "bugs" | "features";
 type Edge = "top" | "right" | "bottom" | "left";
 
 interface OverlayState {
@@ -30,6 +32,8 @@ const ICON_GATES = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const ICON_CONFIGS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>`;
 const ICON_EXPERIMENTS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>`;
 const ICON_I18N = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>`;
+const ICON_BUG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>`;
+const ICON_FEATURE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>`;
 const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
 const ICON_DRAG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>`;
 
@@ -38,6 +42,8 @@ const PANELS: Record<PanelKey, { icon: string; label: string }> = {
   configs: { icon: ICON_CONFIGS, label: "Configs" },
   experiments: { icon: ICON_EXPERIMENTS, label: "Experiments" },
   i18n: { icon: ICON_I18N, label: "Translations" },
+  bugs: { icon: ICON_BUG, label: "Bugs" },
+  features: { icon: ICON_FEATURE, label: "Feature requests" },
 };
 
 const OVERLAY_KEY = "se_l_overlay";
@@ -414,6 +420,8 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       configs: () => renderConfigsPanel(body, api),
       experiments: () => renderExperimentsPanel(body, api),
       i18n: () => renderI18nPanel(body, api, subfoot, shadow),
+      bugs: () => renderBugsPanel(body, api, shadow),
+      features: () => renderFeatureRequestsPanel(body, api, shadow),
     };
     renderers[key]().catch((err) => {
       body.innerHTML = `<div class="err">${String(err)}</div>`;

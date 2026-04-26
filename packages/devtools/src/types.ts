@@ -68,6 +68,57 @@ export interface DraftRecord {
   createdAt: string;
 }
 
+export type BugStatus = "open" | "triaged" | "in_progress" | "resolved" | "wont_fix";
+
+export interface BugRecord {
+  id: string;
+  title: string;
+  status: BugStatus;
+  reporterEmail: string | null;
+  pageUrl: string | null;
+  createdAt: string;
+}
+
+export interface BugCreateInput {
+  title: string;
+  stepsToReproduce: string;
+  actualResult: string;
+  expectedResult: string;
+  pageUrl?: string;
+  userAgent?: string;
+  viewport?: string;
+}
+
+export type FeatureRequestStatus = "open" | "considering" | "planned" | "shipped" | "declined";
+export type FeatureRequestImportance = "nice_to_have" | "important" | "critical";
+
+export interface FeatureRequestRecord {
+  id: string;
+  title: string;
+  status: FeatureRequestStatus;
+  importance: FeatureRequestImportance;
+  reporterEmail: string | null;
+  pageUrl: string | null;
+  createdAt: string;
+}
+
+export interface FeatureRequestCreateInput {
+  title: string;
+  description: string;
+  useCase: string;
+  importance: FeatureRequestImportance;
+  pageUrl?: string;
+  userAgent?: string;
+}
+
+export interface AttachmentUploadResult {
+  id: string;
+  filename: string;
+  kind: "screenshot" | "recording" | "file";
+  mimeType: string;
+  sizeBytes: number;
+}
+
 export type OverridePersistence = "session" | "local";
 
 /**
