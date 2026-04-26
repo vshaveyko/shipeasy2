@@ -561,6 +561,103 @@ export const labelDraftKeys = sqliteTable(
   }),
 );
 
+// ── Feedback (bug reports + feature requests) ───────────────────────────────
+
+export const BUG_STATUSES = ["open", "triaged", "in_progress", "resolved", "wont_fix"] as const;
+export type BugStatus = (typeof BUG_STATUSES)[number];
+
+export const bugReports = sqliteTable(
+  "bug_reports",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    stepsToReproduce: text("steps_to_reproduce").notNull().default(""),
+    actualResult: text("actual_result").notNull().default(""),
+    expectedResult: text("expected_result").notNull().default(""),
+    status: text("status", { enum: BUG_STATUSES }).notNull().default("open"),
+    reporterEmail: text("reporter_email"),
+    pageUrl: text("page_url"),
+    userAgent: text("user_agent"),
+    viewport: text("viewport"),
+    context: text("context", { mode: "json" }).$type<Record<string, unknown> | null>(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("bug_reports_project").on(t.projectId, t.status),
+    createdIdx: index("bug_reports_created").on(t.projectId, t.createdAt),
+  }),
+);
+
+export const FEATURE_REQUEST_STATUSES = [
+  "open",
+  "considering",
+  "planned",
+  "shipped",
+  "declined",
+] as const;
+export type FeatureRequestStatus = (typeof FEATURE_REQUEST_STATUSES)[number];
+
+export const FEATURE_REQUEST_IMPORTANCES = ["nice_to_have", "important", "critical"] as const;
+export type FeatureRequestImportance = (typeof FEATURE_REQUEST_IMPORTANCES)[number];
+
+export const featureRequests = sqliteTable(
+  "feature_requests",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    useCase: text("use_case").notNull().default(""),
+    importance: text("importance", { enum: FEATURE_REQUEST_IMPORTANCES })
+      .notNull()
+      .default("nice_to_have"),
+    status: text("status", { enum: FEATURE_REQUEST_STATUSES }).notNull().default("open"),
+    reporterEmail: text("reporter_email"),
+    pageUrl: text("page_url"),
+    userAgent: text("user_agent"),
+    context: text("context", { mode: "json" }).$type<Record<string, unknown> | null>(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("feature_requests_project").on(t.projectId, t.status),
+    createdIdx: index("feature_requests_created").on(t.projectId, t.createdAt),
+  }),
+);
+
+export const REPORT_KINDS = ["bug", "feature_request"] as const;
+export type ReportKind = (typeof REPORT_KINDS)[number];
+
+export const ATTACHMENT_KINDS = ["screenshot", "recording", "file"] as const;
+export type AttachmentKind = (typeof ATTACHMENT_KINDS)[number];
+
+export const reportAttachments = sqliteTable(
+  "report_attachments",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    reportKind: text("report_kind", { enum: REPORT_KINDS }).notNull(),
+    reportId: text("report_id").notNull(),
+    kind: text("kind", { enum: ATTACHMENT_KINDS }).notNull(),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    r2Key: text("r2_key").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => ({
+    reportIdx: index("report_attachments_report").on(t.projectId, t.reportKind, t.reportId),
+  }),
+);
+
 export const i18nUsageDaily = sqliteTable(
   "i18n_usage_daily",
   {

@@ -16,11 +16,11 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
-  "images": {
-    // Enable image optimization
-    // see https://opennext.js.org/cloudflare/howtos/image
-    "binding": "IMAGES",
-  },
+  // images binding (next/image optimization) is disabled — we don't use
+  // next/image anywhere in the app, and keeping it bundles resvg.wasm
+  // (~1.4 MiB) which pushes the worker past the 3 MiB free-plan size limit.
+  // Re-enable once we move to the paid plan or actually need <Image>.
+  // "images": { "binding": "IMAGES" },
   "services": [
     {
       // Self-reference service binding, the service name must match the worker name

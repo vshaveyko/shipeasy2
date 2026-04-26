@@ -29,6 +29,9 @@ import {
   labelDraftKeys,
   i18nUsageDaily,
   projectMembers,
+  bugReports,
+  featureRequests,
+  reportAttachments,
 } from "./schema";
 
 export type ScopedTable =
@@ -53,7 +56,10 @@ export type ScopedTable =
   | typeof labelDrafts
   | typeof labelDraftKeys
   | typeof i18nUsageDaily
-  | typeof projectMembers;
+  | typeof projectMembers
+  | typeof bugReports
+  | typeof featureRequests
+  | typeof reportAttachments;
 
 export type ScopedDb = ReturnType<typeof scopedDb>;
 
