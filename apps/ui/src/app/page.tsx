@@ -1,5 +1,3 @@
-import { auth } from "@/auth";
-
 import "./landing/landing.css";
 import { LandingNav } from "./landing/nav";
 import { ScrollProgress } from "./landing/scroll-progress";
@@ -15,10 +13,15 @@ import {
 } from "./landing/sections-static";
 import { RevealOnScroll } from "./landing/reveal-on-scroll";
 
-export default async function LandingPage() {
-  const session = await auth();
-  const signedIn = Boolean(session?.user);
+/**
+ * Statically rendered: no `await auth()` so Next 16 doesn't ship two SSR
+ * runtimes worth of code for this route. The signed-in CTA lives on the
+ * client and resolves via /api/auth/session.
+ */
+export const dynamic = "force-static";
+export const revalidate = false;
 
+export default function LandingPage() {
   return (
     <div
       className="relative min-h-screen overflow-x-hidden"
@@ -29,7 +32,7 @@ export default async function LandingPage() {
       <ScrollProgress />
       <RevealOnScroll />
 
-      <LandingNav signedIn={signedIn} />
+      <LandingNav />
       <LandingHero />
       <LandingMarquee />
       <StickyFeatures />
