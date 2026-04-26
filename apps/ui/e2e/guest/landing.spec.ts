@@ -1,24 +1,29 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Landing page", () => {
-  test("renders hero and primary CTAs", async ({ page }) => {
+  test("renders hero, primary CTAs, and core sections", async ({ page }) => {
     await page.goto("/");
 
-    await expect(
-      page.getByRole("heading", { name: /ship faster with the tools you need/i }),
-    ).toBeVisible();
+    // Headline ("Tell Claude to {verb} it. Shipeasy ships it.")
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/Tell Claude to/i);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/Shipeasy/i);
 
-    await expect(page.getByText(/now in beta/i)).toBeVisible();
+    // Hero CTAs — there are multiple "Install with Claude" links (nav + hero +
+    // bottom CTA), so just assert at least one points to /auth/signin.
+    const installLinks = page.getByRole("link", { name: /install with claude/i });
+    await expect(installLinks.first()).toHaveAttribute("href", "/auth/signin");
 
-    await expect(page.getByRole("link", { name: /get started free/i })).toHaveAttribute(
-      "href",
-      "/auth/signin",
-    );
+    // Subhead mentions all four primitives.
+    const body = page.locator("body");
+    await expect(body).toContainText(/Killswitches/i);
+    await expect(body).toContainText(/configs/i);
+    await expect(body).toContainText(/experiments/i);
+    await expect(body).toContainText(/metrics/i);
 
-    await expect(page.getByRole("link", { name: /read the docs/i })).toHaveAttribute(
-      "href",
-      "https://docs.shipeasy.ai",
-    );
+    // Section anchors render.
+    await expect(page.locator("#features")).toBeVisible();
+    await expect(page.locator("#how")).toBeVisible();
+    await expect(page.locator("#pricing")).toBeVisible();
   });
 
   test("nav sign-in link goes to /auth/signin when signed out", async ({ page }) => {
@@ -31,12 +36,11 @@ test.describe("Landing page", () => {
     await expect(page).toHaveURL(/\/auth\/signin$/);
   });
 
-  test("hero copy mentions the three products", async ({ page }) => {
+  test("pricing tiers are listed", async ({ page }) => {
     await page.goto("/");
-
     const body = page.locator("body");
-    await expect(body).toContainText(/configs/i);
-    await expect(body).toContainText(/experiments/i);
-    await expect(body).toContainText(/string manager/i);
+    await expect(body).toContainText(/Hobby/);
+    await expect(body).toContainText(/Team/);
+    await expect(body).toContainText(/Enterprise/);
   });
 });
