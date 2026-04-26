@@ -40,6 +40,14 @@ export default function RootLayout({
   const i18nKey = process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY;
   const i18nProfile = process.env.NEXT_PUBLIC_SHIPEASY_I18N_PROFILE;
   const i18nApi = process.env.NEXT_PUBLIC_SHIPEASY_API_URL ?? "https://api.shipeasy.ai";
+  // Lets you run `next dev` locally but point the devtools overlay at the
+  // prod admin app — pick prod's gates/configs/experiments/translations
+  // without seeding a local D1. Set NEXT_PUBLIC_SHIPEASY_DEVTOOLS_ADMIN_URL
+  // (e.g. https://shipeasy.ai) when you want that.
+  const devtoolsAdminUrl = process.env.NEXT_PUBLIC_SHIPEASY_DEVTOOLS_ADMIN_URL;
+  const devtoolsConfigJson = devtoolsAdminUrl
+    ? JSON.stringify({ adminUrl: devtoolsAdminUrl })
+    : null;
 
   return (
     <html
@@ -58,6 +66,20 @@ export default function RootLayout({
       */}
       <head suppressHydrationWarning>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {/*
+          Devtools config has to land on `window` BEFORE /se-devtools.js
+          executes its IIFE, so we render a plain inline <script> in <head>
+          rather than next/script — the latter serializes inline content
+          into the React Flight payload and never executes.
+        */}
+        {devtoolsConfigJson ? (
+          <script
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html: `window.__se_devtools_config=${devtoolsConfigJson};`,
+            }}
+          />
+        ) : null}
       </head>
       <body
         suppressHydrationWarning

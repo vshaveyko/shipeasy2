@@ -1044,9 +1044,10 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     drafts() {
       return this.get("/api/admin/i18n/drafts");
     }
-    keys(t) {
-      let n = t ? `?profile_id=${encodeURIComponent(t)}` : "";
-      return this.get(`/api/admin/i18n/keys${n}`);
+    async keys(t) {
+      let n = t ? `?profile_id=${encodeURIComponent(t)}` : "",
+        r = await this.get(`/api/admin/i18n/keys${n}`);
+      return Array.isArray(r) ? r : r && Array.isArray(r.keys) ? r.keys : [];
     }
   };
   function _(e) {

@@ -62,8 +62,16 @@ export class DevtoolsApi {
     return this.get("/api/admin/i18n/drafts");
   }
 
-  keys(profileId?: string): Promise<KeyRecord[]> {
+  async keys(profileId?: string): Promise<KeyRecord[]> {
     const qs = profileId ? `?profile_id=${encodeURIComponent(profileId)}` : "";
-    return this.get(`/api/admin/i18n/keys${qs}`);
+    // /api/admin/i18n/keys returns `{ keys, total }` (paginated shape) — unwrap.
+    // get() only auto-extracts arrays or `{data: …}`, so we handle this one
+    // explicitly here rather than complicating the generic unwrapper.
+    const body = await this.get<KeyRecord[] | { keys: KeyRecord[] }>(`/api/admin/i18n/keys${qs}`);
+    if (Array.isArray(body)) return body;
+    if (body && Array.isArray((body as { keys?: KeyRecord[] }).keys)) {
+      return (body as { keys: KeyRecord[] }).keys;
+    }
+    return [];
   }
 }
