@@ -4,7 +4,7 @@
   var Ue = (e, t, n) =>
     t in e ? De(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
   var j = (e, t, n) => Ue(e, typeof t != "symbol" ? t + "" : t, n);
-  var ie = `
+  var ae = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :host {
@@ -793,7 +793,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
 }
 `;
   var K = "se_dt_session";
-  function ae() {
+  function ie() {
     try {
       let e = sessionStorage.getItem(K);
       if (e) return JSON.parse(e);
@@ -821,29 +821,29 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     if (!o) throw new Error("Popup blocked. Allow popups for this site and try again.");
     return (
       t(),
-      new Promise((a, s) => {
+      new Promise((i, s) => {
         let d = !1;
-        function i(b, m) {
+        function a(b, m) {
           d ||
             ((d = !0),
             window.removeEventListener("message", p),
             clearInterval(y),
             clearTimeout(h),
-            b ? s(b) : a(m));
+            b ? s(b) : i(m));
         }
         function p(b) {
           if (b.origin !== n) return;
           let m = b.data;
           if (!m || m.type !== "se:devtools-auth" || !m.token || !m.projectId) return;
           let g = { token: m.token, projectId: m.projectId };
-          (Ie(g), i(null, g));
+          (Ie(g), a(null, g));
         }
         window.addEventListener("message", p);
         let y = setInterval(() => {
-            o.closed && !d && i(new Error("Sign-in window closed before approval."));
+            o.closed && !d && a(new Error("Sign-in window closed before approval."));
           }, 500),
           h = setTimeout(() => {
-            i(new Error("Sign-in timed out after 10 minutes."));
+            a(new Error("Sign-in timed out after 10 minutes."));
           }, 6e5);
       })
     );
@@ -912,11 +912,11 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       [`se-gate-${e}`, null],
     ]);
   }
-  function X(e) {
+  function J(e) {
     let t = $(`se_config_${e}`, `se-config-${e}`);
     if (t !== null) return W(t);
   }
-  function Y(e, t, n = "session") {
+  function X(e, t, n = "session") {
     R([
       [`se_config_${e}`, t == null ? null : pe(t)],
       [`se-config-${e}`, null],
@@ -932,7 +932,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       [`se-exp-${e}`, null],
     ]);
   }
-  function J() {
+  function Y() {
     return $("se_i18n");
   }
   function me(e, t = "session") {
@@ -1014,8 +1014,8 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       if (!n.ok) {
         let o = "";
         try {
-          let a = await n.json();
-          o = a.detail ?? a.error ?? "";
+          let i = await n.json();
+          o = i.detail ?? i.error ?? "";
         } catch {
           try {
             o = (await n.text()).slice(0, 200);
@@ -1029,8 +1029,20 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     gates() {
       return this.get("/api/admin/gates");
     }
-    configs() {
-      return this.get("/api/admin/configs");
+    async configs() {
+      let t = await this.get("/api/admin/configs"),
+        n = "prod";
+      return await Promise.all(
+        t.map(async (o) => {
+          try {
+            let i = await this.get(`/api/admin/configs/${o.id}`),
+              s = i.valueJson !== void 0 ? i.valueJson : (i.values?.[n] ?? null);
+            return { ...o, valueJson: s };
+          } catch {
+            return { ...o, valueJson: null };
+          }
+        }),
+      );
     }
     experiments() {
       return this.get("/api/admin/experiments");
@@ -1089,8 +1101,8 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     let n;
     try {
       n = await t.gates();
-    } catch (a) {
-      e.innerHTML = `<div class="err">Failed to load gates: ${String(a)}</div>`;
+    } catch (i) {
+      e.innerHTML = `<div class="err">Failed to load gates: ${String(i)}</div>`;
       return;
     }
     if (n.length === 0) {
@@ -1106,21 +1118,21 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     function r() {
       ((e.innerHTML = n
         .map(
-          (a) => `
+          (i) => `
         <div class="row">
           <div>
-            <div class="row-name">${a.name}</div>
-            <div class="row-sub">${a.rolloutPct}% rollout</div>
+            <div class="row-name">${i.name}</div>
+            <div class="row-sub">${i.rolloutPct}% rollout</div>
           </div>
-          ${je(a)}
-          ${Ke(a.name, G(a.name))}
+          ${je(i)}
+          ${Ke(i.name, G(i.name))}
         </div>`,
         )
         .join("")),
-        e.querySelectorAll(".tog-btn").forEach((a) => {
-          a.addEventListener("click", () => {
-            let s = a.closest("[data-gate]").dataset.gate,
-              l = a.dataset.v;
+        e.querySelectorAll(".tog-btn").forEach((i) => {
+          i.addEventListener("click", () => {
+            let s = i.closest("[data-gate]").dataset.gate,
+              l = i.dataset.v;
             (fe(s, l === "default" ? null : l === "on"), r());
           });
         }));
@@ -1134,15 +1146,15 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
   }
   function Fe(e) {
-    return X(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
+    return J(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
   }
   async function Le(e, t) {
     e.innerHTML = '<div class="loading">Loading configs\u2026</div>';
     let n;
     try {
       n = await t.configs();
-    } catch (a) {
-      e.innerHTML = `<div class="err">Failed to load configs: ${String(a)}</div>`;
+    } catch (i) {
+      e.innerHTML = `<div class="err">Failed to load configs: ${String(i)}</div>`;
       return;
     }
     if (n.length === 0) {
@@ -1159,18 +1171,18 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     function o() {
       ((e.innerHTML = n
         .map((s) => {
-          let l = X(s.name),
+          let l = J(s.name),
             d = l !== void 0 ? l : s.valueJson,
-            i = r.has(s.name);
+            a = r.has(s.name);
           return `
           <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${s.name}">
             <div style="display:flex;align-items:center;gap:8px">
               <div class="row-name">${s.name}</div>
               ${Fe(s.name)}
-              ${i ? `<button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${s.name}">edit</button>`}
+              ${a ? `<button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${s.name}">edit</button>`}
             </div>
             ${
-              i
+              a
                 ? `
                 <textarea class="editor" data-name="${s.name}" rows="3">${JSON.stringify(d, null, 2)}</textarea>
                 <div class="edit-row">
@@ -1193,26 +1205,26 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
             (r.delete(s.dataset.name), o());
           });
         }));
-      function a(s, l) {
+      function i(s, l) {
         let d = s.dataset.name,
-          i = e.querySelector(`textarea[data-name="${d}"]`);
-        if (i)
+          a = e.querySelector(`textarea[data-name="${d}"]`);
+        if (a)
           try {
-            let p = JSON.parse(i.value);
-            (Y(d, p, l), r.delete(d), o());
+            let p = JSON.parse(a.value);
+            (X(d, p, l), r.delete(d), o());
           } catch {
-            i.style.borderColor = "#f87171";
+            a.style.borderColor = "#f87171";
           }
       }
       (e.querySelectorAll(".save-session").forEach((s) => {
-        s.addEventListener("click", () => a(s, "session"));
+        s.addEventListener("click", () => i(s, "session"));
       }),
         e.querySelectorAll(".save-local").forEach((s) => {
-          s.addEventListener("click", () => a(s, "local"));
+          s.addEventListener("click", () => i(s, "local"));
         }),
         e.querySelectorAll(".clear-ov").forEach((s) => {
           s.addEventListener("click", () => {
-            (Y(s.dataset.name, null), r.delete(s.dataset.name), o());
+            (X(s.dataset.name, null), r.delete(s.dataset.name), o());
           });
         }));
     }
@@ -1221,10 +1233,10 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
   function Ge() {
     return window.__shipeasy ?? null;
   }
-  function Xe(e) {
+  function Je(e) {
     return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
   }
-  function Ye(e) {
+  function Xe(e) {
     let t = ge(e.name),
       n = ["control", ...e.groups.map((o) => o.name)],
       r = [
@@ -1233,7 +1245,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       ].join("");
     return `<select class="sel-input exp-sel" data-name="${e.name}">${r}</select>`;
   }
-  function Je(e) {
+  function Ye(e) {
     let t = Ge()?.getExperiment(e);
     return t
       ? t.inExperiment
@@ -1247,9 +1259,9 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       <div style="flex:1;min-width:0">
         <div class="row-name">${e.name}</div>
       </div>
-      ${Xe(e.status)}
-      ${e.status === "running" ? Je(e.name) : ""}
-      ${e.status === "running" ? Ye(e) : ""}
+      ${Je(e.status)}
+      ${e.status === "running" ? Ye(e.name) : ""}
+      ${e.status === "running" ? Xe(e) : ""}
     </div>`;
   }
   function Ee(e, t, n, r) {
@@ -1264,14 +1276,14 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       });
       return;
     }
-    let a = o.filter((d) => d.status === "running"),
+    let i = o.filter((d) => d.status === "running"),
       s = o.filter((d) => d.status !== "running"),
-      l = (d, i) => (d.length === 0 ? "" : `<div class="sec-head">${i}</div>${d.map(Ve).join("")}`);
-    ((e.innerHTML = l(a, "Running") + l(s, "Other")),
+      l = (d, a) => (d.length === 0 ? "" : `<div class="sec-head">${a}</div>${d.map(Ve).join("")}`);
+    ((e.innerHTML = l(i, "Running") + l(s, "Other")),
       e.querySelectorAll(".exp-sel").forEach((d) => {
         d.addEventListener("change", () => {
-          let i = d.dataset.name;
-          ve(i, d.value || null);
+          let a = d.dataset.name;
+          ve(a, d.value || null);
         });
       }));
   }
@@ -1296,27 +1308,27 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       return;
     }
     let o = { activeUniverse: r[0].name };
-    function a() {
+    function i() {
       let s = r
         .map(
-          (i) => `
-          <button class="tab${i.name === o.activeUniverse ? " active" : ""}"
-                  data-universe="${i.name}">${i.name}</button>`,
+          (a) => `
+          <button class="tab${a.name === o.activeUniverse ? " active" : ""}"
+                  data-universe="${a.name}">${a.name}</button>`,
         )
         .join("");
       ((e.innerHTML = `
       <div class="tabs scroll">${s}</div>
       <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
-        e.querySelectorAll(".tab[data-universe]").forEach((i) => {
-          i.addEventListener("click", () => {
-            ((o.activeUniverse = i.dataset.universe), a());
+        e.querySelectorAll(".tab[data-universe]").forEach((a) => {
+          a.addEventListener("click", () => {
+            ((o.activeUniverse = a.dataset.universe), i());
           });
         }));
       let l = e.querySelector(".tab-body"),
-        d = r.find((i) => i.name === o.activeUniverse);
+        d = r.find((a) => a.name === o.activeUniverse);
       Ee(l, d, n, t.adminUrl);
     }
-    (a(),
+    (i(),
       window.addEventListener("se:state:update", () => {
         let s = e.querySelector(".tab-body"),
           l = r.find((d) => d.name === o.activeUniverse);
@@ -1328,13 +1340,13 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     for (let n of e) {
       let r = n.key.split("."),
         o = r.length > 1 ? r[0] : "(root)",
-        a = r.length > 1 ? r.slice(1) : r;
+        i = r.length > 1 ? r.slice(1) : r;
       t.has(o) || t.set(o, { segment: o, children: [] });
       let s = t.get(o);
-      for (let l = 0; l < a.length; l++) {
-        let d = a[l],
-          i = s.children.find((p) => p.segment === d);
-        (i || ((i = { segment: d, children: [] }), s.children.push(i)), (s = i));
+      for (let l = 0; l < i.length; l++) {
+        let d = i[l],
+          a = s.children.find((p) => p.segment === d);
+        (a || ((a = { segment: d, children: [] }), s.children.push(a)), (s = a));
       }
       ((s.value = n.value), (s.fullKey = n.key));
     }
@@ -1359,11 +1371,11 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     let n = t * 14 + 6;
     if (e.value !== void 0) {
       let o = e.fullKey ? xe(e.fullKey) : null,
-        a = o ?? e.value;
+        i = o ?? e.value;
       return `
       <div class="tree-row leaf" style="padding-left:${n}px" data-key="${k(e.fullKey ?? "")}">
         <span class="tree-seg">${k(e.segment)}</span>
-        <span class="tree-val${o !== null ? " overridden" : ""}" title="${k(a)}">${k(a)}</span>
+        <span class="tree-val${o !== null ? " overridden" : ""}" title="${k(i)}">${k(i)}</span>
       </div>`;
     }
     let r = e.children.map((o) => $e(o, t + 1)).join("");
@@ -1392,7 +1404,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     (T(), e.classList.add("__se_label_active"));
     let n = e.dataset.label ?? "",
       r = e.dataset.labelDesc ?? "",
-      a = J() ?? "default";
+      i = Y() ?? "default";
     e.dataset.__seOriginal === void 0 && (e.dataset.__seOriginal = e.textContent ?? "");
     let s = e.textContent ?? "",
       l = document.createElement("div");
@@ -1405,7 +1417,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     <div class="lp-body">
       <div class="lp-field">
         <label>Current profile</label>
-        <span>${k(a)}</span>
+        <span>${k(i)}</span>
       </div>
       <div class="lp-field">
         <label>Description</label>
@@ -1422,11 +1434,11 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     </div>`),
       t.appendChild(l));
     let d = e.getBoundingClientRect(),
-      i = l.offsetHeight,
+      a = l.offsetHeight,
       p = l.offsetWidth,
       y = 8,
       h = d.bottom + y;
-    h + i > window.innerHeight - 8 && (h = Math.max(8, d.top - i - y));
+    h + a > window.innerHeight - 8 && (h = Math.max(8, d.top - a - y));
     let b = d.left;
     (b + p > window.innerWidth - 8 && (b = Math.max(8, window.innerWidth - p - 8)),
       (l.style.top = `${h}px`),
@@ -1458,59 +1470,59 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
   function et(e, t, n) {
     if (((B = e), te?.(), (te = null), !e)) {
       T();
-      for (let i of q()) i.classList.remove(A);
+      for (let a of q()) a.classList.remove(A);
       return;
     }
-    for (let i of q()) i.classList.add(A);
-    function r(i) {
-      return C !== null && i.composedPath().includes(C);
+    for (let a of q()) a.classList.add(A);
+    function r(a) {
+      return C !== null && a.composedPath().includes(C);
     }
-    function o(i) {
-      for (let p of i.composedPath())
+    function o(a) {
+      for (let p of a.composedPath())
         if (p instanceof HTMLElement && p.hasAttribute("data-label")) return p;
       return null;
     }
-    function a(i) {
-      if (r(i)) return;
-      let p = o(i);
-      p && (i.preventDefault(), i.stopPropagation(), Qe(p, t));
+    function i(a) {
+      if (r(a)) return;
+      let p = o(a);
+      p && (a.preventDefault(), a.stopPropagation(), Qe(p, t));
     }
-    function s(i) {
-      C && (r(i) || o(i) || T());
+    function s(a) {
+      C && (r(a) || o(a) || T());
     }
-    function l(i) {
-      i.key === "Escape" && T();
+    function l(a) {
+      a.key === "Escape" && T();
     }
     let d = new MutationObserver(() => {
       if (B) {
-        for (let i of q()) i.classList.add(A);
+        for (let a of q()) a.classList.add(A);
         n();
       }
     });
     (d.observe(document.body, { childList: !0, subtree: !0 }),
-      document.addEventListener("click", a, !0),
+      document.addEventListener("click", i, !0),
       document.addEventListener("mousedown", s, !0),
       document.addEventListener("keydown", l),
       (te = () => {
-        (document.removeEventListener("click", a, !0),
+        (document.removeEventListener("click", i, !0),
           document.removeEventListener("mousedown", s, !0),
           document.removeEventListener("keydown", l),
           d.disconnect());
-        for (let i of q()) i.classList.remove(A);
+        for (let a of q()) a.classList.remove(A);
       }));
   }
   async function Oe(e, t, n, r) {
     ((e.innerHTML = '<div class="loading">Loading i18n data\u2026</div>'), (n.innerHTML = ""));
-    let o, a, s;
+    let o, i, s;
     try {
-      [o, a, s] = await Promise.all([t.profiles(), t.drafts(), t.keys()]);
+      [o, i, s] = await Promise.all([t.profiles(), t.drafts(), t.keys()]);
     } catch (h) {
       e.innerHTML = `<div class="err">Failed to load i18n data: ${String(h)}</div>`;
       return;
     }
     let l = Ze(s),
       d = Array.from(l.keys()),
-      i = { activeChunk: d[0] ?? null };
+      a = { activeChunk: d[0] ?? null };
     function p() {
       if (d.length === 0) {
         e.innerHTML = _({
@@ -1525,22 +1537,22 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       let h = d
           .map(
             (g) =>
-              `<button class="tab${g === i.activeChunk ? " active" : ""}" data-chunk="${k(g)}">${k(g)}</button>`,
+              `<button class="tab${g === a.activeChunk ? " active" : ""}" data-chunk="${k(g)}">${k(g)}</button>`,
           )
           .join(""),
-        b = i.activeChunk ? l.get(i.activeChunk) : null,
+        b = a.activeChunk ? l.get(a.activeChunk) : null,
         m = b ? b.children.map((g) => $e(g, 0)).join("") : "";
       ((e.innerHTML = `
       <div class="tabs scroll" id="chunk-tabs">${h}</div>
       <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${m}</div>`),
         e.querySelectorAll(".tab[data-chunk]").forEach((g) => {
           g.addEventListener("click", () => {
-            ((i.activeChunk = g.dataset.chunk), p());
+            ((a.activeChunk = g.dataset.chunk), p());
           });
         }));
     }
     function y() {
-      let h = J() ?? "",
+      let h = Y() ?? "",
         b = be() ?? "",
         m = [
           '<option value="">Default</option>',
@@ -1551,7 +1563,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
         ].join(""),
         g = [
           '<option value="">No draft</option>',
-          ...a.map(
+          ...i.map(
             (c) =>
               `<option value="${k(c.id)}" ${b === c.id ? "selected" : ""}>${k(c.name)}</option>`,
           ),
@@ -1587,7 +1599,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
     st =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
-    it =
+    at =
       '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>',
     ne = {
       gates: { icon: tt, label: "Gates" },
@@ -1601,7 +1613,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     oe = 180,
     Te = 700,
     Pe = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
-  function at() {
+  function it() {
     try {
       let e = localStorage.getItem(Ce);
       if (e) return { ...Pe, ...JSON.parse(e) };
@@ -1622,19 +1634,19 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
         [t, "top"],
         [r - t, "bottom"],
       ];
-    o.sort((d, i) => d[0] - i[0]);
-    let a = o[0][1],
-      l = Math.max(5, Math.min(95, a === "left" || a === "right" ? (t / r) * 100 : (e / n) * 100));
-    return { edge: a, offsetPct: l };
+    o.sort((d, a) => d[0] - a[0]);
+    let i = o[0][1],
+      l = Math.max(5, Math.min(95, i === "left" || i === "right" ? (t / r) * 100 : (e / n) * 100));
+    return { edge: i, offsetPct: l };
   }
   function z(e, t, n, r) {
-    let { edge: o, offsetPct: a, panelWidth: s, panelHeight: l } = r,
+    let { edge: o, offsetPct: i, panelWidth: s, panelHeight: l } = r,
       d = window.innerWidth,
-      i = window.innerHeight,
+      a = window.innerHeight,
       p = o === "left" || o === "right",
       y = Math.max(re, Math.min(s, d - 80)),
-      h = Math.max(oe, Math.min(l, i - 40)),
-      b = (a / 100) * (p ? i : d),
+      h = Math.max(oe, Math.min(l, a - 40)),
+      b = (i / 100) * (p ? a : d),
       m = e.getBoundingClientRect(),
       g = p ? m.width || 52 : m.height || 52,
       c = e.style;
@@ -1644,27 +1656,27 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       (c.padding = p ? "8px 6px" : "6px 8px"),
       o === "right"
         ? ((c.right = "0"),
-          (c.top = `${a}%`),
+          (c.top = `${i}%`),
           (c.transform = "translateY(-50%)"),
           (c.borderRadius = "10px 0 0 10px"),
           (c.borderRight = "none"),
           (c.boxShadow = "-3px 0 16px rgba(0,0,0,0.45)"))
         : o === "left"
           ? ((c.left = "0"),
-            (c.top = `${a}%`),
+            (c.top = `${i}%`),
             (c.transform = "translateY(-50%)"),
             (c.borderRadius = "0 10px 10px 0"),
             (c.borderLeft = "none"),
             (c.boxShadow = "3px 0 16px rgba(0,0,0,0.45)"))
           : o === "top"
             ? ((c.top = "0"),
-              (c.left = `${a}%`),
+              (c.left = `${i}%`),
               (c.transform = "translateX(-50%)"),
               (c.borderRadius = "0 0 10px 10px"),
               (c.borderTop = "none"),
               (c.boxShadow = "0 3px 16px rgba(0,0,0,0.45)"))
             : ((c.bottom = "0"),
-              (c.left = `${a}%`),
+              (c.left = `${i}%`),
               (c.transform = "translateX(-50%)"),
               (c.borderRadius = "10px 10px 0 0"),
               (c.borderBottom = "none"),
@@ -1678,14 +1690,14 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       (t.dataset.edge = o),
       o === "right")
     ) {
-      let f = Math.max(10, Math.min(i - h - 10, b - h / 2));
+      let f = Math.max(10, Math.min(a - h - 10, b - h / 2));
       ((u.right = g + "px"),
         (u.top = f + "px"),
         (u.borderRadius = "10px 0 0 10px"),
         (u.borderRight = "none"),
         (u.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
     } else if (o === "left") {
-      let f = Math.max(10, Math.min(i - h - 10, b - h / 2));
+      let f = Math.max(10, Math.min(a - h - 10, b - h / 2));
       ((u.left = g + "px"),
         (u.top = f + "px"),
         (u.borderRadius = "0 10px 10px 0"),
@@ -1725,28 +1737,28 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     let t = document.createElement("div");
     t.setAttribute("id", "shipeasy-devtools");
     let n = t.attachShadow({ mode: "open" });
-    n.innerHTML = `<style>${ie}</style><div id="toolbar"></div><div id="panel"></div>`;
+    n.innerHTML = `<style>${ae}</style><div id="toolbar"></div><div id="panel"></div>`;
     let r = n.getElementById("toolbar"),
       o = n.getElementById("panel");
     ((r.className = "toolbar"), (o.className = "panel"));
-    let a = document.createElement("div");
-    ((a.className = "resize-handle"), o.appendChild(a));
+    let i = document.createElement("div");
+    ((i.className = "resize-handle"), o.appendChild(i));
     let s = document.createElement("div");
     ((s.className = "panel-inner"), o.appendChild(s));
-    let l = at(),
+    let l = it(),
       d = null,
-      i = ae();
-    requestAnimationFrame(() => z(r, o, a, l));
+      a = ie();
+    requestAnimationFrame(() => z(r, o, i, l));
     let p = document.createElement("div");
     ((p.className = "drag-handle"),
       (p.title = "Drag to reposition"),
-      (p.innerHTML = it),
+      (p.innerHTML = at),
       r.appendChild(p),
       p.addEventListener("mousedown", (f) => {
         (f.preventDefault(), p.classList.add("dragging"));
         let L = (v) => {
             let { edge: E, offsetPct: S } = lt(v.clientX, v.clientY);
-            ((l = { ...l, edge: E, offsetPct: S }), z(r, o, a, l));
+            ((l = { ...l, edge: E, offsetPct: S }), z(r, o, i, l));
           },
           w = () => {
             (p.classList.remove("dragging"),
@@ -1766,8 +1778,8 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
         r.appendChild(v),
         y.set(f, v));
     }
-    a.addEventListener("mousedown", (f) => {
-      (f.preventDefault(), f.stopPropagation(), a.classList.add("dragging"));
+    i.addEventListener("mousedown", (f) => {
+      (f.preventDefault(), f.stopPropagation(), i.classList.add("dragging"));
       let L = f.clientX,
         w = f.clientY,
         v = l.panelWidth,
@@ -1782,23 +1794,23 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
             S === "top" && (H.panelHeight = Math.max(oe, Math.min(Te, E + se))),
             S === "bottom" && (H.panelHeight = Math.max(oe, Math.min(Te, E - se))),
             (l = H),
-            z(r, o, a, l));
+            z(r, o, i, l));
         },
         M = () => {
-          (a.classList.remove("dragging"),
+          (i.classList.remove("dragging"),
             document.removeEventListener("mousemove", O),
             document.removeEventListener("mouseup", M),
             Re(l));
         };
       (document.addEventListener("mousemove", O), document.addEventListener("mouseup", M));
     });
-    let h = () => z(r, o, a, l);
+    let h = () => z(r, o, i, l);
     window.addEventListener("resize", h);
     function b(f) {
       ((d = f),
         y.forEach((L, w) => L.classList.toggle("active", w === f)),
         o.classList.add("open"),
-        z(r, o, a, l),
+        z(r, o, i, l),
         u(f));
     }
     function m() {
@@ -1824,11 +1836,11 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     }
     function u(f) {
       let { icon: L, label: w } = ne[f];
-      if (!i) {
+      if (!a) {
         x(f);
         return;
       }
-      let v = new N(e.adminUrl, i.token);
+      let v = new N(e.adminUrl, a.token);
       ((s.innerHTML = `
       ${c(L, w)}
       <div class="panel-body" id="se-body"></div>
@@ -1842,7 +1854,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
       </div>`),
         s.querySelector("#se-close").addEventListener("click", m),
         s.querySelector("#se-signout").addEventListener("click", () => {
-          (le(), (i = null), x(f));
+          (le(), (a = null), x(f));
         }),
         s.querySelector("#se-clearall").addEventListener("click", () => {
           (ye(), u(f));
@@ -1898,7 +1910,7 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
             (E.textContent = ""),
             (S.textContent = ""));
           try {
-            ((i = await de(e, () => {
+            ((a = await de(e, () => {
               ((E.textContent = "Waiting for approval in the opened tab\u2026"),
                 (v.textContent = "Waiting\u2026"));
             })),
@@ -1952,19 +1964,19 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
     let n = t.split("+"),
       r = n[n.length - 1],
       o = n.includes("Shift"),
-      a = n.includes("Alt") || n.includes("Option"),
+      i = n.includes("Alt") || n.includes("Option"),
       s = n.includes("Ctrl") || n.includes("Control"),
       l = n.includes("Meta") || n.includes("Cmd"),
       d = /^[a-zA-Z]$/.test(r) ? `Key${r.toUpperCase()}` : null;
-    function i(p) {
+    function a(p) {
       (d ? p.code === d : p.key.toLowerCase() === r.toLowerCase()) &&
         p.shiftKey === o &&
-        p.altKey === a &&
+        p.altKey === i &&
         p.ctrlKey === s &&
         p.metaKey === l &&
         (D ? ct() : Ae(e));
     }
-    return (window.addEventListener("keydown", i), () => window.removeEventListener("keydown", i));
+    return (window.addEventListener("keydown", a), () => window.removeEventListener("keydown", a));
   }
   if (typeof window < "u") {
     let e = window.__se_devtools_config ?? {};

@@ -42,8 +42,31 @@ export class DevtoolsApi {
     return this.get("/api/admin/gates");
   }
 
-  configs(): Promise<ConfigRecord[]> {
-    return this.get("/api/admin/configs");
+  async configs(): Promise<ConfigRecord[]> {
+    // The list endpoint shed `valueJson` when configs went per-env (migration
+    // 0004). Fetch the per-id detail and project the active env's value back
+    // into `valueJson` so the panel stays untouched. Default env is `prod`.
+    const list =
+      await this.get<Array<ConfigRecord & { envs?: Record<string, unknown> }>>(
+        "/api/admin/configs",
+      );
+    const env = "prod";
+    const details = await Promise.all(
+      list.map(async (c) => {
+        try {
+          const detail = await this.get<{
+            values?: Record<string, unknown>;
+            valueJson?: unknown;
+          }>(`/api/admin/configs/${c.id}`);
+          const valueJson =
+            detail.valueJson !== undefined ? detail.valueJson : (detail.values?.[env] ?? null);
+          return { ...c, valueJson } as ConfigRecord;
+        } catch {
+          return { ...c, valueJson: null } as ConfigRecord;
+        }
+      }),
+    );
+    return details;
   }
 
   experiments(): Promise<ExperimentRecord[]> {
