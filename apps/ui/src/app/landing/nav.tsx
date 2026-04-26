@@ -5,34 +5,18 @@ import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
 /**
- * The landing page is a static export (no `await auth()` server call), so we
- * fetch the session client-side and swap the CTA once it resolves. Showing
- * the signed-out variant first is fine: it links to /auth/signin which
- * detects an existing session and forwards to /dashboard.
+ * Landing nav — static, no session lookup. The single CTA points at
+ * /auth/signin, which is responsible for routing signed-in users straight
+ * through to the dashboard.
  */
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-
-    let cancelled = false;
-    fetch("/api/auth/session", { credentials: "same-origin" })
-      .then((r) => (r.ok ? (r.json() as Promise<{ user?: unknown } | null>) : null))
-      .then((session) => {
-        if (!cancelled) setSignedIn(Boolean(session?.user));
-      })
-      .catch(() => {
-        if (!cancelled) setSignedIn(false);
-      });
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener("scroll", onScroll);
-    };
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
@@ -74,20 +58,9 @@ export function LandingNav() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          {signedIn === true ? (
-            <Link className="lp-btn lp-btn-ghost" href="/dashboard">
-              Open dashboard
-            </Link>
-          ) : (
-            <>
-              <Link className="lp-btn lp-btn-ghost hidden sm:inline-flex" href="/auth/signin">
-                Sign in
-              </Link>
-              <Link className="lp-btn lp-btn-primary" href="/auth/signin">
-                Install with Claude <ArrowRight className="size-3.5" />
-              </Link>
-            </>
-          )}
+          <Link className="lp-btn lp-btn-primary" href="/auth/signin">
+            Go to portal <ArrowRight className="size-3.5" />
+          </Link>
         </div>
       </div>
     </nav>
