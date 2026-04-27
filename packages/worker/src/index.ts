@@ -10,6 +10,7 @@ import { consumeAnalysis } from "./analysis/consumer";
 import { runPurgeRetry } from "./analysis/purge-retry";
 import { runRetentionPurge } from "./analysis/retention";
 import { requireKey, type AuthedContext } from "./lib/auth";
+import { openApiSpec } from "./openapi";
 import { handleBootstrap } from "./sdk/bootstrap";
 import { handleCollect } from "./sdk/collect";
 import { handleEvaluate } from "./sdk/evaluate";
@@ -54,6 +55,13 @@ app.use(
 // ── Health ───────────────────────────────────────────────────────────────────
 app.get("/", (c) => c.text("ShipEasy Worker"));
 app.get("/healthz", (c) => c.json({ ok: true }));
+
+// ── OpenAPI spec (public, served with permissive CORS for codegen tools) ─────
+app.get("/openapi.json", (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Cache-Control", "public, max-age=300");
+  return c.json(openApiSpec);
+});
 
 // ── SDK endpoints ────────────────────────────────────────────────────────────
 app.get("/sdk/flags", requireKey("server"), (c) => handleFlags(c as AuthedContext));
