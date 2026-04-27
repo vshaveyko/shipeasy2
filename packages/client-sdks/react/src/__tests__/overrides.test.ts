@@ -1,16 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  getConfigOverride,
-  getExpOverride,
-  getGateOverride,
+  readConfigOverride as getConfigOverride,
+  readExpOverride as getExpOverride,
+  readGateOverride as getGateOverride,
   isDevtoolsRequested,
-} from "../overrides";
+} from "@shipeasy/sdk/client";
 
 /**
  * The override readers are the seam the devtools overlay drives — flipping
  * these via URL params is the published "QA / repro a session" surface, so
  * they need to be tied down before any refactor (the devtools bundle and
  * the React provider must agree on the param shapes character-for-character).
+ *
+ * They live in @shipeasy/sdk/client now; this spec stays here because it
+ * exercises the runtime contract relied on by both the React provider and
+ * the devtools overlay.
  */
 
 const originalLocation = window.location;

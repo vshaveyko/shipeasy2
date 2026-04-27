@@ -1,16 +1,20 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { FlagsClientBrowser, type User, type ExperimentResult } from "@shipeasy/sdk/client";
-import { ShipeasyContext, type ShipeasyContextValue } from "./context";
 import {
-  initFromUrl,
-  isDevtoolsRequested,
-  getGateOverride,
-  getConfigOverride,
-  getExpOverride,
-} from "./overrides";
-import type { ShipeasySdkBridge } from "./types";
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  FlagsClientBrowser,
+  type User,
+  type ExperimentResult,
+  attachDevtools,
+} from "@shipeasy/sdk/client";
+import { ShipeasyContext, type ShipeasyContextValue } from "./context";
 
 export interface ShipeasyProviderProps {
   children: ReactNode;
@@ -20,109 +24,55 @@ export interface ShipeasyProviderProps {
   /** Admin dashboard URL for devtools. Defaults to https://app.shipeasy.dev */
   adminUrl?: string;
   /**
-   * Hotkey to open the devtools overlay.
-   * Format: modifier keys joined with "+", e.g. "Shift+Alt+S" (default).
+   * Hotkey to open the devtools overlay. Format: modifier keys joined with "+"
+   * (e.g. "Shift+Alt+S", the default). The actual key handling lives in the
+   * SDK's attachDevtools — this is just the string we pass through.
    */
   devtoolsHotkey?: string;
 }
-
-const DEFAULT_HOTKEY = "Shift+Alt+S";
 
 export function ShipeasyProvider({
   children,
   sdkKey,
   baseUrl,
   adminUrl,
-  devtoolsHotkey = DEFAULT_HOTKEY,
+  devtoolsHotkey,
 }: ShipeasyProviderProps) {
   const clientRef = useRef<FlagsClientBrowser | null>(null);
   const [ready, setReady] = useState(false);
-  // Increment to force re-render when overrides change
-  const [overrideSeed, setOverrideSeed] = useState(0);
 
-  // Create client once
   if (!clientRef.current) {
     clientRef.current = new FlagsClientBrowser({ sdkKey, baseUrl });
   }
 
-  // On mount: process URL params and optionally trigger devtools
+  // Bridge SDK change events into React renders. The SDK fires its listeners
+  // after identify() and on every URL override change.
+  const subscribe = useCallback((cb: () => void) => clientRef.current!.subscribe(cb), []);
+  const getSnapshot = useCallback(() => clientRef.current!, []);
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
   useEffect(() => {
-    initFromUrl();
-    if (isDevtoolsRequested()) {
-      loadDevtools(adminUrl, baseUrl);
-    }
-  }, []); // intentional: run once on mount
-
-  // Hotkey listener — always active so devtools can be opened at any time
-  useEffect(() => {
-    const parts = devtoolsHotkey.split("+");
-    const key = parts[parts.length - 1];
-    const shift = parts.includes("Shift");
-    const alt = parts.includes("Alt");
-    const ctrl = parts.includes("Ctrl") || parts.includes("Control");
-    const meta = parts.includes("Meta") || parts.includes("Cmd");
-
-    let loaded = false;
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (
-        e.key === key &&
-        e.shiftKey === shift &&
-        e.altKey === alt &&
-        e.ctrlKey === ctrl &&
-        e.metaKey === meta
-      ) {
-        if (!loaded) {
-          loaded = true;
-          loadDevtools(adminUrl, baseUrl);
-        } else {
-          // Toggle visibility by calling the exposed toggle API
-          (
-            window as unknown as { __shipeasy_devtools?: { toggle: () => void } }
-          ).__shipeasy_devtools?.toggle();
-        }
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return attachDevtools(clientRef.current!, {
+      hotkey: devtoolsHotkey,
+      adminUrl,
+      edgeUrl: baseUrl,
+    });
   }, [devtoolsHotkey, adminUrl, baseUrl]);
-
-  // Override change listener → re-render so hooks pick up new values
-  useEffect(() => {
-    function onOverride() {
-      setOverrideSeed((s) => s + 1);
-      publishBridgeState();
-    }
-    window.addEventListener("se:override:change", onOverride);
-    return () => window.removeEventListener("se:override:change", onOverride);
-  }, []);
 
   const identify = useCallback(async (user: User) => {
     await clientRef.current!.identify(user);
     setReady(true);
-    publishBridgeState();
   }, []);
 
-  const getFlag = useCallback(
-    (name: string): boolean => {
-      void overrideSeed; // track dependency
-      const ov = getGateOverride(name);
-      return ov !== null ? ov : (clientRef.current?.getFlag(name) ?? false);
-    },
-    [overrideSeed],
-  );
+  const getFlag = useCallback((name: string): boolean => {
+    return clientRef.current!.getFlag(name);
+  }, []);
 
   const getConfig = useCallback(
     <T = unknown,>(name: string, decode?: (raw: unknown) => T): T | undefined => {
-      void overrideSeed;
-      const ov = getConfigOverride(name);
-      if (ov !== undefined) {
-        return decode ? decode(ov) : (ov as T);
-      }
-      return clientRef.current?.getConfig(name, decode);
+      return clientRef.current!.getConfig(name, decode);
     },
-    [overrideSeed],
+    [],
   );
 
   const getExperiment = useCallback(
@@ -132,45 +82,14 @@ export function ShipeasyProvider({
       decode?: (raw: unknown) => P,
       variants?: Record<string, Partial<P>>,
     ): ExperimentResult<P> => {
-      void overrideSeed;
-      const ov = getExpOverride(name);
-      if (ov !== null) {
-        // URL forces this variant. If the caller declared the variant's
-        // params inline, merge them on top of the defaults so the rendered
-        // copy matches the override; otherwise just flip the group name.
-        const variantParams = variants?.[ov];
-        const params = variantParams ? { ...defaultParams, ...variantParams } : defaultParams;
-        return { inExperiment: true, group: ov, params };
-      }
-      return (
-        clientRef.current?.getExperiment(name, defaultParams, decode) ?? {
-          inExperiment: false,
-          group: "control",
-          params: defaultParams,
-        }
-      );
+      return clientRef.current!.getExperiment(name, defaultParams, decode, variants);
     },
-    [overrideSeed],
+    [],
   );
 
   const track = useCallback((event: string, props?: Record<string, unknown>) => {
-    clientRef.current?.track(event, props);
+    clientRef.current!.track(event, props);
   }, []);
-
-  function publishBridgeState() {
-    const client = clientRef.current;
-    if (!client) return;
-    const bridge: ShipeasySdkBridge = {
-      getFlag: (name) => client.getFlag(name),
-      getExperiment: (name) => {
-        const r = client.getExperiment(name, {});
-        return { inExperiment: r.inExperiment, group: r.group };
-      },
-      getConfig: (name) => client.getConfig(name),
-    };
-    (window as unknown as { __shipeasy?: ShipeasySdkBridge }).__shipeasy = bridge;
-    window.dispatchEvent(new CustomEvent("se:state:update"));
-  }
 
   const ctx: ShipeasyContextValue = {
     ready,
@@ -182,42 +101,4 @@ export function ShipeasyProvider({
   };
 
   return <ShipeasyContext.Provider value={ctx}>{children}</ShipeasyContext.Provider>;
-}
-
-interface DevtoolsMod {
-  init(opts: { adminUrl?: string; edgeUrl?: string }): void;
-  destroy(): void;
-}
-
-/**
- * Activate the devtools overlay. Customers either:
- *   1. Drop a `<script src="…/se-devtools.js">` tag (admin host serves it).
- *      The IIFE bundle self-installs and handles its own hotkey + URL flag.
- *      In that case `__shipeasy_devtools_global` is exposed and we just call init().
- *   2. Bundle `@shipeasy/devtools` directly. Then they should call its init
- *      themselves — we don't dynamic-import here because bundlers (Turbopack,
- *      webpack) can't reliably ignore a dynamic import expression even with
- *      magic comments, and standalone bundles already wire their own hotkey.
- */
-function loadDevtools(adminUrl?: string, baseUrl?: string): void {
-  const wGlobal = window as unknown as { __shipeasy_devtools_global?: DevtoolsMod };
-  const mod = wGlobal.__shipeasy_devtools_global;
-  if (!mod) return; // No global: customer must mount devtools themselves.
-  mod.init({ adminUrl, edgeUrl: baseUrl });
-
-  const w = window as unknown as { __shipeasy_devtools?: { toggle: () => void } };
-  if (!w.__shipeasy_devtools) {
-    let visible = true;
-    w.__shipeasy_devtools = {
-      toggle() {
-        if (visible) {
-          mod.destroy();
-          visible = false;
-        } else {
-          mod.init({ adminUrl, edgeUrl: baseUrl });
-          visible = true;
-        }
-      },
-    };
-  }
 }

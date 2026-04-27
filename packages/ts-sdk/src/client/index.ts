@@ -353,6 +353,12 @@ export class FlagsClientBrowser {
   private userId = "";
   private buffer: EventBuffer;
   private guardrailsInstalled = false;
+  private listeners = new Set<() => void>();
+  private overrideListenerInstalled = false;
+  private onOverrideChange = () => {
+    this.installBridge();
+    this.notify();
+  };
 
   constructor(opts: FlagsClientBrowserOptions) {
     this.sdkKey = opts.sdkKey;
@@ -397,6 +403,17 @@ export class FlagsClientBrowser {
       this.guardrailsInstalled = true;
       installAutoGuardrails(this.buffer, this.userId, this.anonId);
     }
+    this.notify();
+  }
+
+  private notify(): void {
+    for (const l of this.listeners) {
+      try {
+        l();
+      } catch (err) {
+        console.warn("[shipeasy] subscriber threw:", String(err));
+      }
+    }
   }
 
   initFromBootstrap(data: EvalResponse): void {
@@ -404,11 +421,14 @@ export class FlagsClientBrowser {
   }
 
   getFlag(name: string): boolean {
+    const ov = readGateOverride(name);
+    if (ov !== null) return ov;
     return this.evalResult?.flags[name] ?? false;
   }
 
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
-    const raw = this.evalResult?.configs?.[name];
+    const ov = readConfigOverride(name);
+    const raw = ov !== undefined ? ov : this.evalResult?.configs?.[name];
     if (raw === undefined) return undefined;
     if (!decode) return raw as T;
     try {
@@ -423,12 +443,24 @@ export class FlagsClientBrowser {
     name: string,
     defaultParams: P,
     decode?: (raw: unknown) => P,
+    variants?: Record<string, Partial<P>>,
   ): ExperimentResult<P> {
     const notIn: ExperimentResult<P> = {
       inExperiment: false,
       group: "control",
       params: defaultParams,
     };
+
+    // URL-forced variant short-circuits the server response so the demo
+    // works synchronously before identify() resolves. Caller can supply a
+    // `variants` map to merge variant-specific params on top of defaults.
+    const ov = readExpOverride(name);
+    if (ov !== null) {
+      const variantParams = variants?.[ov];
+      const params = variantParams ? { ...defaultParams, ...variantParams } : defaultParams;
+      return { inExperiment: true, group: ov, params };
+    }
+
     const entry = this.evalResult?.experiments[name];
     if (!entry || !entry.inExperiment) return notIn;
     // Auto-log exposure (deduped within session)
@@ -442,6 +474,41 @@ export class FlagsClientBrowser {
     }
   }
 
+  /**
+   * Subscribe to state changes — fires after identify() completes and on
+   * `se:override:change` events from the devtools overlay. Returns an
+   * unsubscribe function. Used by framework adapters to trigger re-renders.
+   */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    if (!this.overrideListenerInstalled && typeof window !== "undefined") {
+      this.overrideListenerInstalled = true;
+      window.addEventListener("se:override:change", this.onOverrideChange);
+    }
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  /**
+   * Publishes the SDK to `window.__shipeasy` so the devtools overlay can read
+   * current values. Idempotent. Returns the bridge object for tests.
+   */
+  installBridge(): ShipeasySdkBridge | null {
+    if (typeof window === "undefined") return null;
+    const bridge: ShipeasySdkBridge = {
+      getFlag: (n) => this.getFlag(n),
+      getExperiment: (n) => {
+        const r = this.getExperiment(n, {});
+        return { inExperiment: r.inExperiment, group: r.group };
+      },
+      getConfig: (n) => this.getConfig(n),
+    };
+    (window as unknown as { __shipeasy?: ShipeasySdkBridge }).__shipeasy = bridge;
+    window.dispatchEvent(new CustomEvent("se:state:update"));
+    return bridge;
+  }
+
   track(eventName: string, props?: Record<string, unknown>): void {
     this.buffer.pushMetric(eventName, this.userId, this.anonId, props);
   }
@@ -453,5 +520,179 @@ export class FlagsClientBrowser {
   destroy(): void {
     this.buffer.flush();
     this.buffer.destroy();
+    this.listeners.clear();
+    if (this.overrideListenerInstalled && typeof window !== "undefined") {
+      window.removeEventListener("se:override:change", this.onOverrideChange);
+      this.overrideListenerInstalled = false;
+    }
   }
+}
+
+// ---- URL overrides ----
+//
+// Single source of truth for ?se_ks_, ?se_config_, ?se_exp_ params. Mirrored
+// (but not duplicated) by packages/devtools/src/overrides.ts which writes them.
+
+const TRUE_RX = /^(true|on|1|yes)$/i;
+const FALSE_RX = /^(false|off|0|no)$/i;
+
+function parseBool(raw: string): boolean | null {
+  if (TRUE_RX.test(raw)) return true;
+  if (FALSE_RX.test(raw)) return false;
+  return null;
+}
+
+function decodeConfigValue(raw: string): unknown {
+  if (raw.startsWith("b64:")) {
+    try {
+      const json = atob(raw.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(json);
+    } catch {
+      return raw;
+    }
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function readParam(canonical: string, legacy?: string): string | null {
+  if (typeof window === "undefined" || !window.location) return null;
+  const params = new URLSearchParams(window.location.search);
+  const direct = params.get(canonical);
+  if (direct !== null) return direct;
+  if (legacy) {
+    const legacyVal = params.get(legacy);
+    if (legacyVal !== null) return legacyVal;
+  }
+  return null;
+}
+
+export function readGateOverride(name: string): boolean | null {
+  const v =
+    readParam(`se_ks_${name}`) ?? readParam(`se_gate_${name}`) ?? readParam(`se-gate-${name}`);
+  return v === null ? null : parseBool(v);
+}
+
+export function readConfigOverride(name: string): unknown {
+  const v = readParam(`se_config_${name}`, `se-config-${name}`);
+  if (v === null) return undefined;
+  return decodeConfigValue(v);
+}
+
+export function readExpOverride(name: string): string | null {
+  const v = readParam(`se_exp_${name}`, `se-exp-${name}`);
+  if (v === null || v === "" || v === "default" || v === "none") return null;
+  return v;
+}
+
+export function isDevtoolsRequested(): boolean {
+  if (typeof window === "undefined" || !window.location) return false;
+  const p = new URLSearchParams(window.location.search);
+  return p.has("se") || p.has("se_devtools") || p.has("se-devtools");
+}
+
+// ---- Devtools bridge + loader ----
+
+/** Bridge written to window.__shipeasy — mirrors @shipeasy/devtools' contract. */
+export interface ShipeasySdkBridge {
+  getFlag(name: string): boolean;
+  getExperiment(name: string): { inExperiment: boolean; group: string } | undefined;
+  getConfig(name: string): unknown;
+}
+
+interface DevtoolsMod {
+  init(opts: { adminUrl?: string; edgeUrl?: string }): void;
+  destroy(): void;
+}
+
+/**
+ * If the host page already mounted the standalone devtools IIFE bundle (which
+ * exposes `window.__shipeasy_devtools_global`), call its init() and wire up a
+ * toggle handle at `window.__shipeasy_devtools`. No-op when the bundle is
+ * absent — the customer is responsible for mounting it themselves.
+ */
+export function loadDevtools(opts: { adminUrl?: string; edgeUrl?: string } = {}): void {
+  if (typeof window === "undefined") return;
+  const wGlobal = window as unknown as { __shipeasy_devtools_global?: DevtoolsMod };
+  const mod = wGlobal.__shipeasy_devtools_global;
+  if (!mod) return;
+  mod.init(opts);
+
+  const w = window as unknown as { __shipeasy_devtools?: { toggle: () => void } };
+  if (!w.__shipeasy_devtools) {
+    let visible = true;
+    w.__shipeasy_devtools = {
+      toggle() {
+        if (visible) {
+          mod.destroy();
+          visible = false;
+        } else {
+          mod.init(opts);
+          visible = true;
+        }
+      },
+    };
+  }
+}
+
+interface AttachDevtoolsOptions {
+  /** Hotkey string in the form "Shift+Alt+S". */
+  hotkey?: string;
+  adminUrl?: string;
+  edgeUrl?: string;
+}
+
+/**
+ * One-call bootstrap for the devtools overlay. Installs the bridge, optionally
+ * auto-loads the overlay if the page was opened with `?se`, registers a hotkey
+ * listener for opening/toggling the overlay, and re-publishes the bridge after
+ * each `identify()`/override change. Returns an unsubscribe function for
+ * cleanup (e.g. React effect teardown).
+ */
+export function attachDevtools(
+  client: FlagsClientBrowser,
+  opts: AttachDevtoolsOptions = {},
+): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  const hotkey = opts.hotkey ?? "Shift+Alt+S";
+  const parts = hotkey.split("+");
+  const key = parts[parts.length - 1];
+  const shift = parts.includes("Shift");
+  const alt = parts.includes("Alt");
+  const ctrl = parts.includes("Ctrl") || parts.includes("Control");
+  const meta = parts.includes("Meta") || parts.includes("Cmd");
+
+  client.installBridge();
+  if (isDevtoolsRequested()) loadDevtools({ adminUrl: opts.adminUrl, edgeUrl: opts.edgeUrl });
+
+  let loaded = isDevtoolsRequested();
+  function onKeyDown(e: KeyboardEvent) {
+    if (
+      e.key === key &&
+      e.shiftKey === shift &&
+      e.altKey === alt &&
+      e.ctrlKey === ctrl &&
+      e.metaKey === meta
+    ) {
+      if (!loaded) {
+        loaded = true;
+        loadDevtools({ adminUrl: opts.adminUrl, edgeUrl: opts.edgeUrl });
+      } else {
+        (
+          window as unknown as { __shipeasy_devtools?: { toggle: () => void } }
+        ).__shipeasy_devtools?.toggle();
+      }
+    }
+  }
+  window.addEventListener("keydown", onKeyDown);
+  const unsubBridge = client.subscribe(() => client.installBridge());
+
+  return () => {
+    window.removeEventListener("keydown", onKeyDown);
+    unsubBridge();
+  };
 }
