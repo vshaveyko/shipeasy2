@@ -1,19 +1,21 @@
 import { auth, signOut } from "@/auth";
 import { getProject } from "@/lib/handlers/projects";
-import { getPlan } from "@shipeasy/core";
+import { getEffectivePlan } from "@shipeasy/core";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProjectAction } from "./actions";
 
+type Project = Awaited<ReturnType<typeof getProject>>;
+
 export default async function SettingsPage() {
   const session = await auth();
   const projectId = session?.user?.project_id;
 
-  let project: { id: string; name: string; plan: string } | null = null;
+  let project: Project | null = null;
   if (projectId) {
     try {
       project = await getProject(
@@ -25,7 +27,7 @@ export default async function SettingsPage() {
     }
   }
 
-  const plan = project ? getPlan(project.plan) : null;
+  const plan = project ? getEffectivePlan(project) : null;
 
   return (
     <div className="space-y-6">
@@ -39,7 +41,23 @@ export default async function SettingsPage() {
         <CardContent className="space-y-4 pt-4">
           <form action={updateProjectAction} className="space-y-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="project-name">Name</Label>
+              <Label htmlFor="project-domain">
+                Domain <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="project-domain"
+                name="domain"
+                defaultValue={project?.domain ?? ""}
+                placeholder="app.example.com"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Your app&apos;s hostname. Client-key SDK calls from other origins will be rejected.
+                Use <code>*.example.com</code> to allow all subdomains.
+              </p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="project-name">Display name</Label>
               <Input
                 id="project-name"
                 name="name"
@@ -90,9 +108,12 @@ export default async function SettingsPage() {
               </div>
             </div>
           )}
-          <Button variant="outline" size="sm" disabled>
-            Upgrade
-          </Button>
+          <a
+            href="/dashboard/billing"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Manage billing →
+          </a>
         </CardContent>
       </Card>
 

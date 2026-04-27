@@ -32,6 +32,7 @@ export type EventProperty = {
 export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  domain: text("domain"),
   ownerEmail: text("owner_email").notNull().unique(),
   plan: text("plan", { enum: ["free", "paid"] })
     .notNull()

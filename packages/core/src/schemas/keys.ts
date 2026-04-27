@@ -6,6 +6,12 @@ export const keyCreateSchema = z.object({
 
 export const projectUpdateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
+  domain: z
+    .string()
+    .min(3)
+    .max(253)
+    .regex(/^[a-zA-Z0-9][a-zA-Z0-9\-.*]+[a-zA-Z0-9]$/, "Must be a valid hostname or wildcard")
+    .optional(),
 });
 
 export const projectPlanUpdateSchema = z.object({

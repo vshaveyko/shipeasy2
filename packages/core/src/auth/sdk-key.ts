@@ -8,6 +8,8 @@ export interface SdkKeyMeta {
   project_id: string;
   type: SdkKeyType;
   expires_at?: string | null;
+  /** Stored domain pattern for this project (used to validate Origin on client keys). */
+  allowed_origin?: string | null;
 }
 
 const keyCache = new Map<string, { meta: SdkKeyMeta; expiry: number }>();

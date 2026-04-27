@@ -7,6 +7,7 @@ import { updateProject } from "@/lib/handlers/projects";
 export async function updateProjectAction(formData: FormData) {
   const identity = await getIdentity();
   const name = formData.get("name") as string;
-  await updateProject(identity, identity.projectId, { name });
+  const domain = (formData.get("domain") as string) || undefined;
+  await updateProject(identity, identity.projectId, { name, domain });
   redirect("/dashboard/settings");
 }

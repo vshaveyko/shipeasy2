@@ -71,6 +71,13 @@
       "when": 1777317438561,
       "tag": "0009_mixed_zzzax",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1777317809182,
+      "tag": "0010_add_project_domain",
+      "breakpoints": true
     }
   ]
 }

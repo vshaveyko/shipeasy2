@@ -203,7 +203,12 @@ export async function rebuildCatalog(env: CoreEnv, projectId: string): Promise<v
 export async function writeSdkKeyEntry(
   env: CoreEnv,
   hash: string,
-  meta: { project_id: string; type: "server" | "client" | "admin"; expires_at?: string | null },
+  meta: {
+    project_id: string;
+    type: "server" | "client" | "admin";
+    expires_at?: string | null;
+    allowed_origin?: string | null;
+  },
 ): Promise<void> {
   if (!env.FLAGS_KV) return;
   await env.FLAGS_KV.put(`sdk_key:${hash}`, JSON.stringify(meta));

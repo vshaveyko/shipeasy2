@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import {
   checkLimit,
   ApiError,
-  getPlan,
+  getEffectivePlan,
   sha256,
   writeSdkKeyEntry,
   deleteSdkKeyEntry,
@@ -30,7 +30,7 @@ export async function listKeys(identity: AdminIdentity) {
 export async function createKey(identity: AdminIdentity, input: unknown) {
   const parsed = keyCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   await checkLimit(env.DB, identity.projectId, "sdk_keys", plan);
@@ -55,6 +55,7 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
     project_id: identity.projectId,
     type: parsed.type,
     expires_at: expiresAt,
+    allowed_origin: project.domain ?? null,
   });
   await writeAudit(identity, "key.create", "sdk_key", id, { type: parsed.type });
   return { id, type: parsed.type, key: raw, expires_at: expiresAt };
