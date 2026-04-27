@@ -15,18 +15,15 @@ export interface ExperimentResult<P> {
   params: P;
 }
 
-interface EvalFlagResult {
-  enabled: boolean;
-}
-
 interface EvalExpResult {
-  in_experiment: boolean;
+  inExperiment: boolean;
   group: string;
   params: Record<string, unknown>;
 }
 
 interface EvalResponse {
-  flags: Record<string, EvalFlagResult>;
+  flags: Record<string, boolean>;
+  configs: Record<string, unknown>;
   experiments: Record<string, EvalExpResult>;
 }
 
@@ -292,6 +289,42 @@ export interface FlagsClientBrowserOptions {
 }
 
 /**
+ * Browser context auto-collected on every identify() so gate rules can
+ * target by locale, timezone, path, etc. without callers having to wire
+ * each attribute manually. Caller-supplied attrs always win — these are
+ * spread first.
+ */
+function collectBrowserAttrs(): Record<string, unknown> {
+  if (typeof window === "undefined") return {};
+  const attrs: Record<string, unknown> = {};
+  try {
+    if (typeof navigator !== "undefined" && navigator.language) attrs.locale = navigator.language;
+  } catch {}
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) attrs.timezone = tz;
+  } catch {}
+  try {
+    if (document.referrer) attrs.referrer = document.referrer;
+  } catch {}
+  try {
+    attrs.path = window.location.pathname;
+  } catch {}
+  try {
+    if (window.screen) {
+      attrs.screen_width = window.screen.width;
+      attrs.screen_height = window.screen.height;
+    }
+  } catch {}
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.userAgent === "string") {
+      attrs.user_agent = navigator.userAgent;
+    }
+  } catch {}
+  return attrs;
+}
+
+/**
  * Read `?se_exp_<name>=<group>` (and legacy `?se-exp-<name>=…`) URL params
  * and project them into the wire shape `/sdk/evaluate` expects. The worker
  * trusts these and bypasses normal allocation for the named experiments.
@@ -340,10 +373,22 @@ export class FlagsClientBrowser {
       await this.buffer.alias(this.anonId, this.userId);
     }
 
+    // Always include anonymous_id so the worker can hash users into rollouts /
+    // universes even when the caller hasn't identified yet. Auto-collected
+    // browser attrs (locale, timezone, path, screen, referrer, user_agent)
+    // populate before caller-supplied fields, so callers always win.
+    const userPayload: User = {
+      ...collectBrowserAttrs(),
+      anonymous_id: this.anonId,
+      ...user,
+    };
     const res = await fetch(`${this.baseUrl}/sdk/evaluate?env=${this.env}`, {
       method: "POST",
       headers: { "X-SDK-Key": this.sdkKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ user, experiment_overrides: readExperimentOverridesFromUrl() }),
+      body: JSON.stringify({
+        user: userPayload,
+        experiment_overrides: readExperimentOverridesFromUrl(),
+      }),
     });
     if (!res.ok) throw new Error(`/sdk/evaluate returned ${res.status}`);
     this.evalResult = (await res.json()) as EvalResponse;
@@ -359,15 +404,19 @@ export class FlagsClientBrowser {
   }
 
   getFlag(name: string): boolean {
-    return this.evalResult?.flags[name]?.enabled ?? false;
+    return this.evalResult?.flags[name] ?? false;
   }
 
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
-    // Client SDK does not receive configs directly from /sdk/evaluate.
-    // Configs require server-side evaluation or a dedicated endpoint.
-    void name;
-    void decode;
-    return undefined;
+    const raw = this.evalResult?.configs?.[name];
+    if (raw === undefined) return undefined;
+    if (!decode) return raw as T;
+    try {
+      return decode(raw);
+    } catch (err) {
+      console.warn(`[shipeasy] getConfig('${name}') decode failed:`, String(err));
+      return undefined;
+    }
   }
 
   getExperiment<P extends Record<string, unknown>>(
@@ -381,7 +430,7 @@ export class FlagsClientBrowser {
       params: defaultParams,
     };
     const entry = this.evalResult?.experiments[name];
-    if (!entry || !entry.in_experiment) return notIn;
+    if (!entry || !entry.inExperiment) return notIn;
     // Auto-log exposure (deduped within session)
     this.buffer.pushExposure(name, entry.group, this.userId, this.anonId);
     if (!decode) return { inExperiment: true, group: entry.group, params: entry.params as P };

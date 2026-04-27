@@ -1,7 +1,16 @@
 {
   "name": "@shipeasy/react",
   "version": "1.0.0",
-  "description": "ShipEasy React provider, hooks, and devtools integration",
+  "description": "Shipeasy React adapter — <ShipeasyProvider>, useFlag, useConfig, useExperiment, useShipEasyI18n, plus the devtools overlay loader.",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://shipeasy.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shipeasy-ai/sdk-react.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shipeasy-ai/sdk-react/issues"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,27 +22,38 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
-    "// build": "Build @shipeasy/sdk first so its /client subpath types resolve during our DTS step. Cloudflare Workers Builds runs `pnpm --filter @shipeasy/react build` directly (no turbo topology), so this prebuild guarantees a clean-checkout build succeeds.",
-    "prebuild": "pnpm --filter @shipeasy/sdk build",
     "build": "tsup",
     "dev": "tsup --watch",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@shipeasy/sdk": "workspace:*"
+    "@shipeasy/sdk": "^1.0.0"
   },
   "peerDependencies": {
     "react": ">=17.0.0",
     "react-dom": ">=17.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.4",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "vitest": "^2.1.0",
+    "jsdom": "^25.0.0",
+    "@testing-library/react": "^16.0.1"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }

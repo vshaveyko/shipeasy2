@@ -346,7 +346,8 @@ describe("FlagsClientBrowser", () => {
     vi.resetModules();
     const { FlagsClientBrowser } = await import("../client/index");
     const evalResult = {
-      flags: { my_flag: { enabled: true } },
+      flags: { my_flag: true },
+      configs: {},
       experiments: {},
     };
     const mockFetch = vi.fn().mockResolvedValue({
@@ -373,7 +374,8 @@ describe("FlagsClientBrowser", () => {
     vi.stubGlobal("setInterval", () => 1);
     const client = new FlagsClientBrowser({ sdkKey: "k", baseUrl: "http://x" });
     client.initFromBootstrap({
-      flags: { bootstrap_flag: { enabled: true } },
+      flags: { bootstrap_flag: true },
+      configs: {},
       experiments: {},
     });
     expect(client.getFlag("bootstrap_flag")).toBe(true);
@@ -398,7 +400,8 @@ describe("FlagsClientBrowser", () => {
       status: 200,
       json: async () => ({
         flags: {},
-        experiments: { btn_exp: { in_experiment: true, group: "test", params: { color: "blue" } } },
+        configs: {},
+        experiments: { btn_exp: { inExperiment: true, group: "test", params: { color: "blue" } } },
       }),
     });
     vi.stubGlobal("fetch", mockFetch);

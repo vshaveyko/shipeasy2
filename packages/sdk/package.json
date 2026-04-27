@@ -1,7 +1,16 @@
 {
   "name": "@shipeasy/sdk",
   "version": "1.0.0",
-  "description": "Feature flag and experimentation SDK",
+  "description": "Shipeasy SDK — feature gates, runtime configs, experiments, and metrics for the Shipeasy hosted service.",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://shipeasy.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shipeasy-ai/sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shipeasy-ai/sdk/issues"
+  },
   "main": "./dist/server/index.js",
   "module": "./dist/server/index.mjs",
   "browser": "./dist/client/index.js",
@@ -23,13 +32,18 @@
     "./templates/*": "./templates/*.js"
   },
   "files": [
-    "dist/",
-    "templates/"
+    "dist/server/",
+    "dist/client/",
+    "templates/",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",
     "type-check": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "publish-loader": "wrangler r2 object put shipeasy-sdk/loader-v$npm_package_version.js --file=dist/loader/loader.global.js --content-type 'application/javascript; charset=utf-8' --cache-control 'public, max-age=31536000, immutable' --remote && wrangler r2 object put shipeasy-sdk/loader.js --file=dist/loader/loader.global.js --content-type 'application/javascript; charset=utf-8' --cache-control 'public, max-age=300' --remote"
   },
   "dependencies": {
     "murmurhash-js": "^1.0.0"
@@ -38,7 +52,8 @@
     "@types/murmurhash-js": "^1.0.6",
     "tsup": "^8.3.0",
     "typescript": "^5.7.4",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
+    "wrangler": "^4.83.0"
   },
   "peerDependencies": {
     "zod": "^4.0.0"
@@ -50,5 +65,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

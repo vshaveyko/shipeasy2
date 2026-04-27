@@ -1,0 +1,9 @@
+[submodule "packages/sdk-ruby"]
+	path = packages/sdk-ruby
+	url = git@github.com:shipeasy-ai/sdk-ruby.git
+[submodule "packages/sdk"]
+	path = packages/sdk
+	url = git@github.com:shipeasy-ai/sdk.git
+[submodule "packages/react"]
+	path = packages/react
+	url = git@github.com:shipeasy-ai/sdk-react.git

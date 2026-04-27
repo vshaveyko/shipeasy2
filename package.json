@@ -31,7 +31,12 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3"
-    ]
+    ],
+    "// overrides": "Force the submoduled @shipeasy/* packages to resolve to the workspace copies in `packages/*` instead of the npm registry. Without this, sibling packages whose package.json says `\"@shipeasy/sdk\": \"^1.0.0\"` (because they're authored to publish standalone) would pick up the published npm tarball during dev and bypass the local submodule edits.",
+    "overrides": {
+      "@shipeasy/sdk": "workspace:*",
+      "@shipeasy/react": "workspace:*"
+    }
   },
   "devDependencies": {
     "@types/node": "^20.19.39",
