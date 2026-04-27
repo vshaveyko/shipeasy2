@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>shipeasy loader smoke test</title>
+    <script
+      src="/sdk/loader.js"
+      data-sdk-key="sdk_client_bf273deea504461d9a8adb4896dad205"
+      data-base-url="https://cdn.shipeasy.ai"
+      data-user-id="loader-test-user"
+      data-user-email="loader-test@example.com"
+      data-user-plan="pro"
+      data-attrs='{"country":"US","beta_tester":true}'
+    ></script>
+  </head>
+  <body>
+    <h1>shipeasy loader smoke test</h1>
+    <pre id="out">awaiting ready…</pre>
+    <script>
+      (async () => {
+        await window.shipeasy.ready;
+        document.getElementById("out").textContent = JSON.stringify(
+          {
+            showTestimonials: window.shipeasy.getFlag("landing_show_testimonials"),
+            betaBadge: window.shipeasy.getFlag("landing_beta_badge"),
+            announcement: window.shipeasy.getConfig("landing_announcement_bar"),
+            heroPricing: window.shipeasy.getExperiment("landing_pricing", { headline: "x" }),
+          },
+          null,
+          2,
+        );
+      })();
+    </script>
+  </body>
+</html>
