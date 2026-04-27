@@ -1,6 +1,7 @@
 // Drizzle schema — source of truth for D1.
 // See experiment-platform/01-schema.md for the full table layout.
 
+import { sql } from "drizzle-orm";
 import {
   sqliteTable,
   text,
@@ -32,12 +33,30 @@ export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   ownerEmail: text("owner_email").notNull().unique(),
-  plan: text("plan", { enum: ["free", "pro", "premium", "enterprise"] })
+  plan: text("plan", { enum: ["free", "paid"] })
     .notNull()
     .default("free"),
   status: text("status", { enum: ["active", "inactive"] })
     .notNull()
     .default("active"),
+  // Stripe billing
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  stripeItemIdBase: text("stripe_item_id_base"),
+  stripeItemIdExperiments: text("stripe_item_id_experiments"),
+  stripeItemIdGates: text("stripe_item_id_gates"),
+  stripeItemIdConfigs: text("stripe_item_id_configs"),
+  subscriptionStatus: text("subscription_status", {
+    enum: ["none", "trialing", "active", "past_due", "canceled", "incomplete"],
+  })
+    .notNull()
+    .default("none"),
+  currentPeriodEnd: text("current_period_end"),
+  trialEndsAt: text("trial_ends_at"),
+  cancelAtPeriodEnd: integer("cancel_at_period_end").notNull().default(0),
+  billingInterval: text("billing_interval", { enum: ["monthly", "annual"] })
+    .notNull()
+    .default("monthly"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
@@ -181,7 +200,9 @@ export const gates = sqliteTable(
   },
   (t) => ({
     projectIdx: index("gates_project").on(t.projectId),
-    projectNameUniq: uniqueIndex("gates_project_name").on(t.projectId, t.name),
+    projectNameUniq: uniqueIndex("gates_project_name")
+      .on(t.projectId, t.name)
+      .where(sql`deleted_at is null`),
   }),
 );
 
@@ -203,7 +224,11 @@ export const configs = sqliteTable(
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
-  (t) => ({ uniq: uniqueIndex("configs_project_name").on(t.projectId, t.name) }),
+  (t) => ({
+    uniq: uniqueIndex("configs_project_name")
+      .on(t.projectId, t.name)
+      .where(sql`deleted_at is null`),
+  }),
 );
 
 /** Per-(config, env) published value history. `version` is monotonic per (configId, env).
@@ -270,7 +295,9 @@ export const universes = sqliteTable(
   },
   (t) => ({
     projectIdx: index("universes_project").on(t.projectId),
-    projectUniq: uniqueIndex("universes_project_name").on(t.projectId, t.name),
+    projectUniq: uniqueIndex("universes_project_name")
+      .on(t.projectId, t.name)
+      .where(sql`deleted_at is null`),
   }),
 );
 
@@ -323,7 +350,9 @@ export const events = sqliteTable(
   },
   (t) => ({
     projectIdx: index("events_project").on(t.projectId),
-    projectUniq: uniqueIndex("events_project_name").on(t.projectId, t.name),
+    projectUniq: uniqueIndex("events_project_name")
+      .on(t.projectId, t.name)
+      .where(sql`deleted_at is null`),
   }),
 );
 
@@ -347,7 +376,11 @@ export const metrics = sqliteTable(
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
-  (t) => ({ uniq: uniqueIndex("metrics_project_name").on(t.projectId, t.name) }),
+  (t) => ({
+    uniq: uniqueIndex("metrics_project_name")
+      .on(t.projectId, t.name)
+      .where(sql`deleted_at is null`),
+  }),
 );
 
 export const experimentMetrics = sqliteTable(
@@ -442,7 +475,9 @@ export const userAttributes = sqliteTable(
   },
   (t) => ({
     projectIdx: index("user_attributes_project").on(t.projectId),
-    projectUniq: uniqueIndex("user_attributes_project_name").on(t.projectId, t.name),
+    projectUniq: uniqueIndex("user_attributes_project_name")
+      .on(t.projectId, t.name)
+      .where(sql`deleted_at is null`),
   }),
 );
 
@@ -463,7 +498,9 @@ export const labelProfiles = sqliteTable(
   },
   (t) => ({
     projectIdx: index("label_profiles_project").on(t.projectId),
-    projectNameUniq: uniqueIndex("label_profiles_project_name").on(t.projectId, t.name),
+    projectNameUniq: uniqueIndex("label_profiles_project_name")
+      .on(t.projectId, t.name)
+      .where(sql`deleted_at is null`),
   }),
 );
 
@@ -669,5 +706,22 @@ export const i18nUsageDaily = sqliteTable(
   (t) => ({
     pk: primaryKey({ columns: [t.projectId, t.sdkKeyId, t.date] }),
     projectDateIdx: index("i18n_usage_daily_project_date").on(t.projectId, t.date),
+  }),
+);
+
+// ── Billing ──────────────────────────────────────────────────────────────────
+
+export const billingEvents = sqliteTable(
+  "billing_events",
+  {
+    // Stripe event ID — INSERT OR IGNORE makes webhook handling idempotent
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+    type: text("type").notNull(),
+    payload: text("payload", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    receivedAt: text("received_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("billing_events_project").on(t.projectId),
   }),
 );

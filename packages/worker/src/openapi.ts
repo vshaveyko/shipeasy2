@@ -172,7 +172,7 @@ export const openApiSpec = {
         required: ["version", "plan", "gates", "configs"],
         properties: {
           version: { type: "string" },
-          plan: { type: "string", enum: ["free", "pro", "premium", "enterprise"] },
+          plan: { type: "string", enum: ["free", "paid"] },
           gates: {
             type: "object",
             additionalProperties: { $ref: "#/components/schemas/Gate" },

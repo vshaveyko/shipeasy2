@@ -11,7 +11,11 @@ export async function handleFlags(c: AuthedContext) {
   const interval = plan.poll_interval_seconds;
   const etag = `"${flags.version}"`;
 
-  if (c.req.header("If-None-Match") === etag) {
+  // Cloudflare's edge rewrites strong ETags to weak (`W/"..."`), so a client
+  // echoing `If-None-Match` back to us sends the weak form. Compare etag values
+  // independent of the weak prefix.
+  const ifNoneMatch = c.req.header("If-None-Match")?.replace(/^W\//, "");
+  if (ifNoneMatch === etag) {
     return new Response(null, {
       status: 304,
       headers: {

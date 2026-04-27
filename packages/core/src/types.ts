@@ -1,4 +1,4 @@
-export type PlanName = "free" | "pro" | "premium" | "enterprise";
+export type PlanName = "free" | "paid";
 
 export type ProjectStatus = "active" | "inactive";
 

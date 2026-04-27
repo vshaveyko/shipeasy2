@@ -1398,7 +1398,7 @@ select.se-input { cursor: pointer; }
         <div class="row">
           <div>
             <div class="row-name">${a.name}</div>
-            <div class="row-sub">${a.rolloutPct}% rollout</div>
+            <div class="row-sub">${(a.rolloutPct / 100).toFixed(a.rolloutPct % 100 === 0 ? 0 : 2)}% rollout</div>
           </div>
           ${ot(a)}
           ${rt(a.name, X(a.name))}

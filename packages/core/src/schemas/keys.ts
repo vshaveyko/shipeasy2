@@ -9,7 +9,7 @@ export const projectUpdateSchema = z.object({
 });
 
 export const projectPlanUpdateSchema = z.object({
-  plan: z.enum(["free", "pro", "premium", "enterprise"]),
+  plan: z.enum(["free", "paid"]),
 });
 
 export type KeyCreateInput = z.infer<typeof keyCreateSchema>;

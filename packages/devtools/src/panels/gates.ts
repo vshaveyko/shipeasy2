@@ -56,7 +56,7 @@ export async function renderGatesPanel(container: Element, api: DevtoolsApi): Pr
         <div class="row">
           <div>
             <div class="row-name">${g.name}</div>
-            <div class="row-sub">${g.rolloutPct}% rollout</div>
+            <div class="row-sub">${(g.rolloutPct / 100).toFixed(g.rolloutPct % 100 === 0 ? 0 : 2)}% rollout</div>
           </div>
           ${badge(g)}
           ${togGroup(g.name, getGateOverride(g.name))}

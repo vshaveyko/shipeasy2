@@ -2,7 +2,17 @@
 
 import { and, count, eq, isNull } from "drizzle-orm";
 import { getDb } from "./db";
-import { gates, configs, experiments, universes, metrics, events, sdkKeys } from "./db/schema";
+import {
+  gates,
+  configs,
+  experiments,
+  universes,
+  metrics,
+  events,
+  sdkKeys,
+  labelKeys,
+  labelProfiles,
+} from "./db/schema";
 import { ApiError } from "./errors";
 import type { Plan } from "./config/plans";
 
@@ -13,7 +23,9 @@ export type LimitResource =
   | "universes"
   | "metrics"
   | "events_catalog"
-  | "sdk_keys";
+  | "sdk_keys"
+  | "i18n_keys"
+  | "i18n_profiles";
 
 const PLATFORM_LIMITS: Record<LimitResource, number> = {
   flags: 40_000,
@@ -23,6 +35,8 @@ const PLATFORM_LIMITS: Record<LimitResource, number> = {
   metrics: 5_000,
   events_catalog: 20_000,
   sdk_keys: 1_000,
+  i18n_keys: 500_000,
+  i18n_profiles: 100,
 };
 
 export async function checkLimit(
@@ -39,6 +53,8 @@ export async function checkLimit(
     metrics: plan.max_metrics,
     events_catalog: plan.max_events_catalog,
     sdk_keys: plan.max_sdk_keys,
+    i18n_keys: plan.max_i18n_keys,
+    i18n_profiles: plan.max_i18n_profiles,
   };
 
   const planLimit = planLimits[resource];
@@ -101,6 +117,22 @@ export async function checkLimit(
         .select({ n: count() })
         .from(sdkKeys)
         .where(and(eq(sdkKeys.projectId, projectId), isNull(sdkKeys.revokedAt)));
+      n = row[0]?.n ?? 0;
+      break;
+    }
+    case "i18n_keys": {
+      const row = await db
+        .select({ n: count() })
+        .from(labelKeys)
+        .where(eq(labelKeys.projectId, projectId));
+      n = row[0]?.n ?? 0;
+      break;
+    }
+    case "i18n_profiles": {
+      const row = await db
+        .select({ n: count() })
+        .from(labelProfiles)
+        .where(and(eq(labelProfiles.projectId, projectId), isNull(labelProfiles.deletedAt)));
       n = row[0]?.n ?? 0;
       break;
     }
