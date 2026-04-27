@@ -24,9 +24,22 @@ export async function captureScreenshot(): Promise<Blob> {
     const video = document.createElement("video");
     video.srcObject = stream;
     video.muted = true;
+    video.playsInline = true;
+    // play() resolves before the first frame is decoded; wait for both
+    // loadedmetadata (so videoWidth/Height are set) and one rAF tick.
+    await new Promise<void>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("Capture stream timed out")), 5000);
+      video.onloadedmetadata = () => {
+        clearTimeout(t);
+        resolve();
+      };
+      video.onerror = () => {
+        clearTimeout(t);
+        reject(new Error("Capture stream errored"));
+      };
+    });
     await video.play();
-    // One frame is enough; wait a tick so the first frame is decoded.
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
     const w = video.videoWidth;
     const h = video.videoHeight;
     if (!w || !h) throw new Error("Capture stream returned no frames.");

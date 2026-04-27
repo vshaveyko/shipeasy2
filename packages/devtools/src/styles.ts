@@ -245,9 +245,19 @@ export const STYLES = `
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  row-gap: 6px;
   background: var(--se-bg-1);
   align-items: center;
 }
+.panel-footer .foot-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.panel-footer .ibtn { flex-shrink: 0; }
 
 /* Per-panel control bar that sits above the global Sign-out / Clear-overrides footer. */
 .panel-subfoot {

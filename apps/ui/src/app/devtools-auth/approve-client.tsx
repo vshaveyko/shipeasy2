@@ -97,7 +97,7 @@ export function ApproveButton({ origin, email }: Props) {
           {projectList.map((p) => (
             <label
               key={p.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
+              className={`flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${
                 selected === p.id ? "border-primary bg-muted" : "hover:bg-muted/60"
               }`}
             >
@@ -107,10 +107,10 @@ export function ApproveButton({ origin, email }: Props) {
                 value={p.id}
                 checked={selected === p.id}
                 onChange={() => setSelected(p.id)}
-                className="accent-primary size-4"
+                className="accent-primary size-4 shrink-0"
               />
-              <span className="flex-1">
-                <span className="block font-medium">{p.name}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{p.name}</span>
                 <span className="text-muted-foreground block text-xs capitalize">{p.plan}</span>
               </span>
             </label>
@@ -118,7 +118,11 @@ export function ApproveButton({ origin, email }: Props) {
         </div>
       </div>
 
-      <Button className="w-full" onClick={onApprove} disabled={phase === "pending" || !selected}>
+      <Button
+        className="w-full break-all whitespace-normal"
+        onClick={onApprove}
+        disabled={phase === "pending" || !selected}
+      >
         {phase === "pending"
           ? t("common.connecting")
           : t("app.devtools-auth.approve_as", { email })}

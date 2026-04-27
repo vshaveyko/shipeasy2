@@ -44,13 +44,24 @@ export async function startDeviceAuth(
   const adminOrigin = new URL(opts.adminUrl).origin;
   const ourOrigin = window.location.origin;
 
+  // Pin a unique target name per attempt so re-signing-in (after Sign out)
+  // never reuses a stale popup that the previous flow already drove through
+  // window.close(). When the same name is reused, some browsers race the
+  // navigation against our `popup.closed` poll and reject before the new
+  // page has a chance to load.
+  const targetName = `shipeasy-devtools-auth-${Date.now()}`;
   const popup = window.open(
     `${opts.adminUrl}/devtools-auth?origin=${encodeURIComponent(ourOrigin)}`,
-    "shipeasy-devtools-auth",
+    targetName,
     "width=460,height=640,noopener=no",
   );
   if (!popup) {
     throw new Error("Popup blocked. Allow popups for this site and try again.");
+  }
+  try {
+    popup.focus();
+  } catch {
+    /* ignore — focus may be denied across origins */
   }
   onWaiting();
 
@@ -83,8 +94,12 @@ export async function startDeviceAuth(
 
     window.addEventListener("message", onMessage);
 
-    // Detect popup closed without completing.
+    // Detect popup closed without completing. Skip the first 1500ms so a
+    // briefly-blank reused window or a slow cross-origin navigation doesn't
+    // fire a false "closed" detection before the page has even loaded.
+    const startedAt = Date.now();
     const closedPoll = setInterval(() => {
+      if (Date.now() - startedAt < 1500) return;
       if (popup.closed && !done) {
         finish(new Error("Sign-in window closed before approval."));
       }

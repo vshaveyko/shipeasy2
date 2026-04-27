@@ -59,7 +59,7 @@ export default async function DevtoolsAuthPage({ searchParams }: Props) {
     // The page renders inside a 460×640 popup. Tight vertical rhythm + a
     // single "max" wrapper keeps the whole flow visible without scrolling
     // even on the narrowest authorization windows.
-    <div className="flex min-h-[100dvh] flex-col items-center justify-start gap-3 px-3 py-4 sm:justify-center sm:gap-5 sm:py-8">
+    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-start gap-3 overflow-x-hidden px-3 py-4 sm:justify-center sm:gap-5 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-base font-semibold sm:gap-2 sm:text-xl"
@@ -68,7 +68,7 @@ export default async function DevtoolsAuthPage({ searchParams }: Props) {
         ShipEasy
       </Link>
 
-      <Card className="w-full max-w-[360px] sm:max-w-sm">
+      <Card className="w-full max-w-full min-w-0 sm:max-w-sm">
         <CardHeader className="space-y-1 px-4 pb-2 pt-4 text-center sm:px-6 sm:pb-3 sm:pt-6">
           <div className="bg-muted mx-auto flex size-8 items-center justify-center rounded-full sm:size-10">
             <Terminal className="size-4 sm:size-5" />
