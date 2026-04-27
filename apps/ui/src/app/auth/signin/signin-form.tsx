@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
+import { ShipeasyClientProviders } from "@/components/shipeasy-providers";
 import { useShipEasyI18n } from "@shipeasy/react";
 
 function safeCallback(raw: string | null): string {
@@ -122,8 +123,10 @@ function SignInForm() {
 
 export default function SignInFormSuspended() {
   return (
-    <Suspense fallback={null}>
-      <SignInForm />
-    </Suspense>
+    <ShipeasyClientProviders>
+      <Suspense fallback={null}>
+        <SignInForm />
+      </Suspense>
+    </ShipeasyClientProviders>
   );
 }
