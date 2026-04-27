@@ -3,13 +3,13 @@ require "uri"
 require "json"
 require "digest"
 
-module ShipEasyI18n
-  module Rails
+module Shipeasy
+  module I18n
     class LabelFetcher
       MANIFEST_KEY_PREFIX = "i18n:manifest:"
       LABEL_KEY_PREFIX    = "i18n:label:"
 
-      def initialize(config = ShipEasyI18n.configuration)
+      def initialize(config = Shipeasy.config)
         @config = config
       end
 
@@ -22,7 +22,7 @@ module ShipEasyI18n
 
         fetch_label_file(file_url)
       rescue => e
-        ::Rails.logger.warn("[ShipEasyI18n] Failed to fetch labels: #{e.message}") if defined?(::Rails)
+        ::Rails.logger.warn("[Shipeasy::I18n] Failed to fetch labels: #{e.message}") if defined?(::Rails)
         nil
       end
 

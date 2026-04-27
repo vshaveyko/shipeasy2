@@ -1,5 +1,5 @@
-module ShipEasyI18n
-  module Rails
+module Shipeasy
+  module I18n
     module ViewHelpers
       def i18n_head_tags(profile: nil, chunk: nil)
         safe_join([
@@ -9,8 +9,8 @@ module ShipEasyI18n
       end
 
       def i18n_inline_data(profile: nil, chunk: nil)
-        config = ShipEasyI18n.configuration
-        label_file = ShipEasyI18n::Rails::LabelFetcher.new.fetch(
+        config = Shipeasy.config
+        label_file = Shipeasy::I18n::LabelFetcher.new.fetch(
           profile: profile || config.profile,
           chunk:   chunk   || config.default_chunk,
         )
@@ -21,7 +21,7 @@ module ShipEasyI18n
       end
 
       def i18n_script_tag(hide_until_ready: false)
-        config = ShipEasyI18n.configuration
+        config = Shipeasy.config
         attrs  = {
           src: config.loader_url,
           "data-key":     config.public_key,
@@ -33,8 +33,8 @@ module ShipEasyI18n
       end
 
       def i18n_t(key, variables = {}, profile: nil, chunk: nil)
-        config = ShipEasyI18n.configuration
-        label_file = ShipEasyI18n::Rails::LabelFetcher.new.fetch(
+        config = Shipeasy.config
+        label_file = Shipeasy::I18n::LabelFetcher.new.fetch(
           profile: profile || config.profile,
           chunk:   chunk   || config.default_chunk,
         )
