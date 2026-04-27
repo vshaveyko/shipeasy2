@@ -52,6 +52,42 @@ module Shipeasy
     # Reset the config back to defaults — primarily for tests.
     def reset_config!
       @config = nil
+      @flags_pid = nil
+      @flags&.destroy
+      @flags = nil
+    end
+
+    # Lazy, fork-safe singleton FlagsClient. The first call from each
+    # process spawns a fresh client + poll thread — including post-fork
+    # workers under Puma's preload_app!. Callers can `Shipeasy.flags.get_flag(...)`
+    # straight from a controller without holding a constant or worrying
+    # about `before_worker_boot` hooks.
+    #
+    # Initializers stay minimal:
+    #
+    #   # config/initializers/shipeasy.rb
+    #   Shipeasy.configure { |c| c.api_key = ENV["SHIPEASY_SERVER_KEY"] }
+    #
+    # The first request that touches `Shipeasy.flags.*` triggers init().
+    # For serverless / Lambda where you want a single fetch with no thread,
+    # build the client explicitly: `Shipeasy::SDK::FlagsClient.new(...).init_once`.
+    def flags
+      pid = Process.pid
+      if @flags && @flags_pid != pid
+        # Post-fork: parent's poll thread didn't survive. Don't destroy
+        # @flags (its mutex/state is invalid in this child anyway); just
+        # rebuild from scratch.
+        @flags = nil
+      end
+      @flags ||= begin
+        @flags_pid = pid
+        client = SDK::FlagsClient.new(
+          api_key:  config.api_key,
+          base_url: config.base_url,
+        )
+        client.init
+        client
+      end
     end
   end
 end
