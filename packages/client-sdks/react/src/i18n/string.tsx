@@ -1,5 +1,5 @@
 import React, { type HTMLAttributes } from "react";
-import { useShipEasyI18n } from "./context";
+import { useShipEasyI18n } from "../context";
 
 interface ShipEasyI18nStringProps extends HTMLAttributes<HTMLElement> {
   labelKey: string;
