@@ -40,12 +40,15 @@
   z-index: 2147483646;
   display: flex;
   gap: 4px;
-  background: var(--se-bg);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--se-accent) 8%, transparent), transparent 60%),
+    var(--se-bg);
   border: 1px solid var(--se-line-2);
 }
 
-/* Drag handle */
+/* Drag handle \u2014 doubles as the ShipEasy brand mark. */
 .drag-handle {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: var(--se-r-md);
@@ -54,13 +57,23 @@
   justify-content: center;
   cursor: grab;
   font-size: 15px;
-  color: var(--se-fg-4);
+  color: var(--se-accent);
   user-select: none;
   flex-shrink: 0;
   touch-action: none;
+  background: var(--se-accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 30%, transparent);
 }
-.drag-handle:hover { background: var(--se-bg-2); color: var(--se-fg-3); }
-.drag-handle.dragging { cursor: grabbing; color: var(--se-accent); }
+.drag-handle:hover {
+  background: color-mix(in oklab, var(--se-accent) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 50%, transparent);
+}
+.drag-handle.dragging {
+  cursor: grabbing;
+  color: var(--se-accent-fg);
+  background: var(--se-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--se-accent) 40%, transparent);
+}
 
 .btn {
   all: unset;
@@ -81,7 +94,7 @@
   color: var(--se-accent);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 32%, transparent);
 }
-.drag-handle svg { width: 14px; height: 14px; display: block; }
+.drag-handle svg { width: 18px; height: 18px; display: block; }
 
 /* Panel \u2014 position/size/borderRadius/boxShadow/border-one-side set by JS */
 .panel {
@@ -1064,11 +1077,11 @@ select.se-input { cursor: pointer; }
       })
     );
   }
-  var Xe = /^(true|on|1|yes)$/i,
-    Ye = /^(false|off|0|no)$/i,
+  var Ve = /^(true|on|1|yes)$/i,
+    Xe = /^(false|off|0|no)$/i,
     fe = /^se(?:_|-|$)/;
   function U(e) {
-    return Xe.test(e) ? !0 : Ye.test(e) ? !1 : null;
+    return Ve.test(e) ? !0 : Xe.test(e) ? !1 : null;
   }
   function G(e) {
     if (e.startsWith("b64:"))
@@ -1105,7 +1118,7 @@ select.se-input { cursor: pointer; }
     }
     return null;
   }
-  function C(e) {
+  function H(e) {
     if (typeof window > "u") return;
     let t = new URL(window.location.href);
     t.searchParams.set("se", "1");
@@ -1117,23 +1130,23 @@ select.se-input { cursor: pointer; }
     let e = J();
     return e.has("se") || e.has("se_devtools") || e.has("se-devtools");
   }
-  function X(e) {
+  function V(e) {
     let t = R(`se_ks_${e}`) ?? R(`se_gate_${e}`) ?? R(`se-gate-${e}`);
     return t === null ? null : U(t);
   }
   function ve(e, t, n = "session") {
-    C([
+    H([
       [`se_ks_${e}`, t === null ? null : t ? "true" : "false"],
       [`se_gate_${e}`, null],
       [`se-gate-${e}`, null],
     ]);
   }
-  function Y(e) {
+  function X(e) {
     let t = R(`se_config_${e}`, `se-config-${e}`);
     if (t !== null) return G(t);
   }
-  function V(e, t, n = "session") {
-    C([
+  function Y(e, t, n = "session") {
+    H([
       [`se_config_${e}`, t == null ? null : ge(t)],
       [`se-config-${e}`, null],
     ]);
@@ -1143,7 +1156,7 @@ select.se-input { cursor: pointer; }
     return t === null || t === "" || t === "default" || t === "none" ? null : t;
   }
   function he(e, t, n = "session") {
-    C([
+    H([
       [`se_exp_${e}`, t],
       [`se-exp-${e}`, null],
     ]);
@@ -1152,19 +1165,19 @@ select.se-input { cursor: pointer; }
     return R("se_i18n");
   }
   function xe(e, t = "session") {
-    C([["se_i18n", e]]);
+    H([["se_i18n", e]]);
   }
   function ye() {
     return R("se_i18n_draft");
   }
   function we(e, t = "session") {
-    C([["se_i18n_draft", e]]);
+    H([["se_i18n_draft", e]]);
   }
   function ke(e) {
     return R(`se_i18n_label_${e}`);
   }
   function Q(e, t, n = "session") {
-    C([[`se_i18n_label_${e}`, t]]);
+    H([[`se_i18n_label_${e}`, t]]);
   }
   function Ee() {
     if (typeof window > "u") return;
@@ -1346,12 +1359,12 @@ select.se-input { cursor: pointer; }
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function Ve() {
+  function Ye() {
     return window.__shipeasy ?? null;
   }
   function Ze(e) {
-    let t = X(e.name),
-      n = Ve()?.getFlag(e.name);
+    let t = V(e.name),
+      n = Ye()?.getFlag(e.name);
     return (t !== null ? t : (n ?? e.enabled))
       ? '<span class="badge badge-on">ON</span>'
       : '<span class="badge badge-off">OFF</span>';
@@ -1394,7 +1407,7 @@ select.se-input { cursor: pointer; }
             <div class="row-sub">${a.rolloutPct}% rollout</div>
           </div>
           ${Ze(a)}
-          ${Qe(a.name, X(a.name))}
+          ${Qe(a.name, V(a.name))}
         </div>`,
         )
         .join("")),
@@ -1415,7 +1428,7 @@ select.se-input { cursor: pointer; }
     return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
   }
   function tt(e) {
-    return Y(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
+    return X(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
   }
   async function Me(e, t) {
     e.innerHTML = '<div class="loading">Loading configs\u2026</div>';
@@ -1440,7 +1453,7 @@ select.se-input { cursor: pointer; }
     function r() {
       ((e.innerHTML = n
         .map((s) => {
-          let i = Y(s.name),
+          let i = X(s.name),
             p = i !== void 0 ? i : s.valueJson,
             d = o.has(s.name);
           return `
@@ -1480,7 +1493,7 @@ select.se-input { cursor: pointer; }
         if (d)
           try {
             let g = JSON.parse(d.value);
-            (V(p, g, i), o.delete(p), r());
+            (Y(p, g, i), o.delete(p), r());
           } catch {
             d.style.borderColor = "#f87171";
           }
@@ -1493,7 +1506,7 @@ select.se-input { cursor: pointer; }
         }),
         e.querySelectorAll(".clear-ov").forEach((s) => {
           s.addEventListener("click", () => {
-            (V(s.dataset.name, null), o.delete(s.dataset.name), r());
+            (Y(s.dataset.name, null), o.delete(s.dataset.name), r());
           });
         }));
     }
@@ -1658,13 +1671,13 @@ select.se-input { cursor: pointer; }
   var A = "__se_label_target",
     F = !1,
     oe = null,
-    H = null;
+    C = null;
   function j() {
     return Array.from(document.querySelectorAll("[data-label]"));
   }
   function _() {
-    (H?.remove(),
-      (H = null),
+    (C?.remove(),
+      (C = null),
       document.querySelectorAll(`.${A}.__se_label_active`).forEach((e) => {
         e.classList.remove("__se_label_active");
       }));
@@ -1734,7 +1747,7 @@ select.se-input { cursor: pointer; }
       }),
       i.addEventListener("click", (u) => u.stopPropagation()),
       i.addEventListener("mousedown", (u) => u.stopPropagation()),
-      (H = i));
+      (C = i));
   }
   function dt(e, t, n) {
     if (((F = e), oe?.(), (oe = null), !e)) {
@@ -1744,7 +1757,7 @@ select.se-input { cursor: pointer; }
     }
     for (let d of j()) d.classList.add(A);
     function o(d) {
-      return H !== null && d.composedPath().includes(H);
+      return C !== null && d.composedPath().includes(C);
     }
     function r(d) {
       for (let g of d.composedPath())
@@ -1757,7 +1770,7 @@ select.se-input { cursor: pointer; }
       g && (d.preventDefault(), d.stopPropagation(), lt(g, t));
     }
     function s(d) {
-      H && (o(d) || r(d) || _());
+      C && (o(d) || r(d) || _());
     }
     function i(d) {
       d.key === "Escape" && _();
@@ -1898,7 +1911,7 @@ select.se-input { cursor: pointer; }
       { body: i, root: o, close: p }
     );
   }
-  async function Ce() {
+  async function He() {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let e = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !1 });
@@ -1935,7 +1948,7 @@ select.se-input { cursor: pointer; }
       e.getTracks().forEach((t) => t.stop());
     }
   }
-  async function He() {
+  async function Ce() {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let e = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !0 }),
@@ -2288,7 +2301,7 @@ select.se-input { cursor: pointer; }
     (o.body.querySelector("#se-b-screenshot").addEventListener("click", async () => {
       u("Pick a screen/tab to capture\u2026");
       try {
-        let l = await Ce();
+        let l = await He();
         (u(""),
           ft(t, l, (m) => {
             (r.push({ kind: "screenshot", filename: `screenshot-${Date.now()}.png`, blob: m }),
@@ -2318,7 +2331,7 @@ select.se-input { cursor: pointer; }
         }
         u("Pick a screen/tab to record\u2026");
         try {
-          ((a = await He()),
+          ((a = await Ce()),
             (w.textContent = "\u25A0 Stop recording"),
             w.classList.add("danger"),
             u("Recording\u2026 click stop when done."));
@@ -2531,7 +2544,7 @@ select.se-input { cursor: pointer; }
     Lt =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
     St =
-      '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>',
+      '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
     se = {
       gates: { icon: ht, label: "Gates" },
       configs: { icon: xt, label: "Configs" },
@@ -2684,7 +2697,7 @@ select.se-input { cursor: pointer; }
     requestAnimationFrame(() => D(o, r, a, i));
     let g = document.createElement("div");
     ((g.className = "drag-handle"),
-      (g.title = "Drag to reposition"),
+      (g.title = "ShipEasy DevTools \u2014 drag to reposition"),
       (g.innerHTML = St),
       o.appendChild(g),
       g.addEventListener("mousedown", (b) => {

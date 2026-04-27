@@ -9,7 +9,7 @@ import { BrandMark } from "@/components/dashboard/brand-mark";
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div
-      className="min-h-screen min-w-[960px] grid overflow-hidden lg:grid-cols-[minmax(420px,1.1fr)_minmax(440px,1fr)]"
+      className="grid min-h-screen w-full overflow-x-hidden lg:grid-cols-[minmax(420px,1.1fr)_minmax(440px,1fr)]"
       style={{
         backgroundImage: `
           radial-gradient(900px 500px at 80% 110%, color-mix(in oklab, var(--se-accent) 12%, transparent), transparent 60%),
@@ -109,8 +109,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex items-center justify-center px-12 py-12">
-        <div className="w-full max-w-[380px]">{children}</div>
+      <main className="flex w-full min-w-0 items-center justify-center px-4 py-8 sm:px-8 sm:py-12 lg:px-12">
+        <div className="w-full max-w-full min-w-0 sm:max-w-[380px]">{children}</div>
       </main>
     </div>
   );

@@ -4,7 +4,7 @@ import { Terminal } from "lucide-react";
 import { auth } from "@/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@shipeasy/shared/Logo";
-import { ApproveButton } from "./approve-client";
+import { ApproveButton, SwitchAccountLink } from "./approve-client";
 
 interface Props {
   searchParams: Promise<{ origin?: string }>;
@@ -85,10 +85,7 @@ export default async function DevtoolsAuthPage({ searchParams }: Props) {
         <CardContent className="space-y-2 px-4 pb-4 sm:space-y-3 sm:px-6 sm:pb-6">
           <ApproveButton origin={origin} email={user.email} />
           <p className="text-muted-foreground text-center text-[11px] sm:text-xs">
-            Not you?{" "}
-            <Link href="/auth/signin" className="hover:text-foreground underline">
-              Sign in with a different account
-            </Link>
+            Not you? <SwitchAccountLink origin={origin} label="Sign in with a different account" />
           </p>
         </CardContent>
       </Card>

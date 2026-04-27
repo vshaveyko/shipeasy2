@@ -35,7 +35,10 @@ const ICON_I18N = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_BUG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>`;
 const ICON_FEATURE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>`;
 const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
-const ICON_DRAG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>`;
+// Drag handle doubles as the brand mark. Same path as `apps/_shared/Logo.tsx`,
+// rendered in the devtools accent color so the toolbar reads as ShipEasy at a
+// glance.
+const ICON_DRAG = `<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>`;
 
 const PANELS: Record<PanelKey, { icon: string; label: string }> = {
   gates: { icon: ICON_GATES, label: "Gates" },
@@ -250,7 +253,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   // ── Drag handle ───────────────────────────────────────────────────────────────
   const dragHandle = document.createElement("div");
   dragHandle.className = "drag-handle";
-  dragHandle.title = "Drag to reposition";
+  dragHandle.title = "ShipEasy DevTools — drag to reposition";
   dragHandle.innerHTML = ICON_DRAG;
   toolbar.appendChild(dragHandle);
 

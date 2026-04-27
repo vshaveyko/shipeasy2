@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   approveDevtoolsAuthAction,
@@ -13,6 +14,27 @@ interface Props {
   /** Origin of the opener window; restricts postMessage target. */
   origin: string;
   email: string;
+}
+
+/**
+ * Sign out and bounce back to /auth/signin with the same callbackUrl that
+ * brought us here, so the next sign-in lands back on this approval page.
+ * Plain <Link> would no-op for an already-signed-in user (the signin page
+ * server-redirects them straight to /dashboard).
+ */
+export function SwitchAccountLink({ origin, label }: { origin: string; label: string }) {
+  const callbackUrl = `/devtools-auth?origin=${encodeURIComponent(origin)}`;
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void signOut({ callbackUrl: `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` })
+      }
+      className="hover:text-foreground underline"
+    >
+      {label}
+    </button>
+  );
 }
 
 type Phase = "loading" | "ready" | "pending" | "success" | "error";

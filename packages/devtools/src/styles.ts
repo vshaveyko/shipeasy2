@@ -34,12 +34,15 @@ export const STYLES = `
   z-index: 2147483646;
   display: flex;
   gap: 4px;
-  background: var(--se-bg);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--se-accent) 8%, transparent), transparent 60%),
+    var(--se-bg);
   border: 1px solid var(--se-line-2);
 }
 
-/* Drag handle */
+/* Drag handle — doubles as the ShipEasy brand mark. */
 .drag-handle {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: var(--se-r-md);
@@ -48,13 +51,23 @@ export const STYLES = `
   justify-content: center;
   cursor: grab;
   font-size: 15px;
-  color: var(--se-fg-4);
+  color: var(--se-accent);
   user-select: none;
   flex-shrink: 0;
   touch-action: none;
+  background: var(--se-accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 30%, transparent);
 }
-.drag-handle:hover { background: var(--se-bg-2); color: var(--se-fg-3); }
-.drag-handle.dragging { cursor: grabbing; color: var(--se-accent); }
+.drag-handle:hover {
+  background: color-mix(in oklab, var(--se-accent) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 50%, transparent);
+}
+.drag-handle.dragging {
+  cursor: grabbing;
+  color: var(--se-accent-fg);
+  background: var(--se-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--se-accent) 40%, transparent);
+}
 
 .btn {
   all: unset;
@@ -75,7 +88,7 @@ export const STYLES = `
   color: var(--se-accent);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 32%, transparent);
 }
-.drag-handle svg { width: 14px; height: 14px; display: block; }
+.drag-handle svg { width: 18px; height: 18px; display: block; }
 
 /* Panel — position/size/borderRadius/boxShadow/border-one-side set by JS */
 .panel {
