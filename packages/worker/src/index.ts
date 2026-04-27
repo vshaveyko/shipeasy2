@@ -16,6 +16,8 @@ import { handleCollect } from "./sdk/collect";
 import { handleEvaluate } from "./sdk/evaluate";
 import { handleExperiments } from "./sdk/experiments";
 import { handleFlags } from "./sdk/flags";
+import { handleWebhook } from "./billing/webhook";
+import { handleI18nLoader, handleI18nStrings } from "./sdk/i18n";
 import type { AnalysisMessage, WorkerEnv } from "./env";
 
 type HonoEnv = { Bindings: WorkerEnv; Variables: { key: import("@shipeasy/core").SdkKeyMeta } };
@@ -64,6 +66,8 @@ app.get("/openapi.json", (c) => {
 });
 
 // ── SDK endpoints ────────────────────────────────────────────────────────────
+app.get("/sdk/i18n/loader.js", (c) => handleI18nLoader(c as AuthedContext));
+app.get("/sdk/i18n/strings", requireKey("client"), (c) => handleI18nStrings(c as AuthedContext));
 app.get("/sdk/flags", requireKey("server"), (c) => handleFlags(c as AuthedContext));
 app.get("/sdk/experiments", requireKey("server"), (c) => handleExperiments(c as AuthedContext));
 app.post("/sdk/evaluate", requireKey("client"), (c) => handleEvaluate(c as AuthedContext));
@@ -74,6 +78,9 @@ app.post("/collect", requireKey("client"), (c) => handleCollect(c as AuthedConte
 app.post("/auth/device/start", (c) => deviceStart(c));
 app.post("/auth/device/complete", (c) => deviceComplete(c));
 app.get("/auth/device/poll", (c) => devicePoll(c));
+
+// ── Stripe billing webhook ───────────────────────────────────────────────────
+app.post("/billing/webhook", (c) => handleWebhook(c));
 
 // ── Error handler: surface ApiError status codes ─────────────────────────────
 app.onError((err, c) => {
