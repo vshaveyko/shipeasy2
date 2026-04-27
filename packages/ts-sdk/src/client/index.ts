@@ -1,5 +1,16 @@
 // ShipEasy browser SDK — calls /sdk/evaluate on identify(), logs exposures + events via /collect.
 
+declare global {
+  interface Window {
+    i18n?: {
+      t: (key: string, vars?: Record<string, string | number>) => string;
+      ready: (cb: () => void) => void;
+      on: (event: "update", cb: () => void) => () => void;
+      locale: string | null;
+    };
+  }
+}
+
 export const version = "1.0.0";
 
 // ---- Types ----
@@ -696,3 +707,125 @@ export function attachDevtools(
     unsubBridge();
   };
 }
+
+// ---- Module-scope singletons ----
+//
+// Most apps want one client per page. Rather than ask every callsite to
+// pass a `FlagsClientBrowser` instance around, expose a configurable
+// singleton plus two facade objects (`flags`, `i18n`) that any module —
+// React component, event handler, util fn, plain JS — can import directly:
+//
+//   import { configureShipeasy, flags, i18n } from "@shipeasy/sdk/client";
+//   configureShipeasy({ sdkKey: "...", baseUrl: "..." });
+//   await flags.identify({ user_id });
+//   flags.get("new_checkout");
+//   i18n.t("hero.title", { name });
+//
+// The React adapter wraps the same singletons and adds a re-render
+// subscription — it does not re-export them, so customers consistently
+// reach for the central import.
+
+let _client: FlagsClientBrowser | null = null;
+
+/** Configure the singleton. Idempotent — re-calling with the same opts is a no-op. */
+export function configureShipeasy(opts: FlagsClientBrowserOptions): FlagsClientBrowser {
+  if (_client) return _client;
+  _client = new FlagsClientBrowser(opts);
+  return _client;
+}
+
+/** Returns the configured singleton, or null if configureShipeasy() hasn't run yet. */
+export function getShipeasyClient(): FlagsClientBrowser | null {
+  return _client;
+}
+
+/**
+ * Test helper — drop the singleton so the next configureShipeasy() builds fresh.
+ * Not part of the documented surface; production code should never call this.
+ */
+export function _resetShipeasyForTests(): void {
+  _client?.destroy();
+  _client = null;
+}
+
+/**
+ * Universal flags facade. Methods return safe defaults when the singleton
+ * hasn't been configured yet (false / undefined / `notIn` experiment), so
+ * importing this in a module that loads before app boot is harmless.
+ */
+export const flags = {
+  configure(opts: FlagsClientBrowserOptions): void {
+    configureShipeasy(opts);
+  },
+  identify(user: User): Promise<void> {
+    if (!_client) {
+      console.warn("[shipeasy] flags.identify called before configureShipeasy()");
+      return Promise.resolve();
+    }
+    return _client.identify(user);
+  },
+  /** Read a feature gate. Returns false until identify() resolves. */
+  get(name: string): boolean {
+    return _client?.getFlag(name) ?? false;
+  },
+  getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
+    return _client?.getConfig(name, decode);
+  },
+  getExperiment<P extends Record<string, unknown>>(
+    name: string,
+    defaultParams: P,
+    decode?: (raw: unknown) => P,
+    variants?: Record<string, Partial<P>>,
+  ): ExperimentResult<P> {
+    return (
+      _client?.getExperiment(name, defaultParams, decode, variants) ?? {
+        inExperiment: false,
+        group: "control",
+        params: defaultParams,
+      }
+    );
+  },
+  track(eventName: string, props?: Record<string, unknown>): void {
+    _client?.track(eventName, props);
+  },
+  flush(): Promise<void> {
+    return _client?.flush() ?? Promise.resolve();
+  },
+  /** Subscribe for change notifications (identify/override). Used by framework adapters. */
+  subscribe(listener: () => void): () => void {
+    if (!_client) return () => {};
+    return _client.subscribe(listener);
+  },
+};
+
+/**
+ * Universal i18n facade. Backed by the `window.i18n` global the loader
+ * script installs. Returns the key itself when the loader hasn't run
+ * (SSR, missing script tag, before profile fetch completes), so call
+ * sites never need to null-check.
+ */
+export const i18n = {
+  t(key: string, variables?: Record<string, string | number>): string {
+    if (typeof window !== "undefined" && window.i18n) return window.i18n.t(key, variables);
+    return key;
+  },
+  get locale(): string | null {
+    if (typeof window !== "undefined" && window.i18n) return window.i18n.locale;
+    return null;
+  },
+  get ready(): boolean {
+    if (typeof window !== "undefined" && window.i18n) return Boolean(window.i18n.locale);
+    return false;
+  },
+  /** Resolves the next time the loader finishes a profile fetch. */
+  whenReady(): Promise<void> {
+    if (typeof window === "undefined" || !window.i18n) return Promise.resolve();
+    if (window.i18n.locale) return Promise.resolve();
+    return new Promise((resolve) => window.i18n!.ready(resolve));
+  },
+  /** Subscribe to locale/profile updates. Returns an unsubscribe fn. */
+  onUpdate(cb: () => void): () => void {
+    if (typeof window === "undefined" || !window.i18n) return () => {};
+    return window.i18n.on("update", cb);
+  },
+};

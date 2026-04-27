@@ -1,35 +1,20 @@
 "use client";
 
+import { type ReactNode, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import {
-  FlagsClientBrowser,
-  type User,
-  type ExperimentResult,
   attachDevtools,
+  configureShipeasy,
+  flags,
+  getShipeasyClient,
+  i18n,
+  type ExperimentResult,
+  type User,
 } from "@shipeasy/sdk/client";
 import {
   ShipeasyContext,
   type ShipeasyContextValue,
   type ShipEasyI18nContextValue,
 } from "./context";
-
-declare global {
-  interface Window {
-    i18n?: {
-      t: (key: string, vars?: Record<string, string | number>) => string;
-      ready: (cb: () => void) => void;
-      on: (event: "update", cb: () => void) => () => void;
-      locale: string | null;
-    };
-  }
-}
 
 export interface ShipeasyProviderProps {
   children: ReactNode;
@@ -43,16 +28,19 @@ export interface ShipeasyProviderProps {
   baseUrl?: string;
   /** Admin dashboard URL for devtools. Defaults to https://app.shipeasy.dev */
   adminUrl?: string;
-  /**
-   * Hotkey to open the devtools overlay. Format: modifier keys joined with "+"
-   * (e.g. "Shift+Alt+S", the default). The actual key handling lives in the
-   * SDK's attachDevtools — this is just the string we pass through.
-   */
+  /** Hotkey to open the devtools overlay. Defaults to "Shift+Alt+S". */
   devtoolsHotkey?: string;
   /** Initial locale to render under during SSR before window.i18n loads. */
   ssrLocale?: string;
 }
 
+/**
+ * Configures the @shipeasy/sdk/client singleton on mount and exposes a
+ * React context that re-renders on identify() and locale changes. The
+ * provider is here for reactivity — for static / one-shot lookups, just
+ * `import { flags, i18n } from "@shipeasy/sdk/client"` directly. There
+ * is no React-only re-export of the singletons by design.
+ */
 export function ShipeasyProvider({
   children,
   sdkKey,
@@ -61,102 +49,68 @@ export function ShipeasyProvider({
   devtoolsHotkey,
   ssrLocale,
 }: ShipeasyProviderProps) {
-  const clientRef = useRef<FlagsClientBrowser | null>(null);
   const [ready, setReady] = useState(false);
 
-  if (sdkKey && !clientRef.current) {
-    clientRef.current = new FlagsClientBrowser({ sdkKey, baseUrl });
+  if (sdkKey && !getShipeasyClient()) {
+    configureShipeasy({ sdkKey, baseUrl });
   }
 
-  // Bridge SDK change events into React renders. Skipped when there's no
-  // sdkKey (i18n-only mode); useSyncExternalStore still needs a stable
-  // subscribe pair so we hand it no-ops in that case.
-  const subscribe = useCallback(
-    (cb: () => void) => clientRef.current?.subscribe(cb) ?? (() => {}),
-    [],
-  );
-  const getSnapshot = useCallback(() => clientRef.current, []);
+  // Bridge SDK change events into React renders.
+  const subscribe = useCallback((cb: () => void) => flags.subscribe(cb), []);
+  const getSnapshot = useCallback(() => getShipeasyClient(), []);
   useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   useEffect(() => {
-    const c = clientRef.current;
+    const c = getShipeasyClient();
     if (!c) return;
-    return attachDevtools(c, {
-      hotkey: devtoolsHotkey,
-      adminUrl,
-      edgeUrl: baseUrl,
-    });
+    return attachDevtools(c, { hotkey: devtoolsHotkey, adminUrl, edgeUrl: baseUrl });
   }, [devtoolsHotkey, adminUrl, baseUrl]);
 
   // ---- i18n ----
-  const [i18nReady, setI18nReady] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(window.i18n?.locale);
-  });
-  const [locale, setLocale] = useState<string | null>(() => {
-    if (typeof window !== "undefined" && window.i18n?.locale) return window.i18n.locale;
-    return ssrLocale ?? null;
-  });
-  const t = useCallback<ShipEasyI18nContextValue["t"]>((key, vars) => {
-    if (typeof window !== "undefined" && window.i18n) return window.i18n.t(key, vars);
-    return key;
-  }, []);
+  const [i18nReady, setI18nReady] = useState<boolean>(() => i18n.ready);
+  const [locale, setLocale] = useState<string | null>(() => i18n.locale ?? ssrLocale ?? null);
+  const t = useCallback<ShipEasyI18nContextValue["t"]>((key, vars) => i18n.t(key, vars), []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.i18n) return;
-    if (window.i18n.locale) {
+    if (i18n.ready) {
       setI18nReady(true);
-      setLocale(window.i18n.locale);
+      setLocale(i18n.locale);
     }
-    window.i18n.ready(() => {
+    void i18n.whenReady().then(() => {
       setI18nReady(true);
-      setLocale(window.i18n!.locale);
+      setLocale(i18n.locale);
     });
-    return window.i18n.on("update", () => {
-      setLocale(window.i18n!.locale);
+    return i18n.onUpdate(() => {
+      setLocale(i18n.locale);
       setI18nReady((r) => r);
     });
   }, []);
 
-  // ---- callbacks ----
   const identify = useCallback(async (user: User) => {
-    if (!clientRef.current) return;
-    await clientRef.current.identify(user);
+    if (!getShipeasyClient()) return;
+    await flags.identify(user);
     setReady(true);
   }, []);
 
-  const getFlag = useCallback((name: string): boolean => {
-    return clientRef.current?.getFlag(name) ?? false;
-  }, []);
-
+  const getFlag = useCallback((name: string): boolean => flags.get(name), []);
   const getConfig = useCallback(
-    <T = unknown,>(name: string, decode?: (raw: unknown) => T): T | undefined => {
-      return clientRef.current?.getConfig(name, decode);
-    },
+    <T = unknown,>(name: string, decode?: (raw: unknown) => T): T | undefined =>
+      flags.getConfig<T>(name, decode),
     [],
   );
-
   const getExperiment = useCallback(
     <P extends Record<string, unknown>>(
       name: string,
       defaultParams: P,
       decode?: (raw: unknown) => P,
       variants?: Record<string, Partial<P>>,
-    ): ExperimentResult<P> => {
-      return (
-        clientRef.current?.getExperiment(name, defaultParams, decode, variants) ?? {
-          inExperiment: false,
-          group: "control",
-          params: defaultParams,
-        }
-      );
-    },
+    ): ExperimentResult<P> => flags.getExperiment(name, defaultParams, decode, variants),
     [],
   );
-
-  const track = useCallback((event: string, props?: Record<string, unknown>) => {
-    clientRef.current?.track(event, props);
-  }, []);
+  const track = useCallback(
+    (event: string, props?: Record<string, unknown>) => flags.track(event, props),
+    [],
+  );
 
   const ctx: ShipeasyContextValue = {
     ready,
