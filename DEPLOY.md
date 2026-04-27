@@ -35,7 +35,7 @@ Root directory: repo root (monorepo).
 **Build command:**
 
 ```
-pnpm install --frozen-lockfile && pnpm --filter @shipeasy/react build && pnpm --filter @shipeasy/devtools build && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote && pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build
+git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter @shipeasy/react build && pnpm --filter @shipeasy/devtools build && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote && pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build
 ```
 
 **Deploy command:**
@@ -46,17 +46,18 @@ pnpm --filter @shipeasy/ui exec opennextjs-cloudflare deploy
 
 Why each step:
 
-1. `pnpm install --frozen-lockfile` — deps.
-2. `pnpm --filter @shipeasy/devtools build` — compiles the IIFE bundle
+1. `git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive` — populates `packages/{sdk,react,sdk-ruby}`. CF Workers Builds clones with depth=1 and does not fetch submodules by default, so without this line `pnpm install --frozen-lockfile` either fails or silently resolves `@shipeasy/react` to a stale registry copy and the dashboard ships partially broken (RSC render errors). The `insteadOf` rewrite is needed because `.gitmodules` uses SSH URLs and the CF build environment has no SSH keys; this forces HTTPS, which works for public repos without auth. **If any submoduled repo is private**, set `GITHUB_TOKEN` in CF build env vars and replace the rewrite with `url.https://x-access-token:$GITHUB_TOKEN@github.com/.insteadOf=git@github.com:`.
+2. `pnpm install --frozen-lockfile` — deps.
+3. `pnpm --filter @shipeasy/devtools build` — compiles the IIFE bundle
    and drops a fresh `apps/ui/public/se-devtools.js`. Without this step
    you ship whatever was committed last, not the current source.
-3. `pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote`
+4. `pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote`
    — applies any new SQL migration. **Idempotent.** Must run before the
    new code that expects the new schema goes live (e.g. the soft-delete
    migration added `deleted_at` columns that `scopedDb.select` now
    filters on). Cloudflare Builds authenticates wrangler automatically
    from the build environment, so no API token is needed in env vars.
-4. `pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build` —
+5. `pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build` —
    OpenNext adapter compiles Next.js into a Worker bundle.
 
 ### `shipeasy-worker` — edge / SDK hot path
@@ -66,7 +67,7 @@ Root directory: repo root.
 **Build command:**
 
 ```
-pnpm install --frozen-lockfile && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote
+git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote
 ```
 
 **Deploy command:**
@@ -87,7 +88,7 @@ Root directory: repo root.
 **Build command:**
 
 ```
-pnpm install --frozen-lockfile && pnpm --filter @shipeasy/docs exec fumadocs-mdx && pnpm --filter @shipeasy/docs exec next build
+git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter @shipeasy/docs exec fumadocs-mdx && pnpm --filter @shipeasy/docs exec next build
 ```
 
 **Deploy command:**

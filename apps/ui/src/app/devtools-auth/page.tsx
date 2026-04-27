@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Terminal } from "lucide-react";
 import { auth } from "@/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Logo } from "@shipeasy/shared/Logo";
+import { BrandMark } from "@/components/dashboard/brand-mark";
 import { ApproveButton, SwitchAccountLink } from "./approve-client";
 
 interface Props {
@@ -62,10 +62,10 @@ export default async function DevtoolsAuthPage({ searchParams }: Props) {
     <div className="flex min-h-[100dvh] w-full flex-col items-center justify-start gap-3 overflow-x-hidden px-3 py-4 sm:justify-center sm:gap-5 sm:py-8">
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-base font-semibold sm:gap-2 sm:text-xl"
+        className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em] sm:text-base"
       >
-        <Logo className="size-5 sm:size-7" />
-        ShipEasy
+        <BrandMark size={22} />
+        Shipeasy
       </Link>
 
       <Card className="w-full max-w-full min-w-0 sm:max-w-sm">
