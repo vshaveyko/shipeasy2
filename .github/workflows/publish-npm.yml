@@ -4,15 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/sdk/**"
-      - "packages/sdk-vue/**"
-      - "packages/sdk-svelte/**"
-      - "packages/sdk-angular/**"
-      - "packages/i18n-core/**"
-      - "packages/i18n-react/**"
-      - "packages/i18n-vue/**"
-      - "packages/i18n-svelte/**"
-      - "packages/i18n-angular/**"
+      - "packages/ts-sdk/**"
+      - "packages/client-sdks/sdk-vue/**"
+      - "packages/client-sdks/sdk-svelte/**"
+      - "packages/client-sdks/sdk-angular/**"
+      - "packages/client-sdks/react/**"
+      - "packages/client-sdks/i18n-core/**"
+      - "packages/client-sdks/i18n-vue/**"
+      - "packages/client-sdks/i18n-svelte/**"
+      - "packages/client-sdks/i18n-angular/**"
   workflow_dispatch:
 
 jobs:
@@ -38,15 +38,15 @@ jobs:
       - name: Publish changed packages
         run: |
           for pkg in \
-            packages/sdk \
-            packages/sdk-vue \
-            packages/sdk-svelte \
-            packages/sdk-angular \
-            packages/i18n-core \
-            packages/i18n-react \
-            packages/i18n-vue \
-            packages/i18n-svelte \
-            packages/i18n-angular; do
+            packages/ts-sdk \
+            packages/client-sdks/sdk-vue \
+            packages/client-sdks/sdk-svelte \
+            packages/client-sdks/sdk-angular \
+            packages/client-sdks/react \
+            packages/client-sdks/i18n-core \
+            packages/client-sdks/i18n-vue \
+            packages/client-sdks/i18n-svelte \
+            packages/client-sdks/i18n-angular; do
             if [ ! -f "$pkg/package.json" ]; then
               echo "Skipping $pkg: no package.json"
               continue

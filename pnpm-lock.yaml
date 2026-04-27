@@ -114,10 +114,10 @@ importers:
         version: link:../../packages/devtools
       '@shipeasy/react':
         specifier: '*'
-        version: link:../../packages/react
+        version: link:../../packages/client-sdks/react
       '@shipeasy/sdk':
         specifier: '*'
-        version: link:../../packages/sdk
+        version: link:../../packages/ts-sdk
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -256,6 +256,142 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
 
+  packages/client-sdks/i18n-angular:
+    devDependencies:
+      '@angular/common':
+        specifier: ^17.0.0
+        version: 17.3.12(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
+      '@angular/core':
+        specifier: ^17.0.0
+        version: 17.3.12(rxjs@7.8.2)(zone.js@0.15.1)
+      rxjs:
+        specifier: ^7.8.0
+        version: 7.8.2
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+
+  packages/client-sdks/i18n-core:
+    devDependencies:
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+
+  packages/client-sdks/i18n-svelte:
+    devDependencies:
+      svelte:
+        specifier: ^5.0.0
+        version: 5.55.4(@typescript-eslint/types@8.58.2)
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+
+  packages/client-sdks/i18n-vue:
+    devDependencies:
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+      vue:
+        specifier: ^3.5.0
+        version: 3.5.32(typescript@5.9.3)
+
+  packages/client-sdks/react:
+    dependencies:
+      '@shipeasy/sdk':
+        specifier: ^1.0.0
+        version: link:../../ts-sdk
+      react:
+        specifier: '>=17.0.0'
+        version: 19.2.5
+      react-dom:
+        specifier: '>=17.0.0'
+        version: 19.2.5(react@19.2.5)
+    devDependencies:
+      '@testing-library/react':
+        specifier: ^16.0.1
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
+
+  packages/client-sdks/sdk-angular:
+    dependencies:
+      '@shipeasy/sdk':
+        specifier: '*'
+        version: link:../../ts-sdk
+    devDependencies:
+      '@angular/core':
+        specifier: ^17.0.0
+        version: 17.3.12(rxjs@7.8.2)(zone.js@0.15.1)
+      rxjs:
+        specifier: ^7.8.0
+        version: 7.8.2
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+
+  packages/client-sdks/sdk-svelte:
+    dependencies:
+      '@shipeasy/sdk':
+        specifier: '*'
+        version: link:../../ts-sdk
+    devDependencies:
+      svelte:
+        specifier: ^5.0.0
+        version: 5.55.4(@typescript-eslint/types@8.58.2)
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+
+  packages/client-sdks/sdk-vue:
+    dependencies:
+      '@shipeasy/sdk':
+        specifier: '*'
+        version: link:../../ts-sdk
+    devDependencies:
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+      vue:
+        specifier: ^3.5.0
+        version: 3.5.32(typescript@5.9.3)
+
   packages/core:
     dependencies:
       drizzle-orm:
@@ -286,57 +422,6 @@ importers:
       typescript:
         specifier: ^5.7.4
         version: 5.9.3
-
-  packages/i18n-angular:
-    devDependencies:
-      '@angular/common':
-        specifier: ^17.0.0
-        version: 17.3.12(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
-      '@angular/core':
-        specifier: ^17.0.0
-        version: 17.3.12(rxjs@7.8.2)(zone.js@0.15.1)
-      rxjs:
-        specifier: ^7.8.0
-        version: 7.8.2
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
-  packages/i18n-core:
-    devDependencies:
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
-  packages/i18n-svelte:
-    devDependencies:
-      svelte:
-        specifier: ^5.0.0
-        version: 5.55.4(@typescript-eslint/types@8.58.2)
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
-  packages/i18n-vue:
-    devDependencies:
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-      vue:
-        specifier: ^3.5.0
-        version: 3.5.32(typescript@5.9.3)
 
   packages/mcp:
     dependencies:
@@ -370,7 +455,7 @@ importers:
         version: 1.29.0(zod@4.3.6)
       '@shipeasy/sdk':
         specifier: '*'
-        version: link:../sdk
+        version: link:../ts-sdk
       semver:
         specifier: ^7.6.0
         version: 7.7.4
@@ -394,41 +479,7 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
 
-  packages/react:
-    dependencies:
-      '@shipeasy/sdk':
-        specifier: ^1.0.0
-        version: link:../sdk
-      react:
-        specifier: '>=17.0.0'
-        version: 19.2.5
-      react-dom:
-        specifier: '>=17.0.0'
-        version: 19.2.5(react@19.2.5)
-    devDependencies:
-      '@testing-library/react':
-        specifier: ^16.0.1
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.14)
-      jsdom:
-        specifier: ^25.0.0
-        version: 25.0.1
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.0
-        version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
-
-  packages/sdk:
+  packages/ts-sdk:
     dependencies:
       murmurhash-js:
         specifier: ^1.0.0
@@ -452,57 +503,6 @@ importers:
       wrangler:
         specifier: ^4.83.0
         version: 4.83.0(@cloudflare/workers-types@4.20260416.2)
-
-  packages/sdk-angular:
-    dependencies:
-      '@shipeasy/sdk':
-        specifier: '*'
-        version: link:../sdk
-    devDependencies:
-      '@angular/core':
-        specifier: ^17.0.0
-        version: 17.3.12(rxjs@7.8.2)(zone.js@0.15.1)
-      rxjs:
-        specifier: ^7.8.0
-        version: 7.8.2
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
-  packages/sdk-svelte:
-    dependencies:
-      '@shipeasy/sdk':
-        specifier: '*'
-        version: link:../sdk
-    devDependencies:
-      svelte:
-        specifier: ^5.0.0
-        version: 5.55.4(@typescript-eslint/types@8.58.2)
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
-  packages/sdk-vue:
-    dependencies:
-      '@shipeasy/sdk':
-        specifier: '*'
-        version: link:../sdk
-    devDependencies:
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-      vue:
-        specifier: ^3.5.0
-        version: 3.5.32(typescript@5.9.3)
 
   packages/worker:
     dependencies:

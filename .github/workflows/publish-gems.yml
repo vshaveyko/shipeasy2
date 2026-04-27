@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/sdk-ruby/**"
-      - "packages/i18n-rails/**"
+      - "packages/server-sdks/sdk-ruby/**"
+      - "packages/server-sdks/i18n-rails/**"
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/sdk-ruby
+        working-directory: packages/server-sdks/sdk-ruby
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/i18n-rails
+        working-directory: packages/server-sdks/i18n-rails
     steps:
       - uses: actions/checkout@v4
 
