@@ -817,15 +817,29 @@ export const i18n = {
     if (typeof window !== "undefined" && window.i18n) return Boolean(window.i18n.locale);
     return false;
   },
-  /** Resolves the next time the loader finishes a profile fetch. */
+  /** Resolves when the loader has installed window.i18n and fetched a profile. */
   whenReady(): Promise<void> {
-    if (typeof window === "undefined" || !window.i18n) return Promise.resolve();
-    if (window.i18n.locale) return Promise.resolve();
-    return new Promise((resolve) => window.i18n!.ready(resolve));
+    if (typeof window === "undefined") return Promise.resolve();
+    if (window.i18n?.locale) return Promise.resolve();
+    // window.i18n not yet installed — wait for the se:i18n:ready DOM event.
+    return new Promise((resolve) => {
+      const handler = () => resolve();
+      window.addEventListener("se:i18n:ready", handler, { once: true });
+    });
   },
   /** Subscribe to locale/profile updates. Returns an unsubscribe fn. */
   onUpdate(cb: () => void): () => void {
-    if (typeof window === "undefined" || !window.i18n) return () => {};
-    return window.i18n.on("update", cb);
+    if (typeof window === "undefined") return () => {};
+    if (window.i18n) return window.i18n.on("update", cb);
+    // window.i18n not yet installed — subscribe once ready, then forward to on("update").
+    let unsub = () => {};
+    const handler = () => {
+      if (window.i18n) unsub = window.i18n.on("update", cb);
+    };
+    window.addEventListener("se:i18n:ready", handler, { once: true });
+    return () => {
+      window.removeEventListener("se:i18n:ready", handler);
+      unsub();
+    };
   },
 };
