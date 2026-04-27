@@ -1,10 +1,10 @@
 "use strict";
 (() => {
-  var We = Object.defineProperty;
-  var Ge = (e, t, n) =>
-    t in e ? We(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
-  var K = (e, t, n) => Ge(e, typeof t != "symbol" ? t + "" : t, n);
-  var de = `
+  var Xe = Object.defineProperty;
+  var Ze = (e, t, n) =>
+    t in e ? Xe(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
+  var G = (e, t, n) => Ze(e, typeof t != "symbol" ? t + "" : t, n);
+  var ue = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :host {
@@ -307,6 +307,8 @@
   flex-shrink: 0;
 }
 .subfoot-btn:hover { background: var(--se-bg-3); color: var(--se-fg); }
+.subfoot-btn.dim { color: var(--se-fg-4); cursor: default; }
+.subfoot-btn.dim:hover { background: var(--se-bg-2); color: var(--se-fg-4); }
 .subfoot-btn.on {
   background: var(--se-accent-soft);
   color: var(--se-accent);
@@ -1002,38 +1004,30 @@ select.se-input { cursor: pointer; }
 }
 .se-annot-host { display: flex; flex-direction: column; gap: 8px; }
 
-/* Edit-labels hover highlight on the customer page */
-.__se_label_target {
-  outline: 2px dashed var(--se-accent) !important;
-  outline-offset: 2px !important;
-  cursor: pointer !important;
-  transition: outline-color 0.12s;
-}
-.__se_label_target:hover,
-.__se_label_target.__se_label_active {
-  outline-style: solid !important;
-  outline-color: var(--se-accent) !important;
-}
+/* Edit-labels highlight (.__se_label_target) lives in panels/i18n.ts and
+ * is injected directly into document.head \u2014 these elements are in the
+ * customer page DOM, outside our shadow root, so shadow CSS can't reach
+ * them. */
 `;
-  var W = "se_dt_session";
-  function ce() {
+  var J = "se_dt_session";
+  function fe() {
     try {
-      let e = sessionStorage.getItem(W);
+      let e = sessionStorage.getItem(J);
       if (e) return JSON.parse(e);
     } catch {}
     return null;
   }
-  function Je(e) {
+  function Qe(e) {
     try {
-      sessionStorage.setItem(W, JSON.stringify(e));
+      sessionStorage.setItem(J, JSON.stringify(e));
     } catch {}
   }
-  function pe() {
+  function ge() {
     try {
-      sessionStorage.removeItem(W);
+      sessionStorage.removeItem(J);
     } catch {}
   }
-  async function ue(e, t) {
+  async function me(e, t) {
     let n = new URL(e.adminUrl).origin,
       o = window.location.origin,
       r = `shipeasy-devtools-auth-${Date.now()}`,
@@ -1050,40 +1044,40 @@ select.se-input { cursor: pointer; }
       t(),
       new Promise((s, i) => {
         let f = !1;
-        function b(p, l) {
+        function h(p, l) {
           f ||
             ((f = !0),
-            window.removeEventListener("message", g),
-            clearInterval(w),
+            window.removeEventListener("message", u),
+            clearInterval(E),
             clearTimeout(x),
             p ? i(p) : s(l));
         }
-        function g(p) {
+        function u(p) {
           if (p.origin !== n) return;
           let l = p.data;
           if (!l || l.type !== "se:devtools-auth" || !l.token || !l.projectId) return;
-          let m = { token: l.token, projectId: l.projectId };
-          (Je(m), b(null, m));
+          let v = { token: l.token, projectId: l.projectId };
+          (Qe(v), h(null, v));
         }
-        window.addEventListener("message", g);
+        window.addEventListener("message", u);
         let y = Date.now(),
-          w = setInterval(() => {
+          E = setInterval(() => {
             Date.now() - y < 1500 ||
-              (a.closed && !f && b(new Error("Sign-in window closed before approval.")));
+              (a.closed && !f && h(new Error("Sign-in window closed before approval.")));
           }, 500),
           x = setTimeout(() => {
-            b(new Error("Sign-in timed out after 10 minutes."));
+            h(new Error("Sign-in timed out after 10 minutes."));
           }, 6e5);
       })
     );
   }
-  var Ve = /^(true|on|1|yes)$/i,
-    Xe = /^(false|off|0|no)$/i,
-    fe = /^se(?:_|-|$)/;
-  function U(e) {
-    return Ve.test(e) ? !0 : Xe.test(e) ? !1 : null;
+  var et = /^(true|on|1|yes)$/i,
+    tt = /^(false|off|0|no)$/i,
+    ve = /^se(?:_|-|$)/;
+  function F(e) {
+    return et.test(e) ? !0 : tt.test(e) ? !1 : null;
   }
-  function G(e) {
+  function V(e) {
     if (e.startsWith("b64:"))
       try {
         let t = atob(e.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
@@ -1097,19 +1091,19 @@ select.se-input { cursor: pointer; }
       return e;
     }
   }
-  function ge(e) {
+  function be(e) {
     let t = JSON.stringify(e);
     return t.length <= 60
       ? t
       : `b64:${btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
   }
-  function J() {
+  function Y() {
     return typeof window > "u"
       ? new URLSearchParams()
       : new URLSearchParams(window.location.search);
   }
   function R(e, t) {
-    let n = J(),
+    let n = Y(),
       o = n.get(e);
     if (o !== null) return o;
     if (t) {
@@ -1118,106 +1112,106 @@ select.se-input { cursor: pointer; }
     }
     return null;
   }
-  function H(e) {
+  function O(e) {
     if (typeof window > "u") return;
     let t = new URL(window.location.href);
     t.searchParams.set("se", "1");
     for (let [n, o] of e) o === null ? t.searchParams.delete(n) : t.searchParams.set(n, o);
     window.location.assign(t.toString());
   }
-  function me() {
+  function he() {
     if (typeof window > "u") return !1;
-    let e = J();
+    let e = Y();
     return e.has("se") || e.has("se_devtools") || e.has("se-devtools");
   }
-  function V(e) {
+  function X(e) {
     let t = R(`se_ks_${e}`) ?? R(`se_gate_${e}`) ?? R(`se-gate-${e}`);
-    return t === null ? null : U(t);
+    return t === null ? null : F(t);
   }
-  function ve(e, t, n = "session") {
-    H([
+  function xe(e, t, n = "session") {
+    O([
       [`se_ks_${e}`, t === null ? null : t ? "true" : "false"],
       [`se_gate_${e}`, null],
       [`se-gate-${e}`, null],
     ]);
   }
-  function X(e) {
+  function Z(e) {
     let t = R(`se_config_${e}`, `se-config-${e}`);
-    if (t !== null) return G(t);
+    if (t !== null) return V(t);
   }
-  function Y(e, t, n = "session") {
-    H([
-      [`se_config_${e}`, t == null ? null : ge(t)],
+  function Q(e, t, n = "session") {
+    O([
+      [`se_config_${e}`, t == null ? null : be(t)],
       [`se-config-${e}`, null],
     ]);
   }
-  function be(e) {
+  function ye(e) {
     let t = R(`se_exp_${e}`, `se-exp-${e}`);
     return t === null || t === "" || t === "default" || t === "none" ? null : t;
   }
-  function he(e, t, n = "session") {
-    H([
+  function we(e, t, n = "session") {
+    O([
       [`se_exp_${e}`, t],
       [`se-exp-${e}`, null],
     ]);
   }
-  function Z() {
+  function ee() {
     return R("se_i18n");
   }
-  function xe(e, t = "session") {
-    H([["se_i18n", e]]);
-  }
-  function ye() {
-    return R("se_i18n_draft");
-  }
-  function we(e, t = "session") {
-    H([["se_i18n_draft", e]]);
-  }
-  function ke(e) {
-    return R(`se_i18n_label_${e}`);
-  }
-  function Q(e, t, n = "session") {
-    H([[`se_i18n_label_${e}`, t]]);
+  function ke(e, t = "session") {
+    O([["se_i18n", e]]);
   }
   function Ee() {
+    return R("se_i18n_draft");
+  }
+  function Le(e, t = "session") {
+    O([["se_i18n_draft", e]]);
+  }
+  function Se(e) {
+    return R(`se_i18n_label_${e}`);
+  }
+  function te(e, t, n = "session") {
+    O([[`se_i18n_label_${e}`, t]]);
+  }
+  function Me() {
     if (typeof window > "u") return;
     let e = new URL(window.location.href);
-    for (let t of [...e.searchParams.keys()]) fe.test(t) && e.searchParams.delete(t);
+    for (let t of [...e.searchParams.keys()]) ve.test(t) && e.searchParams.delete(t);
     (e.searchParams.set("se", "1"), window.location.assign(e.toString()));
   }
-  function ee(e, t) {
+  function ne(e, t) {
     let n = new URL(t ?? (typeof window < "u" ? window.location.href : "https://example.com/"));
-    for (let o of [...n.searchParams.keys()]) fe.test(o) && n.searchParams.delete(o);
+    for (let o of [...n.searchParams.keys()]) ve.test(o) && n.searchParams.delete(o);
     e.openDevtools && n.searchParams.set("se", "1");
     for (let [o, r] of Object.entries(e.gates ?? {}))
       n.searchParams.set(`se_ks_${o}`, r ? "true" : "false");
     for (let [o, r] of Object.entries(e.experiments ?? {})) n.searchParams.set(`se_exp_${o}`, r);
-    for (let [o, r] of Object.entries(e.configs ?? {})) n.searchParams.set(`se_config_${o}`, ge(r));
+    for (let [o, r] of Object.entries(e.configs ?? {})) n.searchParams.set(`se_config_${o}`, be(r));
     (e.i18nProfile && n.searchParams.set("se_i18n", e.i18nProfile),
       e.i18nDraft && n.searchParams.set("se_i18n_draft", e.i18nDraft));
     for (let [o, r] of Object.entries(e.i18nLabels ?? {}))
       n.searchParams.set(`se_i18n_label_${o}`, r);
     return n.toString();
   }
-  function te() {
+  function oe() {
     let e = { gates: {}, experiments: {}, configs: {}, i18nLabels: {} };
     if (typeof window > "u") return e;
-    let t = J();
+    let t = Y();
     for (let [n, o] of t)
       if (n.startsWith("se_ks_")) {
-        let r = U(o);
+        let r = F(o);
         r !== null && (e.gates[n.slice(6)] = r);
       } else if (n.startsWith("se_gate_")) {
-        let r = U(o);
+        let r = F(o);
         r !== null && (e.gates[n.slice(8)] = r);
       } else if (n.startsWith("se-gate-")) {
-        let r = U(o);
+        let r = F(o);
         r !== null && (e.gates[n.slice(8)] = r);
       } else
         n.startsWith("se_exp_") || n.startsWith("se-exp-")
           ? (e.experiments[n.slice(7)] = o)
           : n.startsWith("se_config_") || n.startsWith("se-config-")
-            ? (e.configs[n.slice(10)] = G(o))
+            ? (e.configs[n.slice(10)] = V(o))
             : n === "se_i18n"
               ? (e.i18nProfile = o)
               : n === "se_i18n_draft"
@@ -1225,16 +1219,16 @@ select.se-input { cursor: pointer; }
                 : n.startsWith("se_i18n_label_") && (e.i18nLabels[n.slice(14)] = o);
     return e;
   }
-  function Le(e) {
+  function Te(e) {
     if (typeof window > "u") return;
-    let t = { ...te(), ...e, openDevtools: !0 },
-      n = ee(t);
+    let t = { ...oe(), ...e, openDevtools: !0 },
+      n = ne(t);
     window.location.assign(n);
   }
-  var N = class {
+  var K = class {
     constructor(t, n) {
-      K(this, "adminUrl", t);
-      K(this, "token", n);
+      G(this, "adminUrl", t);
+      G(this, "token", n);
     }
     async get(t) {
       let n = await fetch(`${this.adminUrl}${t}`, {
@@ -1348,28 +1342,28 @@ select.se-input { cursor: pointer; }
     return `
     <div class="empty-state">
       <div class="empty-icon">${e.icon}</div>
-      <div class="empty-title">${ne(e.title)}</div>
-      <div class="empty-msg">${ne(e.message)}</div>
-      <a class="empty-cta" href="${e.ctaHref}" target="_blank" rel="noopener">${ne(e.ctaLabel)}</a>
+      <div class="empty-title">${re(e.title)}</div>
+      <div class="empty-msg">${re(e.message)}</div>
+      <a class="empty-cta" href="${e.ctaHref}" target="_blank" rel="noopener">${re(e.ctaLabel)}</a>
     </div>`;
   }
-  function ne(e) {
+  function re(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function Ye() {
+  function nt() {
     return window.__shipeasy ?? null;
   }
-  function Ze(e) {
-    let t = V(e.name),
-      n = Ye()?.getFlag(e.name);
+  function ot(e) {
+    let t = X(e.name),
+      n = nt()?.getFlag(e.name);
     return (t !== null ? t : (n ?? e.enabled))
       ? '<span class="badge badge-on">ON</span>'
       : '<span class="badge badge-off">OFF</span>';
   }
-  function Qe(e, t) {
+  function rt(e, t) {
     let n = (o) => (t === (o === "on" ? !0 : o === "off" ? !1 : null) ? " sel" : "");
     return `
     <div class="tog" data-gate="${e}">
@@ -1378,7 +1372,7 @@ select.se-input { cursor: pointer; }
       <button class="tog-btn${n("off")}" data-v="off">OFF</button>
     </div>`;
   }
-  async function Se(e, t) {
+  async function $e(e, t) {
     e.innerHTML = '<div class="loading">Loading gates\u2026</div>';
     let n;
     try {
@@ -1406,8 +1400,8 @@ select.se-input { cursor: pointer; }
             <div class="row-name">${a.name}</div>
             <div class="row-sub">${a.rolloutPct}% rollout</div>
           </div>
-          ${Ze(a)}
-          ${Qe(a.name, V(a.name))}
+          ${ot(a)}
+          ${rt(a.name, X(a.name))}
         </div>`,
         )
         .join("")),
@@ -1415,7 +1409,7 @@ select.se-input { cursor: pointer; }
           a.addEventListener("click", () => {
             let s = a.closest("[data-gate]").dataset.gate,
               i = a.dataset.v;
-            (ve(s, i === "default" ? null : i === "on"), o());
+            (xe(s, i === "default" ? null : i === "on"), o());
           });
         }));
     }
@@ -1423,14 +1417,14 @@ select.se-input { cursor: pointer; }
     let r = () => o();
     window.addEventListener("se:state:update", r);
   }
-  function et(e) {
+  function st(e) {
     let t = typeof e == "string" ? e : JSON.stringify(e);
     return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
   }
-  function tt(e) {
-    return X(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
+  function at(e) {
+    return Z(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
   }
-  async function Me(e, t) {
+  async function Re(e, t) {
     e.innerHTML = '<div class="loading">Loading configs\u2026</div>';
     let n;
     try {
@@ -1453,14 +1447,14 @@ select.se-input { cursor: pointer; }
     function r() {
       ((e.innerHTML = n
         .map((s) => {
-          let i = X(s.name),
+          let i = Z(s.name),
             c = i !== void 0 ? i : s.valueJson,
             f = o.has(s.name);
           return `
           <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${s.name}">
             <div style="display:flex;align-items:center;gap:8px">
               <div class="row-name">${s.name}</div>
-              ${tt(s.name)}
+              ${at(s.name)}
               ${f ? `<button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${s.name}">edit</button>`}
             </div>
             ${
@@ -1472,7 +1466,7 @@ select.se-input { cursor: pointer; }
                   <button class="ibtn save-local" data-name="${s.name}">Save (local)</button>
                   ${i !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${s.name}">clear</button>` : ""}
                 </div>`
-                : `<div class="mono val-display">${et(c)}</div>`
+                : `<div class="mono val-display">${st(c)}</div>`
             }
           </div>`;
         })
@@ -1492,8 +1486,8 @@ select.se-input { cursor: pointer; }
           f = e.querySelector(`textarea[data-name="${c}"]`);
         if (f)
           try {
-            let b = JSON.parse(f.value);
-            (Y(c, b, i), o.delete(c), r());
+            let h = JSON.parse(f.value);
+            (Q(c, h, i), o.delete(c), r());
           } catch {
             f.style.borderColor = "#f87171";
           }
@@ -1506,20 +1500,20 @@ select.se-input { cursor: pointer; }
         }),
         e.querySelectorAll(".clear-ov").forEach((s) => {
           s.addEventListener("click", () => {
-            (Y(s.dataset.name, null), o.delete(s.dataset.name), r());
+            (Q(s.dataset.name, null), o.delete(s.dataset.name), r());
           });
         }));
     }
     r();
   }
-  function nt() {
+  function it() {
     return window.__shipeasy ?? null;
   }
-  function ot(e) {
+  function lt(e) {
     return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
   }
-  function rt(e) {
-    let t = be(e.name),
+  function dt(e) {
+    let t = ye(e.name),
       n = ["control", ...e.groups.map((r) => r.name)],
       o = [
         `<option value="" ${t === null ? "selected" : ""}>default</option>`,
@@ -1527,26 +1521,26 @@ select.se-input { cursor: pointer; }
       ].join("");
     return `<select class="sel-input exp-sel" data-name="${e.name}">${o}</select>`;
   }
-  function st(e) {
-    let t = nt()?.getExperiment(e);
+  function ct(e) {
+    let t = it()?.getExperiment(e);
     return t
       ? t.inExperiment
         ? `<span class="badge badge-run">${t.group}</span>`
         : '<span class="badge badge-draft">not enrolled</span>'
       : "";
   }
-  function at(e) {
+  function pt(e) {
     return `
     <div class="row">
       <div style="flex:1;min-width:0">
         <div class="row-name">${e.name}</div>
       </div>
-      ${ot(e.status)}
-      ${e.status === "running" ? st(e.name) : ""}
-      ${e.status === "running" ? rt(e) : ""}
+      ${lt(e.status)}
+      ${e.status === "running" ? ct(e.name) : ""}
+      ${e.status === "running" ? dt(e) : ""}
     </div>`;
   }
-  function Te(e, t, n, o) {
+  function _e(e, t, n, o) {
     let r = n.filter((c) => c.universe === t.name);
     if (r.length === 0) {
       e.innerHTML = $({
@@ -1560,16 +1554,16 @@ select.se-input { cursor: pointer; }
     }
     let a = r.filter((c) => c.status === "running"),
       s = r.filter((c) => c.status !== "running"),
-      i = (c, f) => (c.length === 0 ? "" : `<div class="sec-head">${f}</div>${c.map(at).join("")}`);
+      i = (c, f) => (c.length === 0 ? "" : `<div class="sec-head">${f}</div>${c.map(pt).join("")}`);
     ((e.innerHTML = i(a, "Running") + i(s, "Other")),
       e.querySelectorAll(".exp-sel").forEach((c) => {
         c.addEventListener("change", () => {
           let f = c.dataset.name;
-          he(f, c.value || null);
+          we(f, c.value || null);
         });
       }));
   }
-  async function $e(e, t) {
+  async function Pe(e, t) {
     e.innerHTML = '<div class="loading">Loading\u2026</div>';
     let n, o;
     try {
@@ -1608,16 +1602,16 @@ select.se-input { cursor: pointer; }
         }));
       let i = e.querySelector(".tab-body"),
         c = o.find((f) => f.name === r.activeUniverse);
-      Te(i, c, n, t.adminUrl);
+      _e(i, c, n, t.adminUrl);
     }
     (a(),
       window.addEventListener("se:state:update", () => {
         let s = e.querySelector(".tab-body"),
           i = o.find((c) => c.name === r.activeUniverse);
-        s && i && Te(s, i, n, t.adminUrl);
+        s && i && _e(s, i, n, t.adminUrl);
       }));
   }
-  function it(e) {
+  function ut(e) {
     let t = new Map();
     for (let n of e) {
       let o = n.key.split("."),
@@ -1627,21 +1621,21 @@ select.se-input { cursor: pointer; }
       let s = t.get(r);
       for (let i = 0; i < a.length; i++) {
         let c = a[i],
-          f = s.children.find((b) => b.segment === c);
+          f = s.children.find((h) => h.segment === c);
         (f || ((f = { segment: c, children: [] }), s.children.push(f)), (s = f));
       }
       ((s.value = n.value), (s.fullKey = n.key));
     }
-    for (let n of t.values()) Re(n);
+    for (let n of t.values()) Ce(n);
     return t;
   }
-  function Re(e) {
+  function Ce(e) {
     e.children.sort((t, n) => {
       let o = t.value !== void 0,
         r = n.value !== void 0;
       return o !== r ? (o ? 1 : -1) : t.segment.localeCompare(n.segment);
     });
-    for (let t of e.children) Re(t);
+    for (let t of e.children) Ce(t);
   }
   function S(e) {
     return e.replace(
@@ -1649,10 +1643,10 @@ select.se-input { cursor: pointer; }
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function _e(e, t) {
+  function Oe(e, t) {
     let n = t * 14 + 6;
     if (e.value !== void 0) {
-      let r = e.fullKey ? ke(e.fullKey) : null,
+      let r = e.fullKey ? Se(e.fullKey) : null,
         a = r ?? e.value;
       return `
       <div class="tree-row leaf" style="padding-left:${n}px" data-key="${S(e.fullKey ?? "")}">
@@ -1660,7 +1654,7 @@ select.se-input { cursor: pointer; }
         <span class="tree-val${r !== null ? " overridden" : ""}" title="${S(a)}">${S(a)}</span>
       </div>`;
     }
-    let o = e.children.map((r) => _e(r, t + 1)).join("");
+    let o = e.children.map((r) => Oe(r, t + 1)).join("");
     return `
     <div class="tree-row branch" style="padding-left:${n}px">
       <span class="tree-caret">\u25BE</span>
@@ -1668,25 +1662,59 @@ select.se-input { cursor: pointer; }
     </div>
     ${o}`;
   }
-  var A = "__se_label_target",
-    F = !1,
-    oe = null,
-    C = null;
-  function j() {
+  var _ = "__se_label_target",
+    ae = "__se_label_target_style",
+    D = !1,
+    se = null,
+    A = null;
+  function ft() {
+    if (document.getElementById(ae)) return;
+    let e = document.createElement("style");
+    ((e.id = ae),
+      (e.textContent = `
+    .${_} {
+      outline: 2px solid #4ade80 !important;
+      outline-offset: 2px !important;
+      cursor: pointer !important;
+      background-color: color-mix(in oklab, #4ade80 14%, transparent) !important;
+      border-radius: 3px !important;
+      box-shadow: 0 0 0 1px color-mix(in oklab, #4ade80 25%, transparent) !important;
+      transition:
+        background-color 0.12s,
+        box-shadow 0.12s,
+        outline-color 0.12s !important;
+      position: relative;
+    }
+    .${_}:hover,
+    .${_}.__se_label_active {
+      background-color: color-mix(in oklab, #4ade80 28%, transparent) !important;
+      box-shadow:
+        0 0 0 4px color-mix(in oklab, #4ade80 35%, transparent),
+        0 4px 14px color-mix(in oklab, #4ade80 30%, transparent) !important;
+      outline-color: #6ee7a0 !important;
+      z-index: 1;
+    }
+  `),
+      document.head.appendChild(e));
+  }
+  function He() {
+    document.getElementById(ae)?.remove();
+  }
+  function B() {
     return Array.from(document.querySelectorAll("[data-label]"));
   }
-  function _() {
-    (C?.remove(),
-      (C = null),
-      document.querySelectorAll(`.${A}.__se_label_active`).forEach((e) => {
+  function H() {
+    (A?.remove(),
+      (A = null),
+      document.querySelectorAll(`.${_}.__se_label_active`).forEach((e) => {
         e.classList.remove("__se_label_active");
       }));
   }
-  function lt(e, t) {
-    (_(), e.classList.add("__se_label_active"));
+  function gt(e, t) {
+    (H(), e.classList.add("__se_label_active"));
     let n = e.dataset.label ?? "",
       o = e.dataset.labelDesc ?? "",
-      a = Z() ?? "default";
+      a = ee() ?? "default";
     e.dataset.__seOriginal === void 0 && (e.dataset.__seOriginal = e.textContent ?? "");
     let s = e.textContent ?? "",
       i = document.createElement("div");
@@ -1717,50 +1745,52 @@ select.se-input { cursor: pointer; }
       t.appendChild(i));
     let c = e.getBoundingClientRect(),
       f = i.offsetHeight,
-      b = i.offsetWidth,
-      g = 8,
-      y = c.bottom + g;
-    y + f > window.innerHeight - 8 && (y = Math.max(8, c.top - f - g));
-    let w = c.left;
-    (w + b > window.innerWidth - 8 && (w = Math.max(8, window.innerWidth - b - 8)),
+      h = i.offsetWidth,
+      u = 8,
+      y = c.bottom + u;
+    y + f > window.innerHeight - 8 && (y = Math.max(8, c.top - f - u));
+    let E = c.left;
+    (E + h > window.innerWidth - 8 && (E = Math.max(8, window.innerWidth - h - 8)),
       (i.style.top = `${y}px`),
-      (i.style.left = `${w}px`));
+      (i.style.left = `${E}px`));
     let x = i.querySelector(".lp-input");
     (x.focus(),
       x.select(),
-      i.querySelector(".lp-close").addEventListener("click", _),
+      i.querySelector(".lp-close").addEventListener("click", H),
       i.querySelector('[data-action="save"]').addEventListener("click", () => {
         let p = x.value;
         ((e.textContent = p),
-          Q(n, p),
+          te(n, p),
           window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: n, value: p } })),
-          _());
+          H());
       }),
       i.querySelector('[data-action="reset"]').addEventListener("click", () => {
         let p = e.dataset.__seOriginal ?? "";
         ((e.textContent = p),
-          Q(n, null),
+          te(n, null),
           window.dispatchEvent(
             new CustomEvent("se:i18n:edit", { detail: { key: n, value: null } }),
           ),
-          _());
+          H());
       }),
       i.addEventListener("click", (p) => p.stopPropagation()),
       i.addEventListener("mousedown", (p) => p.stopPropagation()),
-      (C = i));
+      (A = i));
   }
-  function dt(e, t, n) {
-    if (((F = e), oe?.(), (oe = null), !e)) {
-      _();
-      for (let g of j()) g.classList.remove(A);
+  function mt(e, t, n) {
+    if (((D = e), se?.(), (se = null), !e)) {
+      H();
+      for (let u of B()) u.classList.remove(_);
+      He();
       return;
     }
-    for (let g of j()) g.classList.add(A);
-    function o(g) {
-      return C !== null && g.composedPath().includes(C);
+    ft();
+    for (let u of B()) u.classList.add(_);
+    function o(u) {
+      return A !== null && u.composedPath().includes(A);
     }
-    function r(g) {
-      for (let y of g.composedPath())
+    function r(u) {
+      for (let y of u.composedPath())
         if (y instanceof HTMLElement && y.hasAttribute("data-label")) return y;
       return null;
     }
@@ -1776,41 +1806,42 @@ select.se-input { cursor: pointer; }
       "submit",
       "auxclick",
     ];
-    function s(g) {
-      o(g) || (r(g) && (g.preventDefault(), g.stopPropagation(), g.stopImmediatePropagation()));
+    function s(u) {
+      o(u) || (r(u) && (u.preventDefault(), u.stopPropagation(), u.stopImmediatePropagation()));
     }
-    function i(g) {
-      if (o(g)) return;
-      let y = r(g);
-      y && (g.preventDefault(), g.stopPropagation(), g.stopImmediatePropagation(), lt(y, t));
+    function i(u) {
+      if (o(u)) return;
+      let y = r(u);
+      y && (u.preventDefault(), u.stopPropagation(), u.stopImmediatePropagation(), gt(y, t));
     }
-    function c(g) {
-      C && (o(g) || r(g) || _());
+    function c(u) {
+      A && (o(u) || r(u) || H());
     }
-    function f(g) {
-      g.key === "Escape" && _();
+    function f(u) {
+      u.key === "Escape" && H();
     }
-    let b = new MutationObserver(() => {
-      if (F) {
-        for (let g of j()) g.classList.add(A);
+    let h = new MutationObserver(() => {
+      if (D) {
+        for (let u of B()) u.classList.add(_);
         n();
       }
     });
-    b.observe(document.body, { childList: !0, subtree: !0 });
-    for (let g of a) document.addEventListener(g, s, !0);
+    h.observe(document.body, { childList: !0, subtree: !0 });
+    for (let u of a) document.addEventListener(u, s, !0);
     (document.addEventListener("click", i, !0),
       document.addEventListener("mousedown", c, !0),
       document.addEventListener("keydown", f),
-      (oe = () => {
-        for (let g of a) document.removeEventListener(g, s, !0);
+      (se = () => {
+        for (let u of a) document.removeEventListener(u, s, !0);
         (document.removeEventListener("click", i, !0),
           document.removeEventListener("mousedown", c, !0),
           document.removeEventListener("keydown", f),
-          b.disconnect());
-        for (let g of j()) g.classList.remove(A);
+          h.disconnect());
+        for (let u of B()) u.classList.remove(_);
+        He();
       }));
   }
-  async function Pe(e, t, n, o) {
+  async function Ae(e, t, n, o) {
     ((e.innerHTML = '<div class="loading">Loading i18n data\u2026</div>'), (n.innerHTML = ""));
     let r, a, s;
     try {
@@ -1819,10 +1850,10 @@ select.se-input { cursor: pointer; }
       e.innerHTML = `<div class="err">Failed to load i18n data: ${String(y)}</div>`;
       return;
     }
-    let i = it(s),
+    let i = ut(s),
       c = Array.from(i.keys()),
       f = { activeChunk: c[0] ?? null };
-    function b() {
+    function h() {
       if (c.length === 0) {
         e.innerHTML = $({
           icon: "\u{1F310}",
@@ -1839,56 +1870,66 @@ select.se-input { cursor: pointer; }
               `<button class="tab${p === f.activeChunk ? " active" : ""}" data-chunk="${S(p)}">${S(p)}</button>`,
           )
           .join(""),
-        w = f.activeChunk ? i.get(f.activeChunk) : null,
-        x = w ? w.children.map((p) => _e(p, 0)).join("") : "";
+        E = f.activeChunk ? i.get(f.activeChunk) : null,
+        x = E ? E.children.map((p) => Oe(p, 0)).join("") : "";
       ((e.innerHTML = `
       <div class="tabs scroll" id="chunk-tabs">${y}</div>
       <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${x}</div>`),
         e.querySelectorAll(".tab[data-chunk]").forEach((p) => {
           p.addEventListener("click", () => {
-            ((f.activeChunk = p.dataset.chunk), b());
+            ((f.activeChunk = p.dataset.chunk), h());
           });
         }));
     }
-    function g() {
-      let y = Z() ?? "",
-        w = ye() ?? "",
-        x = [
+    function u() {
+      let y = ee() ?? "",
+        E = Ee() ?? "",
+        x = B().length,
+        p = D
+          ? `Editing ${x} label${x === 1 ? "" : "s"}`
+          : x === 0
+            ? "No labels found"
+            : `Edit labels (${x})`,
+        l =
+          x === 0
+            ? "No [data-label] elements on this page. Wrap copy in <ShipEasyI18nString> to make it editable."
+            : "Toggle in-page label editing",
+        v = [
           '<option value="">Default</option>',
           ...r.map(
-            (l) =>
-              `<option value="${S(l.id)}" ${y === l.id ? "selected" : ""}>${S(l.name)}</option>`,
+            (w) =>
+              `<option value="${S(w.id)}" ${y === w.id ? "selected" : ""}>${S(w.name)}</option>`,
           ),
         ].join(""),
-        p = [
+        k = [
           '<option value="">No draft</option>',
           ...a.map(
-            (l) =>
-              `<option value="${S(l.id)}" ${w === l.id ? "selected" : ""}>${S(l.name)}</option>`,
+            (w) =>
+              `<option value="${S(w.id)}" ${E === w.id ? "selected" : ""}>${S(w.name)}</option>`,
           ),
         ].join("");
       ((n.innerHTML = `
-      <button class="subfoot-btn${F ? " on" : ""}" id="se-edit-toggle" title="Toggle in-page label editing">
+      <button class="subfoot-btn${D ? " on" : ""}${x === 0 ? " dim" : ""}" id="se-edit-toggle" title="${S(l)}">
         <span class="dot"></span>
-        Edit labels
+        ${S(p)}
       </button>
-      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${x}</select>
-      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${p}</select>`),
+      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${v}</select>
+      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${k}</select>`),
         n.querySelector("#se-edit-toggle").addEventListener("click", () => {
-          (dt(!F, o, () => {}), g());
+          (mt(!D, o, () => u()), u());
         }),
-        n.querySelector("#se-profile-sel").addEventListener("change", (l) => {
-          let m = l.target.value || null;
-          xe(m);
+        n.querySelector("#se-profile-sel").addEventListener("change", (w) => {
+          let b = w.target.value || null;
+          ke(b);
         }),
-        n.querySelector("#se-draft-sel").addEventListener("change", (l) => {
-          let m = l.target.value || null;
-          we(m);
+        n.querySelector("#se-draft-sel").addEventListener("change", (w) => {
+          let b = w.target.value || null;
+          Le(b);
         }));
     }
-    (b(), g());
+    (h(), u());
   }
-  function q(e, t) {
+  function I(e, t) {
     let n = document.createElement("div");
     n.className = "se-modal-overlay";
     let o = document.createElement("div");
@@ -1910,25 +1951,25 @@ select.se-input { cursor: pointer; }
     ((i.className = "se-modal-body"), o.appendChild(i));
     function c() {
       (n.removeEventListener("click", f),
-        document.removeEventListener("keydown", b),
+        document.removeEventListener("keydown", h),
         n.remove(),
         t.onClose?.());
     }
-    function f(g) {
-      g.target === n && c();
+    function f(u) {
+      u.target === n && c();
     }
-    function b(g) {
-      g.key === "Escape" && c();
+    function h(u) {
+      u.key === "Escape" && c();
     }
     return (
       n.addEventListener("click", f),
-      document.addEventListener("keydown", b),
+      document.addEventListener("keydown", h),
       s.addEventListener("click", c),
       e.appendChild(n),
       { body: i, root: o, close: c }
     );
   }
-  async function He() {
+  async function qe() {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let e = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !1 });
@@ -1965,7 +2006,7 @@ select.se-input { cursor: pointer; }
       e.getTracks().forEach((t) => t.stop());
     }
   }
-  async function Ce() {
+  async function Be() {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let e = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !0 }),
@@ -2012,36 +2053,36 @@ select.se-input { cursor: pointer; }
       },
     };
   }
-  var Oe = ["#f87171", "#fbbf24", "#4ade80", "#60a5fa"];
-  async function Ae(e) {
+  var De = ["#f87171", "#fbbf24", "#4ade80", "#60a5fa"];
+  async function Ie(e) {
     let t = URL.createObjectURL(e),
-      n = await new Promise((d, u) => {
-        let v = new Image();
-        ((v.onload = () => d(v)),
-          (v.onerror = () => u(new Error("Failed to load screenshot for annotation."))),
-          (v.src = t));
+      n = await new Promise((d, m) => {
+        let g = new Image();
+        ((g.onload = () => d(g)),
+          (g.onerror = () => m(new Error("Failed to load screenshot for annotation."))),
+          (g.src = t));
       }),
       o = document.createElement("div");
     o.className = "se-annot";
     let r = document.createElement("div");
     ((r.className = "se-annot-toolbar"), o.appendChild(r));
     let a = "arrow",
-      s = Oe[0],
+      s = De[0],
       i = [];
-    function c(d, u) {
-      let v = document.createElement("button");
+    function c(d, m) {
+      let g = document.createElement("button");
       return (
-        (v.type = "button"),
-        (v.className = "se-annot-btn"),
-        (v.dataset.tool = d),
-        (v.textContent = u),
-        v.addEventListener("click", () => {
+        (g.type = "button"),
+        (g.className = "se-annot-btn"),
+        (g.dataset.tool = d),
+        (g.textContent = m),
+        g.addEventListener("click", () => {
           ((a = d),
             r
               .querySelectorAll("[data-tool]")
               .forEach((L) => L.classList.toggle("on", L.dataset.tool === d)));
         }),
-        v
+        g
       );
     }
     let f = c("arrow", "\u2197 arrow");
@@ -2049,152 +2090,152 @@ select.se-input { cursor: pointer; }
       r.appendChild(f),
       r.appendChild(c("rect", "\u25AD rect")),
       r.appendChild(c("text", "T text")));
-    let b = document.createElement("span");
-    ((b.className = "se-annot-sep"), r.appendChild(b));
-    for (let d of Oe) {
-      let u = document.createElement("button");
-      ((u.type = "button"),
-        (u.className = "se-annot-swatch"),
-        (u.dataset.color = d),
-        (u.style.background = d),
-        d === s && u.classList.add("on"),
-        u.addEventListener("click", () => {
+    let h = document.createElement("span");
+    ((h.className = "se-annot-sep"), r.appendChild(h));
+    for (let d of De) {
+      let m = document.createElement("button");
+      ((m.type = "button"),
+        (m.className = "se-annot-swatch"),
+        (m.dataset.color = d),
+        (m.style.background = d),
+        d === s && m.classList.add("on"),
+        m.addEventListener("click", () => {
           ((s = d),
             r
               .querySelectorAll("[data-color]")
-              .forEach((v) => v.classList.toggle("on", v.dataset.color === d)));
+              .forEach((g) => g.classList.toggle("on", g.dataset.color === d)));
         }),
-        r.appendChild(u));
+        r.appendChild(m));
     }
-    let g = document.createElement("button");
-    ((g.type = "button"),
-      (g.className = "se-annot-btn"),
-      (g.textContent = "\u21B6 undo"),
-      g.addEventListener("click", () => {
-        (i.pop(), h());
+    let u = document.createElement("button");
+    ((u.type = "button"),
+      (u.className = "se-annot-btn"),
+      (u.textContent = "\u21B6 undo"),
+      u.addEventListener("click", () => {
+        (i.pop(), w());
       }),
-      r.appendChild(g));
+      r.appendChild(u));
     let y = document.createElement("button");
     ((y.type = "button"),
       (y.className = "se-annot-btn"),
       (y.textContent = "clear"),
       y.addEventListener("click", () => {
-        ((i.length = 0), h());
+        ((i.length = 0), w());
       }),
       r.appendChild(y));
-    let w = document.createElement("div");
-    ((w.className = "se-annot-stage"), o.appendChild(w));
+    let E = document.createElement("div");
+    ((E.className = "se-annot-stage"), o.appendChild(E));
     let x = document.createElement("canvas");
     ((x.width = n.naturalWidth),
       (x.height = n.naturalHeight),
       (x.className = "se-annot-canvas"),
       (x.style.cursor = "crosshair"),
       (x.style.touchAction = "none"),
-      w.appendChild(x));
+      E.appendChild(x));
     let p = x.getContext("2d");
     function l(d) {
-      let u = x.getBoundingClientRect(),
-        v = x.width / u.width,
-        L = x.height / u.height;
-      return { x: (d.clientX - u.left) * v, y: (d.clientY - u.top) * L };
+      let m = x.getBoundingClientRect(),
+        g = x.width / m.width,
+        L = x.height / m.height;
+      return { x: (d.clientX - m.left) * g, y: (d.clientY - m.top) * L };
     }
-    function m() {
+    function v() {
       return Math.max(2, Math.round(n.naturalWidth / 400));
     }
-    function E(d) {
+    function k(d) {
       if (
         (p.save(),
         (p.strokeStyle = d.color),
         (p.fillStyle = d.color),
-        (p.lineWidth = m()),
+        (p.lineWidth = v()),
         (p.lineCap = "round"),
         (p.lineJoin = "round"),
         d.tool === "rect")
       ) {
-        let u = Math.min(d.x1, d.x2),
-          v = Math.min(d.y1, d.y2),
+        let m = Math.min(d.x1, d.x2),
+          g = Math.min(d.y1, d.y2),
           L = Math.abs(d.x2 - d.x1),
           M = Math.abs(d.y2 - d.y1);
-        p.strokeRect(u, v, L, M);
+        p.strokeRect(m, g, L, M);
       } else if (d.tool === "arrow") {
         (p.beginPath(), p.moveTo(d.x1, d.y1), p.lineTo(d.x2, d.y2), p.stroke());
-        let u = Math.atan2(d.y2 - d.y1, d.x2 - d.x1),
-          v = m() * 5;
+        let m = Math.atan2(d.y2 - d.y1, d.x2 - d.x1),
+          g = v() * 5;
         (p.beginPath(),
           p.moveTo(d.x2, d.y2),
-          p.lineTo(d.x2 - v * Math.cos(u - Math.PI / 6), d.y2 - v * Math.sin(u - Math.PI / 6)),
-          p.lineTo(d.x2 - v * Math.cos(u + Math.PI / 6), d.y2 - v * Math.sin(u + Math.PI / 6)),
+          p.lineTo(d.x2 - g * Math.cos(m - Math.PI / 6), d.y2 - g * Math.sin(m - Math.PI / 6)),
+          p.lineTo(d.x2 - g * Math.cos(m + Math.PI / 6), d.y2 - g * Math.sin(m + Math.PI / 6)),
           p.closePath(),
           p.fill());
       } else if (d.tool === "text" && d.text) {
-        let u = Math.max(14, Math.round(n.naturalWidth / 60));
-        ((p.font = `600 ${u}px ui-sans-serif, system-ui, sans-serif`), (p.textBaseline = "top"));
-        let v = u * 0.3,
-          M = p.measureText(d.text).width + v * 2,
-          T = u + v * 2;
+        let m = Math.max(14, Math.round(n.naturalWidth / 60));
+        ((p.font = `600 ${m}px ui-sans-serif, system-ui, sans-serif`), (p.textBaseline = "top"));
+        let g = m * 0.3,
+          M = p.measureText(d.text).width + g * 2,
+          T = m + g * 2;
         ((p.fillStyle = "rgba(0,0,0,0.55)"),
           p.fillRect(d.x1, d.y1, M, T),
           (p.fillStyle = d.color),
-          p.fillText(d.text, d.x1 + v, d.y1 + v));
+          p.fillText(d.text, d.x1 + g, d.y1 + g));
       }
       p.restore();
     }
-    function h(d) {
+    function w(d) {
       (p.clearRect(0, 0, x.width, x.height), p.drawImage(n, 0, 0));
-      for (let u of i) E(u);
-      d && E(d);
+      for (let m of i) k(m);
+      d && k(d);
     }
-    h();
-    let k = null;
+    w();
+    let b = null;
     return (
       x.addEventListener("pointerdown", (d) => {
         d.preventDefault();
-        let u = l(d);
+        let m = l(d);
         if (a === "text") {
-          let v = prompt("Annotation text:");
-          v &&
-            v.trim() &&
-            (i.push({ tool: "text", color: s, x1: u.x, y1: u.y, x2: u.x, y2: u.y, text: v.trim() }),
-            h());
+          let g = prompt("Annotation text:");
+          g &&
+            g.trim() &&
+            (i.push({ tool: "text", color: s, x1: m.x, y1: m.y, x2: m.x, y2: m.y, text: g.trim() }),
+            w());
           return;
         }
-        ((k = { x1: u.x, y1: u.y }), x.setPointerCapture(d.pointerId));
+        ((b = { x1: m.x, y1: m.y }), x.setPointerCapture(d.pointerId));
       }),
       x.addEventListener("pointermove", (d) => {
-        if (!k) return;
-        let u = l(d);
-        h({ tool: a, color: s, x1: k.x1, y1: k.y1, x2: u.x, y2: u.y });
+        if (!b) return;
+        let m = l(d);
+        w({ tool: a, color: s, x1: b.x1, y1: b.y1, x2: m.x, y2: m.y });
       }),
       x.addEventListener("pointerup", (d) => {
-        if (!k) return;
-        let u = l(d),
-          v = Math.abs(u.x - k.x1),
-          L = Math.abs(u.y - k.y1);
-        ((v > 4 || L > 4) && i.push({ tool: a, color: s, x1: k.x1, y1: k.y1, x2: u.x, y2: u.y }),
-          (k = null),
-          h());
+        if (!b) return;
+        let m = l(d),
+          g = Math.abs(m.x - b.x1),
+          L = Math.abs(m.y - b.y1);
+        ((g > 4 || L > 4) && i.push({ tool: a, color: s, x1: b.x1, y1: b.y1, x2: m.x, y2: m.y }),
+          (b = null),
+          w());
       }),
       {
         root: o,
         async export() {
-          let d = await new Promise((u, v) => {
-            x.toBlob((L) => (L ? u(L) : v(new Error("toBlob failed"))), "image/png");
+          let d = await new Promise((m, g) => {
+            x.toBlob((L) => (L ? m(L) : g(new Error("toBlob failed"))), "image/png");
           });
           return (URL.revokeObjectURL(t), d);
         },
       }
     );
   }
-  function B(e) {
+  function z(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function ct(e) {
+  function vt(e) {
     return `<span class="badge ${e === "open" ? "badge-run" : e === "resolved" ? "badge-on" : e === "wont_fix" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
   }
-  function pt(e) {
+  function bt(e) {
     let t = Date.now() - Date.parse(e),
       n = Math.floor(t / 6e4);
     if (n < 1) return "just now";
@@ -2202,14 +2243,14 @@ select.se-input { cursor: pointer; }
     let o = Math.floor(n / 60);
     return o < 24 ? `${o}h ago` : `${Math.floor(o / 24)}d ago`;
   }
-  async function qe(e, t, n) {
+  async function ze(e, t, n) {
     async function o() {
       e.innerHTML = '<div class="loading">Loading bugs\u2026</div>';
       let a;
       try {
         a = await t.bugs();
       } catch (i) {
-        ((e.innerHTML = `<div class="err">Failed to load bugs: ${B(String(i))}</div>`), r());
+        ((e.innerHTML = `<div class="err">Failed to load bugs: ${z(String(i))}</div>`), r());
         return;
       }
       e.innerHTML = `
@@ -2229,22 +2270,22 @@ select.se-input { cursor: pointer; }
             <a class="row se-feedback-row" target="_blank" rel="noopener"
                href="${t.adminUrl}/dashboard/bugs/${i.id}">
               <div style="flex:1;min-width:0">
-                <div class="row-name">${B(i.title)}</div>
-                <div class="row-sub">${pt(i.createdAt)}${i.reporterEmail ? ` \xB7 ${B(i.reporterEmail)}` : ""}</div>
+                <div class="row-name">${z(i.title)}</div>
+                <div class="row-sub">${bt(i.createdAt)}${i.reporterEmail ? ` \xB7 ${z(i.reporterEmail)}` : ""}</div>
               </div>
-              ${ct(i.status)}
+              ${vt(i.status)}
             </a>`,
             )
             .join("")),
         r());
     }
     function r() {
-      e.querySelector("#se-file-bug")?.addEventListener("click", () => ut(t, n, o));
+      e.querySelector("#se-file-bug")?.addEventListener("click", () => ht(t, n, o));
     }
     await o();
   }
-  function ut(e, t, n) {
-    let o = q(t, { title: "File a bug", size: "lg" }),
+  function ht(e, t, n) {
+    let o = I(t, { title: "File a bug", size: "lg" }),
       r = [],
       a = null;
     o.body.innerHTML = `
@@ -2288,69 +2329,69 @@ select.se-input { cursor: pointer; }
       i = o.body.querySelector("#se-b-steps"),
       c = o.body.querySelector("#se-b-actual"),
       f = o.body.querySelector("#se-b-expected"),
-      b = o.body.querySelector("#se-b-attach"),
-      g = o.body.querySelector("#se-b-status"),
+      h = o.body.querySelector("#se-b-attach"),
+      u = o.body.querySelector("#se-b-status"),
       y = o.body.querySelector("#se-b-file"),
-      w = o.body.querySelector("#se-b-record");
+      E = o.body.querySelector("#se-b-record");
     function x() {
       if (r.length === 0) {
-        b.innerHTML = "";
+        h.innerHTML = "";
         return;
       }
-      ((b.innerHTML = r
+      ((h.innerHTML = r
         .map(
-          (l, m) => `
+          (l, v) => `
           <div class="se-attach-item">
-            <span>${B(l.filename)} <span class="dim">(${(l.blob.size / 1024).toFixed(0)} KB)</span></span>
-            <button type="button" class="ibtn danger" data-idx="${m}">remove</button>
+            <span>${z(l.filename)} <span class="dim">(${(l.blob.size / 1024).toFixed(0)} KB)</span></span>
+            <button type="button" class="ibtn danger" data-idx="${v}">remove</button>
           </div>`,
         )
         .join("")),
-        b.querySelectorAll("button[data-idx]").forEach((l) => {
+        h.querySelectorAll("button[data-idx]").forEach((l) => {
           l.addEventListener("click", () => {
             (r.splice(Number(l.dataset.idx), 1), x());
           });
         }));
     }
-    function p(l, m = !1) {
-      ((g.textContent = l), (g.style.color = m ? "var(--se-danger)" : "var(--se-fg-3)"));
+    function p(l, v = !1) {
+      ((u.textContent = l), (u.style.color = v ? "var(--se-danger)" : "var(--se-fg-3)"));
     }
     (o.body.querySelector("#se-b-screenshot").addEventListener("click", async () => {
       p("Pick a screen/tab to capture\u2026");
       try {
-        let l = await He();
+        let l = await qe();
         (p(""),
-          ft(t, l, (m) => {
-            (r.push({ kind: "screenshot", filename: `screenshot-${Date.now()}.png`, blob: m }),
+          xt(t, l, (v) => {
+            (r.push({ kind: "screenshot", filename: `screenshot-${Date.now()}.png`, blob: v }),
               x());
           }));
       } catch (l) {
         p(String(l instanceof Error ? l.message : l), !0);
       }
     }),
-      w.addEventListener("click", async () => {
+      E.addEventListener("click", async () => {
         if (a) {
           try {
-            ((w.disabled = !0), p("Finalizing recording\u2026"));
+            ((E.disabled = !0), p("Finalizing recording\u2026"));
             let l = await a.stop();
             ((a = null),
-              (w.textContent = "\u23FA Record screen"),
-              w.classList.remove("danger"),
+              (E.textContent = "\u23FA Record screen"),
+              E.classList.remove("danger"),
               r.push({ kind: "recording", filename: `recording-${Date.now()}.webm`, blob: l }),
               x(),
               p(""));
           } catch (l) {
             p(String(l instanceof Error ? l.message : l), !0);
           } finally {
-            w.disabled = !1;
+            E.disabled = !1;
           }
           return;
         }
         p("Pick a screen/tab to record\u2026");
         try {
-          ((a = await Ce()),
-            (w.textContent = "\u25A0 Stop recording"),
-            w.classList.add("danger"),
+          ((a = await Be()),
+            (E.textContent = "\u25A0 Stop recording"),
+            E.classList.add("danger"),
             p("Recording\u2026 click stop when done."));
         } catch (l) {
           (p(String(l instanceof Error ? l.message : l), !0), (a = null));
@@ -2366,15 +2407,15 @@ select.se-input { cursor: pointer; }
       }),
       o.body.querySelector("#se-b-submit").addEventListener("click", async () => {
         let l = o.body.querySelector("#se-b-submit"),
-          m = s.value.trim();
-        if (!m) {
+          v = s.value.trim();
+        if (!v) {
           (p("Title is required", !0), s.focus());
           return;
         }
         ((l.disabled = !0), p("Submitting\u2026"));
         try {
-          let E = await e.createBug({
-            title: m,
+          let k = await e.createBug({
+            title: v,
             stepsToReproduce: i.value,
             actualResult: c.value,
             expectedResult: f.value,
@@ -2382,25 +2423,25 @@ select.se-input { cursor: pointer; }
             userAgent: navigator.userAgent,
             viewport: `${window.innerWidth}x${window.innerHeight}`,
           });
-          for (let h = 0; h < r.length; h++) {
-            let k = r[h];
-            (p(`Uploading attachment ${h + 1}/${r.length}\u2026`),
+          for (let w = 0; w < r.length; w++) {
+            let b = r[w];
+            (p(`Uploading attachment ${w + 1}/${r.length}\u2026`),
               await e.uploadAttachment({
                 reportKind: "bug",
-                reportId: E.id,
-                kind: k.kind,
-                filename: k.filename,
-                blob: k.blob,
+                reportId: k.id,
+                kind: b.kind,
+                filename: b.filename,
+                blob: b.blob,
               }));
           }
           (o.close(), n());
-        } catch (E) {
-          (p(String(E instanceof Error ? E.message : E), !0), (l.disabled = !1));
+        } catch (k) {
+          (p(String(k instanceof Error ? k.message : k), !0), (l.disabled = !1));
         }
       }));
   }
-  function ft(e, t, n) {
-    let o = q(e, { title: "Annotate screenshot", size: "lg" });
+  function xt(e, t, n) {
+    let o = I(e, { title: "Annotate screenshot", size: "lg" });
     o.body.innerHTML = `<div class="se-annot-host" id="se-annot-host"></div>
     <div class="se-modal-footer">
       <button type="button" class="ibtn" id="se-a-cancel">Cancel</button>
@@ -2408,7 +2449,7 @@ select.se-input { cursor: pointer; }
     </div>`;
     let r = o.body.querySelector("#se-annot-host");
     ((r.innerHTML = '<div class="loading">Preparing annotator\u2026</div>'),
-      Ae(t)
+      Ie(t)
         .then((a) => {
           ((r.innerHTML = ""),
             r.appendChild(a.root),
@@ -2419,23 +2460,23 @@ select.se-input { cursor: pointer; }
             }));
         })
         .catch((a) => {
-          r.innerHTML = `<div class="err">${B(String(a))}</div>`;
+          r.innerHTML = `<div class="err">${z(String(a))}</div>`;
         }));
   }
-  function re(e) {
+  function ie(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function gt(e) {
+  function yt(e) {
     return `<span class="badge ${e === "open" ? "badge-run" : e === "shipped" ? "badge-on" : e === "declined" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
   }
-  function mt(e) {
+  function wt(e) {
     let t = e.replace("_", " ");
     return `<span class="badge ${e === "critical" ? "badge-off" : e === "important" ? "badge-run" : "badge-draft"}">${t}</span>`;
   }
-  function vt(e) {
+  function kt(e) {
     let t = Date.now() - Date.parse(e),
       n = Math.floor(t / 6e4);
     if (n < 1) return "just now";
@@ -2443,14 +2484,14 @@ select.se-input { cursor: pointer; }
     let o = Math.floor(n / 60);
     return o < 24 ? `${o}h ago` : `${Math.floor(o / 24)}d ago`;
   }
-  async function Be(e, t, n) {
+  async function Ue(e, t, n) {
     async function o() {
       e.innerHTML = '<div class="loading">Loading feature requests\u2026</div>';
       let r;
       try {
         r = await t.featureRequests();
       } catch (s) {
-        e.innerHTML = `<div class="err">Failed to load feature requests: ${re(String(s))}</div>`;
+        e.innerHTML = `<div class="err">Failed to load feature requests: ${ie(String(s))}</div>`;
         return;
       }
       e.innerHTML = `
@@ -2469,20 +2510,20 @@ select.se-input { cursor: pointer; }
             <a class="row se-feedback-row" target="_blank" rel="noopener"
                href="${t.adminUrl}/dashboard/feature-requests/${s.id}">
               <div style="flex:1;min-width:0">
-                <div class="row-name">${re(s.title)}</div>
-                <div class="row-sub">${vt(s.createdAt)}${s.reporterEmail ? ` \xB7 ${re(s.reporterEmail)}` : ""}</div>
+                <div class="row-name">${ie(s.title)}</div>
+                <div class="row-sub">${kt(s.createdAt)}${s.reporterEmail ? ` \xB7 ${ie(s.reporterEmail)}` : ""}</div>
               </div>
-              ${mt(s.importance)}
-              ${gt(s.status)}
+              ${wt(s.importance)}
+              ${yt(s.status)}
             </a>`,
             )
             .join("")),
-        e.querySelector("#se-file-fr").addEventListener("click", () => bt(t, n, o)));
+        e.querySelector("#se-file-fr").addEventListener("click", () => Et(t, n, o)));
     }
     await o();
   }
-  function bt(e, t, n) {
-    let o = q(t, { title: "Request a feature", size: "lg" });
+  function Et(e, t, n) {
+    let o = I(t, { title: "Request a feature", size: "lg" });
     o.body.innerHTML = `
     <div class="se-form">
       <label class="se-field">
@@ -2524,8 +2565,8 @@ select.se-input { cursor: pointer; }
           ((c.textContent = "Title is required"), (c.style.color = "var(--se-danger)"), r.focus());
           return;
         }
-        let b = o.body.querySelector("#se-f-submit");
-        ((b.disabled = !0),
+        let h = o.body.querySelector("#se-f-submit");
+        ((h.disabled = !0),
           (c.textContent = "Submitting\u2026"),
           (c.style.color = "var(--se-fg-3)"));
         try {
@@ -2539,56 +2580,69 @@ select.se-input { cursor: pointer; }
           }),
             o.close(),
             n());
-        } catch (g) {
-          ((c.textContent = String(g instanceof Error ? g.message : g)),
+        } catch (u) {
+          ((c.textContent = String(u instanceof Error ? u.message : u)),
             (c.style.color = "var(--se-danger)"),
-            (b.disabled = !1));
+            (h.disabled = !1));
         }
       }));
   }
-  var ht =
+  var Lt =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
-    xt =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
-    yt =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
-    wt =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
-    kt =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
-    Et =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
-    Lt =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
     St =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
+    Mt =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
+    Tt =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
+    $t =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
+    Rt =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
+    _t =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+    Pt =
       '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
-    se = {
-      gates: { icon: ht, label: "Gates" },
-      configs: { icon: xt, label: "Configs" },
-      experiments: { icon: yt, label: "Experiments" },
-      i18n: { icon: wt, label: "Translations" },
-      bugs: { icon: kt, label: "Bugs" },
-      features: { icon: Et, label: "Feature requests" },
+    W = {
+      gates: { icon: Lt, label: "Gates" },
+      configs: { icon: St, label: "Configs" },
+      experiments: { icon: Mt, label: "Experiments" },
+      i18n: { icon: Tt, label: "Translations" },
+      bugs: { icon: $t, label: "Bugs" },
+      features: { icon: Rt, label: "Feature requests" },
     },
-    Ne = "se_l_overlay",
-    ae = 240,
-    De = 580,
-    ie = 180,
-    ze = 700,
-    Ie = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
-  function Mt() {
+    Ge = "se_l_overlay",
+    le = "se_l_active_panel";
+  function Ht() {
     try {
-      let e = localStorage.getItem(Ne);
-      if (e) return { ...Ie, ...JSON.parse(e) };
+      let e = sessionStorage.getItem(le);
+      if (e && e in W) return e;
     } catch {}
-    return { ...Ie };
+    return null;
   }
-  function Ue(e) {
+  function Ne(e) {
     try {
-      localStorage.setItem(Ne, JSON.stringify(e));
+      e === null ? sessionStorage.removeItem(le) : sessionStorage.setItem(le, e);
     } catch {}
   }
-  function Tt(e, t) {
+  var de = 240,
+    je = 580,
+    ce = 180,
+    Fe = 700,
+    Ke = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
+  function Ct() {
+    try {
+      let e = localStorage.getItem(Ge);
+      if (e) return { ...Ke, ...JSON.parse(e) };
+    } catch {}
+    return { ...Ke };
+  }
+  function We(e) {
+    try {
+      localStorage.setItem(Ge, JSON.stringify(e));
+    } catch {}
+  }
+  function Ot(e, t) {
     let n = window.innerWidth,
       o = window.innerHeight,
       r = [
@@ -2602,21 +2656,21 @@ select.se-input { cursor: pointer; }
       i = Math.max(5, Math.min(95, a === "left" || a === "right" ? (t / o) * 100 : (e / n) * 100));
     return { edge: a, offsetPct: i };
   }
-  function D(e, t, n, o) {
+  function U(e, t, n, o) {
     let { edge: r, offsetPct: a, panelWidth: s, panelHeight: i } = o,
       c = window.innerWidth,
       f = window.innerHeight,
-      b = r === "left" || r === "right",
-      g = Math.max(ae, Math.min(s, c - 80)),
-      y = Math.max(ie, Math.min(i, f - 40)),
-      w = (a / 100) * (b ? f : c),
+      h = r === "left" || r === "right",
+      u = Math.max(de, Math.min(s, c - 80)),
+      y = Math.max(ce, Math.min(i, f - 40)),
+      E = (a / 100) * (h ? f : c),
       x = e.getBoundingClientRect(),
-      p = b ? x.width || 52 : x.height || 52,
+      p = h ? x.width || 52 : x.height || 52,
       l = e.style;
     ((l.top = l.bottom = l.left = l.right = l.transform = ""),
       (l.borderTop = l.borderBottom = l.borderLeft = l.borderRight = ""),
-      (l.flexDirection = b ? "column" : "row"),
-      (l.padding = b ? "8px 6px" : "6px 8px"),
+      (l.flexDirection = h ? "column" : "row"),
+      (l.padding = h ? "8px 6px" : "6px 8px"),
       r === "right"
         ? ((l.right = "0"),
           (l.top = `${a}%`),
@@ -2644,63 +2698,63 @@ select.se-input { cursor: pointer; }
               (l.borderRadius = "10px 10px 0 0"),
               (l.borderBottom = "none"),
               (l.boxShadow = "0 -3px 16px rgba(0,0,0,0.45)")));
-    let m = t.style;
+    let v = t.style;
     if (
-      ((m.top = m.bottom = m.left = m.right = m.transform = ""),
-      (m.borderTop = m.borderBottom = m.borderLeft = m.borderRight = ""),
-      (m.width = g + "px"),
-      (m.height = y + "px"),
+      ((v.top = v.bottom = v.left = v.right = v.transform = ""),
+      (v.borderTop = v.borderBottom = v.borderLeft = v.borderRight = ""),
+      (v.width = u + "px"),
+      (v.height = y + "px"),
       (t.dataset.edge = r),
       r === "right")
     ) {
-      let h = Math.max(10, Math.min(f - y - 10, w - y / 2));
-      ((m.right = p + "px"),
-        (m.top = h + "px"),
-        (m.borderRadius = "10px 0 0 10px"),
-        (m.borderRight = "none"),
-        (m.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
+      let w = Math.max(10, Math.min(f - y - 10, E - y / 2));
+      ((v.right = p + "px"),
+        (v.top = w + "px"),
+        (v.borderRadius = "10px 0 0 10px"),
+        (v.borderRight = "none"),
+        (v.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
     } else if (r === "left") {
-      let h = Math.max(10, Math.min(f - y - 10, w - y / 2));
-      ((m.left = p + "px"),
-        (m.top = h + "px"),
-        (m.borderRadius = "0 10px 10px 0"),
-        (m.borderLeft = "none"),
-        (m.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
+      let w = Math.max(10, Math.min(f - y - 10, E - y / 2));
+      ((v.left = p + "px"),
+        (v.top = w + "px"),
+        (v.borderRadius = "0 10px 10px 0"),
+        (v.borderLeft = "none"),
+        (v.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
     } else if (r === "top") {
-      let h = Math.max(10, Math.min(c - g - 10, w - g / 2));
-      ((m.top = p + "px"),
-        (m.left = h + "px"),
-        (m.borderRadius = "0 0 10px 10px"),
-        (m.borderTop = "none"),
-        (m.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
+      let w = Math.max(10, Math.min(c - u - 10, E - u / 2));
+      ((v.top = p + "px"),
+        (v.left = w + "px"),
+        (v.borderRadius = "0 0 10px 10px"),
+        (v.borderTop = "none"),
+        (v.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
     } else {
-      let h = Math.max(10, Math.min(c - g - 10, w - g / 2));
-      ((m.bottom = p + "px"),
-        (m.left = h + "px"),
-        (m.borderRadius = "10px 10px 0 0"),
-        (m.borderBottom = "none"),
-        (m.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
+      let w = Math.max(10, Math.min(c - u - 10, E - u / 2));
+      ((v.bottom = p + "px"),
+        (v.left = w + "px"),
+        (v.borderRadius = "10px 10px 0 0"),
+        (v.borderBottom = "none"),
+        (v.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
     }
-    let E = n.style;
-    ((E.top = E.bottom = E.left = E.right = E.width = E.height = ""),
-      (n.dataset.dir = b ? "ew" : "ns"),
-      b
-        ? ((E.width = "10px"),
-          (E.top = "0"),
-          (E.bottom = "0"),
+    let k = n.style;
+    ((k.top = k.bottom = k.left = k.right = k.width = k.height = ""),
+      (n.dataset.dir = h ? "ew" : "ns"),
+      h
+        ? ((k.width = "10px"),
+          (k.top = "0"),
+          (k.bottom = "0"),
           (n.style.cursor = "ew-resize"),
-          r === "right" ? (E.left = "0") : (E.right = "0"))
-        : ((E.height = "10px"),
-          (E.left = "0"),
-          (E.right = "0"),
+          r === "right" ? (k.left = "0") : (k.right = "0"))
+        : ((k.height = "10px"),
+          (k.left = "0"),
+          (k.right = "0"),
           (n.style.cursor = "ns-resize"),
-          r === "top" ? (E.bottom = "0") : (E.top = "0")));
+          r === "top" ? (k.bottom = "0") : (k.top = "0")));
   }
-  function je(e) {
+  function Je(e) {
     let t = document.createElement("div");
     t.setAttribute("id", "shipeasy-devtools");
     let n = t.attachShadow({ mode: "open" });
-    n.innerHTML = `<style>${de}</style><div id="toolbar"></div><div id="panel"></div>`;
+    n.innerHTML = `<style>${ue}</style><div id="toolbar"></div><div id="panel"></div>`;
     let o = n.getElementById("toolbar"),
       r = n.getElementById("panel");
     ((o.className = "toolbar"), (r.className = "panel"));
@@ -2708,104 +2762,109 @@ select.se-input { cursor: pointer; }
     ((a.className = "resize-handle"), r.appendChild(a));
     let s = document.createElement("div");
     ((s.className = "panel-inner"), r.appendChild(s));
-    let i = Mt(),
+    let i = Ct(),
       c = null,
-      f = ce();
-    requestAnimationFrame(() => D(o, r, a, i));
-    let b = document.createElement("div");
-    ((b.className = "drag-handle"),
-      (b.title = "ShipEasy DevTools \u2014 drag to reposition"),
-      (b.innerHTML = St),
-      o.appendChild(b),
-      b.addEventListener("mousedown", (h) => {
-        (h.preventDefault(), b.classList.add("dragging"));
-        let k = (u) => {
-            let { edge: v, offsetPct: L } = Tt(u.clientX, u.clientY);
-            ((i = { ...i, edge: v, offsetPct: L }), D(o, r, a, i));
+      f = fe(),
+      h = Ht();
+    requestAnimationFrame(() => U(o, r, a, i));
+    let u = document.createElement("div");
+    ((u.className = "drag-handle"),
+      (u.title = "ShipEasy DevTools \u2014 drag to reposition"),
+      (u.innerHTML = Pt),
+      o.appendChild(u),
+      u.addEventListener("mousedown", (b) => {
+        (b.preventDefault(), u.classList.add("dragging"));
+        let d = (g) => {
+            let { edge: L, offsetPct: M } = Ot(g.clientX, g.clientY);
+            ((i = { ...i, edge: L, offsetPct: M }), U(o, r, a, i));
           },
-          d = () => {
-            (b.classList.remove("dragging"),
-              document.removeEventListener("mousemove", k),
-              document.removeEventListener("mouseup", d),
-              Ue(i));
+          m = () => {
+            (u.classList.remove("dragging"),
+              document.removeEventListener("mousemove", d),
+              document.removeEventListener("mouseup", m),
+              We(i));
           };
-        (document.addEventListener("mousemove", k), document.addEventListener("mouseup", d));
+        (document.addEventListener("mousemove", d), document.addEventListener("mouseup", m));
       }));
-    let g = new Map();
-    for (let [h, { icon: k, label: d }] of Object.entries(se)) {
-      let u = document.createElement("button");
-      ((u.className = "btn"),
-        (u.title = d),
-        (u.innerHTML = k),
-        u.addEventListener("click", () => p(h)),
-        o.appendChild(u),
-        g.set(h, u));
+    let y = new Map();
+    for (let [b, { icon: d, label: m }] of Object.entries(W)) {
+      let g = document.createElement("button");
+      ((g.className = "btn"),
+        (g.title = m),
+        (g.innerHTML = d),
+        g.addEventListener("click", () => l(b)),
+        o.appendChild(g),
+        y.set(b, g));
     }
-    a.addEventListener("mousedown", (h) => {
-      (h.preventDefault(), h.stopPropagation(), a.classList.add("dragging"));
-      let k = h.clientX,
-        d = h.clientY,
-        u = i.panelWidth,
-        v = i.panelHeight,
-        { edge: L } = i,
-        M = (P) => {
-          let I = P.clientX - k,
-            le = P.clientY - d,
-            O = { ...i };
-          (L === "right" && (O.panelWidth = Math.max(ae, Math.min(De, u - I))),
-            L === "left" && (O.panelWidth = Math.max(ae, Math.min(De, u + I))),
-            L === "top" && (O.panelHeight = Math.max(ie, Math.min(ze, v + le))),
-            L === "bottom" && (O.panelHeight = Math.max(ie, Math.min(ze, v - le))),
-            (i = O),
-            D(o, r, a, i));
+    a.addEventListener("mousedown", (b) => {
+      (b.preventDefault(), b.stopPropagation(), a.classList.add("dragging"));
+      let d = b.clientX,
+        m = b.clientY,
+        g = i.panelWidth,
+        L = i.panelHeight,
+        { edge: M } = i,
+        T = (C) => {
+          let j = C.clientX - d,
+            pe = C.clientY - m,
+            q = { ...i };
+          (M === "right" && (q.panelWidth = Math.max(de, Math.min(je, g - j))),
+            M === "left" && (q.panelWidth = Math.max(de, Math.min(je, g + j))),
+            M === "top" && (q.panelHeight = Math.max(ce, Math.min(Fe, L + pe))),
+            M === "bottom" && (q.panelHeight = Math.max(ce, Math.min(Fe, L - pe))),
+            (i = q),
+            U(o, r, a, i));
         },
-        T = () => {
+        P = () => {
           (a.classList.remove("dragging"),
-            document.removeEventListener("mousemove", M),
-            document.removeEventListener("mouseup", T),
-            Ue(i));
+            document.removeEventListener("mousemove", T),
+            document.removeEventListener("mouseup", P),
+            We(i));
         };
-      (document.addEventListener("mousemove", M), document.addEventListener("mouseup", T));
+      (document.addEventListener("mousemove", T), document.addEventListener("mouseup", P));
     });
-    let y = () => D(o, r, a, i);
-    window.addEventListener("resize", y);
-    function w(h) {
-      ((c = h),
-        g.forEach((k, d) => k.classList.toggle("active", d === h)),
+    let E = () => U(o, r, a, i);
+    window.addEventListener("resize", E);
+    function x(b) {
+      ((c = b),
+        Ne(b),
+        y.forEach((d, m) => d.classList.toggle("active", m === b)),
         r.classList.add("open"),
-        D(o, r, a, i),
-        m(h));
+        U(o, r, a, i),
+        k(b));
     }
-    function x() {
-      (r.classList.remove("open"), g.forEach((h) => h.classList.remove("active")), (c = null));
+    function p() {
+      (r.classList.remove("open"),
+        y.forEach((b) => b.classList.remove("active")),
+        (c = null),
+        Ne(null));
     }
-    function p(h) {
-      c === h ? x() : w(h);
+    function l(b) {
+      c === b ? p() : x(b);
     }
-    function l(h, k) {
-      let d = typeof window < "u" && window.location ? window.location.host : "",
-        u = d ? `<span class="sub">${d}</span>` : "";
+    function v(b, d) {
+      let m = typeof window < "u" && window.location ? window.location.host : "",
+        g = m ? `<span class="sub">${m}</span>` : "";
       return `
       <div class="panel-head">
         <span class="mk"></span>
         <span class="panel-title">
-          <span class="panel-title-icon">${h}</span>
-          <span class="panel-title-label">${k}</span>
-          ${u}
+          <span class="panel-title-icon">${b}</span>
+          <span class="panel-title-label">${d}</span>
+          ${g}
         </span>
         <span class="live"><span class="dot"></span>LIVE</span>
-        <button class="close" id="se-close" aria-label="Close">${Lt}</button>
+        <button class="close" id="se-close" aria-label="Close">${_t}</button>
       </div>`;
     }
-    function m(h) {
-      let { icon: k, label: d } = se[h];
+    function k(b) {
+      let { icon: d, label: m } = W[b];
       if (!f) {
-        E(h);
+        w(b);
         return;
       }
-      let u = new N(e.adminUrl, f.token);
+      let g = new K(e.adminUrl, f.token);
       ((s.innerHTML = `
-      ${l(k, d)}
+      ${v(d, m)}
       <div class="panel-body" id="se-body"></div>
       <div class="panel-subfoot" id="se-subfoot"></div>
       <div class="panel-footer">
@@ -2815,46 +2874,46 @@ select.se-input { cursor: pointer; }
         <button class="ibtn danger" id="se-signout">Sign out</button>
         <button class="ibtn danger" id="se-clearall">Clear overrides</button>
       </div>`),
-        s.querySelector("#se-close").addEventListener("click", x),
+        s.querySelector("#se-close").addEventListener("click", p),
         s.querySelector("#se-signout").addEventListener("click", () => {
-          (pe(), (f = null), E(h));
+          (ge(), (f = null), w(b));
         }),
         s.querySelector("#se-clearall").addEventListener("click", () => {
-          (Ee(), m(h));
+          (Me(), k(b));
         }),
         s.querySelector("#se-apply-url").addEventListener("click", () => {
-          Le();
+          Te();
         }),
         s.querySelector("#se-share").addEventListener("click", async () => {
-          let T = ee({ ...te(), openDevtools: !0 });
+          let P = ne({ ...oe(), openDevtools: !0 });
           try {
-            await navigator.clipboard.writeText(T);
-            let P = s.querySelector("#se-share"),
-              I = P.textContent;
-            ((P.textContent = "Copied \u2713"), setTimeout(() => (P.textContent = I), 1500));
+            await navigator.clipboard.writeText(P);
+            let C = s.querySelector("#se-share"),
+              j = C.textContent;
+            ((C.textContent = "Copied \u2713"), setTimeout(() => (C.textContent = j), 1500));
           } catch {
-            prompt("Copy this URL:", T);
+            prompt("Copy this URL:", P);
           }
         }));
-      let v = s.querySelector("#se-body"),
-        L = s.querySelector("#se-subfoot");
+      let L = s.querySelector("#se-body"),
+        M = s.querySelector("#se-subfoot");
       ({
-        gates: () => Se(v, u),
-        configs: () => Me(v, u),
-        experiments: () => $e(v, u),
-        i18n: () => Pe(v, u, L, n),
-        bugs: () => qe(v, u, n),
-        features: () => Be(v, u, n),
+        gates: () => $e(L, g),
+        configs: () => Re(L, g),
+        experiments: () => Pe(L, g),
+        i18n: () => Ae(L, g, M, n),
+        bugs: () => ze(L, g, n),
+        features: () => Ue(L, g, n),
       })
-        [h]()
-        .catch((T) => {
-          v.innerHTML = `<div class="err">${String(T)}</div>`;
+        [b]()
+        .catch((P) => {
+          L.innerHTML = `<div class="err">${String(P)}</div>`;
         });
     }
-    function E(h) {
-      let { icon: k, label: d } = se[h];
+    function w(b) {
+      let { icon: d, label: m } = W[b];
       ((s.innerHTML = `
-      ${l(k, d)}
+      ${v(d, m)}
       <div class="panel-body auth-mode">
         <div class="auth-box">
           <div class="auth-icon">\u{1F510}</div>
@@ -2865,39 +2924,40 @@ select.se-input { cursor: pointer; }
           <div class="auth-err" id="se-auth-err"></div>
         </div>
       </div>`),
-        s.querySelector("#se-close").addEventListener("click", x),
+        s.querySelector("#se-close").addEventListener("click", p),
         s.querySelector("#se-connect").addEventListener("click", async () => {
-          let u = s.querySelector("#se-connect"),
-            v = s.querySelector("#se-auth-status"),
-            L = s.querySelector("#se-auth-err");
-          ((u.disabled = !0),
-            (u.textContent = "Opening\u2026"),
-            (v.textContent = ""),
-            (L.textContent = ""));
+          let g = s.querySelector("#se-connect"),
+            L = s.querySelector("#se-auth-status"),
+            M = s.querySelector("#se-auth-err");
+          ((g.disabled = !0),
+            (g.textContent = "Opening\u2026"),
+            (L.textContent = ""),
+            (M.textContent = ""));
           try {
-            ((f = await ue(e, () => {
-              ((v.textContent = "Waiting for approval in the opened tab\u2026"),
-                (u.textContent = "Waiting\u2026"));
+            ((f = await me(e, () => {
+              ((L.textContent = "Waiting for approval in the opened tab\u2026"),
+                (g.textContent = "Waiting\u2026"));
             })),
-              m(h));
-          } catch (M) {
-            ((L.textContent = M instanceof Error ? M.message : String(M)),
-              (v.textContent = ""),
-              (u.disabled = !1),
-              (u.textContent = "Retry"));
+              k(b));
+          } catch (T) {
+            ((M.textContent = T instanceof Error ? T.message : String(T)),
+              (L.textContent = ""),
+              (g.disabled = !1),
+              (g.textContent = "Retry"));
           }
         }));
     }
     return (
       document.body.appendChild(t),
+      h && requestAnimationFrame(() => x(h)),
       {
         destroy() {
-          (window.removeEventListener("resize", y), t.remove());
+          (window.removeEventListener("resize", E), t.remove());
         },
       }
     );
   }
-  function $t() {
+  function At() {
     if (typeof document < "u") {
       let e = document.currentScript;
       if (e?.src)
@@ -2913,19 +2973,19 @@ select.se-input { cursor: pointer; }
     }
     return typeof window < "u" ? window.location.origin : "";
   }
-  var z = null;
-  function Fe(e = {}) {
-    if (z || typeof window > "u" || typeof document > "u") return;
-    let t = { adminUrl: e.adminUrl ?? $t() },
-      { destroy: n } = je(t);
-    z = n;
+  var N = null;
+  function Ve(e = {}) {
+    if (N || typeof window > "u" || typeof document > "u") return;
+    let t = { adminUrl: e.adminUrl ?? At() },
+      { destroy: n } = Je(t);
+    N = n;
   }
-  function Rt() {
-    (z?.(), (z = null));
+  function qt() {
+    (N?.(), (N = null));
   }
-  function Ke(e = {}, t = "Shift+Alt+S") {
+  function Ye(e = {}, t = "Shift+Alt+S") {
     if (typeof window > "u") return () => {};
-    me() && Fe(e);
+    he() && Ve(e);
     let n = t.split("+"),
       o = n[n.length - 1],
       r = n.includes("Shift"),
@@ -2933,18 +2993,18 @@ select.se-input { cursor: pointer; }
       s = n.includes("Ctrl") || n.includes("Control"),
       i = n.includes("Meta") || n.includes("Cmd"),
       c = /^[a-zA-Z]$/.test(o) ? `Key${o.toUpperCase()}` : null;
-    function f(b) {
-      (c ? b.code === c : b.key.toLowerCase() === o.toLowerCase()) &&
-        b.shiftKey === r &&
-        b.altKey === a &&
-        b.ctrlKey === s &&
-        b.metaKey === i &&
-        (z ? Rt() : Fe(e));
+    function f(h) {
+      (c ? h.code === c : h.key.toLowerCase() === o.toLowerCase()) &&
+        h.shiftKey === r &&
+        h.altKey === a &&
+        h.ctrlKey === s &&
+        h.metaKey === i &&
+        (N ? qt() : Ve(e));
     }
     return (window.addEventListener("keydown", f), () => window.removeEventListener("keydown", f));
   }
   if (typeof window < "u") {
     let e = window.__se_devtools_config ?? {};
-    (Ke(e), (window.__se_devtools_ready = !0));
+    (Ye(e), (window.__se_devtools_ready = !0));
   }
 })();

@@ -84,9 +84,52 @@ function renderTreeNode(node: TreeNode, depth: number): string {
 // ── Edit-labels mode ──────────────────────────────────────────────────────────
 
 const LABEL_CLASS = "__se_label_target";
+const LABEL_STYLE_ID = "__se_label_target_style";
 let editLabelsActive = false;
 let cleanupEditLabels: (() => void) | null = null;
 let activePopper: HTMLElement | null = null;
+
+/**
+ * Inject the label highlight rules into the *page's* document.head — our
+ * main shadow-root stylesheet is scoped to the shadow tree and can't reach
+ * customer DOM, so without this nothing visible happens when edit mode is
+ * on. Keeping the rules out of the global stylesheet means we don't leak
+ * accent colors to pages that haven't opened the panel.
+ */
+function installLabelHighlightStyles(): void {
+  if (document.getElementById(LABEL_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = LABEL_STYLE_ID;
+  style.textContent = `
+    .${LABEL_CLASS} {
+      outline: 2px solid #4ade80 !important;
+      outline-offset: 2px !important;
+      cursor: pointer !important;
+      background-color: color-mix(in oklab, #4ade80 14%, transparent) !important;
+      border-radius: 3px !important;
+      box-shadow: 0 0 0 1px color-mix(in oklab, #4ade80 25%, transparent) !important;
+      transition:
+        background-color 0.12s,
+        box-shadow 0.12s,
+        outline-color 0.12s !important;
+      position: relative;
+    }
+    .${LABEL_CLASS}:hover,
+    .${LABEL_CLASS}.__se_label_active {
+      background-color: color-mix(in oklab, #4ade80 28%, transparent) !important;
+      box-shadow:
+        0 0 0 4px color-mix(in oklab, #4ade80 35%, transparent),
+        0 4px 14px color-mix(in oklab, #4ade80 30%, transparent) !important;
+      outline-color: #6ee7a0 !important;
+      z-index: 1;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function removeLabelHighlightStyles(): void {
+  document.getElementById(LABEL_STYLE_ID)?.remove();
+}
 
 function qualifyingLabels(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>("[data-label]"));
@@ -194,9 +237,11 @@ function toggleEditLabels(enable: boolean, shadow: ShadowRoot, onAfterEdit: () =
   if (!enable) {
     closePopper();
     for (const el of qualifyingLabels()) el.classList.remove(LABEL_CLASS);
+    removeLabelHighlightStyles();
     return;
   }
 
+  installLabelHighlightStyles();
   for (const el of qualifyingLabels()) el.classList.add(LABEL_CLASS);
 
   // We use composedPath() so shadow-DOM events are correctly inspected —
@@ -285,6 +330,7 @@ function toggleEditLabels(enable: boolean, shadow: ShadowRoot, onAfterEdit: () =
     document.removeEventListener("keydown", onKey);
     observer.disconnect();
     for (const el of qualifyingLabels()) el.classList.remove(LABEL_CLASS);
+    removeLabelHighlightStyles();
   };
 }
 
@@ -348,6 +394,16 @@ export async function renderI18nPanel(
   function renderSubfoot() {
     const activeProfile = getI18nProfileOverride() ?? "";
     const activeDraft = getI18nDraftOverride() ?? "";
+    const labelCount = qualifyingLabels().length;
+    const editLabel = editLabelsActive
+      ? `Editing ${labelCount} label${labelCount === 1 ? "" : "s"}`
+      : labelCount === 0
+        ? "No labels found"
+        : `Edit labels (${labelCount})`;
+    const editTitle =
+      labelCount === 0
+        ? "No [data-label] elements on this page. Wrap copy in <ShipEasyI18nString> to make it editable."
+        : "Toggle in-page label editing";
     const profileOpts = [
       `<option value="">Default</option>`,
       ...profiles.map(
@@ -364,15 +420,18 @@ export async function renderI18nPanel(
     ].join("");
 
     subfoot.innerHTML = `
-      <button class="subfoot-btn${editLabelsActive ? " on" : ""}" id="se-edit-toggle" title="Toggle in-page label editing">
+      <button class="subfoot-btn${editLabelsActive ? " on" : ""}${labelCount === 0 ? " dim" : ""}" id="se-edit-toggle" title="${escapeHtml(editTitle)}">
         <span class="dot"></span>
-        Edit labels
+        ${escapeHtml(editLabel)}
       </button>
       <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${profileOpts}</select>
       <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${draftOpts}</select>`;
 
     subfoot.querySelector<HTMLButtonElement>("#se-edit-toggle")!.addEventListener("click", () => {
-      toggleEditLabels(!editLabelsActive, shadow, () => {});
+      // Re-scan on every toggle so newly mounted labels are picked up even if
+      // the MutationObserver missed a frame (rare, but possible during route
+      // transitions).
+      toggleEditLabels(!editLabelsActive, shadow, () => renderSubfoot());
       renderSubfoot();
     });
     subfoot.querySelector<HTMLSelectElement>("#se-profile-sel")!.addEventListener("change", (e) => {

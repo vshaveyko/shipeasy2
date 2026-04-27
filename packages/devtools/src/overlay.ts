@@ -50,6 +50,26 @@ const PANELS: Record<PanelKey, { icon: string; label: string }> = {
 };
 
 const OVERLAY_KEY = "se_l_overlay";
+const ACTIVE_PANEL_KEY = "se_l_active_panel";
+
+function loadActivePanel(): PanelKey | null {
+  try {
+    const raw = sessionStorage.getItem(ACTIVE_PANEL_KEY);
+    if (raw && raw in PANELS) return raw as PanelKey;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function saveActivePanel(key: PanelKey | null): void {
+  try {
+    if (key === null) sessionStorage.removeItem(ACTIVE_PANEL_KEY);
+    else sessionStorage.setItem(ACTIVE_PANEL_KEY, key);
+  } catch {
+    /* ignore */
+  }
+}
 const PANEL_MIN_W = 240;
 const PANEL_MAX_W = 580;
 const PANEL_MIN_H = 180;
@@ -245,6 +265,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   let state: OverlayState = loadOverlayState();
   let activeKey: PanelKey | null = null;
   let session: DevtoolsSession | null = loadSession();
+  const initialPanel = loadActivePanel();
 
   // ── Initial layout ────────────────────────────────────────────────────────────
   // Defer one frame so getBoundingClientRect is accurate after first paint
@@ -335,6 +356,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   // ── Panel open/close ──────────────────────────────────────────────────────────
   function openPanel(key: PanelKey) {
     activeKey = key;
+    saveActivePanel(key);
     buttons.forEach((b, k) => b.classList.toggle("active", k === key));
     panel.classList.add("open");
     applyLayout(toolbar, panel, resizeHandle, state);
@@ -345,6 +367,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     panel.classList.remove("open");
     buttons.forEach((b) => b.classList.remove("active"));
     activeKey = null;
+    saveActivePanel(null);
   }
 
   function togglePanel(key: PanelKey) {
@@ -472,6 +495,15 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   }
 
   document.body.appendChild(host);
+
+  // Auto-reopen the panel that was active before a value-change reload.
+  // applyAndReload (overrides.ts) reloads the page on every override edit,
+  // and the URL keeps `?se=1` so we mount again here — but without this the
+  // user lands on a closed panel and has to re-pick which feature they were
+  // editing. Defer one frame so the toolbar/panel layout is applied first.
+  if (initialPanel) {
+    requestAnimationFrame(() => openPanel(initialPanel));
+  }
 
   return {
     destroy() {

@@ -301,6 +301,8 @@ export const STYLES = `
   flex-shrink: 0;
 }
 .subfoot-btn:hover { background: var(--se-bg-3); color: var(--se-fg); }
+.subfoot-btn.dim { color: var(--se-fg-4); cursor: default; }
+.subfoot-btn.dim:hover { background: var(--se-bg-2); color: var(--se-fg-4); }
 .subfoot-btn.on {
   background: var(--se-accent-soft);
   color: var(--se-accent);
@@ -996,16 +998,8 @@ select.se-input { cursor: pointer; }
 }
 .se-annot-host { display: flex; flex-direction: column; gap: 8px; }
 
-/* Edit-labels hover highlight on the customer page */
-.__se_label_target {
-  outline: 2px dashed var(--se-accent) !important;
-  outline-offset: 2px !important;
-  cursor: pointer !important;
-  transition: outline-color 0.12s;
-}
-.__se_label_target:hover,
-.__se_label_target.__se_label_active {
-  outline-style: solid !important;
-  outline-color: var(--se-accent) !important;
-}
+/* Edit-labels highlight (.__se_label_target) lives in panels/i18n.ts and
+ * is injected directly into document.head — these elements are in the
+ * customer page DOM, outside our shadow root, so shadow CSS can't reach
+ * them. */
 `;
