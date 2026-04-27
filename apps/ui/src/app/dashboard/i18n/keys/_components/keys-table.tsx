@@ -24,7 +24,6 @@ import {
   upsertDraftKeyAction,
   deleteKeyAction,
 } from "../actions";
-import { useShipEasyI18n } from "@shipeasy/react";
 import type { BulkAction } from "./bulk-actions";
 import { BulkActionsBar } from "./bulk-actions-bar";
 import { RowCheckbox } from "./row-checkbox";
@@ -341,7 +340,6 @@ interface Props {
 }
 
 export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
-  const { t } = useShipEasyI18n();
   const router = useRouter();
 
   const [profileId, setProfileId] = useState<string | null>(profiles[0]?.id ?? null);
@@ -957,7 +955,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
             <div className="mb-1.5 flex items-baseline gap-1.5">
               <span className="t-caps dim-3 shrink-0 text-[9px] tracking-[0.08em]">ref</span>
               <span className="line-clamp-2 break-all text-xs text-[var(--se-fg-3)]">
-                {leaf.value || <em>{t("common.empty")}</em>}
+                {leaf.value || <em>(empty)</em>}
               </span>
             </div>
           )}
@@ -982,28 +980,23 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
             <button
               onClick={() => startEdit(leaf)}
               className="-ml-1.5 min-h-5 rounded-[var(--radius-sm)] px-1.5 py-0.5 text-left text-sm text-foreground hover:bg-[var(--se-bg-3)]"
-              title={t("app.dashboard.i18n.keys._components.click_to_edit")}
+              title="Click to edit"
             >
               {draftId ? (
                 hasDraft ? (
                   <span className="break-all leading-snug">{draftKey!.value}</span>
                 ) : (
-                  <span className="italic text-[var(--se-fg-4)]">
-                    {t("app.dashboard.i18n.keys._components.click_to_translate")}
-                  </span>
+                  <span className="italic text-[var(--se-fg-4)]">Click to translate</span>
                 )
               ) : leaf.value ? (
                 <span className="break-all leading-snug">{leaf.value}</span>
               ) : (
-                <span className="italic text-[var(--se-fg-4)]">{t("common.empty")}</span>
+                <span className="italic text-[var(--se-fg-4)]">(empty)</span>
               )}
             </button>
           )}
           {draftId && hasDraft && !isEditing && (
-            <span
-              className="se-badge se-badge-paused mt-1 w-fit"
-              title={t("app.dashboard.i18n.keys._components.draft_value_exists")}
-            >
+            <span className="se-badge se-badge-paused mt-1 w-fit" title="Draft value exists">
               <span className="dot" />
               DRAFT
             </span>
@@ -1018,8 +1011,8 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                 variant="ghost"
                 onClick={commitEdit}
                 disabled={isPending}
-                aria-label={t("app.dashboard.i18n.keys._components.save_ctrl_enter")}
-                title={t("app.dashboard.i18n.keys._components.save_ctrl_enter")}
+                aria-label="Save (Ctrl+Enter)"
+                title="Save (Ctrl+Enter)"
                 className="text-[var(--se-accent)] hover:bg-[var(--se-accent-soft)]"
               >
                 <Check className="size-3.5" />
@@ -1028,8 +1021,8 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                 size="icon-sm"
                 variant="ghost"
                 onClick={cancelEdit}
-                aria-label={t("app.dashboard.i18n.keys._components.cancel_esc")}
-                title={t("app.dashboard.i18n.keys._components.cancel_esc")}
+                aria-label="Cancel (Esc)"
+                title="Cancel (Esc)"
               >
                 <X className="size-3.5" />
               </Button>
@@ -1041,7 +1034,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                   size="icon-xs"
                   variant="ghost"
                   disabled
-                  title={t("app.dashboard.i18n.keys._components.translate_with_ai_coming_soon")}
+                  title="Translate with AI (coming soon)"
                   className="opacity-0 transition-opacity group-hover:opacity-100"
                 >
                   <Sparkles className="size-3 text-[var(--se-accent)]" />
@@ -1124,14 +1117,14 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   if (profiles.length === 0) {
     return (
       <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] py-12 text-center text-sm text-[var(--se-fg-3)]">
-        {t("common.no_profiles_yet")}{" "}
+        No profiles yet.{" "}
         <a
           href="/dashboard/i18n/profiles/new"
           className="text-[var(--se-accent)] underline decoration-[var(--se-line-2)] underline-offset-4"
         >
-          {t("app.dashboard.i18n.keys._components.create_a_profile")}
+          Create a profile
         </a>{" "}
-        {t("app.dashboard.i18n.keys._components.to_start_managing_keys")}
+        to start managing keys.
       </div>
     );
   }
@@ -1169,9 +1162,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           <>
             <span className="mx-1 h-5 w-px bg-[var(--se-line)]" />
             <div className="flex items-center gap-1.5">
-              <span className="t-caps dim-3 tracking-[0.08em]">
-                {t("app.dashboard.i18n.keys._components.draft")}
-              </span>
+              <span className="t-caps dim-3 tracking-[0.08em]">Draft</span>
               <select
                 value={draftId ?? ""}
                 onChange={(e) => {
@@ -1181,7 +1172,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                 }}
                 className="h-7 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 font-mono text-xs text-foreground outline-none focus:border-[var(--se-fg-3)]"
               >
-                <option value="">{t("app.dashboard.i18n.keys._components.published")}</option>
+                <option value="">Published</option>
                 {profileDrafts.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
@@ -1195,7 +1186,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         <div className="ml-auto">
           <Button size="sm" variant="outline" disabled className="gap-1.5 text-xs">
             <Sparkles className="size-3.5 text-[var(--se-accent)]" />
-            {t("app.dashboard.i18n.keys._components.translate_with_ai")}
+            Translate with AI
           </Button>
         </div>
       </div>
@@ -1218,7 +1209,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           </svg>
           <input
             type="text"
-            placeholder={t("app.dashboard.i18n.keys._components.filter_keys")}
+            placeholder="Filter keys…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="h-7 w-52 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] pl-7 pr-2.5 text-xs text-foreground outline-none placeholder:text-[var(--se-fg-4)] focus:border-[var(--se-fg-3)] focus:bg-[var(--se-bg-1)]"
@@ -1228,18 +1219,18 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         <button
           onClick={expanded.size > 0 ? collapseAll : expandAll}
           className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-transparent px-2 py-1 text-xs text-[var(--se-fg-3)] hover:border-[var(--se-line-2)] hover:bg-[var(--se-bg-2)] hover:text-foreground"
-          aria-label={expanded.size > 0 ? t("common.collapse_all") : t("common.expand_all")}
-          title={expanded.size > 0 ? t("common.collapse_all") : t("common.expand_all")}
+          aria-label={expanded.size > 0 ? "Collapse all" : "Expand all"}
+          title={expanded.size > 0 ? "Collapse all" : "Expand all"}
         >
           <ChevronsUpDown className="size-3" />
-          {expanded.size > 0 ? t("common.collapse") : t("common.expand")}
+          {expanded.size > 0 ? "Collapse" : "Expand"}
         </button>
 
         <span
           className="t-mono-xs tracking-[0.02em] text-[var(--se-fg-3)]"
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
-          {sections.reduce((s, sec) => s + sec.count, 0)} {t("common.keys")}
+          {sections.reduce((s, sec) => s + sec.count, 0)} keys
         </span>
 
         {(loadingSections || searchLoading) && (
@@ -1249,7 +1240,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         {draftId && (
           <span className="se-badge se-badge-paused ml-auto">
             <span className="dot" />
-            {t("app.dashboard.i18n.keys._components.has_draft").toUpperCase()}
+            HAS DRAFT
           </span>
         )}
       </div>
@@ -1260,7 +1251,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       {/* ── Virtual table ── */}
       {!profileId ? (
         <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] py-12 text-center text-sm text-[var(--se-fg-3)]">
-          {t("app.dashboard.i18n.keys._components.select_a_profile_above")}
+          Select a profile above.
         </div>
       ) : searchLoading && searchResults === null ? (
         <div className="flex items-center justify-center rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] py-12">
@@ -1277,7 +1268,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         </div>
       ) : sections.length === 0 ? (
         <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] py-12 text-center text-sm text-[var(--se-fg-3)]">
-          {t("app.dashboard.i18n.keys._components.no_keys_for_this_profile")}
+          No keys for this profile.
         </div>
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] text-sm">
@@ -1294,19 +1285,13 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
               />
             </div>
             <div />
-            <div className="t-caps dim-3 flex h-9 items-center pr-4 tracking-[0.08em]">
-              {t("common.key")}
-            </div>
+            <div className="t-caps dim-3 flex h-9 items-center pr-4 tracking-[0.08em]">KEY</div>
             <div className="t-caps dim-3 flex h-9 items-center tracking-[0.08em]">
               {draftId ? (
                 <span>
-                  <span className="text-[var(--se-fg-4)]">
-                    {t("app.dashboard.i18n.keys._components.published")}
-                  </span>
+                  <span className="text-[var(--se-fg-4)]">Published</span>
                   {" → "}
-                  <span className="text-[var(--se-warn)]">
-                    {t("app.dashboard.i18n.keys._components.draft")}
-                  </span>
+                  <span className="text-[var(--se-warn)]">Draft</span>
                 </span>
               ) : (
                 "VALUE"
@@ -1351,13 +1336,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       {/* Draft hint */}
       {draftId && (
         <p className="text-xs text-[var(--se-fg-3)]">
-          {t(
-            "app.dashboard.i18n.keys._components.editing_draft_changes_won_apos_t_affect_the_published_profil",
-          )}{" "}
-          <kbd className="se-kbd">{t("app.dashboard.i18n.keys._components.ctrl_enter")}</kbd>{" "}
-          {t("app.dashboard.i18n.keys._components.to_save")}{" "}
-          <kbd className="se-kbd">{t("app.dashboard.i18n.keys._components.esc")}</kbd>{" "}
-          {t("app.dashboard.i18n.keys._components.to_cancel")}
+          Editing draft — changes won&apos;t affect the published profile until you publish.{" "}
+          <kbd className="se-kbd">Ctrl+Enter</kbd> to save, <kbd className="se-kbd">Esc</kbd> to
+          cancel.
         </p>
       )}
     </div>
