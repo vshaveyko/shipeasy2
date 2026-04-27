@@ -214,16 +214,43 @@ function toggleEditLabels(enable: boolean, shadow: ShadowRoot, onAfterEdit: () =
     return null;
   }
 
+  // Swallow every event type that could trigger the underlying widget's
+  // behaviour (button clicks, link navigation, drag selection, focus rings,
+  // form submits, etc.). Without this, apps that wire onMouseDown / onPointer
+  // handlers — common in button libraries — still fire even though we
+  // preventDefault on `click`.
+  const SWALLOW_EVENTS = [
+    "mousedown",
+    "mouseup",
+    "pointerdown",
+    "pointerup",
+    "touchstart",
+    "touchend",
+    "dblclick",
+    "contextmenu",
+    "submit",
+    "auxclick",
+  ] as const;
+
+  function suppress(e: Event) {
+    if (pathHasPopper(e)) return;
+    if (!pathLabelTarget(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  }
+
   function onClick(e: MouseEvent) {
     if (pathHasPopper(e)) return;
     const el = pathLabelTarget(e);
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
     openLabelPopper(el, shadow);
   }
 
-  function onOutsideClick(e: MouseEvent) {
+  function onOutsideMouseDown(e: MouseEvent) {
     if (!activePopper) return;
     if (pathHasPopper(e)) return;
     if (pathLabelTarget(e)) return;
@@ -242,13 +269,19 @@ function toggleEditLabels(enable: boolean, shadow: ShadowRoot, onAfterEdit: () =
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
+  for (const type of SWALLOW_EVENTS) {
+    document.addEventListener(type, suppress, true);
+  }
   document.addEventListener("click", onClick, true);
-  document.addEventListener("mousedown", onOutsideClick, true);
+  document.addEventListener("mousedown", onOutsideMouseDown, true);
   document.addEventListener("keydown", onKey);
 
   cleanupEditLabels = () => {
+    for (const type of SWALLOW_EVENTS) {
+      document.removeEventListener(type, suppress, true);
+    }
     document.removeEventListener("click", onClick, true);
-    document.removeEventListener("mousedown", onOutsideClick, true);
+    document.removeEventListener("mousedown", onOutsideMouseDown, true);
     document.removeEventListener("keydown", onKey);
     observer.disconnect();
     for (const el of qualifyingLabels()) el.classList.remove(LABEL_CLASS);
