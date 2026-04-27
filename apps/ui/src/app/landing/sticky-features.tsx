@@ -182,23 +182,89 @@ const STEPS = [
 function PanelShell({
   active,
   tag,
+  command,
+  reply,
   children,
 }: {
   active: boolean;
   tag: string;
+  command?: string;
+  reply?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className={`lp-pin-panel ${active ? "lp-active" : ""}`}>
       <div className="lp-pin-tag">{tag}</div>
+      {command ? <TerminalIntro active={active} command={command} reply={reply} /> : null}
       {children}
+    </div>
+  );
+}
+
+/**
+ * Per-panel terminal block: types a command character-by-character when the
+ * panel becomes active, then reveals the reply. Resets to empty whenever
+ * the panel deactivates so the animation re-plays on each scroll-through.
+ */
+function TerminalIntro({
+  active,
+  command,
+  reply,
+}: {
+  active: boolean;
+  command: string;
+  reply?: React.ReactNode;
+}) {
+  const [shown, setShown] = useState("");
+  const [showReply, setShowReply] = useState(false);
+
+  useEffect(() => {
+    if (!active) {
+      setShown("");
+      setShowReply(false);
+      return;
+    }
+    let i = 0;
+    const startDelay = setTimeout(() => {
+      const t = setInterval(() => {
+        i++;
+        setShown(command.slice(0, i));
+        if (i >= command.length) {
+          clearInterval(t);
+          setTimeout(() => setShowReply(true), 380);
+        }
+      }, 24);
+      return () => clearInterval(t);
+    }, 250);
+    return () => clearTimeout(startDelay);
+  }, [active, command]);
+
+  const done = shown.length === command.length;
+  return (
+    <div className="lp-term">
+      <div className="lp-term-line">
+        <span className="lp-term-prompt">claude &gt;</span>
+        <span className="lp-term-cmd">{shown}</span>
+        {!done && <span className="lp-term-cursor" />}
+      </div>
+      {showReply && <div className="lp-term-reply">↳ {reply}</div>}
     </div>
   );
 }
 
 function KillswitchesPanel({ active }: { active: boolean }) {
   return (
-    <PanelShell active={active} tag="killswitches · live">
+    <PanelShell
+      active={active}
+      tag="killswitches · live"
+      command="kill ai_recommendations if errors > 0.5%"
+      reply={
+        <>
+          ✓ guardrail armed · disabled in{" "}
+          <b style={{ color: "var(--se-accent)", fontWeight: 500 }}>187ms</b>
+        </>
+      }
+    >
       <div className="lp-ks-list">
         <div className="lp-ks-row">
           <span className="lp-name">new_checkout</span>
@@ -222,23 +288,18 @@ function KillswitchesPanel({ active }: { active: boolean }) {
           <div className="lp-switch" />
         </div>
       </div>
-      <div className="lp-ks-foot" style={{ marginTop: "auto" }}>
-        <span style={{ color: "var(--se-accent)" }}>●</span> guardrail auto-triggered — global kill
-        in <b>&lt; 200ms</b>
-      </div>
     </PanelShell>
   );
 }
 
 function ConfigsPanel({ active }: { active: boolean }) {
   return (
-    <PanelShell active={active} tag="runtime config · live">
-      <div className="lp-cfg-conv">
-        <div>
-          <span className="lp-you">&gt;</span> bump max_uploads to 100 for pro plan
-        </div>
-        <div className="lp-ok">↳ ✓ updated · auto-revert on regression</div>
-      </div>
+    <PanelShell
+      active={active}
+      tag="runtime config · live"
+      command="bump max_uploads to 100 for pro plan"
+      reply={<>✓ updated · auto-revert on regression</>}
+    >
       <pre className="lp-cfg-json">
         {"{\n  "}
         <span className="lp-k">&quot;max_uploads&quot;</span>
@@ -266,7 +327,17 @@ function ConfigsPanel({ active }: { active: boolean }) {
 
 function ExperimentsPanel({ active }: { active: boolean }) {
   return (
-    <PanelShell active={active} tag="experiment · checkout_v3">
+    <PanelShell
+      active={active}
+      tag="experiment · checkout_v3"
+      command="test one-click checkout vs current, scope 50%"
+      reply={
+        <>
+          ✓ live · day 6 · variant B winning at{" "}
+          <b style={{ color: "var(--se-accent)", fontWeight: 500 }}>+49.8%</b>
+        </>
+      }
+    >
       <div className="lp-exp-card">
         <div className="lp-exp-head">
           <div className="lp-exp-title">
@@ -337,7 +408,12 @@ function MetricsPanel({ active }: { active: boolean }) {
     },
   ];
   return (
-    <PanelShell active={active} tag="auto-collected · last 7d">
+    <PanelShell
+      active={active}
+      tag="auto-collected · last 7d"
+      command="show last 7 days — activation, revenue, errors"
+      reply={<>✓ 4 metrics · streamed live · no SQL needed</>}
+    >
       <div className="lp-met-grid">
         {cards.map((c) => (
           <div key={c.k} className="lp-met-card">

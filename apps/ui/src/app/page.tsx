@@ -1,4 +1,6 @@
 import "./landing/landing.css";
+import { LandingProviders } from "./landing/providers";
+import { AnnouncementBar } from "./landing/announcement-bar";
 import { LandingNav } from "./landing/nav";
 import { ScrollProgress } from "./landing/scroll-progress";
 import { LandingHero } from "./landing/hero";
@@ -24,7 +26,7 @@ export const revalidate = false;
 export default function LandingPage() {
   return (
     <div
-      className="relative min-h-screen overflow-x-hidden"
+      className="relative min-h-screen"
       style={{ background: "var(--se-bg)", color: "var(--se-fg)" }}
     >
       <div aria-hidden className="lp-bg-grid" />
@@ -32,15 +34,18 @@ export default function LandingPage() {
       <ScrollProgress />
       <RevealOnScroll />
 
-      <LandingNav />
-      <LandingHero />
-      <LandingMarquee />
-      <StickyFeatures />
-      <LandingWorkflow />
-      <LandingTestimonials />
-      <LandingPricing />
-      <LandingFaq />
-      <LandingCtaFooter />
+      <LandingProviders>
+        <AnnouncementBar />
+        <LandingNav />
+        <LandingHero />
+        <LandingMarquee />
+        <StickyFeatures />
+        <LandingWorkflow />
+        <LandingTestimonials />
+        <LandingPricing />
+        <LandingFaq />
+        <LandingCtaFooter />
+      </LandingProviders>
     </div>
   );
 }
