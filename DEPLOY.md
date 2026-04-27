@@ -35,7 +35,7 @@ Root directory: repo root (monorepo).
 **Build command:**
 
 ```
-git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter @shipeasy/react build && pnpm --filter @shipeasy/devtools build && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote && pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build
+pnpm install --no-frozen-lockfile && pnpm --filter @shipeasy/ui update @shipeasy/sdk @shipeasy/react --latest && pnpm --filter @shipeasy/devtools build && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote && pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build
 ```
 
 **Deploy command:**
@@ -46,8 +46,19 @@ pnpm --filter @shipeasy/ui exec opennextjs-cloudflare deploy
 
 Why each step:
 
-1. `git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive` — populates `packages/{sdk,react,sdk-ruby}`. CF Workers Builds clones with depth=1 and does not fetch submodules by default, so without this line `pnpm install --frozen-lockfile` either fails or silently resolves `@shipeasy/react` to a stale registry copy and the dashboard ships partially broken (RSC render errors). The `insteadOf` rewrite is needed because `.gitmodules` uses SSH URLs and the CF build environment has no SSH keys; this forces HTTPS, which works for public repos without auth. **If any submoduled repo is private**, set `GITHUB_TOKEN` in CF build env vars and replace the rewrite with `url.https://x-access-token:$GITHUB_TOKEN@github.com/.insteadOf=git@github.com:`.
-2. `pnpm install --frozen-lockfile` — deps.
+1. `pnpm install --no-frozen-lockfile` — deps. We don't freeze because
+   the next step bumps `@shipeasy/sdk` / `@shipeasy/react` to the latest
+   published version, which mutates the lockfile.
+2. `pnpm --filter @shipeasy/ui update @shipeasy/sdk @shipeasy/react --latest`
+   — pulls the freshest published SDK from npm every build. apps/ui
+   declares these as `"*"` so install picks whatever's tagged `latest`.
+   The packages are _also_ submoduled at `packages/{sdk,react}` for local
+   iteration: when initialised they become workspace members and shadow
+   the registry copy via `link-workspace-packages=true`; in CF Builds the
+   submodules aren't fetched, so the registry copy is what ships. **The
+   packages must be published to npm before this works** — `@shipeasy/sdk`
+   is, but `@shipeasy/react` needs its first publish (run the
+   `workflow_dispatch` on the sdk-react submodule's GitHub Actions).
 3. `pnpm --filter @shipeasy/devtools build` — compiles the IIFE bundle
    and drops a fresh `apps/ui/public/se-devtools.js`. Without this step
    you ship whatever was committed last, not the current source.
@@ -67,7 +78,7 @@ Root directory: repo root.
 **Build command:**
 
 ```
-git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote
+pnpm install --frozen-lockfile && pnpm --filter @shipeasy/worker exec wrangler d1 migrations apply shipeasy-db --remote
 ```
 
 **Deploy command:**
@@ -88,7 +99,7 @@ Root directory: repo root.
 **Build command:**
 
 ```
-git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter @shipeasy/docs exec fumadocs-mdx && pnpm --filter @shipeasy/docs exec next build
+pnpm install --frozen-lockfile && pnpm --filter @shipeasy/docs exec fumadocs-mdx && pnpm --filter @shipeasy/docs exec next build
 ```
 
 **Deploy command:**

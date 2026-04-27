@@ -22,7 +22,7 @@
   },
   "peerDependencies": {
     "vue": "^3.0.0",
-    "@shipeasy/sdk": "workspace:*"
+    "@shipeasy/sdk": "*"
   },
   "devDependencies": {
     "tsup": "^8.3.0",

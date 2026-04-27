@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@shipeasy/sdk": "workspace:*",
+    "@shipeasy/sdk": "*",
     "semver": "^7.6.0",
     "zod": "^4.0.0"
   },

@@ -19,7 +19,7 @@
   },
   "peerDependencies": {
     "@angular/core": ">=17.0.0",
-    "@shipeasy/sdk": "workspace:*",
+    "@shipeasy/sdk": "*",
     "rxjs": ">=7.0.0"
   },
   "devDependencies": {
