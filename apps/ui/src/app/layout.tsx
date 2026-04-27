@@ -37,9 +37,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const i18nKey = process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY;
-  const i18nProfile = process.env.NEXT_PUBLIC_SHIPEASY_I18N_PROFILE;
-  const i18nApi = process.env.NEXT_PUBLIC_SHIPEASY_API_URL ?? "https://api.shipeasy.ai";
+  // These are public client-side values; hardcoded so they survive Cloudflare
+  // Builds where .env.local is never present and wrangler vars don't propagate
+  // to the Next.js compile step.
+  const i18nKey =
+    process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "sdk_client_bf273deea504461d9a8adb4896dad205";
+  const i18nProfile = process.env.NEXT_PUBLIC_SHIPEASY_I18N_PROFILE ?? "en:prod";
+  const i18nApi = process.env.NEXT_PUBLIC_SHIPEASY_API_URL ?? "https://cdn.shipeasy.ai";
   // Lets you run `next dev` locally but point the devtools overlay at the
   // prod admin app — pick prod's gates/configs/experiments/translations
   // without seeding a local D1. Set NEXT_PUBLIC_SHIPEASY_DEVTOOLS_ADMIN_URL
