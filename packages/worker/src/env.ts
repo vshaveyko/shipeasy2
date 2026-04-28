@@ -30,4 +30,13 @@ export interface WorkerEnv extends CoreEnv {
   ANALYTICS_HOST?: string;
   CRONITOR_HEARTBEAT_URL?: string;
   CLI_SERVICE_SECRET?: string;
+
+  // Stripe — secrets set via `wrangler secret put`
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_PRICE_BASE_MONTHLY?: string;
+  STRIPE_PRICE_BASE_ANNUAL?: string;
+  STRIPE_PRICE_PER_EXPERIMENT?: string;
+  STRIPE_PRICE_PER_GATE?: string;
+  STRIPE_PRICE_PER_CONFIG?: string;
 }

@@ -106,6 +106,15 @@ export function GateEditorClient({
           <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--se-line-2)] p-6 text-center text-[13px] text-[var(--se-fg-3)]">
             No rules yet. Click <b className="text-[var(--se-fg-2)]">Add rule</b> to start targeting
             users — gate falls back to the rollout percentage when nothing matches.
+            {attrOptions.length === 0 && (
+              <div className="mt-2 text-[12px]">
+                To target by attribute, first{" "}
+                <a href="/dashboard/experiments/attributes" className="underline text-[var(--se-accent)]">
+                  define attributes
+                </a>{" "}
+                in Experiments.
+              </div>
+            )}
           </div>
         ) : (
           rules.map((rule, idx) => (
@@ -164,7 +173,7 @@ export function GateEditorClient({
 
       {/* Test panel column */}
       <div className="space-y-3">
-        <TestPanel gateName={gateName} rules={rules} />
+        <TestPanel gateName={gateName} rules={rules} rolloutPct={rolloutPct} />
         <SdkUsage gateName={gateName} />
       </div>
     </div>
@@ -282,7 +291,7 @@ function RuleCondition({
   );
 }
 
-function TestPanel({ gateName, rules }: { gateName: string; rules: Rule[] }) {
+function TestPanel({ gateName, rules, rolloutPct }: { gateName: string; rules: Rule[]; rolloutPct: number }) {
   const [userId, setUserId] = useState("usr_3b20a9f2");
   const sample = useMemo(
     () =>
@@ -316,7 +325,10 @@ function TestPanel({ gateName, rules }: { gateName: string; rules: Rule[] }) {
     });
   }, [rules, sample]);
   const firstPass = evaluation.findIndex((e) => e.pass);
-  const result = firstPass !== -1;
+  // If a rule matched, it wins; otherwise fall back to rollout percentage.
+  // For the test panel we treat 100% as always-true and 0% as always-false;
+  // intermediate values are probabilistic (shown as a hint, not a definite bool).
+  const result = firstPass !== -1 || rolloutPct === 100;
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-2)] p-4">
@@ -360,41 +372,54 @@ function TestPanel({ gateName, rules }: { gateName: string; rules: Rule[] }) {
       <div className="mt-3.5">
         <div className="t-caps dim-2 mb-2">Evaluation</div>
         {evaluation.length === 0 ? (
-          <div className="text-[12.5px] text-[var(--se-fg-3)]">No rules to evaluate.</div>
+          <div className="text-[12.5px] text-[var(--se-fg-3)]">
+            No rules to evaluate.{" "}
+            <span className="text-[var(--se-fg-2)]">Falls through to {rolloutPct}% rollout.</span>
+          </div>
         ) : (
-          evaluation.map((e, i) => {
-            const skipped = firstPass !== -1 && i > firstPass;
-            return (
-              <div
-                key={i}
-                className={`flex items-center gap-2.5 py-1.5 text-[12.5px] ${
-                  skipped ? "text-[var(--se-fg-3)]" : ""
-                }`}
-              >
-                <span
-                  className="rounded px-1.5 py-0.5 font-mono text-[10.5px]"
-                  style={{
-                    background: skipped
-                      ? "var(--se-bg-3)"
-                      : e.pass
-                        ? "var(--se-accent-soft)"
-                        : "var(--se-danger-soft)",
-                    color: skipped
-                      ? "var(--se-fg-2)"
-                      : e.pass
-                        ? "var(--se-accent)"
-                        : "var(--se-danger)",
-                  }}
+          <>
+            {evaluation.map((e, i) => {
+              const skipped = firstPass !== -1 && i > firstPass;
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2.5 py-1.5 text-[12.5px] ${
+                    skipped ? "text-[var(--se-fg-3)]" : ""
+                  }`}
                 >
-                  {skipped ? "skip" : e.pass ? "PASS" : "FAIL"}
+                  <span
+                    className="rounded px-1.5 py-0.5 font-mono text-[10.5px]"
+                    style={{
+                      background: skipped
+                        ? "var(--se-bg-3)"
+                        : e.pass
+                          ? "var(--se-accent-soft)"
+                          : "var(--se-danger-soft)",
+                      color: skipped
+                        ? "var(--se-fg-2)"
+                        : e.pass
+                          ? "var(--se-accent)"
+                          : "var(--se-danger)",
+                    }}
+                  >
+                    {skipped ? "skip" : e.pass ? "PASS" : "FAIL"}
+                  </span>
+                  <span className={skipped ? "dim" : ""}>
+                    Rule {i + 1} · {e.rule.attr || "—"} {e.rule.op}{" "}
+                    {e.rule.value ? `"${e.rule.value}"` : ""}
+                  </span>
+                </div>
+              );
+            })}
+            {firstPass === -1 && (
+              <div className="flex items-center gap-2.5 py-1.5 text-[12.5px] text-[var(--se-fg-3)]">
+                <span className="rounded px-1.5 py-0.5 font-mono text-[10.5px] bg-[var(--se-bg-3)] text-[var(--se-fg-2)]">
+                  fall
                 </span>
-                <span className={skipped ? "dim" : ""}>
-                  Rule {i + 1} · {e.rule.attr || "—"} {e.rule.op}{" "}
-                  {e.rule.value ? `"${e.rule.value}"` : ""}
-                </span>
+                <span>Rollout · {rolloutPct}% of users</span>
               </div>
-            );
-          })
+            )}
+          </>
         )}
       </div>
 

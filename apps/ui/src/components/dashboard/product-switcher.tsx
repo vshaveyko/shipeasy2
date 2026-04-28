@@ -15,17 +15,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PRODUCTS, getProductFromPath } from "@/lib/products";
-import { useShipEasyI18n } from "@shipeasy/react";
 
 export function ProductSwitcher() {
-  const { t } = useShipEasyI18n();
   const pathname = usePathname();
   const current = getProductFromPath(pathname);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={t("components.dashboard.switch_product")}
+        aria-label="Switch product"
         className={cn(
           "flex w-full items-center gap-2 rounded-md border bg-background px-2.5 py-2 text-left text-sm transition-colors",
           "hover:bg-muted/60",
@@ -48,10 +46,10 @@ export function ProductSwitcher() {
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-medium text-foreground">
-                {t("components.dashboard.choose_a_product")}
+                Choose a product
               </span>
               <span className="truncate text-[11px] text-muted-foreground">
-                {t("components.dashboard.feature_flags_a_b_tests_i18n")}
+                Feature flags, A/B tests, i18n
               </span>
             </span>
           </>
@@ -61,7 +59,7 @@ export function ProductSwitcher() {
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            {t("components.dashboard.products")}
+            Products
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {PRODUCTS.map((p) => {

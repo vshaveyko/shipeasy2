@@ -11,7 +11,8 @@
   "dependencies": {
     "@shipeasy/core": "workspace:*",
     "drizzle-orm": "^0.36.0",
-    "hono": "^4.6.0"
+    "hono": "^4.6.0",
+    "stripe": "^17.0.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.5.0",

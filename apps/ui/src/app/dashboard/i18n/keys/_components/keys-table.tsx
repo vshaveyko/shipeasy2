@@ -565,6 +565,18 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         fd.set("id", keyId);
         fd.set("value", value);
         await updateKeyAction(fd);
+        // Invalidate section + page caches so updated value re-renders
+        const topPrefix = key.split(".")[0]!;
+        setSectionsByProfile((prev) => {
+          const next = new Map(prev);
+          next.delete(profileId!);
+          return next;
+        });
+        setSectionPages((prev) => {
+          const next = new Map(prev);
+          next.delete(treeKey(topPrefix));
+          return next;
+        });
       }
       setEditing(null);
       router.refresh();

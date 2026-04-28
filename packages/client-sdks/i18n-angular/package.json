@@ -31,5 +31,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@shipeasy/i18n-core": "workspace:*"
   }
 }

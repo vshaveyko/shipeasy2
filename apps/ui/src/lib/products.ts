@@ -18,6 +18,7 @@ import {
   FolderTree,
   PencilLine,
   Users,
+  CreditCard,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
@@ -205,6 +206,7 @@ export const SHARED_NAV: NavGroup = {
     { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
     { href: "/dashboard/team", label: "Team", icon: Users },
     { href: "/dashboard/keys", label: "SDK Keys", icon: KeyRound },
+    { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
     {
       href: "https://docs.shipeasy.ai",

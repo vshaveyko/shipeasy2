@@ -126,6 +126,7 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const publishedValue = detail.values[selectedEnv];
   const publishedText = formatValue(publishedValue);
@@ -253,12 +254,12 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
   };
 
   const handleDelete = () => {
-    if (!confirm(`Delete "${detail.name}"? This can't be undone.`)) return;
     startTransition(async () => {
       const res = await fetch(`/api/admin/configs/${detail.id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         setError(body.error ?? `Failed to delete (${res.status})`);
+        setConfirmDelete(false);
         return;
       }
       router.push("/dashboard/configs/values");
@@ -361,16 +362,38 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
             <Button variant="ghost" size="sm" disabled>
               <GitBranch className="size-3" /> History
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={pending}
-              className="text-[var(--se-danger)] hover:bg-[var(--se-danger-soft)]"
-              aria-label="Delete config"
-            >
-              <Trash2 className="size-3" /> Delete
-            </Button>
+            {confirmDelete ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={pending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={pending}
+                  className="text-[var(--se-danger)] hover:bg-[var(--se-danger-soft)]"
+                >
+                  Confirm delete
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(true)}
+                disabled={pending}
+                className="text-[var(--se-danger)] hover:bg-[var(--se-danger-soft)]"
+                aria-label="Delete config"
+              >
+                <Trash2 className="size-3" /> Delete
+              </Button>
+            )}
           </div>
         </div>
 

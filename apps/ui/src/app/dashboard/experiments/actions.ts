@@ -70,6 +70,8 @@ export async function createExperimentAction(formData: FormData) {
     min_sample_size,
     sequential_testing: false,
   });
+  revalidatePath("/dashboard/experiments");
+  revalidatePath("/dashboard");
   redirect("/dashboard/experiments");
 }
 

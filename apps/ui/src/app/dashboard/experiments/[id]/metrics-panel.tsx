@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { addExperimentMetricAction } from "./actions";
-import { useShipEasyI18n } from "@shipeasy/react";
 
 type Role = "guardrail" | "secondary";
 
@@ -37,7 +36,6 @@ function AttachForm({
   role: Role;
   onCancel: () => void;
 }) {
-  const { t } = useShipEasyI18n();
   return (
     <form
       action={addExperimentMetricAction}
@@ -47,7 +45,7 @@ function AttachForm({
       <input type="hidden" name="experiment_id" value={experimentId} />
       <input type="hidden" name="role" value={role} />
       <div className="grid gap-1.5">
-        <Label htmlFor="attach-metric">{t("app.dashboard.experiments._id.metric")}</Label>
+        <Label htmlFor="attach-metric">Metric</Label>
         <select
           id="attach-metric"
           name="metric_id"
@@ -61,10 +59,10 @@ function AttachForm({
         </select>
       </div>
       <Button size="sm" type="submit">
-        {t("app.dashboard.experiments._id.attach")}
+        Attach
       </Button>
       <Button size="sm" variant="ghost" type="button" onClick={onCancel}>
-        {t("common.cancel")}
+        Cancel
       </Button>
     </form>
   );
@@ -76,7 +74,6 @@ export function MetricsPanel({
   guardrailMetrics,
   secondaryMetrics,
 }: Props) {
-  const { t } = useShipEasyI18n();
   const [openRole, setOpenRole] = useState<Role | null>(null);
 
   const guardrailIds = new Set(guardrailMetrics.map((m) => m.metricId));
@@ -88,10 +85,8 @@ export function MetricsPanel({
     <>
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>{t("app.dashboard.experiments._id.guardrails")}</CardTitle>
-          <CardDescription>
-            {t("app.dashboard.experiments._id.metrics_we_never_want_to_regress")}
-          </CardDescription>
+          <CardTitle>Guardrails</CardTitle>
+          <CardDescription>Metrics we never want to regress</CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-2">
           {guardrailMetrics.length > 0 ? (
@@ -103,19 +98,17 @@ export function MetricsPanel({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("app.dashboard.experiments._id.none_attached")}
-            </p>
+            <p className="text-sm text-muted-foreground">None attached</p>
           )}
           {openRole === null && (
             <Button
-              aria-label={t("app.dashboard.experiments._id.add_guardrail")}
+              aria-label="Add guardrail"
               size="sm"
               variant="outline"
               type="button"
               onClick={() => setOpenRole("guardrail")}
             >
-              {t("app.dashboard.experiments._id.attach")}
+              Attach
             </Button>
           )}
           {openRole === "guardrail" && (
@@ -131,10 +124,8 @@ export function MetricsPanel({
 
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle>{t("app.dashboard.experiments._id.secondary_metrics")}</CardTitle>
-          <CardDescription>
-            {t("app.dashboard.experiments._id.optional_observational_metrics")}
-          </CardDescription>
+          <CardTitle>Secondary metrics</CardTitle>
+          <CardDescription>Optional observational metrics</CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-2">
           {secondaryMetrics.length > 0 ? (
@@ -146,19 +137,17 @@ export function MetricsPanel({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("app.dashboard.experiments._id.none_attached")}
-            </p>
+            <p className="text-sm text-muted-foreground">None attached</p>
           )}
           {openRole === null && (
             <Button
-              aria-label={t("app.dashboard.experiments._id.add_secondary")}
+              aria-label="Add secondary"
               size="sm"
               variant="outline"
               type="button"
               onClick={() => setOpenRole("secondary")}
             >
-              {t("app.dashboard.experiments._id.attach")}
+              Attach
             </Button>
           )}
           {openRole === "secondary" && (

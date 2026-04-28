@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveGateRulesAction } from "./actions";
-import { useShipEasyI18n } from "@shipeasy/react";
 
 interface Attribute {
   id: string;
@@ -27,7 +26,6 @@ interface Props {
 }
 
 export function RulesBuilder({ gateId, initialRules, attributes }: Props) {
-  const { t } = useShipEasyI18n();
   const [rules, setRules] = useState<Rule[]>(initialRules);
 
   function addRule() {
@@ -49,9 +47,7 @@ export function RulesBuilder({ gateId, initialRules, attributes }: Props) {
 
       {rules.length === 0 ? (
         <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {t(
-            "app.dashboard.configs.gates.no_rules_yet_click_ldquo_add_rule_rdquo_to_start_targeting_u",
-          )}
+          No rules yet. Click &ldquo;Add rule&rdquo; to start targeting users.
         </div>
       ) : (
         <div className="space-y-3">
@@ -59,9 +55,7 @@ export function RulesBuilder({ gateId, initialRules, attributes }: Props) {
             <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
               <div className="grid gap-1.5">
                 {idx === 0 && (
-                  <Label htmlFor={`rule-attr-${idx}`}>
-                    {t("app.dashboard.configs.gates.attribute")}
-                  </Label>
+                  <Label htmlFor={`rule-attr-${idx}`}>Attribute</Label>
                 )}
                 <select
                   id={`rule-attr-${idx}`}
@@ -79,9 +73,7 @@ export function RulesBuilder({ gateId, initialRules, attributes }: Props) {
               </div>
               <div className="grid gap-1.5">
                 {idx === 0 && (
-                  <Label htmlFor={`rule-op-${idx}`}>
-                    {t("app.dashboard.configs.gates.operator")}
-                  </Label>
+                  <Label htmlFor={`rule-op-${idx}`}>Operator</Label>
                 )}
                 <select
                   id={`rule-op-${idx}`}
@@ -99,9 +91,7 @@ export function RulesBuilder({ gateId, initialRules, attributes }: Props) {
               </div>
               <div className="grid gap-1.5">
                 {idx === 0 && (
-                  <Label htmlFor={`rule-value-${idx}`}>
-                    {t("app.dashboard.configs.gates.value")}
-                  </Label>
+                  <Label htmlFor={`rule-value-${idx}`}>Value</Label>
                 )}
                 <Input
                   id={`rule-value-${idx}`}
@@ -113,7 +103,7 @@ export function RulesBuilder({ gateId, initialRules, attributes }: Props) {
               </div>
               <button
                 type="button"
-                title={t("app.dashboard.configs.gates.remove_rule")}
+                title="Remove rule"
                 onClick={() => removeRule(idx)}
                 className="flex size-8 items-center justify-center rounded text-muted-foreground hover:text-foreground"
               >
@@ -126,11 +116,11 @@ export function RulesBuilder({ gateId, initialRules, attributes }: Props) {
 
       <div className="flex items-center gap-3">
         <Button type="button" variant="outline" size="sm" onClick={addRule}>
-          {t("app.dashboard.configs.gates.add_rule")}
+          Add rule
         </Button>
         {rules.length > 0 && (
           <Button type="submit" size="sm">
-            {t("app.dashboard.configs.gates.save_rules")}
+            Save rules
           </Button>
         )}
       </div>

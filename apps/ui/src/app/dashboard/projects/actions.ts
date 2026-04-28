@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { findProjectById, insertProject, listProjectsByEmail } from "@shipeasy/core";
@@ -42,6 +43,7 @@ export async function createProjectAction(formData: FormData) {
     maxAge: 60 * 60 * 24 * 365,
   });
 
+  revalidatePath("/dashboard");
   redirect("/dashboard");
 }
 

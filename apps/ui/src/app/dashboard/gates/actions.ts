@@ -12,6 +12,7 @@ export async function createGateAction(formData: FormData) {
   const rollout_pct = Math.round(Number(formData.get("rollout_pct") ?? 0) * 100);
   const killswitch = formData.get("killswitch") === "true";
   await createGate(identity, { name, rollout_pct, rules: [], killswitch });
+  revalidatePath("/dashboard/gates");
   redirect("/dashboard/gates");
 }
 

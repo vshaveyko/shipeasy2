@@ -12,6 +12,12 @@ CF_ACCOUNT_ID = "b3b935b0b2a42ae7ec5029cd3de2f0e8"
 ANALYTICS_HOST = "cdn.shipeasy.ai"
 FLAGS_DOMAIN = "cdn.shipeasy.ai"
 CRONITOR_HEARTBEAT_URL = ""
+# Stripe — set via `wrangler secret put` in production; fill in .dev.vars for local dev
+STRIPE_PRICE_BASE_MONTHLY = ""
+STRIPE_PRICE_BASE_ANNUAL = ""
+STRIPE_PRICE_PER_EXPERIMENT = ""
+STRIPE_PRICE_PER_GATE = ""
+STRIPE_PRICE_PER_CONFIG = ""
 
 [[d1_databases]]
 binding = "DB"

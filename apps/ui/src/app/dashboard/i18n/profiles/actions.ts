@@ -18,6 +18,8 @@ export async function createProfileAction(formData: FormData) {
   const identity = await getIdentity();
   const name = formData.get("name");
   await createProfile(identity, { name });
+  revalidatePath("/dashboard/i18n/profiles");
+  revalidatePath("/dashboard");
   redirect("/dashboard/i18n/profiles");
 }
 

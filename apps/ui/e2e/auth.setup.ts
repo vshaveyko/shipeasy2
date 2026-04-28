@@ -55,7 +55,7 @@ function cleanE2eTestData() {
     // Project row must exist (with plan=pro) so loadProject() resolves and TopBar shows plan badge
     // Use INSERT OR IGNORE + UPDATE to avoid CASCADE deleting child rows (universes, etc.)
     `INSERT OR IGNORE INTO projects (id, name, owner_email, plan, status, created_at, updated_at) VALUES ('${pid}', 'Default project', 'e2e@shipeasy.test', 'free', 'active', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z')`,
-    `UPDATE projects SET plan='free', name='Default project' WHERE id='${pid}'`,
+    `UPDATE projects SET plan='free', name='Default project', stripe_customer_id=NULL, stripe_subscription_id=NULL, stripe_item_id_base=NULL, stripe_item_id_experiments=NULL, stripe_item_id_gates=NULL, stripe_item_id_configs=NULL, subscription_status='none', current_period_end=NULL, trial_ends_at=NULL, cancel_at_period_end=0, billing_interval='monthly' WHERE id='${pid}'`,
     `INSERT OR IGNORE INTO events (id, project_id, name, pending, created_at) VALUES ('e2e-event-id', '${pid}', 'e2e_event', 0, '2024-01-01T00:00:00.000Z')`,
     `INSERT OR IGNORE INTO universes (id, project_id, name, unit_type, holdout_range, created_at) VALUES ('e2e-universe-default', '${pid}', 'default', 'user_id', NULL, '2024-01-01T00:00:00.000Z')`,
     // i18n test profile (en:test) with 5 keys matching i18n-keys.spec.ts expectations

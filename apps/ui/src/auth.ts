@@ -27,7 +27,7 @@ declare module "next-auth/jwt" {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google, GitHub],
-  session: { strategy: "jwt", maxAge: 15 * 60 },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
   /*
     A stale auth.js session cookie (e.g. left over from a prior AUTH_SECRET)
     surfaces as a recurring JWTSessionError on every server render. The

@@ -1,5 +1,5 @@
 import { eq, inArray } from "drizzle-orm";
-import { checkLimit, rebuildCatalog, ApiError, getPlan } from "@shipeasy/core";
+import { checkLimit, rebuildCatalog, ApiError, getEffectivePlan } from "@shipeasy/core";
 import { events, metrics } from "@shipeasy/core/db/schema";
 import {
   eventCreateSchema,
@@ -26,7 +26,7 @@ export async function getEvent(identity: AdminIdentity, id: string) {
 export async function createEvent(identity: AdminIdentity, input: unknown) {
   const parsed = eventCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   await checkLimit(env.DB, identity.projectId, "events_catalog", plan);

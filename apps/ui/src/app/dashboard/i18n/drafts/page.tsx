@@ -49,7 +49,7 @@ export default async function I18nDraftsPage() {
         }
       />
 
-      {drafts.filter((d) => d.status === "open").length === 0 && (
+      {drafts.length === 0 && (
         <EmptyState
           icon={PencilLine}
           title="No drafts in flight"

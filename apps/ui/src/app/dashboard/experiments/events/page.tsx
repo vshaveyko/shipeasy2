@@ -3,18 +3,12 @@ import { auth } from "@/auth";
 import { listEvents } from "@/lib/handlers/events";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { SelectableList } from "@/components/dashboard/selectable-list";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  createEventAction,
-  approveEventAction,
-  deleteEventAction,
-  bulkDeleteEventsAction,
-} from "./actions";
+import { createEventAction } from "./actions";
+import { EventsContent } from "./events-content";
 
 export default async function EventsPage() {
   const session = await auth();
@@ -79,46 +73,7 @@ export default async function EventsPage() {
           description="Call track('purchase', ...) from an SDK and it'll appear here as a pending event awaiting approval."
         />
       ) : (
-        <SelectableList
-          items={events}
-          onBulkDelete={bulkDeleteEventsAction}
-          renderContent={(ev) => (
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-sm font-medium">{ev.name}</span>
-              {ev.description && (
-                <span className="text-xs text-muted-foreground">{ev.description}</span>
-              )}
-              {ev.pending ? (
-                <Badge variant="secondary">pending</Badge>
-              ) : (
-                <Badge variant="default">approved</Badge>
-              )}
-            </div>
-          )}
-          renderActions={(ev) => (
-            <>
-              {!!ev.pending && (
-                <form action={approveEventAction}>
-                  <input type="hidden" name="id" value={ev.id} />
-                  <Button size="sm" variant="outline" type="submit">
-                    Approve
-                  </Button>
-                </form>
-              )}
-              <form action={deleteEventAction}>
-                <input type="hidden" name="id" value={ev.id} />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  type="submit"
-                  className="text-destructive hover:text-destructive"
-                >
-                  Delete
-                </Button>
-              </form>
-            </>
-          )}
-        />
+        <EventsContent events={events} />
       )}
     </div>
   );

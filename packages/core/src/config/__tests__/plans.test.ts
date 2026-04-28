@@ -8,22 +8,10 @@ describe("getPlan", () => {
     expect(plan.price_usd_per_month).toBe(0);
   });
 
-  it("returns the pro plan", () => {
-    const plan = getPlan("pro");
-    expect(plan.name).toBe("pro");
-    expect(plan.max_flags).toBe(200);
-  });
-
-  it("returns the premium plan", () => {
-    const plan = getPlan("premium");
-    expect(plan.name).toBe("premium");
-  });
-
-  it("returns the enterprise plan with -1 limits (unlimited)", () => {
-    const plan = getPlan("enterprise");
-    expect(plan.name).toBe("enterprise");
+  it("returns the paid plan", () => {
+    const plan = getPlan("paid");
+    expect(plan.name).toBe("paid");
     expect(plan.max_flags).toBe(-1);
-    expect(plan.max_sdk_keys).toBe(-1);
   });
 
   it("throws for an unknown plan name", () => {
@@ -36,36 +24,37 @@ describe("getPlan", () => {
 });
 
 describe("PLANS", () => {
-  it("contains exactly the four expected plans", () => {
-    expect(Object.keys(PLANS)).toEqual(["free", "pro", "premium", "enterprise"]);
+  it("contains exactly the two expected plans", () => {
+    expect(Object.keys(PLANS)).toEqual(["free", "paid"]);
   });
 
-  it("resource limits increase from free → pro → premium", () => {
-    expect(PLANS.free.max_flags).toBeLessThan(PLANS.pro.max_flags);
-    expect(PLANS.pro.max_flags).toBeLessThan(PLANS.premium.max_flags);
-
-    expect(PLANS.free.max_experiments_running).toBeLessThan(PLANS.pro.max_experiments_running);
-    expect(PLANS.pro.max_experiments_running).toBeLessThan(PLANS.premium.max_experiments_running);
+  it("free plan has hard count limits; paid has -1 (unlimited)", () => {
+    expect(PLANS.free.max_flags).toBe(3);
+    expect(PLANS.free.max_configs).toBe(1);
+    expect(PLANS.free.max_experiments_running).toBe(1);
+    expect(PLANS.free.max_universes).toBe(1);
+    expect(PLANS.paid.max_flags).toBe(-1);
+    expect(PLANS.paid.max_configs).toBe(-1);
+    expect(PLANS.paid.max_experiments_running).toBe(-1);
   });
 
-  it("poll interval decreases as tier increases (faster polling at higher tiers)", () => {
-    expect(PLANS.enterprise.poll_interval_seconds).toBeLessThan(
-      PLANS.premium.poll_interval_seconds,
-    );
-    expect(PLANS.premium.poll_interval_seconds).toBeLessThan(PLANS.pro.poll_interval_seconds);
-    expect(PLANS.pro.poll_interval_seconds).toBeLessThan(PLANS.free.poll_interval_seconds);
+  it("free plan has i18n limits; paid has -1", () => {
+    expect(PLANS.free.max_i18n_keys).toBe(250);
+    expect(PLANS.free.max_i18n_profiles).toBe(1);
+    expect(PLANS.paid.max_i18n_keys).toBe(-1);
+    expect(PLANS.paid.max_i18n_profiles).toBe(-1);
   });
 
-  it("enterprise has -1 for all resource count limits", () => {
-    const ent = PLANS.enterprise;
-    expect(ent.max_flags).toBe(-1);
-    expect(ent.max_configs).toBe(-1);
-    expect(ent.max_experiments_running).toBe(-1);
-    expect(ent.max_universes).toBe(-1);
-    expect(ent.max_metrics).toBe(-1);
-    expect(ent.max_events_catalog).toBe(-1);
-    expect(ent.max_sdk_keys).toBe(-1);
-    expect(ent.max_team_members).toBe(-1);
+  it("paid plan polls faster than free", () => {
+    expect(PLANS.paid.poll_interval_seconds).toBeLessThan(PLANS.free.poll_interval_seconds);
+  });
+
+  it("free has mcp_access=true (1 profile with MCP included)", () => {
+    expect(PLANS.free.mcp_access).toBe(true);
+  });
+
+  it("paid plan has 14-day trial", () => {
+    expect(PLANS.paid.trial_days).toBe(14);
   });
 
   it("all plans have required boolean feature flags", () => {
@@ -78,24 +67,13 @@ describe("PLANS", () => {
     }
   });
 
-  it("free plan has holdout_groups=false", () => {
-    expect(PLANS.free.holdout_groups).toBe(false);
-  });
-
-  it("pro and above have holdout_groups=true", () => {
-    expect(PLANS.pro.holdout_groups).toBe(true);
-    expect(PLANS.premium.holdout_groups).toBe(true);
-    expect(PLANS.enterprise.holdout_groups).toBe(true);
-  });
-
   it("analysis_frequency is 'daily' for all plans", () => {
     for (const plan of Object.values(PLANS)) {
       expect(plan.analysis_frequency).toBe("daily");
     }
   });
 
-  it("results_retention_days increases with plan tier", () => {
-    expect(PLANS.free.results_retention_days).toBeLessThan(PLANS.pro.results_retention_days);
-    expect(PLANS.pro.results_retention_days).toBeLessThan(PLANS.premium.results_retention_days);
+  it("paid plan retains results longer than free", () => {
+    expect(PLANS.paid.results_retention_days).toBeGreaterThan(PLANS.free.results_retention_days);
   });
 });

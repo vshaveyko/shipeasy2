@@ -7,7 +7,6 @@ import { ArrowRight } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { ShipeasyClientProviders } from "@/components/shipeasy-providers";
-import { useShipEasyI18n } from "@shipeasy/react";
 
 function safeCallback(raw: string | null): string {
   if (!raw) return "/dashboard";
@@ -16,14 +15,13 @@ function safeCallback(raw: string | null): string {
 }
 
 function SignInForm() {
-  const { t } = useShipEasyI18n();
   const search = useSearchParams();
   const callbackUrl = safeCallback(search.get("callbackUrl"));
 
   return (
     <AuthShell>
       <h1 className="mb-2 text-[32px] font-medium leading-[1.1] tracking-[-0.02em]">
-        {t("app.welcome_back")}{" "}
+        Welcome{" "}
         <em
           className="text-foreground"
           style={{ fontFamily: "var(--se-serif)", fontStyle: "italic", fontWeight: 400 }}
@@ -32,7 +30,7 @@ function SignInForm() {
         </em>
       </h1>
       <p className="mb-7 text-[14px] leading-[1.55] text-[var(--se-fg-2)]">
-        {t("app.sign_in_to_your_account_to_continue")}
+        Sign in to your account to continue.
       </p>
 
       <button
@@ -45,7 +43,7 @@ function SignInForm() {
             fill="currentColor"
           />
         </svg>
-        {t("app.continue_with_github")}
+        Continue with GitHub
       </button>
 
       <button
@@ -70,7 +68,7 @@ function SignInForm() {
             fill="#EA4335"
           />
         </svg>
-        {t("app.continue_with_google")}
+        Continue with Google
       </button>
 
       <div className="my-5 flex items-center gap-3 font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-4)]">

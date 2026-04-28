@@ -1,4 +1,6 @@
-import { createContext, useContext } from "react";
+import { createElement, createContext, useCallback, useContext } from "react";
+import type { ReactElement } from "react";
+import { labelAttrs } from "@shipeasy/i18n-core";
 import type { ExperimentResult, User } from "@shipeasy/sdk/client";
 
 export interface ShipEasyI18nContextValue {
@@ -52,7 +54,28 @@ export function useShipeasy(): ShipeasyContextValue {
   return useContext(ShipeasyContext);
 }
 
+export interface ShipEasyI18nHookValue extends ShipEasyI18nContextValue {
+  /**
+   * Like `t()` but returns a `<span data-label="key">` React element so the
+   * ShipEasy devtools "Edit labels" overlay can locate and inline-edit it.
+   * Use `t()` for non-JSX contexts (attributes, titles, placeholders).
+   */
+  tEl: (
+    key: string,
+    variables?: Record<string, string | number>,
+    desc?: string,
+  ) => ReactElement;
+}
+
 /** Backwards-compatible selector for code that only cares about i18n. */
-export function useShipEasyI18n(): ShipEasyI18nContextValue {
-  return useContext(ShipeasyContext).i18n;
+export function useShipEasyI18n(): ShipEasyI18nHookValue {
+  const ctx = useContext(ShipeasyContext).i18n;
+  const tEl = useCallback(
+    (key: string, variables?: Record<string, string | number>, desc?: string): ReactElement =>
+      createElement("span", labelAttrs(key, variables, desc), ctx.t(key, variables)),
+    // ctx.t is stable (wrapped in useCallback with [] in the provider)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ctx.t],
+  );
+  return { ...ctx, tEl };
 }

@@ -3,11 +3,9 @@ import { auth } from "@/auth";
 import { listMetrics } from "@/lib/handlers/metrics";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { SelectableList } from "@/components/dashboard/selectable-list";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricForm } from "./metric-form";
-import { deleteMetricAction, bulkDeleteMetricsAction } from "./actions";
+import { MetricsContent } from "./metrics-content";
 
 const AGG_TYPES = [
   {
@@ -57,31 +55,7 @@ export default async function MetricsPage() {
           description="Define a metric by picking an event, an aggregation type, and (optionally) a filter."
         />
       ) : (
-        <SelectableList
-          items={metrics}
-          onBulkDelete={bulkDeleteMetricsAction}
-          renderContent={(m) => (
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-sm font-medium">{m.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {m.aggregation} on {m.eventName}
-              </span>
-            </div>
-          )}
-          renderActions={(m) => (
-            <form action={deleteMetricAction}>
-              <input type="hidden" name="id" value={m.id} />
-              <Button
-                size="sm"
-                variant="ghost"
-                type="submit"
-                className="text-destructive hover:text-destructive"
-              >
-                Delete
-              </Button>
-            </form>
-          )}
-        />
+        <MetricsContent metrics={metrics} />
       )}
 
       <Card>

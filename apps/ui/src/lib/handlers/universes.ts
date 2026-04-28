@@ -1,5 +1,5 @@
 import { and, eq, ne } from "drizzle-orm";
-import { checkLimit, rebuildExperiments, ApiError, getPlan } from "@shipeasy/core";
+import { checkLimit, rebuildExperiments, ApiError, getEffectivePlan } from "@shipeasy/core";
 import { universes, experiments } from "@shipeasy/core/db/schema";
 import { universeCreateSchema, universeUpdateSchema } from "@shipeasy/core/schemas/universes";
 import { scopedDb, scopedDbSA } from "../db";
@@ -15,7 +15,7 @@ export async function listUniverses(identity: AdminIdentity) {
 export async function createUniverse(identity: AdminIdentity, input: unknown) {
   const parsed = universeCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   if (parsed.holdout_range && !plan.holdout_groups) {
@@ -47,7 +47,7 @@ export async function createUniverse(identity: AdminIdentity, input: unknown) {
 export async function updateUniverse(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = universeUpdateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   if (parsed.holdout_range !== undefined && parsed.holdout_range !== null && !plan.holdout_groups) {

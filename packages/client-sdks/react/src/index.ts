@@ -1,7 +1,7 @@
 export { ShipeasyProvider } from "./provider";
 export type { ShipeasyProviderProps } from "./provider";
 export { ShipeasyContext, useShipeasy, useShipEasyI18n } from "./context";
-export type { ShipeasyContextValue, ShipEasyI18nContextValue } from "./context";
+export type { ShipeasyContextValue, ShipEasyI18nContextValue, ShipEasyI18nHookValue } from "./context";
 export { useFlag, useConfig, useExperiment, useTrack } from "./hooks";
 
 // i18n bindings — the `<ShipeasyProvider>` now owns the i18n context too,

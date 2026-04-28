@@ -10,6 +10,13 @@ declare global {
     FLAGS_DOMAIN?: string;
     WORKER_URL?: string;
     CLI_SERVICE_SECRET?: string;
+    // Stripe — set via `wrangler secret put`
+    STRIPE_SECRET_KEY?: string;
+    STRIPE_PRICE_BASE_MONTHLY?: string;
+    STRIPE_PRICE_BASE_ANNUAL?: string;
+    STRIPE_PRICE_PER_EXPERIMENT?: string;
+    STRIPE_PRICE_PER_GATE?: string;
+    STRIPE_PRICE_PER_CONFIG?: string;
   }
 }
 

@@ -6,49 +6,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createMetricAction } from "./actions";
-import { useShipEasyI18n } from "@shipeasy/react";
 
 export function MetricForm() {
-  const { t } = useShipEasyI18n();
   const [aggregation, setAggregation] = useState("count_users");
   const needsValuePath = aggregation === "sum" || aggregation === "avg";
 
   return (
     <Card>
       <CardHeader className="border-b pb-4">
-        <CardTitle>{t("app.dashboard.experiments.metrics.new_metric")}</CardTitle>
+        <CardTitle>New metric</CardTitle>
         <CardDescription>
-          {t(
-            "app.dashboard.experiments.metrics.define_a_metric_by_picking_an_event_and_aggregation_type",
-          )}
+          Define a metric by picking an event and aggregation type.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
         <form action={createMetricAction} className="grid gap-3 sm:grid-cols-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="metric-name">{t("common.name")}</Label>
+            <Label htmlFor="metric-name">Name</Label>
             <Input
               id="metric-name"
               name="name"
-              placeholder={t("app.dashboard.experiments.metrics.purchase_rate")}
+              placeholder="purchase-rate"
               className="font-mono"
               required
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="metric-event">
-              {t("app.dashboard.experiments.metrics.event_name")}
-            </Label>
+            <Label htmlFor="metric-event">Event name</Label>
             <Input
               id="metric-event"
               name="event_name"
-              placeholder={t("app.dashboard.experiments.metrics.purchase")}
+              placeholder="purchase"
               className="font-mono"
               required
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="metric-agg">{t("app.dashboard.experiments.metrics.aggregation")}</Label>
+            <Label htmlFor="metric-agg">Aggregation</Label>
             <select
               id="metric-agg"
               name="aggregation"
@@ -56,36 +50,26 @@ export function MetricForm() {
               onChange={(e) => setAggregation(e.target.value)}
               className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              <option value="count_users">
-                {t("app.dashboard.experiments.metrics.count_users")}
-              </option>
-              <option value="count_events">
-                {t("app.dashboard.experiments.metrics.count_events")}
-              </option>
+              <option value="count_users">count_users</option>
+              <option value="count_events">count_events</option>
               <option value="sum">sum</option>
               <option value="avg">avg</option>
-              <option value="retention_Nd">
-                {t("app.dashboard.experiments.metrics.retention_nd")}
-              </option>
+              <option value="retention_Nd">retention_Nd</option>
             </select>
           </div>
           {needsValuePath && (
             <div className="grid gap-1.5">
-              <Label htmlFor="metric-value-path">
-                {t("app.dashboard.experiments.metrics.value_path")}
-              </Label>
+              <Label htmlFor="metric-value-path">Value path</Label>
               <Input
                 id="metric-value-path"
                 name="value_path"
-                placeholder={t("app.dashboard.experiments.metrics.amount")}
+                placeholder="amount"
                 className="font-mono"
               />
             </div>
           )}
           <div className="grid gap-1.5">
-            <Label htmlFor="metric-winsorize">
-              {t("app.dashboard.experiments.metrics.winsorize")}
-            </Label>
+            <Label htmlFor="metric-winsorize">Winsorize %</Label>
             <Input
               id="metric-winsorize"
               name="winsorize_pct"
@@ -96,9 +80,7 @@ export function MetricForm() {
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="metric-mde">
-              {t("app.dashboard.experiments.metrics.min_detectable_effect")}
-            </Label>
+            <Label htmlFor="metric-mde">Min detectable effect</Label>
             <Input
               id="metric-mde"
               name="min_detectable_effect"
@@ -109,7 +91,7 @@ export function MetricForm() {
           </div>
           <div className="flex items-end">
             <Button size="sm" type="submit">
-              {t("app.dashboard.experiments.metrics.new_metric")}
+              New metric
             </Button>
           </div>
         </form>

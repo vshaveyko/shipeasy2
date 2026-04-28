@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { ChevronsUpDown } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SignOutButton } from "@/components/dashboard/sign-out-button";
-import { Badge } from "@/components/ui/badge";
+import { BrandMark } from "@/components/dashboard/brand-mark";
 import { buttonVariants } from "@/components/ui/button";
-import { LinkButton } from "@/components/ui/link-button";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { BrandMark } from "@/components/dashboard/brand-mark";
 
 type TopBarProps = {
   user: {
@@ -29,7 +26,7 @@ type TopBarProps = {
   planLabel?: string;
 };
 
-export function TopBar({ user, projectName = "Default project", planLabel }: TopBarProps) {
+export function TopBar({ user, projectName = "Default project" }: TopBarProps) {
   const initials =
     user.name
       ?.split(" ")
@@ -39,53 +36,47 @@ export function TopBar({ user, projectName = "Default project", planLabel }: Top
       .slice(0, 2) ?? "?";
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-background px-6">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]"
-        >
-          <BrandMark size={22} />
-          Shipeasy
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "sm" }),
-              "h-8 gap-2 font-normal",
-            )}
-          >
-            <span className="font-medium">{projectName}</span>
-            {planLabel && (
-              <Badge variant="secondary" className="text-[10px]">
-                {planLabel}
-              </Badge>
-            )}
-            <ChevronsUpDown className="size-3.5 text-muted-foreground" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Projects</DropdownMenuLabel>
-              <DropdownMenuItem>{projectName}</DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>+ New project (coming soon)</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background px-4">
+      {/* Mobile: show logo (sidebar is hidden on mobile) */}
+      <Link
+        href="/dashboard"
+        className="flex items-center gap-2 text-[14px] font-semibold tracking-[-0.01em] md:hidden"
+      >
+        <BrandMark size={20} />
+        Shipeasy
+      </Link>
+
+      {/* Desktop: breadcrumb shows project name */}
+      <div className="hidden items-center gap-1.5 text-[13px] md:flex">
+        <span className="text-muted-foreground">{projectName}</span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <LinkButton
-          variant="ghost"
-          size="sm"
-          href="https://docs.shipeasy.ai"
-          target="_blank"
-          rel="noreferrer"
+      {/* Search — center */}
+      <div className="flex flex-1 items-center justify-center">
+        <button
+          type="button"
+          className="flex h-8 w-[260px] items-center gap-2 rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 text-[12.5px] text-muted-foreground transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)]"
         >
-          Docs
-        </LinkButton>
-        <ThemeToggle />
+          <Search className="size-3.5 shrink-0" />
+          <span className="flex-1 text-left">Search or ask Claude…</span>
+          <kbd className="inline-flex items-center gap-0.5 rounded border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+            ⌘K
+          </kbd>
+        </button>
+      </div>
+
+      {/* Right: bell + theme + user */}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          aria-label="Notifications"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "size-8 p-0 text-muted-foreground",
+          )}
+        >
+          <Bell className="size-4" />
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label={user.name ?? "Account menu"}

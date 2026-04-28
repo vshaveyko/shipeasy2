@@ -27,8 +27,9 @@ const fetcher = async <T,>(url: string): Promise<T> => {
 };
 
 export function KeysContent() {
-  const profilesQ = useSWR<Profile[]>("/api/admin/i18n/profiles", fetcher);
-  const draftsQ = useSWR<Draft[]>("/api/admin/i18n/drafts", fetcher);
+  const swrOpts = { dedupingInterval: 0 };
+  const profilesQ = useSWR<Profile[]>("/api/admin/i18n/profiles", fetcher, swrOpts);
+  const draftsQ = useSWR<Draft[]>("/api/admin/i18n/drafts", fetcher, swrOpts);
 
   const profiles = profilesQ.data ?? [];
   const drafts = draftsQ.data ?? [];

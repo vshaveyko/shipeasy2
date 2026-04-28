@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,22 +12,18 @@ interface Props<T> {
   onClear: () => void;
 }
 
-/**
- * Sticky toolbar that appears above a selectable list when the user has
- * picked one or more rows. Renders the provided `actions` in order and
- * confirms destructive ones via `window.confirm` before dispatching.
- *
- * Strings here are plain English until the shipeasy i18n provider is wired
- * into the app shell; swap them for `t()` calls once translations resolve.
- */
 export function BulkActionsBar<T>({ selected, actions, onClear }: Props<T>) {
   const [isPending, startTransition] = useTransition();
+  const [pendingConfirm, setPendingConfirm] = useState<string | null>(null);
 
   if (selected.length === 0) return null;
 
   function runAction(action: BulkAction<T>) {
-    const msg = action.confirm?.(selected);
-    if (msg && !window.confirm(msg)) return;
+    if (action.confirm?.(selected) && pendingConfirm !== action.id) {
+      setPendingConfirm(action.id);
+      return;
+    }
+    setPendingConfirm(null);
     startTransition(async () => {
       await action.run(selected);
       onClear();
@@ -57,7 +53,27 @@ export function BulkActionsBar<T>({ selected, actions, onClear }: Props<T>) {
         {actions.map((a) => {
           const Icon = a.icon;
           const enabled = a.enabled ? a.enabled(selected) : true;
-          return (
+          const awaitingConfirm = pendingConfirm === a.id;
+          return awaitingConfirm ? (
+            <span key={a.id} className="flex items-center gap-1">
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => setPendingConfirm(null)}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="xs"
+                variant={a.variant ?? "outline"}
+                onClick={() => runAction(a)}
+                disabled={isPending}
+              >
+                Confirm
+              </Button>
+            </span>
+          ) : (
             <Button
               key={a.id}
               size="xs"

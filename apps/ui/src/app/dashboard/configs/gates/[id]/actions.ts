@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { updateGate } from "@/lib/handlers/gates";
 
@@ -21,5 +22,7 @@ export async function saveGateRulesAction(formData: FormData) {
   }
 
   await updateGate(identity, gateId, { rules });
+  revalidatePath(`/dashboard/configs/gates/${gateId}`);
+  revalidatePath("/dashboard/configs/gates");
   redirect("/dashboard/configs/gates");
 }

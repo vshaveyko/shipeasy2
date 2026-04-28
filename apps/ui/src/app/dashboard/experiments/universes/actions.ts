@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { createUniverse, deleteUniverse } from "@/lib/handlers/universes";
 
@@ -15,6 +16,7 @@ export async function createUniverseAction(formData: FormData) {
       ? [Number(loRaw), Number(hiRaw)]
       : null;
   await createUniverse(identity, { name, unit_type, holdout_range });
+  revalidatePath("/dashboard/experiments/universes");
   redirect("/dashboard/experiments/universes");
 }
 
@@ -22,5 +24,6 @@ export async function deleteUniverseAction(formData: FormData) {
   const identity = await getIdentity();
   const id = formData.get("id") as string;
   await deleteUniverse(identity, id);
+  revalidatePath("/dashboard/experiments/universes");
   redirect("/dashboard/experiments/universes");
 }

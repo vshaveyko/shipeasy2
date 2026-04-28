@@ -65,11 +65,11 @@ describe("PATCH /admin/projects/:id", () => {
 describe("PATCH /admin/projects/:id/plan", () => {
   it("upgrades plan and triggers KV rebuild", async () => {
     const res = await UPDATE_PLAN(
-      req("PATCH", `/api/admin/projects/${ID}/plan`, { plan: "pro" }),
+      req("PATCH", `/api/admin/projects/${ID}/plan`, { plan: "paid" }),
       p(),
     );
     expect(res.status).toBe(200);
-    expect(((await res.json()) as { plan: string }).plan).toBe("pro");
+    expect(((await res.json()) as { plan: string }).plan).toBe("paid");
   });
 
   it("returns 422 for invalid plan", async () => {

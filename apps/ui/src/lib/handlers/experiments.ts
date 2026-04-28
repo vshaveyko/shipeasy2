@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { checkLimit, rebuildExperiments, ApiError, getPlan, getDb } from "@shipeasy/core";
+import { checkLimit, rebuildExperiments, ApiError, getEffectivePlan, buildUsageUpdates, getDb } from "@shipeasy/core";
 import {
   experiments,
   experimentMetrics,
@@ -16,6 +16,7 @@ import { scopedDb, scopedDbSA } from "../db";
 import { getEnv, getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
+import { syncUsage } from "../billing";
 import type { AdminIdentity } from "../admin-auth";
 
 const IMMUTABLE_WHILE_RUNNING = ["allocation_pct", "groups", "salt", "universe", "params"] as const;
@@ -40,7 +41,7 @@ async function assertUniverseExists(projectId: string, name: string) {
 export async function createExperiment(identity: AdminIdentity, input: unknown) {
   const parsed = experimentCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   if (
@@ -145,7 +146,7 @@ export async function setExperimentStatus(
   status: "draft" | "running" | "stopped" | "archived",
 ) {
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
   const s = await scopedDbSA(identity.projectId);
 
@@ -177,6 +178,9 @@ export async function setExperimentStatus(
 
   await s.update(experiments).set(patch).where(eq(experiments.id, id));
   await rebuildExperiments(env, identity.projectId);
+  if (status === "running" || status === "stopped") {
+    await syncUsage(env, identity.projectId);
+  }
   await writeAudit(identity, `experiment.${status}`, "experiment", id);
   return { id, status };
 }

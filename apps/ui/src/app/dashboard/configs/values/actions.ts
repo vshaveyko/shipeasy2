@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { createConfig, deleteConfig, bulkDeleteConfigs } from "@/lib/handlers/configs";
 
@@ -30,6 +31,8 @@ export async function createConfigAction(formData: FormData) {
     valueType: (valueType as "string" | "number" | "boolean" | "object" | "array") ?? undefined,
     value: value ?? "",
   });
+  revalidatePath("/dashboard/configs/values");
+  revalidatePath("/dashboard");
   redirect(`/dashboard/configs/values/${created.id}`);
 }
 
@@ -37,6 +40,8 @@ export async function deleteConfigAction(formData: FormData) {
   const identity = await getIdentity();
   const id = formData.get("id") as string;
   await deleteConfig(identity, id);
+  revalidatePath("/dashboard/configs/values");
+  revalidatePath("/dashboard");
   redirect("/dashboard/configs/values");
 }
 

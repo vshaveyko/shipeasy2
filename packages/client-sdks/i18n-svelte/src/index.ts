@@ -1,4 +1,6 @@
 import { readable, derived, type Readable } from "svelte/store";
+export { labelAttrs } from "@shipeasy/i18n-core";
+export type { LabelAttrs } from "@shipeasy/i18n-core";
 
 declare global {
   interface Window {

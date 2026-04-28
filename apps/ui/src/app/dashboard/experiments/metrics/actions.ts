@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { createMetric, deleteMetric, bulkDeleteMetrics } from "@/lib/handlers/metrics";
 
@@ -23,6 +24,7 @@ export async function createMetricAction(formData: FormData) {
     value_path,
     min_detectable_effect,
   });
+  revalidatePath("/dashboard/experiments/metrics");
   redirect("/dashboard/experiments/metrics");
 }
 
@@ -30,6 +32,7 @@ export async function deleteMetricAction(formData: FormData) {
   const identity = await getIdentity();
   const id = formData.get("id") as string;
   await deleteMetric(identity, id);
+  revalidatePath("/dashboard/experiments/metrics");
   redirect("/dashboard/experiments/metrics");
 }
 

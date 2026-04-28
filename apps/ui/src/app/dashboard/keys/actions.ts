@@ -10,6 +10,7 @@ export async function createKeyAction(formData: FormData) {
   const identity = await getIdentity();
   const type = formData.get("type") as string;
   const result = await createKey(identity, { type });
+  revalidatePath("/dashboard/keys");
   redirect(`/dashboard/keys?new_key=${encodeURIComponent(result.key)}`);
 }
 

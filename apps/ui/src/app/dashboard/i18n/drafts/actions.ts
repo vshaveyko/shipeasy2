@@ -19,6 +19,7 @@ export async function createDraftAction(formData: FormData) {
   const name = formData.get("name");
   const profile_id = formData.get("profile_id");
   await createDraft(identity, { name, profile_id });
+  revalidatePath("/dashboard/i18n/drafts");
   redirect("/dashboard/i18n/drafts");
 }
 

@@ -4,10 +4,46 @@ import { auth } from "@/auth";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PRODUCTS } from "@/lib/products";
+import { listGates } from "@/lib/handlers/gates";
+import { listConfigs } from "@/lib/handlers/configs";
+import { listExperiments } from "@/lib/handlers/experiments";
+import { listProfiles } from "@/lib/handlers/i18n";
+import { getProject } from "@/lib/handlers/projects";
+import { getEffectivePlan } from "@shipeasy/core";
 
 export default async function OverviewPage() {
   const session = await auth();
   const firstName = session?.user?.name?.split(" ")[0];
+  const projectId = session?.user?.project_id ?? "";
+  const actorEmail = session?.user?.email ?? "unknown";
+  const identity = { projectId, actorEmail, source: "jwt" as const };
+
+  let gatesCount = 0;
+  let configsCount = 0;
+  let runningCount = 0;
+  let localesCount = 0;
+  let planName = "Free";
+
+  if (projectId) {
+    try {
+      const [gates, configs, experiments, profiles, project] = await Promise.all([
+        listGates(identity).catch(() => []),
+        listConfigs(identity).catch(() => []),
+        listExperiments(identity).catch(() => []),
+        listProfiles(identity).catch(() => []),
+        getProject(identity, projectId).catch(() => null),
+      ]);
+      gatesCount = gates.length;
+      configsCount = configs.length;
+      runningCount = experiments.filter((e) => e.status === "running").length;
+      localesCount = profiles.length;
+      if (project) {
+        planName = getEffectivePlan(project).display_name ?? "Free";
+      }
+    } catch {
+      // DB not available in dev without wrangler
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -18,10 +54,12 @@ export default async function OverviewPage() {
       />
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Gates + configs" value="0" hint="across environments" />
-        <StatCard label="Running experiments" value="0" hint="live with traffic" accent />
-        <StatCard label="Published locales" value="0" hint="string profiles live" />
-        <StatCard label="Plan" value="Free" hint="upgrade for more limits" />
+        <StatCard label="Gates + configs" value={String(gatesCount + configsCount)} hint="across environments" />
+        <StatCard label="Running experiments" value={String(runningCount)} hint="live with traffic" accent />
+        <StatCard label="Published locales" value={String(localesCount)} hint="string profiles live" />
+        <a href="/dashboard/billing" className="block">
+          <StatCard label="Plan" value={planName} hint="upgrade for more limits" />
+        </a>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">

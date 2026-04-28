@@ -17,15 +17,12 @@ export function ProjectSettingsForm({ projectId, name, domain }: Props) {
     <ActionForm action={updateProjectAction} loading="Saving…" success="Settings saved">
       <div className="space-y-4">
         <div className="grid gap-1.5">
-          <Label htmlFor="project-domain">
-            Domain <span className="text-destructive">*</span>
-          </Label>
+          <Label htmlFor="project-domain">Domain</Label>
           <Input
             id="project-domain"
             name="domain"
             defaultValue={domain}
             placeholder="app.example.com"
-            required
           />
           <p className="text-xs text-muted-foreground">
             Your app&apos;s hostname. Client-key SDK calls from other origins will be rejected. Use{" "}

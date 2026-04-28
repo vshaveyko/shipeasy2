@@ -7,19 +7,15 @@ test.describe("Plans — settings page display", () => {
     await page.goto("/dashboard/settings");
     await expect(page.getByText(/^plan$/i).first()).toBeVisible();
     await expect(page.getByText(/^current$/i)).toBeVisible();
-    // Plan name should be one of: free, pro, premium, enterprise
+    // Plan name should be one of: free, paid
     await expect(
-      page
-        .getByText(/\bfree\b/i)
-        .or(page.getByText(/\bpro\b/i))
-        .or(page.getByText(/\bpremium\b/i))
-        .or(page.getByText(/\benterprise\b/i)),
+      page.getByText(/\bfree\b/i).or(page.getByText(/\bpaid\b/i)),
     ).toBeVisible();
   });
 
-  test("Upgrade button is visible in Plan section", async ({ page }) => {
+  test("Manage billing link is visible in Plan section", async ({ page }) => {
     await page.goto("/dashboard/settings");
-    await expect(page.getByRole("button", { name: /^upgrade$/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /manage billing/i })).toBeVisible();
   });
 
   test("plan section shows poll interval setting", async ({ page }) => {

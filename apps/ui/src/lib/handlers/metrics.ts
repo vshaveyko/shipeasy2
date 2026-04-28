@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { checkLimit, ApiError, getPlan, getDb } from "@shipeasy/core";
+import { checkLimit, ApiError, getEffectivePlan, getDb } from "@shipeasy/core";
 import { metrics, events, experimentMetrics, experiments } from "@shipeasy/core/db/schema";
 import { metricCreateSchema, metricUpdateSchema } from "@shipeasy/core/schemas/metrics";
 import { scopedDb, scopedDbSA } from "../db";
@@ -29,7 +29,7 @@ export async function getMetric(identity: AdminIdentity, id: string) {
 export async function createMetric(identity: AdminIdentity, input: unknown) {
   const parsed = metricCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   await assertEventExists(identity.projectId, parsed.event_name);

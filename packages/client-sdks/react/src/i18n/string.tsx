@@ -1,4 +1,5 @@
 import React, { type HTMLAttributes } from "react";
+import { labelAttrs } from "@shipeasy/i18n-core";
 import { useShipEasyI18n } from "../context";
 
 interface ShipEasyI18nStringProps extends HTMLAttributes<HTMLElement> {
@@ -23,14 +24,5 @@ export function ShipEasyI18nString({
   // The i18n shim returns the key itself when no profile is loaded; show
   // the declared defaultValue instead so SSR renders human copy.
   const text = translated === labelKey && defaultValue ? defaultValue : translated;
-  return React.createElement(
-    Tag,
-    {
-      "data-label": labelKey,
-      "data-variables": variables ? JSON.stringify(variables) : undefined,
-      "data-label-desc": desc,
-      ...rest,
-    },
-    text,
-  );
+  return React.createElement(Tag, { ...labelAttrs(labelKey, variables, desc), ...rest }, text);
 }

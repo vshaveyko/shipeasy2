@@ -1,11 +1,12 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { checkLimit, rebuildFlags, ApiError, getPlan } from "@shipeasy/core";
+import { checkLimit, rebuildFlags, ApiError, getEffectivePlan } from "@shipeasy/core";
 import { gates, experiments } from "@shipeasy/core/db/schema";
 import { gateCreateSchema, gateUpdateSchema } from "@shipeasy/core/schemas/gates";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
+import { syncUsage } from "../billing";
 import type { AdminIdentity } from "../admin-auth";
 
 export async function listGates(identity: AdminIdentity) {
@@ -16,7 +17,7 @@ export async function listGates(identity: AdminIdentity) {
 export async function createGate(identity: AdminIdentity, input: unknown) {
   const parsed = gateCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   await checkLimit(env.DB, identity.projectId, "flags", plan);
@@ -44,6 +45,7 @@ export async function createGate(identity: AdminIdentity, input: unknown) {
   }
 
   await rebuildFlags(env, identity.projectId, project.plan);
+  await syncUsage(env, identity.projectId);
   await writeAudit(identity, "gate.create", "gate", id, parsed);
   return { id, name: parsed.name };
 }
@@ -107,6 +109,7 @@ export async function deleteGate(identity: AdminIdentity, id: string) {
 
   await s.update(gates).set({ deletedAt: new Date().toISOString() }).where(eq(gates.id, id));
   await rebuildFlags(env, identity.projectId, project.plan);
+  await syncUsage(env, identity.projectId);
   await writeAudit(identity, "gate.delete", "gate", id);
   return { ok: true };
 }

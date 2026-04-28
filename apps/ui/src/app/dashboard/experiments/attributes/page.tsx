@@ -3,11 +3,8 @@ import { auth } from "@/auth";
 import { listAttributes } from "@/lib/handlers/attributes";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { SelectableList } from "@/components/dashboard/selectable-list";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { AttributeForm } from "./attribute-form";
-import { deleteAttributeAction, bulkDeleteAttributesAction } from "./actions";
+import { AttributesContent } from "./attributes-content";
 
 export default async function AttributesPage() {
   const session = await auth();
@@ -42,29 +39,7 @@ export default async function AttributesPage() {
           description="Declaring an attribute lets you reference it in targeting rules without typos, with the right data type."
         />
       ) : (
-        <SelectableList
-          items={attributes}
-          onBulkDelete={bulkDeleteAttributesAction}
-          renderContent={(attr) => (
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-sm font-medium">{attr.name}</span>
-              <Badge variant="secondary">{attr.type}</Badge>
-            </div>
-          )}
-          renderActions={(attr) => (
-            <form action={deleteAttributeAction}>
-              <input type="hidden" name="id" value={attr.id} />
-              <Button
-                size="sm"
-                variant="ghost"
-                type="submit"
-                className="text-destructive hover:text-destructive"
-              >
-                Delete
-              </Button>
-            </form>
-          )}
-        />
+        <AttributesContent attributes={attributes} />
       )}
     </div>
   );

@@ -3,7 +3,7 @@ import {
   checkLimit,
   rebuildFlags,
   ApiError,
-  getPlan,
+  getEffectivePlan,
   CONFIG_ENVS,
   type ConfigEnv,
 } from "@shipeasy/core";
@@ -18,6 +18,7 @@ import { scopedDb, scopedDbSA } from "../db";
 import { getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
+import { syncUsage } from "../billing";
 import type { AdminIdentity } from "../admin-auth";
 
 export type ConfigSummary = {
@@ -190,7 +191,7 @@ function seedValues(parsed: { value: unknown }): Record<ConfigEnv, unknown> {
 export async function createConfig(identity: AdminIdentity, input: unknown) {
   const parsed = configCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
-  const plan = getPlan(project.plan);
+  const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
   await checkLimit(env.DB, identity.projectId, "configs", plan);
@@ -225,6 +226,7 @@ export async function createConfig(identity: AdminIdentity, input: unknown) {
   }
 
   await rebuildFlags(env, identity.projectId, project.plan);
+  await syncUsage(env, identity.projectId);
   await writeAudit(identity, "config.create", "config", id, parsed);
   return { id, name: parsed.name };
 }
@@ -388,6 +390,7 @@ export async function deleteConfig(identity: AdminIdentity, id: string) {
   if (rows.length === 0) throw new ApiError("Config not found", 404);
   await s.update(configs).set({ deletedAt: new Date().toISOString() }).where(eq(configs.id, id));
   await rebuildFlags(env, identity.projectId, project.plan);
+  await syncUsage(env, identity.projectId);
   await writeAudit(identity, "config.delete", "config", id);
   return { ok: true };
 }

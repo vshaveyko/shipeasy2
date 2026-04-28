@@ -8,12 +8,13 @@ test.describe("Settings", () => {
 
     const main = page.locator("main");
     await expect(main.getByText(/^project$/i).first()).toBeVisible();
-    await expect(page.getByLabel(/^name$/i)).toBeVisible();
+    await expect(page.getByLabel(/domain/i)).toBeVisible();
+    await expect(page.getByLabel(/display name/i)).toBeVisible();
     await expect(page.getByLabel(/project id/i)).toBeVisible();
 
     await expect(main.getByText(/^plan$/i).first()).toBeVisible();
     await expect(page.getByText(/^current$/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: /^upgrade$/i })).toBeDisabled();
+    await expect(page.getByRole("link", { name: /manage billing/i })).toBeVisible();
 
     await expect(page.getByText("e2e@shipeasy.test")).toBeVisible();
     await expect(page.getByText(/e2e test user/i).first()).toBeVisible();
