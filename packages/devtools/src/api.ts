@@ -90,6 +90,32 @@ export class DevtoolsApi {
     return this.get("/api/admin/i18n/drafts");
   }
 
+  private async put<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(`${this.adminUrl}${path}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const json = (await res.json()) as { error?: string; detail?: string };
+        detail = json.detail ?? json.error ?? "";
+      } catch {
+        try {
+          detail = (await res.text()).slice(0, 200);
+        } catch {
+          /* ignore */
+        }
+      }
+      throw new Error(`${path} → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
+    }
+    return (await res.json()) as T;
+  }
+
   private async post<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${this.adminUrl}${path}`, {
       method: "POST",
@@ -161,6 +187,14 @@ export class DevtoolsApi {
       throw new Error(`upload failed → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
     }
     return (await res.json()) as AttachmentUploadResult;
+  }
+
+  upsertDraftKey(draftId: string, key: string, value: string): Promise<void> {
+    return this.post(`/api/admin/i18n/drafts/${encodeURIComponent(draftId)}/keys`, { key, value });
+  }
+
+  updateKeyById(id: string, value: string): Promise<void> {
+    return this.put(`/api/admin/i18n/keys/${encodeURIComponent(id)}`, { value });
   }
 
   async keys(profileId?: string): Promise<KeyRecord[]> {

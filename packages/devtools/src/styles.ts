@@ -797,6 +797,12 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
   border-top: 1px solid var(--se-line);
   justify-content: flex-end;
 }
+.lp-err {
+  padding: 4px 12px 8px;
+  font-size: 11px;
+  color: var(--se-red, #f87171);
+  min-height: 0;
+}
 
 /* ── Feedback (bugs / feature requests) ─────────────────────────────────── */
 .se-feedback-head {

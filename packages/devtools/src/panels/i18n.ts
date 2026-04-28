@@ -92,6 +92,10 @@ let editLabelsActive = false;
 let cleanupEditLabels: (() => void) | null = null;
 let activePopper: HTMLElement | null = null;
 
+// Set once when renderI18nPanel loads; used by openLabelPopper for API saves.
+let panelApi: DevtoolsApi | null = null;
+let panelKeys: KeyRecord[] = [];
+
 /**
  * Inject the label highlight rules into the *page's* document.head — our
  * main shadow-root stylesheet is scoped to the shadow tree and can't reach
@@ -259,6 +263,54 @@ function closePopper() {
   });
 }
 
+/**
+ * Persist a label value to the active draft or profile via the admin API.
+ * Falls back to URL-param override-only when no API is available or when
+ * neither a draft nor a non-default profile is selected.
+ */
+async function saveLabel(
+  key: string,
+  value: string,
+  target: HTMLElement,
+  popper: HTMLElement,
+): Promise<void> {
+  // Update DOM and URL override immediately for instant visual feedback.
+  target.textContent = value;
+  setI18nLabelOverride(key, value);
+  window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key, value } }));
+
+  const draftId = getI18nDraftOverride();
+  const profileId = getI18nProfileOverride();
+  const api = panelApi;
+
+  if (!api || (!draftId && !profileId)) {
+    closePopper();
+    return;
+  }
+
+  const saveBtn = popper.querySelector<HTMLButtonElement>('[data-action="save"]')!;
+  const errEl = popper.querySelector<HTMLElement>(".lp-err");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving…";
+  if (errEl) errEl.textContent = "";
+
+  try {
+    if (draftId) {
+      await api.upsertDraftKey(draftId, key, value);
+    } else if (profileId) {
+      const match = panelKeys.find((k) => k.key === key && k.profileId === profileId);
+      if (match) {
+        await api.updateKeyById(match.id, value);
+      }
+    }
+    closePopper();
+  } catch (err) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save";
+    if (errEl) errEl.textContent = err instanceof Error ? err.message : String(err);
+  }
+}
+
 function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
   closePopper();
   target.classList.add("__se_label_active");
@@ -298,7 +350,8 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
     <div class="lp-actions">
       <button class="ibtn" data-action="reset">Reset</button>
       <button class="ibtn pri" data-action="save">Save</button>
-    </div>`;
+    </div>
+    <div class="lp-err"></div>`;
 
   shadow.appendChild(popper);
 
@@ -324,11 +377,7 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
 
   popper.querySelector(".lp-close")!.addEventListener("click", closePopper);
   popper.querySelector('[data-action="save"]')!.addEventListener("click", () => {
-    const value = input.value;
-    target.textContent = value;
-    setI18nLabelOverride(key, value);
-    window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key, value } }));
-    closePopper();
+    void saveLabel(key, input.value, target, popper);
   });
   popper.querySelector('[data-action="reset"]')!.addEventListener("click", () => {
     const original = target.dataset.__seOriginal ?? "";
@@ -461,6 +510,8 @@ export async function renderI18nPanel(
   container.innerHTML = `<div class="loading">Loading i18n data…</div>`;
   subfoot.innerHTML = "";
 
+  panelApi = api;
+
   let profiles: ProfileRecord[];
   let drafts: DraftRecord[];
   let keys: KeyRecord[];
@@ -471,6 +522,7 @@ export async function renderI18nPanel(
     return;
   }
 
+  panelKeys = keys;
   const chunks = buildChunks(keys);
   const chunkNames = Array.from(chunks.keys());
   const state = { activeChunk: chunkNames[0] ?? null };
