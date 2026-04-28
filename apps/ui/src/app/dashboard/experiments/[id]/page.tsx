@@ -13,9 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LinkButton } from "@/components/ui/link-button";
 import { getPlan, getDb } from "@shipeasy/core";
 import { experimentMetrics, metrics as metricsTable } from "@shipeasy/core/db/schema";
-import { setExperimentStatusAction } from "../actions";
-import { Button } from "@/components/ui/button";
 import { MetricsPanel } from "./metrics-panel";
+import { ExperimentStatusButtons } from "./experiment-status-buttons";
 
 function deriveVerdict(results: { pValue: number | null; srmDetected: number | null }[]): string {
   if (results.length === 0) return "—";
@@ -132,33 +131,12 @@ export default async function ExperimentDetailPage({
       </LinkButton>
 
       <PageHeader
-        title={id}
+        title={name}
         titleAriaOnly
         description={
           (experiment as { description?: string | null } | null)?.description ?? "Experiment detail"
         }
-        actions={
-          <>
-            {status === "draft" && (
-              <form action={setExperimentStatusAction}>
-                <input type="hidden" name="id" value={id} />
-                <input type="hidden" name="status" value="running" />
-                <Button size="sm" type="submit">
-                  Start
-                </Button>
-              </form>
-            )}
-            {status === "running" && (
-              <form action={setExperimentStatusAction}>
-                <input type="hidden" name="id" value={id} />
-                <input type="hidden" name="status" value="stopped" />
-                <Button size="sm" variant="outline" type="submit">
-                  Stop
-                </Button>
-              </form>
-            )}
-          </>
-        }
+        actions={<ExperimentStatusButtons id={id} status={status} />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

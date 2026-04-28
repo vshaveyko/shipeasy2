@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { createKeyAction, revokeKeyAction } from "./actions";
+import { createKeyAction } from "./actions";
+import { CopyKeyButton } from "./copy-key-button";
+import { RevokeKeyButton } from "./revoke-key-button";
 
 const KEY_TYPES = [
   {
@@ -93,7 +95,7 @@ export default async function KeysPage({
               <code className="flex-1 overflow-x-auto rounded bg-background px-3 py-2 font-mono text-xs">
                 {new_key}
               </code>
-              <span className="shrink-0 text-xs text-muted-foreground">Copy key</span>
+              <CopyKeyButton value={new_key} />
             </div>
           </CardContent>
         </Card>
@@ -148,19 +150,7 @@ export default async function KeysPage({
                   </span>
                 )}
               </div>
-              {!key.revoked_at && (
-                <form action={revokeKeyAction}>
-                  <input type="hidden" name="id" value={key.id} />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    type="submit"
-                    className="text-destructive hover:text-destructive"
-                  >
-                    Revoke
-                  </Button>
-                </form>
-              )}
+              {!key.revoked_at && <RevokeKeyButton id={key.id} />}
             </div>
           ))}
         </div>

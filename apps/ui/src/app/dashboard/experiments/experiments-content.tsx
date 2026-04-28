@@ -7,6 +7,7 @@ import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
+import { ActionForm } from "@/components/ui/action-form";
 import { deleteExperimentAction, setExperimentStatusAction } from "./actions";
 
 interface ExperimentRow {
@@ -32,7 +33,9 @@ const fetcher = async (url: string): Promise<ExperimentRow[]> => {
 };
 
 export function ExperimentsContent() {
-  const { data, isLoading } = useSWR<ExperimentRow[]>("/api/admin/experiments", fetcher);
+  const { data, isLoading, mutate } = useSWR<ExperimentRow[]>("/api/admin/experiments", fetcher, {
+    dedupingInterval: 0,
+  });
   const experiments = data ?? [];
 
   if (isLoading) {
@@ -163,7 +166,7 @@ export function ExperimentsContent() {
                 className="font-mono text-[11px] text-[var(--se-fg-2)]"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
-                {exp.allocationPct}%
+                {Math.round((exp.allocationPct ?? 0) / 100)}%
               </div>
               <div
                 className="font-mono text-[11px] text-[var(--se-fg-2)]"
@@ -179,25 +182,40 @@ export function ExperimentsContent() {
               </div>
               <div className="flex items-center justify-end gap-1">
                 {exp.status === "draft" ? (
-                  <form action={setExperimentStatusAction}>
+                  <ActionForm
+                    action={setExperimentStatusAction}
+                    loading="Starting experiment…"
+                    success="Experiment started"
+                    onSuccess={() => mutate()}
+                  >
                     <input type="hidden" name="id" value={exp.id} />
                     <input type="hidden" name="status" value="running" />
                     <Button size="sm" variant="ghost" type="submit" aria-label="Start experiment">
                       <Play className="size-3" />
                     </Button>
-                  </form>
+                  </ActionForm>
                 ) : null}
                 {exp.status === "running" ? (
-                  <form action={setExperimentStatusAction}>
+                  <ActionForm
+                    action={setExperimentStatusAction}
+                    loading="Stopping experiment…"
+                    success="Experiment stopped"
+                    onSuccess={() => mutate()}
+                  >
                     <input type="hidden" name="id" value={exp.id} />
                     <input type="hidden" name="status" value="stopped" />
                     <Button size="sm" variant="ghost" type="submit" aria-label="Stop experiment">
                       <Square className="size-3" />
                     </Button>
-                  </form>
+                  </ActionForm>
                 ) : null}
-                {exp.status !== "running" ? (
-                  <form action={deleteExperimentAction}>
+                {exp.status !== "running" && exp.status !== "archived" ? (
+                  <ActionForm
+                    action={deleteExperimentAction}
+                    loading="Deleting experiment…"
+                    success="Experiment deleted"
+                    onSuccess={() => mutate()}
+                  >
                     <input type="hidden" name="id" value={exp.id} />
                     <Button
                       size="sm"
@@ -207,7 +225,7 @@ export function ExperimentsContent() {
                     >
                       Delete
                     </Button>
-                  </form>
+                  </ActionForm>
                 ) : null}
               </div>
             </div>

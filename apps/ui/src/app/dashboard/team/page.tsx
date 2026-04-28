@@ -1,13 +1,12 @@
-import { Clock, Search, Shield, X } from "lucide-react";
+import { Clock, Search, Shield } from "lucide-react";
 import { auth } from "@/auth";
 import { listMembers } from "@/lib/handlers/members";
 import { loadProject } from "@/lib/project";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Button } from "@/components/ui/button";
 import { InviteButton } from "./invite-button";
 import { RoleSelect } from "./role-select";
-import { removeMemberAction } from "./actions";
+import { RemoveMemberButton } from "./remove-member-button";
 
 type Role = {
   key: "admin" | "editor" | "viewer";
@@ -73,11 +72,7 @@ export default async function TeamPage() {
           title="Team"
           description="Invite people to collaborate on experiments, gates, configs, and metrics."
         />
-        <HeroEmptyState
-          kind="experiments"
-          ctaLabel="Sign in to manage your team"
-          ctaHref="/auth/signin"
-        />
+        <HeroEmptyState kind="team" ctaLabel="Sign in to manage your team" ctaHref="/auth/signin" />
       </div>
     );
   }
@@ -152,7 +147,7 @@ export default async function TeamPage() {
           }
         />
         <HeroEmptyState
-          kind="experiments"
+          kind="team"
           ctaLabel="Invite your first teammate"
           extraAction={
             <InviteButton
@@ -247,18 +242,7 @@ export default async function TeamPage() {
               {m.status === "owner" || m.you || !m.id || !isOwner ? (
                 <span aria-hidden />
               ) : (
-                <form action={removeMemberAction}>
-                  <input type="hidden" name="id" value={m.id} />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    variant="ghost"
-                    aria-label={`Remove ${m.email}`}
-                    className="size-7 p-0 text-[var(--se-fg-3)] hover:bg-[var(--se-danger-soft)] hover:text-[var(--se-danger)]"
-                  >
-                    <X className="size-3" />
-                  </Button>
-                </form>
+                <RemoveMemberButton id={m.id} email={m.email} />
               )}
             </div>
           </div>

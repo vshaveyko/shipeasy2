@@ -78,6 +78,13 @@
       "when": 1777317809182,
       "tag": "0010_add_project_domain",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1745920000000,
+      "tag": "0011_multi_project",
+      "breakpoints": true
     }
   ]
 }

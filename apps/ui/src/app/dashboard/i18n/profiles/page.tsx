@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
-import { FolderTree, Trash2 } from "lucide-react";
+import { FolderTree } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { auth } from "@/auth";
 import { listProfiles, listKeys } from "@/lib/handlers/i18n";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
-import { deleteProfileAction } from "./actions";
+import { DeleteProfileButton } from "./delete-profile-button";
 
 export default async function I18nProfilesPage() {
   const session = await auth();
@@ -89,17 +88,7 @@ export default async function I18nProfilesPage() {
                       >
                         Browse keys
                       </LinkButton>
-                      <form action={deleteProfileAction}>
-                        <input type="hidden" name="id" value={profile.id} />
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          type="submit"
-                          aria-label={`Delete profile ${profile.name}`}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </form>
+                      <DeleteProfileButton id={profile.id} name={profile.name} />
                     </div>
                   </td>
                 </tr>

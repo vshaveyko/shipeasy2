@@ -131,6 +131,16 @@ export async function findProjectByEmail(d1: D1Database, email: string) {
   return rows[0] ?? null;
 }
 
+export async function listProjectsByEmail(d1: D1Database, email: string) {
+  const db = getDb(d1);
+  return db
+    .select()
+    .from(projects)
+    .where(eq(projects.ownerEmail, email))
+    .orderBy(projects.createdAt)
+    .all();
+}
+
 export async function findProjectById(d1: D1Database, id: string) {
   const db = getDb(d1);
   const rows = await db.select().from(projects).where(eq(projects.id, id)).limit(1);

@@ -27,6 +27,63 @@ type EmptyConfig = {
 };
 
 const CONFIGS: Record<string, EmptyConfig> = {
+  metrics: {
+    eyebrow: "METRICS",
+    eyebrowAside: "not collecting yet",
+    title: "Track anything you ship.",
+    titleAccent: "in 60 seconds",
+    sub: "Auto-collect web vitals, errors, and page loads — then layer your own events with a one-line log() call. No schema migrations. No redeploys.",
+    file: "~/your-app · setup.ts",
+    code: [
+      { type: "cmt", text: "// install" },
+      {
+        type: "cmd",
+        tokens: ["npm install ", { kind: "str", text: "'@shipeasy/sdk'" }],
+      },
+      { type: "blank" },
+      { type: "cmt", text: "// initialize once" },
+      {
+        type: "line",
+        tokens: [
+          { kind: "kw", text: "import" },
+          " { init, log } ",
+          { kind: "kw", text: "from" },
+          " ",
+          { kind: "str", text: "'@shipeasy/sdk'" },
+          ";",
+        ],
+      },
+      {
+        type: "line",
+        tokens: [{ kind: "fn", text: "init" }, "({ apiKey: process.env.SHIPEASY_KEY });"],
+      },
+      { type: "blank" },
+      { type: "cmt", text: "// track anything" },
+      {
+        type: "line",
+        tokens: [
+          { kind: "fn", text: "log" },
+          "(",
+          { kind: "str", text: "'user_checkout'" },
+          ", { amount: ",
+          { kind: "num", text: "129.00" },
+          ", plan: ",
+          { kind: "str", text: "'pro'" },
+          " });",
+          { kind: "cursor" },
+        ],
+      },
+    ],
+    stats: [
+      { v: "4", l: "auto-collected metrics", d: "web vitals · errors · views · api" },
+      { v: "∞", l: "custom events", d: "call log('event_name') anywhere" },
+      { v: "<5s", l: "time to first event", d: "paste, run, watch it land" },
+    ],
+    cta: "Start in 60 seconds",
+    ctaHref: "/dashboard/metrics?setup=1",
+    demo: "Explore with demo data",
+    demoHref: "/dashboard/metrics?demo=1",
+  },
   gates: {
     eyebrow: "GATES",
     eyebrowAside: "no gates defined",
@@ -176,6 +233,40 @@ const CONFIGS: Record<string, EmptyConfig> = {
     ctaHref: "/dashboard/configs/new",
   },
 
+  team: {
+    eyebrow: "TEAM",
+    eyebrowAside: "just you so far",
+    title: "Ship faster,",
+    titleAccent: "together.",
+    sub: "Invite teammates and assign roles. Admins manage billing and keys. Editors create experiments and gates. Viewers watch dashboards without touching production.",
+    file: "~/your-app · team.ts",
+    code: [
+      { type: "cmt", text: "// invite a teammate via the dashboard" },
+      { type: "blank" },
+      {
+        type: "line",
+        tokens: [
+          { kind: "kw", text: "const" },
+          " invite = ",
+          { kind: "fn", text: "inviteTeammate" },
+          "({",
+        ],
+      },
+      { type: "line", tokens: ["  email: ", { kind: "str", text: "'alice@acme.com'" }, ","] },
+      {
+        type: "line",
+        tokens: ["  role: ", { kind: "str", text: "'editor'" }, ",", { kind: "cursor" }],
+      },
+      { type: "line", tokens: ["});"] },
+    ],
+    stats: [
+      { v: "3", l: "role types", d: "admin · editor · viewer" },
+      { v: "SSO", l: "sign-in", d: "GitHub OAuth or email magic link" },
+      { v: "∞", l: "members", d: "no per-seat limits on paid plans" },
+    ],
+    cta: "Invite your first teammate",
+    ctaHref: "#invite",
+  },
   keys: {
     eyebrow: "API KEYS",
     eyebrowAside: "no keys issued",

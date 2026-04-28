@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import Script from "next/script";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,6 +20,25 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
   subsets: ["latin"],
 });
+
+// Inline script injected into <head> before the i18n CDN loader runs.
+// Must be a plain string — no TypeScript, no imports.
+// Marker chars: ￹ U+FFF9  ￺ U+FFFA  ￻ U+FFFB  (Interlinear Annotation)
+const EDIT_LABELS_INTERCEPTOR = `(function(){
+  if(!new URLSearchParams(location.search).has('se_edit_labels'))return;
+  function patch(v){
+    if(!v||v._se_patched)return;
+    var o=v.t.bind(v);
+    v.t=function(k,x){return '￹'+k+'￺'+o(k,x)+'￻';};
+    v._se_patched=true;
+  }
+  try{
+    if(window.i18n){patch(window.i18n);return;}
+    Object.defineProperty(window,'i18n',{configurable:true,
+      get:function(){return window._sei18n;},
+      set:function(v){window._sei18n=v;patch(v);}});
+  }catch(e){}
+})();`;
 
 export const metadata: Metadata = {
   title: "ShipEasy",
@@ -84,12 +104,25 @@ export default function RootLayout({
             }}
           />
         ) : null}
+        {/*
+          Edit-labels interceptor: runs synchronously before the i18n CDN
+          loader so the window.i18n property setter is in place when the
+          loader installs the real object. When ?se_edit_labels=1 is present,
+          t(key) returns an invisible Unicode marker string instead of the
+          translated value. The devtools script then scans the rendered DOM,
+          finds those markers in text nodes, and replaces them with
+          <span data-label="key"> elements — no changes to call sites needed.
+          Marker format: ￹{key}￺{value}￻
+        */}
+        {/* eslint-disable-next-line react/no-danger */}
+        <script dangerouslySetInnerHTML={{ __html: EDIT_LABELS_INTERCEPTOR }} />
       </head>
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
         {children}
+        <Toaster theme="dark" position="bottom-right" richColors />
         {i18nKey && i18nProfile ? (
           <Script
             id="se-i18n-loader"

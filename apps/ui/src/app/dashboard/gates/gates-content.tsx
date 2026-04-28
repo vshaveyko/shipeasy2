@@ -1,12 +1,15 @@
 "use client";
 
+import { useOptimistic, useTransition } from "react";
 import useSWR from "swr";
 import { Search, Shield, MoreHorizontal } from "lucide-react";
+import { toast } from "sonner";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
+import { ActionForm } from "@/components/ui/action-form";
 import { deleteGateAction, enableGateAction } from "./actions";
 
 interface GateRow {
@@ -25,8 +28,18 @@ const fetcher = async (url: string): Promise<GateRow[]> => {
 };
 
 export function GatesContent() {
-  const { data, isLoading } = useSWR<GateRow[]>("/api/admin/gates", fetcher);
+  const { data, isLoading, mutate } = useSWR<GateRow[]>("/api/admin/gates", fetcher, {
+    dedupingInterval: 0,
+  });
   const gates = data ?? [];
+
+  const [optimisticGates, setOptimisticEnabled] = useOptimistic(
+    gates,
+    (prev, { id, enabled }: { id: string; enabled: boolean }) =>
+      prev.map((g) => (g.id === id ? { ...g, enabled } : g)),
+  );
+
+  const [, startTransition] = useTransition();
 
   if (isLoading) {
     return (
@@ -101,7 +114,7 @@ export function GatesContent() {
           <span />
           <span />
         </div>
-        {gates.map((gate) => {
+        {optimisticGates.map((gate) => {
           const ruleCount = Array.isArray(gate.rules) ? gate.rules.length : 0;
           const isEnabled = Boolean(gate.enabled);
           const isKill = Boolean(gate.killswitch);
@@ -137,7 +150,7 @@ export function GatesContent() {
                 className="font-mono text-[11px] text-[var(--se-fg-2)]"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
-                {gate.rolloutPct}%
+                {Math.round((gate.rolloutPct ?? 0) / 100)}%
               </div>
               <div className="font-mono text-[11px] text-[var(--se-fg-2)]">
                 {ruleCount} rule{ruleCount === 1 ? "" : "s"}
@@ -155,16 +168,36 @@ export function GatesContent() {
                   </span>
                 )}
               </div>
-              <form action={enableGateAction} className="flex justify-end">
-                <input type="hidden" name="id" value={gate.id} />
-                <input type="hidden" name="enabled" value={isEnabled ? "false" : "true"} />
+              {/* Optimistic toggle */}
+              <div className="flex justify-end">
                 <button
-                  type="submit"
+                  type="button"
                   aria-label={isEnabled ? "Disable gate" : "Enable gate"}
                   className={`se-toggle ${isEnabled ? "on" : ""}`}
+                  onClick={() => {
+                    const nextEnabled = !isEnabled;
+                    startTransition(async () => {
+                      setOptimisticEnabled({ id: gate.id, enabled: nextEnabled });
+                      const fd = new FormData();
+                      fd.append("id", gate.id);
+                      fd.append("enabled", String(nextEnabled));
+                      const result = await enableGateAction(fd);
+                      if (!result.ok) {
+                        toast.error(result.error);
+                      } else {
+                        await mutate();
+                      }
+                    });
+                  }}
                 />
-              </form>
-              <form action={deleteGateAction} className="flex justify-end">
+              </div>
+              <ActionForm
+                action={deleteGateAction}
+                loading="Deleting gate…"
+                success="Gate deleted"
+                onSuccess={() => mutate()}
+                className="flex justify-end"
+              >
                 <input type="hidden" name="id" value={gate.id} />
                 <Button
                   type="submit"
@@ -175,7 +208,7 @@ export function GatesContent() {
                 >
                   <MoreHorizontal className="size-3" />
                 </Button>
-              </form>
+              </ActionForm>
             </div>
           );
         })}

@@ -11,6 +11,13 @@ const MIGRATIONS = [
   join(__dirname, "../../../../packages/worker/migrations/0002_soft_delete.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0003_label_keys_variables.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0004_configs_env_versioning.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0005_project_members.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0006_feedback.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0007_grey_santa_claus.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0008_billing.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0009_mixed_zzzax.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0010_add_project_domain.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0011_multi_project.sql"),
 ];
 
 class SqliteStatement {

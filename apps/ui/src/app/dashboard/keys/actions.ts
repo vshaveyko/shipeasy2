@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { createKey, revokeKey } from "@/lib/handlers/keys";
+import { ok, fail } from "@/lib/action-result";
 
 export async function createKeyAction(formData: FormData) {
   const identity = await getIdentity();
@@ -12,8 +14,13 @@ export async function createKeyAction(formData: FormData) {
 }
 
 export async function revokeKeyAction(formData: FormData) {
-  const identity = await getIdentity();
-  const id = formData.get("id") as string;
-  await revokeKey(identity, id);
-  redirect("/dashboard/keys");
+  try {
+    const identity = await getIdentity();
+    const id = formData.get("id") as string;
+    await revokeKey(identity, id);
+    revalidatePath("/dashboard/keys");
+    return ok("Key revoked");
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Failed to revoke key");
+  }
 }

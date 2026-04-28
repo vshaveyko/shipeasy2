@@ -1,23 +1,42 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Projects page", () => {
-  test("renders the page header and a project card for the current workspace", async ({ page }) => {
+  test("renders the page header and project cards", async ({ page }) => {
     await page.goto("/dashboard/projects");
 
     await expect(page.getByRole("heading", { name: /^projects$/i })).toBeVisible();
     await expect(page.getByText(/one project per app/i)).toBeVisible();
 
-    // Either at least one card with the CURRENT badge, or the hero empty state CTA.
-    const currentBadge = page.getByText("CURRENT", { exact: true });
-    const heroCta = page.getByRole("link", { name: /set up your first project/i });
-    const visible = (await currentBadge.count()) > 0 || (await heroCta.count()) > 0;
-    expect(visible).toBe(true);
+    // Should show ACTIVE badge for the current project
+    const activeBadge = page.getByText("ACTIVE", { exact: true });
+    await expect(activeBadge.first()).toBeVisible();
   });
 
-  test("New project button is disabled (multi-project coming soon)", async ({ page }) => {
+  test("New project link navigates to the create form", async ({ page }) => {
     await page.goto("/dashboard/projects");
-    const newBtn = page.getByRole("button", { name: /^new project$/i }).first();
-    await expect(newBtn).toBeDisabled();
+    await page
+      .getByRole("link", { name: /^new project$/i })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/dashboard\/projects\/new$/);
+    await expect(page.getByRole("heading", { name: /^new project$/i })).toBeVisible();
+    await expect(page.getByLabel(/display name/i)).toBeVisible();
+    await expect(page.getByLabel(/domain/i)).toBeVisible();
+  });
+
+  test("new project form creates a project and redirects to dashboard", async ({ page }) => {
+    await page.goto("/dashboard/projects/new");
+
+    const unique = `e2e-proj-${Date.now()}`;
+    await page.getByLabel(/display name/i).fill(unique);
+    await page.getByRole("button", { name: /create project/i }).click();
+
+    // Should redirect to /dashboard after creation
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    // The new project should appear in the projects list
+    await page.goto("/dashboard/projects");
+    await expect(page.getByText(unique)).toBeVisible();
   });
 
   test("sidebar Projects link navigates here", async ({ page }) => {
@@ -27,6 +46,20 @@ test.describe("Projects page", () => {
       .first()
       .click();
     await expect(page).toHaveURL(/\/dashboard\/projects$/);
+  });
+
+  test("sidebar shows project switcher with project list", async ({ page }) => {
+    await page.goto("/dashboard");
+    // The sidebar project switcher button should be visible
+    const aside = page.locator("aside");
+    await expect(aside).toBeVisible();
+    // At minimum one project entry visible in sidebar switcher trigger
+    const switcherBtn = aside.locator("button").first();
+    await expect(switcherBtn).toBeVisible();
+    // Click to open dropdown
+    await switcherBtn.click();
+    // "New project" option should appear
+    await expect(page.getByRole("link", { name: /^new project$/i }).first()).toBeVisible();
   });
 });
 

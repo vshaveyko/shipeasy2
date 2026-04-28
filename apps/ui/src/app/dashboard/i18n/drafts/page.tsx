@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
-import { PencilLine, Trash2 } from "lucide-react";
+import { PencilLine } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { auth } from "@/auth";
 import { listDrafts, listProfiles } from "@/lib/handlers/i18n";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
-import { abandonDraftAction, deleteDraftAction } from "./actions";
+import { AbandonDraftButton, DeleteDraftButton } from "./draft-action-buttons";
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   open: { label: "OPEN", cls: "se-badge se-badge-live" },
@@ -100,26 +99,9 @@ export default async function I18nDraftsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {draft.status === "open" && (
-                          <form action={abandonDraftAction}>
-                            <input type="hidden" name="id" value={draft.id} />
-                            <Button variant="ghost" size="sm" type="submit">
-                              Abandon
-                            </Button>
-                          </form>
-                        )}
+                        {draft.status === "open" && <AbandonDraftButton id={draft.id} />}
                         {draft.status !== "open" && (
-                          <form action={deleteDraftAction}>
-                            <input type="hidden" name="id" value={draft.id} />
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              type="submit"
-                              aria-label={`Delete draft ${draft.name}`}
-                            >
-                              <Trash2 className="size-4 text-destructive" />
-                            </Button>
-                          </form>
+                          <DeleteDraftButton id={draft.id} name={draft.name} />
                         )}
                       </div>
                     </td>

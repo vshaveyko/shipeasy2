@@ -1,12 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import {
   createExperiment,
   deleteExperiment,
   setExperimentStatus,
 } from "@/lib/handlers/experiments";
+import { ok, fail } from "@/lib/action-result";
 
 export async function createExperimentAction(formData: FormData) {
   const identity = await getIdentity();
@@ -72,16 +74,31 @@ export async function createExperimentAction(formData: FormData) {
 }
 
 export async function deleteExperimentAction(formData: FormData) {
-  const identity = await getIdentity();
-  const id = formData.get("id") as string;
-  await deleteExperiment(identity, id);
-  redirect("/dashboard/experiments");
+  try {
+    const identity = await getIdentity();
+    const id = formData.get("id") as string;
+    await deleteExperiment(identity, id);
+    revalidatePath("/dashboard/experiments");
+    return ok("Experiment deleted");
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Failed to delete experiment");
+  }
 }
 
 export async function setExperimentStatusAction(formData: FormData) {
-  const identity = await getIdentity();
-  const id = formData.get("id") as string;
-  const status = formData.get("status") as "draft" | "running" | "stopped" | "archived";
-  await setExperimentStatus(identity, id, status);
-  redirect("/dashboard/experiments");
+  try {
+    const identity = await getIdentity();
+    const id = formData.get("id") as string;
+    const status = formData.get("status") as "draft" | "running" | "stopped" | "archived";
+    await setExperimentStatus(identity, id, status);
+    revalidatePath("/dashboard/experiments");
+    const labels: Record<string, string> = {
+      running: "Experiment started",
+      stopped: "Experiment stopped",
+      archived: "Experiment archived",
+    };
+    return ok(labels[status] ?? "Status updated");
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Failed to update experiment");
+  }
 }
