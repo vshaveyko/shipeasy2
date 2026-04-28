@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { useShipEasyI18n } from "@shipeasy/react";
+import { i18n } from "@shipeasy/sdk/client";
 
 /**
  * Landing nav — static, no session lookup. The single CTA points at
@@ -11,7 +11,6 @@ import { useShipEasyI18n } from "@shipeasy/react";
  * through to the dashboard.
  */
 export function LandingNav() {
-  const { t } = useShipEasyI18n();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -61,7 +60,8 @@ export function LandingNav() {
 
         <div className="flex items-center gap-2.5">
           <Link className="lp-btn lp-btn-primary" href="/auth/signin">
-            {t("landing.nav.cta") || "Go to portal"} <ArrowRight className="size-3.5" />
+            {i18n.tEl("landing.nav.cta", undefined, "Primary CTA in the landing nav")}{" "}
+            <ArrowRight className="size-3.5" />
           </Link>
         </div>
       </div>

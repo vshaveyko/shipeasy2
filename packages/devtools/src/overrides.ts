@@ -107,6 +107,17 @@ export function isDevtoolsRequested(): boolean {
   return p.has("se") || p.has("se_devtools") || p.has("se-devtools");
 }
 
+/** True when ?se_edit_labels=1 is present — t() emits markers, devtools scans DOM. */
+export function isEditLabelsModeActive(): boolean {
+  if (typeof window === "undefined") return false;
+  return currentParams().has("se_edit_labels");
+}
+
+/** Toggle the edit-labels mode by adding/removing ?se_edit_labels and reloading. */
+export function setEditLabelsMode(on: boolean): void {
+  applyAndReload([["se_edit_labels", on ? "1" : null]]);
+}
+
 // ── Gate / killswitch overrides ─────────────────────────────────────────────
 
 export function getGateOverride(name: string): boolean | null {

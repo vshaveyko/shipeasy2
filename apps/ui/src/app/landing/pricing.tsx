@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { i18n } from "@shipeasy/sdk/client";
 import { CheckIcon } from "./icons";
 
 interface Plan {
@@ -10,11 +11,16 @@ interface Plan {
   monthly: string;
   annual: string;
   per: string;
-  desc: string;
   features: string[];
-  cta: { label: string; href: string; primary?: boolean };
+  cta: { href: string; primary?: boolean };
   featured?: boolean;
   popular?: boolean;
+  keys: {
+    descKey: string;
+    ctaKey: string;
+    descVars?: Record<string, string | number>;
+    ctaVars?: Record<string, string | number>;
+  };
 }
 
 const PLANS: Plan[] = [
@@ -23,21 +29,23 @@ const PLANS: Plan[] = [
     monthly: "$0",
     annual: "$0",
     per: "/ forever",
-    desc: "Side projects and solo work.",
     features: [
       "3 experiments",
       "Unlimited killswitches",
       "100k events / mo",
       "MCP + Claude integration",
     ],
-    cta: { label: "Start free", href: "/auth/signin" },
+    cta: { href: "/auth/signin" },
+    keys: {
+      descKey: "landing.pricing.plan_hobby_desc",
+      ctaKey: "landing.pricing.plan_hobby_cta",
+    },
   },
   {
     name: "Team",
     monthly: "$49",
     annual: "$39",
     per: "/ seat / mo",
-    desc: "Small teams shipping experiments weekly.",
     features: [
       "Unlimited experiments",
       "10M events / mo",
@@ -45,18 +53,26 @@ const PLANS: Plan[] = [
       "Auto-ramp + guardrails",
       "Slack digests · SSO",
     ],
-    cta: { label: "Start 14-day trial", href: "/auth/signin", primary: true },
+    cta: { href: "/auth/signin", primary: true },
     featured: true,
     popular: true,
+    keys: {
+      descKey: "landing.pricing.plan_team_desc",
+      ctaKey: "landing.pricing.plan_team_cta",
+      descVars: { trialDays: 14 },
+    },
   },
   {
     name: "Enterprise",
     monthly: "Custom",
     annual: "Custom",
     per: "",
-    desc: "Self-hosted, audit logs, SLAs.",
     features: ["Everything in Team", "Self-hosted option", "SOC 2 Type II", "Dedicated support"],
-    cta: { label: "Talk to us", href: "mailto:hi@shipeasy.ai" },
+    cta: { href: "mailto:hi@shipeasy.ai" },
+    keys: {
+      descKey: "landing.pricing.plan_enterprise_desc",
+      ctaKey: "landing.pricing.plan_enterprise_cta",
+    },
   },
 ];
 
@@ -67,9 +83,11 @@ export function LandingPricing() {
     <section className="lp-section" id="pricing">
       <div className="mx-auto max-w-[1200px] px-7">
         <div className="lp-sec-head lp-reveal lp-in">
-          <div className="lp-sec-eyebrow">Pricing</div>
+          <div className="lp-sec-eyebrow">
+            {i18n.tEl("landing.pricing.eyebrow", undefined, "Pricing section eyebrow label")}
+          </div>
           <h2 className="lp-sec-title">
-            Free to start. <em>Fair</em> as you grow.
+            {i18n.tEl("landing.pricing.title", undefined, "Pricing section headline")}
           </h2>
         </div>
 
@@ -81,7 +99,11 @@ export function LandingPricing() {
               className={period === "monthly" ? "lp-active" : ""}
               onClick={() => setPeriod("monthly")}
             >
-              Monthly
+              {i18n.tEl(
+                "landing.pricing.toggle_monthly",
+                undefined,
+                "Billing period toggle: monthly",
+              )}
             </button>
             <button
               role="tab"
@@ -89,7 +111,11 @@ export function LandingPricing() {
               className={period === "annual" ? "lp-active" : ""}
               onClick={() => setPeriod("annual")}
             >
-              Annual{" "}
+              {i18n.tEl(
+                "landing.pricing.toggle_annual",
+                undefined,
+                "Billing period toggle: annual",
+              )}{" "}
               <span
                 style={{
                   color: "var(--se-accent)",
@@ -122,7 +148,9 @@ export function LandingPricing() {
                 <span>{period === "annual" ? p.annual : p.monthly}</span>
                 {p.per && <span className="lp-per">{p.per}</span>}
               </div>
-              <div className="lp-plan-desc">{p.desc}</div>
+              <div className="lp-plan-desc">
+                {i18n.tEl(p.keys.descKey, p.keys.descVars, `${p.name} plan description`)}
+              </div>
               <ul>
                 {p.features.map((f) => (
                   <li key={f}>
@@ -136,14 +164,16 @@ export function LandingPricing() {
                   className={`lp-btn lp-cta ${p.cta.primary ? "lp-btn-primary" : "lp-btn-ghost"}`}
                   href={p.cta.href}
                 >
-                  {p.cta.label} <ArrowRight className="size-3.5" />
+                  {i18n.tEl(p.keys.ctaKey, p.keys.ctaVars, `${p.name} plan CTA button`)}{" "}
+                  <ArrowRight className="size-3.5" />
                 </a>
               ) : (
                 <Link
                   className={`lp-btn lp-cta ${p.cta.primary ? "lp-btn-primary" : "lp-btn-ghost"}`}
                   href={p.cta.href}
                 >
-                  {p.cta.label} <ArrowRight className="size-3.5" />
+                  {i18n.tEl(p.keys.ctaKey, p.keys.ctaVars, `${p.name} plan CTA button`)}{" "}
+                  <ArrowRight className="size-3.5" />
                 </Link>
               )}
             </div>

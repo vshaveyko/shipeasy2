@@ -29,6 +29,7 @@ const EDIT_LABELS_INTERCEPTOR = `(function(){
   function patch(v){
     if(!v||v._se_patched)return;
     var o=v.t.bind(v);
+    window._sei18n_t=o;
     v.t=function(k,x){return '￹'+k+'￺'+o(k,x)+'￻';};
     v._se_patched=true;
   }

@@ -188,14 +188,19 @@ class EventBuffer {
 
 // ---- Auto-guardrails ----
 
+// Cap on errors recorded per session — prevents one bad page from spamming
+// /collect with thousands of events while still letting us see >1 distinct error.
+const MAX_ERRORS_PER_SESSION = 5;
+
 function installAutoGuardrails(buffer: EventBuffer, userId: string, anonId: string): void {
   if (typeof window === "undefined" || typeof PerformanceObserver === "undefined") return;
 
   let lcp: number | null = null;
   let inp: number | null = null;
   let clsBad = false;
-  let jsError = false;
-  let netError = false;
+  let jsErrorCount = 0;
+  let netErrorCount = 0;
+  let navTimingFlushed = false;
 
   try {
     const lcpObs = new PerformanceObserver((list) => {
@@ -229,34 +234,130 @@ function installAutoGuardrails(buffer: EventBuffer, userId: string, anonId: stri
     clsObs.observe({ type: "layout-shift", buffered: true });
   } catch {}
 
+  // ---- Errors: split client (JS exception) vs request (HTTP failure). ----
   const origOnError = window.onerror;
-  window.onerror = (...args) => {
-    if (!jsError) {
-      jsError = true;
-      buffer.pushMetric("__auto_js_error", userId, anonId, { value: 1 });
+  window.onerror = (msg, source, lineno, _colno, err) => {
+    if (jsErrorCount < MAX_ERRORS_PER_SESSION) {
+      jsErrorCount += 1;
+      buffer.pushMetric("__auto_js_error", userId, anonId, {
+        value: 1,
+        kind: "exception",
+        message: typeof msg === "string" ? msg.slice(0, 200) : String(err ?? "").slice(0, 200),
+        source: typeof source === "string" ? source.slice(0, 200) : "",
+        line: lineno ?? 0,
+      });
     }
-    if (typeof origOnError === "function") return origOnError(...args);
+    if (typeof origOnError === "function") return origOnError(msg, source, lineno, _colno, err);
     return false;
   };
 
-  window.addEventListener("unhandledrejection", () => {
-    if (!jsError) {
-      jsError = true;
-      buffer.pushMetric("__auto_js_error", userId, anonId, { value: 1 });
+  window.addEventListener("unhandledrejection", (e: PromiseRejectionEvent) => {
+    if (jsErrorCount < MAX_ERRORS_PER_SESSION) {
+      jsErrorCount += 1;
+      const reason = (e as PromiseRejectionEvent).reason;
+      const message =
+        reason instanceof Error
+          ? reason.message
+          : typeof reason === "string"
+            ? reason
+            : String(reason);
+      buffer.pushMetric("__auto_js_error", userId, anonId, {
+        value: 1,
+        kind: "unhandled_rejection",
+        message: message.slice(0, 200),
+      });
     }
   });
 
   const origFetch = window.fetch;
   window.fetch = async function (...args) {
-    const res = await origFetch.apply(this, args);
-    if (!netError && res.status >= 500) {
-      netError = true;
-      buffer.pushMetric("__auto_network_error", userId, anonId, { value: 1 });
+    const startedAt = typeof performance !== "undefined" ? performance.now() : 0;
+    const url = typeof args[0] === "string" ? args[0] : (args[0] as Request | URL).toString();
+    let res: Response;
+    try {
+      res = await origFetch.apply(this, args);
+    } catch (err) {
+      // Network-level failure (DNS, offline, CORS, abort) — never reaches a status.
+      if (netErrorCount < MAX_ERRORS_PER_SESSION) {
+        netErrorCount += 1;
+        buffer.pushMetric("__auto_network_error", userId, anonId, {
+          value: 1,
+          kind: "network",
+          status: 0,
+          url: url.slice(0, 200),
+        });
+      }
+      throw err;
+    }
+    if (res.status >= 500 && netErrorCount < MAX_ERRORS_PER_SESSION) {
+      netErrorCount += 1;
+      const elapsed = typeof performance !== "undefined" ? performance.now() - startedAt : 0;
+      buffer.pushMetric("__auto_network_error", userId, anonId, {
+        value: 1,
+        kind: "5xx",
+        status: res.status,
+        url: url.slice(0, 200),
+        duration_ms: Math.round(elapsed),
+      });
     }
     return res;
   };
 
-  const flush = () => {
+  // ---- Navigation timing & paint (page_load, ttfb, fp, fcp, dom_ready). ----
+  // These are available at the `load` event; we delay one tick so
+  // `loadEventEnd` is populated. Safe to call multiple times — guarded.
+  const flushNavTiming = () => {
+    if (navTimingFlushed) return;
+    navTimingFlushed = true;
+    try {
+      const navList = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+      const nav = navList[0];
+      if (nav) {
+        const start = nav.startTime ?? 0;
+        if (nav.loadEventEnd > 0) {
+          buffer.pushMetric("__auto_page_load", userId, anonId, {
+            value: nav.loadEventEnd - start,
+          });
+        }
+        if (nav.responseStart > 0) {
+          buffer.pushMetric("__auto_ttfb", userId, anonId, {
+            value: nav.responseStart - start,
+          });
+        }
+        if (nav.domContentLoadedEventEnd > 0) {
+          buffer.pushMetric("__auto_dom_ready", userId, anonId, {
+            value: nav.domContentLoadedEventEnd - start,
+          });
+        }
+      }
+      const paints = performance.getEntriesByType("paint");
+      for (const p of paints) {
+        if (p.name === "first-paint") {
+          buffer.pushMetric("__auto_fp", userId, anonId, { value: p.startTime });
+        } else if (p.name === "first-contentful-paint") {
+          buffer.pushMetric("__auto_fcp", userId, anonId, { value: p.startTime });
+        }
+      }
+    } catch {}
+  };
+
+  if (document.readyState === "complete") {
+    // Page already finished loading — capture on next tick so loadEventEnd is set.
+    setTimeout(flushNavTiming, 0);
+  } else {
+    window.addEventListener(
+      "load",
+      () => {
+        // Defer one tick: the load event handler runs *before* loadEventEnd
+        // is finalised on the navigation entry.
+        setTimeout(flushNavTiming, 0);
+      },
+      { once: true },
+    );
+  }
+
+  const flushOnHide = () => {
+    flushNavTiming();
     if (lcp !== null) buffer.pushMetric("__auto_lcp", userId, anonId, { value: lcp });
     if (inp !== null) buffer.pushMetric("__auto_inp", userId, anonId, { value: inp });
     if (clsBad) buffer.pushMetric("__auto_cls_binary", userId, anonId, { value: 1 });
@@ -266,7 +367,7 @@ function installAutoGuardrails(buffer: EventBuffer, userId: string, anonId: stri
   };
 
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flush();
+    if (document.visibilityState === "hidden") flushOnHide();
   });
 }
 
@@ -415,6 +516,10 @@ export class FlagsClientBrowser {
       installAutoGuardrails(this.buffer, this.userId, this.anonId);
     }
     this.notify();
+  }
+
+  get ready(): boolean {
+    return this.evalResult !== null;
   }
 
   private notify(): void {
@@ -796,7 +901,16 @@ export const flags = {
     if (!_client) return () => {};
     return _client.subscribe(listener);
   },
+  /** True once identify() has completed and flags are available. */
+  get ready(): boolean {
+    return _client?.ready ?? false;
+  },
 };
+
+// Framework-specific element creator — injected once via i18n.configure().
+// Kept outside the object so tree-shakers can drop tEl entirely when not used.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _createElement: ((tag: string, props: object, children: string) => any) | null = null;
 
 /**
  * Universal i18n facade. Backed by the `window.i18n` global the loader
@@ -808,6 +922,34 @@ export const i18n = {
   t(key: string, variables?: Record<string, string | number>): string {
     if (typeof window !== "undefined" && window.i18n) return window.i18n.t(key, variables);
     return key;
+  },
+  /**
+   * Translate a key and return a framework element (e.g. React <span>)
+   * carrying `data-label` / `data-variables` attributes so the ShipEasy
+   * devtools "Edit labels" overlay can highlight and edit it in place.
+   *
+   * Requires a one-time setup call: `i18n.configure({ createElement })`.
+   * The returned value is whatever `createElement` returns — pass React's
+   * `createElement`, Vue's `h`, Solid's `createSignal`-based factory, etc.
+   *
+   * Falls back to a plain translated string if `createElement` was not
+   * configured (e.g. server-side or in non-JSX contexts).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tEl(key: string, variables?: Record<string, string | number>, desc?: string): any {
+    const text = this.t(key, variables);
+    if (!_createElement) return text;
+    // Build data-* attribute bag inline to avoid importing @shipeasy/i18n-core
+    // into every bundle that pulls in this singleton.
+    const props: Record<string, string> = { "data-label": key };
+    if (variables) props["data-variables"] = JSON.stringify(variables);
+    if (desc) props["data-label-desc"] = desc;
+    return _createElement("span", props, text);
+  },
+  /** Wire up the element creator once at app startup (call before any tEl use). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  configure(opts: { createElement: (tag: string, props: object, children: string) => any }): void {
+    _createElement = opts.createElement;
   },
   get locale(): string | null {
     if (typeof window !== "undefined" && window.i18n) return window.i18n.locale;

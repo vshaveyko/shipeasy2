@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, type ReactNode } from "react";
-import { ShipeasyProvider, useShipeasy } from "@shipeasy/react";
+import { createElement, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { configureShipeasy, flags, i18n } from "@shipeasy/sdk/client";
+
+// Wire React's createElement into the i18n singleton once — this is the only
+// React-specific coupling in the entire SDK surface.
+if (typeof window !== "undefined") {
+  i18n.configure({
+    createElement: createElement as Parameters<typeof i18n.configure>[0]["createElement"],
+  });
+}
 
 const SDK_KEY = process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "";
 const EDGE_URL = process.env.NEXT_PUBLIC_SHIPEASY_EDGE_URL ?? "https://cdn.shipeasy.ai";
-const ADMIN_URL = "https://shipeasy.ai";
 
-/**
- * Shape of the user attributes we forward to the SDK on every page load.
- * `user_id` and `anonymous_id` are the canonical identifiers; everything
- * else is targeting metadata. Fields are optional so an anonymous landing
- * visitor can identify with `{}` and a signed-in dashboard user can pass
- * `{ user_id, email, plan, project_id }`. Custom attributes can be added
- * via the index signature without a type change.
- */
 export interface ShipeasyUser {
   user_id?: string;
   email?: string;
@@ -24,19 +23,49 @@ export interface ShipeasyUser {
   [attr: string]: unknown;
 }
 
+/** Subscribe to flag/config/experiment evaluation updates for useSyncExternalStore. */
+function subscribeToFlags(cb: () => void): () => void {
+  return flags.subscribe(cb);
+}
+
+/** Subscribe to i18n locale/translation updates for useSyncExternalStore. */
+function subscribeToI18n(cb: () => void): () => void {
+  return i18n.onUpdate(cb);
+}
+
+function getLocaleSnapshot(): string | null {
+  return i18n.locale;
+}
+
+function getLocaleServerSnapshot(): string | null {
+  return null;
+}
+
 /**
- * Mounts on first render and re-runs whenever the JSON-stringified user
- * shape changes. The SDK auto-merges browser context (locale, tz, path,
- * referrer, screen, user_agent) and `anonymous_id` before sending — see
- * collectBrowserAttrs in `@shipeasy/sdk/client`. Caller-supplied fields
- * always win.
+ * React hook that re-renders the component whenever the i18n locale changes.
+ * Used inside components that call i18n.t() / i18n.tEl() so they get fresh
+ * translations when the CDN loader finishes its profile fetch.
  */
+export function useI18nLocale(): string | null {
+  return useSyncExternalStore(subscribeToI18n, getLocaleSnapshot, getLocaleServerSnapshot);
+}
+
+/**
+ * React hook that re-renders the component whenever flag/config evaluations
+ * update (e.g. after flags.identify() completes).
+ */
+export function useFlags(): void {
+  useSyncExternalStore(
+    subscribeToFlags,
+    () => flags.ready,
+    () => false,
+  );
+}
+
 function AutoIdentify({ user }: { user: ShipeasyUser }) {
-  const { identify } = useShipeasy();
   const userKey = useMemo(() => JSON.stringify(user), [user]);
   useEffect(() => {
-    void identify(user).catch(() => {});
-    // userKey covers the user content; identify is stable per provider mount.
+    void flags.identify(user).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userKey]);
   return null;
@@ -44,26 +73,27 @@ function AutoIdentify({ user }: { user: ShipeasyUser }) {
 
 interface ShipeasyClientProvidersProps {
   children: ReactNode;
-  /**
-   * User attributes to identify with on mount. Omit (or pass `{}`) for
-   * anonymous visitors — the SDK will still send `anonymous_id` and
-   * auto-collected browser context.
-   */
   user?: ShipeasyUser;
 }
 
-/**
- * Single React-side entry point for both landing (anonymous) and
- * dashboard (signed-in). Pass `user` from a server component so the
- * SDK identifies with the freshest session info on every navigation.
- */
+function I18nSubscriber() {
+  // Re-render the full subtree when translations arrive from the CDN.
+  // useSyncExternalStore is the correct React 18 primitive for external stores.
+  useSyncExternalStore(subscribeToI18n, getLocaleSnapshot, getLocaleServerSnapshot);
+  return null;
+}
+
 export function ShipeasyClientProviders({ children, user }: ShipeasyClientProvidersProps) {
-  // Provider works with or without an SDK key — i18n stays mounted in both
-  // cases. When no key is configured, flag/experiment APIs return defaults.
+  // Configure SDK once per client session. configureShipeasy is idempotent.
+  useEffect(() => {
+    if (SDK_KEY) configureShipeasy({ sdkKey: SDK_KEY, baseUrl: EDGE_URL });
+  }, []);
+
   return (
-    <ShipeasyProvider sdkKey={SDK_KEY || undefined} baseUrl={EDGE_URL} adminUrl={ADMIN_URL}>
+    <>
+      <I18nSubscriber />
       {SDK_KEY ? <AutoIdentify user={user ?? {}} /> : null}
       {children}
-    </ShipeasyProvider>
+    </>
   );
 }

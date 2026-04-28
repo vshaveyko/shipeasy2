@@ -1,8 +1,11 @@
+import { LABEL_MARKER_RE, LABEL_MARKER_START } from "@shipeasy/i18n-core";
 import { DevtoolsApi } from "../api";
 import {
   getI18nDraftOverride,
   getI18nLabelOverride,
   getI18nProfileOverride,
+  isEditLabelsModeActive,
+  setEditLabelsMode,
   setI18nDraftOverride,
   setI18nLabelOverride,
   setI18nProfileOverride,
@@ -129,6 +132,119 @@ function installLabelHighlightStyles(): void {
 
 function removeLabelHighlightStyles(): void {
   document.getElementById(LABEL_STYLE_ID)?.remove();
+}
+
+/**
+ * Walk all text nodes under `root`, find label markers emitted by the patched
+ * `window.i18n.t()`, and replace each one with a `<span data-label="key">`
+ * element so the normal highlight/popper flow can take over.  Returns the
+ * number of spans created.
+ *
+ * This is safe to call multiple times — already-replaced nodes have no
+ * markers left, so a second pass is a no-op.
+ */
+export function scanAndReplaceMarkers(root: Node = document.body): number {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const replacements: Array<[Text, DocumentFragment]> = [];
+
+  const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]);
+
+  let node: Text | null;
+  while ((node = walker.nextNode() as Text | null)) {
+    const text = node.nodeValue ?? "";
+    if (!text.includes(LABEL_MARKER_START)) continue;
+    // Skip raw source nodes — the interceptor <script> in <head> contains the
+    // literal Unicode marker characters in its source text, which would be
+    // mistakenly parsed as label markers.
+    if (SKIP_TAGS.has(node.parentElement?.tagName ?? "")) continue;
+    // Skip text nodes already inside a [data-label] span — tEl() / ShipEasyI18nString
+    // wraps t() output in a span with data-label already set; the inner text node
+    // would otherwise produce a nested span with the same key (double-wrap).
+    if ((node.parentElement as Element)?.closest?.("[data-label]")) continue;
+
+    const frag = document.createDocumentFragment();
+    let lastIdx = 0;
+    LABEL_MARKER_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+
+    while ((m = LABEL_MARKER_RE.exec(text)) !== null) {
+      if (m.index > lastIdx) {
+        frag.appendChild(document.createTextNode(text.slice(lastIdx, m.index)));
+      }
+      const span = document.createElement("span");
+      span.setAttribute("data-label", m[1]);
+      const override = getI18nLabelOverride(m[1]);
+      span.textContent = override ?? m[2];
+      frag.appendChild(span);
+      lastIdx = m.index + m[0].length;
+    }
+
+    if (lastIdx < text.length) {
+      frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+    }
+
+    replacements.push([node, frag]);
+  }
+
+  for (const [n, frag] of replacements) n.parentNode?.replaceChild(frag, n);
+
+  // tEl() / ShipEasyI18nString spans already carry data-label. Their text may be:
+  //   A) A marker string — SDK's t() was also patched (unlikely but handled).
+  //   B) The raw key — SDK's internal store has no translations yet.
+  //   C) The clean translated text — SDK already has translations loaded.
+  //
+  // For cases A and B we look up the translation via the patched window.i18n.t(),
+  // which always returns a marker-wrapped string once the CDN loader has run.
+  // The scanner skipped these text nodes above to avoid double-wrapping, so we
+  // handle them here after the text-node pass.
+  // window._sei18n_t is the original (unpatched) CDN loader t() stashed by the
+  // interceptor. Using it instead of the patched window.i18n.t() avoids emitting
+  // markers (and any side-effects like CDN loader "update" events) on each call.
+  const origT = (
+    window as Window & { _sei18n_t?: (k: string, x?: Record<string, string | number>) => string }
+  )._sei18n_t;
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-label]"))) {
+    const text = el.textContent ?? "";
+    const key = el.getAttribute("data-label")!;
+    const override = getI18nLabelOverride(key);
+
+    if (text.includes(LABEL_MARKER_START)) {
+      // Span text is a marker string — extract the translated value.
+      LABEL_MARKER_RE.lastIndex = 0;
+      const m = LABEL_MARKER_RE.exec(text);
+      if (m) el.textContent = override ?? m[2];
+    } else if (origT) {
+      // Span text is the raw key or already-translated text from the SDK's own t().
+      // Look up the real translation via the stashed original CDN t(), no side-effects.
+      try {
+        const variables = el.dataset.variables
+          ? (JSON.parse(el.dataset.variables) as Record<string, string | number>)
+          : undefined;
+        const translated = origT(key, variables);
+        if (translated && translated !== key) el.textContent = override ?? translated;
+        else if (override) el.textContent = override;
+      } catch {
+        // JSON.parse failure — leave textContent unchanged
+      }
+    }
+  }
+
+  // Marker strings can also land in HTML attributes (placeholder, alt, aria-label,
+  // title) where text nodes never exist.  We can't add edit affordance there, but
+  // we must strip the garbage markers so screen readers and browser tooltips are
+  // not affected.
+  const ATTR_NAMES = ["placeholder", "alt", "aria-label", "title"];
+  for (const attr of ATTR_NAMES) {
+    for (const el of Array.from(document.querySelectorAll<Element>(`[${attr}]`))) {
+      const v = el.getAttribute(attr)!;
+      if (!v.includes(LABEL_MARKER_START)) continue;
+      LABEL_MARKER_RE.lastIndex = 0;
+      const m = LABEL_MARKER_RE.exec(v);
+      if (m) el.setAttribute(attr, m[2]);
+    }
+  }
+
+  return replacements.length;
 }
 
 function qualifyingLabels(): HTMLElement[] {
@@ -402,8 +518,8 @@ export async function renderI18nPanel(
         : `Edit labels (${labelCount})`;
     const editTitle =
       labelCount === 0
-        ? "No [data-label] elements on this page. Wrap copy in <ShipEasyI18nString> to make it editable."
-        : "Toggle in-page label editing";
+        ? "No translatable elements found. Use t() / tEl() / <ShipEasyI18nString> in your templates."
+        : "Toggle in-page label editing (reloads page)";
     const profileOpts = [
       `<option value="">Default</option>`,
       ...profiles.map(
@@ -428,11 +544,19 @@ export async function renderI18nPanel(
       <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${draftOpts}</select>`;
 
     subfoot.querySelector<HTMLButtonElement>("#se-edit-toggle")!.addEventListener("click", () => {
-      // Re-scan on every toggle so newly mounted labels are picked up even if
-      // the MutationObserver missed a frame (rare, but possible during route
-      // transitions).
-      toggleEditLabels(!editLabelsActive, shadow, () => renderSubfoot());
-      renderSubfoot();
+      if (isEditLabelsModeActive()) {
+        // Turning off: remove the URL param and reload — markers disappear.
+        setEditLabelsMode(false);
+      } else if (editLabelsActive) {
+        // In-page labels (from ShipEasyI18nString / tEl) are already in DOM:
+        // just toggle the highlight off without a reload.
+        toggleEditLabels(false, shadow, () => renderSubfoot());
+        renderSubfoot();
+      } else {
+        // Full marker mode: add ?se_edit_labels=1 and reload so the head
+        // script can patch window.i18n.t before the first render.
+        setEditLabelsMode(true);
+      }
     });
     subfoot.querySelector<HTMLSelectElement>("#se-profile-sel")!.addEventListener("change", (e) => {
       const val = (e.target as HTMLSelectElement).value || null;
@@ -442,6 +566,16 @@ export async function renderI18nPanel(
       const val = (e.target as HTMLSelectElement).value || null;
       setI18nDraftOverride(val);
     });
+  }
+
+  // When the page was loaded with ?se_edit_labels=1, window.i18n.t emitted
+  // markers into the DOM.  Replace them now so qualifyingLabels() finds them
+  // and the edit-labels UI activates automatically.
+  if (isEditLabelsModeActive()) {
+    scanAndReplaceMarkers();
+    if (!editLabelsActive) {
+      toggleEditLabels(true, shadow, () => renderSubfoot());
+    }
   }
 
   renderBody();

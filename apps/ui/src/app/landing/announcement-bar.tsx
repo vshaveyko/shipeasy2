@@ -1,7 +1,7 @@
 "use client";
 
-import { useConfig } from "@shipeasy/react";
-import { useMounted } from "./use-mounted";
+import { flags } from "@shipeasy/sdk/client";
+import { useFlags, useMounted } from "./use-mounted";
 
 interface AnnouncementBarConfig {
   enabled?: boolean;
@@ -12,7 +12,8 @@ interface AnnouncementBarConfig {
 
 export function AnnouncementBar() {
   const mounted = useMounted();
-  const cfg = useConfig<AnnouncementBarConfig>("landing_announcement_bar");
+  useFlags(); // re-render when flag evaluations update
+  const cfg = flags.getConfig<AnnouncementBarConfig>("landing_announcement_bar");
   if (!mounted || !cfg?.enabled || !cfg.text) return null;
   const color =
     cfg.accent === "amber"

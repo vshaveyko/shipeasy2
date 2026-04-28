@@ -16,6 +16,8 @@ export {
   buildOverrideUrl,
   snapshotOverridesFromStorage,
   applyOverridesToUrlAndReload,
+  isEditLabelsModeActive,
+  setEditLabelsMode,
 } from "./overrides";
 export type { OverrideUrlInput } from "./overrides";
 

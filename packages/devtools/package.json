@@ -25,5 +25,8 @@
     "tsup": "^8.3.0",
     "typescript": "^5.7.4"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "@shipeasy/i18n-core": "workspace:*"
+  }
 }
