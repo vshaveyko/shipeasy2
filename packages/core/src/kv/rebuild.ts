@@ -10,6 +10,8 @@ import {
   universes,
   experiments,
   events,
+  labelProfiles,
+  labelKeys,
   CONFIG_ENVS,
   type ConfigEnv,
 } from "../db/schema";
@@ -217,4 +219,44 @@ export async function writeSdkKeyEntry(
 export async function deleteSdkKeyEntry(env: CoreEnv, hash: string): Promise<void> {
   if (!env.FLAGS_KV) return;
   await env.FLAGS_KV.delete(`sdk_key:${hash}`);
+}
+
+export function i18nKvKey(projectId: string, profileName: string): string {
+  return `${projectId}:i18n:${profileName}`;
+}
+
+export async function rebuildI18nProfile(
+  env: CoreEnv,
+  projectId: string,
+  profileId: string,
+): Promise<void> {
+  if (!env.FLAGS_KV) return;
+  const db = getDb(env.DB);
+
+  const [profileRows, keyRows] = await Promise.all([
+    db
+      .select({ name: labelProfiles.name })
+      .from(labelProfiles)
+      .where(eq(labelProfiles.id, profileId))
+      .limit(1),
+    db
+      .select({ key: labelKeys.key, value: labelKeys.value, updatedAt: labelKeys.updatedAt })
+      .from(labelKeys)
+      .where(eq(labelKeys.profileId, profileId)),
+  ]);
+
+  if (profileRows.length === 0) return;
+
+  const strings: Record<string, string> = {};
+  let latestTs = "";
+  for (const row of keyRows) {
+    strings[row.key] = row.value;
+    if (row.updatedAt > latestTs) latestTs = row.updatedAt;
+  }
+  const version = latestTs ? latestTs.slice(0, 19).replace(/\D/g, "") : "0";
+
+  await env.FLAGS_KV.put(
+    i18nKvKey(projectId, profileRows[0].name),
+    JSON.stringify({ strings, locale: "en", version }),
+  );
 }

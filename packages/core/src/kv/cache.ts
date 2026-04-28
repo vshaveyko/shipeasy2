@@ -70,16 +70,47 @@ export async function getExperiments(env: CoreEnv, projectId: string): Promise<E
   return data;
 }
 
+export interface I18nBlob {
+  strings: Record<string, string>;
+  locale: string;
+  version: string;
+}
+
+const i18nCache = new Map<string, { data: I18nBlob; expiry: number }>();
+
+export async function getI18nStrings(
+  env: CoreEnv,
+  projectId: string,
+  profileName: string,
+): Promise<I18nBlob | null> {
+  const ttl = env.FLAGS_CACHE_TTL_MS !== undefined ? Number(env.FLAGS_CACHE_TTL_MS) : 10_000;
+  const cacheKey = `${projectId}:${profileName}`;
+  if (ttl > 0) {
+    const hit = i18nCache.get(cacheKey);
+    if (hit && Date.now() < hit.expiry) return hit.data;
+  }
+  if (!env.FLAGS_KV) return null;
+  const raw = await env.FLAGS_KV.get(`${projectId}:i18n:${profileName}`);
+  if (!raw) return null;
+  const data = JSON.parse(raw) as I18nBlob;
+  if (ttl > 0) i18nCache.set(cacheKey, { data, expiry: Date.now() + ttl });
+  return data;
+}
+
 /** Clears all in-process KV caches. Intended for tests. */
 export function clearCaches(projectId?: string): void {
   if (projectId) {
     for (const envName of CONFIG_ENVS) flagsCache.delete(flagsCacheKey(projectId, envName));
     expsCache.delete(projectId);
     catalogCache.delete(projectId);
+    for (const key of i18nCache.keys()) {
+      if (key.startsWith(`${projectId}:`)) i18nCache.delete(key);
+    }
   } else {
     flagsCache.clear();
     expsCache.clear();
     catalogCache.clear();
+    i18nCache.clear();
   }
 }
 

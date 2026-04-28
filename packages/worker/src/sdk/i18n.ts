@@ -2,7 +2,7 @@
 // GET /sdk/i18n/strings     — client-key auth; returns profile strings from D1
 
 import { and, eq, isNull } from "drizzle-orm";
-import { getDb } from "@shipeasy/core";
+import { getDb, getI18nStrings } from "@shipeasy/core";
 import { labelKeys, labelProfiles } from "@shipeasy/core/db/schema";
 import type { AuthedContext } from "../lib/auth";
 
@@ -55,6 +55,15 @@ export async function handleI18nStrings(c: AuthedContext) {
   const profile = c.req.query("profile");
   if (!profile) return c.json({ error: "profile query param required" }, 400);
 
+  const cached = await getI18nStrings(c.env, key.project_id, profile);
+  if (cached) {
+    return c.json(cached, 200, {
+      "Cache-Control": "public, max-age=30, stale-while-revalidate=60",
+      ETag: `"${cached.version}"`,
+    });
+  }
+
+  // KV miss — fall back to D1 and build the response from scratch.
   const db = getDb(c.env.DB);
 
   const profileRows = await db

@@ -1,5 +1,5 @@
 import { and, count, eq, inArray, isNull, like, or, sum } from "drizzle-orm";
-import { ApiError, getDb } from "@shipeasy/core";
+import { ApiError, getDb, rebuildI18nProfile } from "@shipeasy/core";
 import {
   labelProfiles,
   labelChunks,
@@ -288,6 +288,7 @@ export async function upsertKeys(identity: AdminIdentity, input: unknown) {
     chunk: parsed.chunk,
     count: upserted,
   });
+  await rebuildI18nProfile(env, identity.projectId, parsed.profile_id);
   return { upserted, chunk: chunk.name };
 }
 
@@ -311,6 +312,8 @@ export async function updateKey(identity: AdminIdentity, id: string, input: unkn
     .where(eq(labelKeys.id, id));
 
   await writeAudit(identity, "i18n.key.update", "label_key", id, parsed);
+  const env = await getEnvAsync();
+  await rebuildI18nProfile(env, identity.projectId, existing[0].profileId);
   return { id };
 }
 
@@ -320,6 +323,8 @@ export async function deleteKey(identity: AdminIdentity, id: string) {
   if (existing.length === 0) throw new ApiError("Key not found", 404);
   await s.delete(labelKeys).where(eq(labelKeys.id, id));
   await writeAudit(identity, "i18n.key.delete", "label_key", id);
+  const env = await getEnvAsync();
+  await rebuildI18nProfile(env, identity.projectId, existing[0].profileId);
   return { ok: true };
 }
 
@@ -333,6 +338,9 @@ export async function bulkDeleteKeys(identity: AdminIdentity, ids: string[]) {
     count: existing.length,
     ids: existing.map((k) => k.id),
   });
+  const env = await getEnvAsync();
+  const profileIds = [...new Set(existing.map((k) => k.profileId))];
+  await Promise.all(profileIds.map((pid) => rebuildI18nProfile(env, identity.projectId, pid)));
   return { deleted: existing.length };
 }
 
@@ -491,6 +499,8 @@ export async function publishProfile(
   await s.update(labelChunks).set({ publishedAt: now }).where(eq(labelChunks.id, chunk.id));
 
   await writeAudit(identity, "i18n.profile.publish", "label_profile", id, { chunk: chunkName });
+  const env = await getEnvAsync();
+  await rebuildI18nProfile(env, identity.projectId, id);
   return { ok: true, profile_id: id, chunk: chunkName, published_at: now };
 }
 
