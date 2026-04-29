@@ -27,6 +27,6 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@shipeasy/i18n-core": "workspace:*"
+    "@shipeasy/sdk": "^1.2.0"
   }
 }

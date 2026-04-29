@@ -11,8 +11,8 @@ import {
   type ComputedRef,
   type Plugin,
 } from "vue";
-export { labelAttrs } from "@shipeasy/i18n-core";
-export type { LabelAttrs } from "@shipeasy/i18n-core";
+export { labelAttrs } from "@shipeasy/sdk/client";
+export type { LabelAttrs } from "@shipeasy/sdk/client";
 
 declare global {
   interface Window {

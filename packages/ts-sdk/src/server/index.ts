@@ -353,6 +353,56 @@ export class FlagsClient {
   }
 }
 
+// ---- i18n SSR helpers (formerly @shipeasy/i18n-core/server) ----
+
+export interface LabelFile {
+  v: number;
+  profile: string;
+  chunk: string;
+  strings: Record<string, string>;
+}
+
+export interface FetchLabelsOptions {
+  key: string;
+  profile: string;
+  chunk?: string;
+  cdnBaseUrl?: string;
+  timeoutMs?: number;
+}
+
+const DEFAULT_I18N_CDN = "https://cdn.i18n.shipeasy.ai";
+
+async function fetchJson<T>(url: string, timeoutMs = 2000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      next: { revalidate: 60 },
+    } as RequestInit);
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
+    return res.json() as Promise<T>;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function fetchLabelsForSSR(opts: FetchLabelsOptions): Promise<LabelFile | null> {
+  const cdn = opts.cdnBaseUrl ?? DEFAULT_I18N_CDN;
+  const chunk = opts.chunk ?? "index";
+  try {
+    const manifest = await fetchJson<Record<string, string>>(
+      `${cdn}/labels/${opts.key}/${opts.profile}/manifest.json`,
+      opts.timeoutMs,
+    );
+    const fileUrl = manifest[chunk];
+    if (!fileUrl) return null;
+    return await fetchJson<LabelFile>(fileUrl, opts.timeoutMs);
+  } catch {
+    return null;
+  }
+}
+
 // ---- Module-scope singleton ----
 //
 // Mirrors the client SDK pattern: configure once at app boot, then call

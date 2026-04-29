@@ -267,9 +267,9 @@ importers:
 
   packages/client-sdks/i18n-angular:
     dependencies:
-      '@shipeasy/i18n-core':
-        specifier: workspace:*
-        version: link:../i18n-core
+      '@shipeasy/sdk':
+        specifier: ^1.2.0
+        version: 1.2.0(zod@4.3.6)
     devDependencies:
       '@angular/common':
         specifier: ^17.0.0
@@ -287,20 +287,11 @@ importers:
         specifier: ^5.7.4
         version: 5.9.3
 
-  packages/client-sdks/i18n-core:
-    devDependencies:
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
   packages/client-sdks/i18n-svelte:
     dependencies:
-      '@shipeasy/i18n-core':
-        specifier: workspace:*
-        version: link:../i18n-core
+      '@shipeasy/sdk':
+        specifier: ^1.2.0
+        version: 1.2.0(zod@4.3.6)
     devDependencies:
       svelte:
         specifier: ^5.0.0
@@ -314,9 +305,9 @@ importers:
 
   packages/client-sdks/i18n-vue:
     dependencies:
-      '@shipeasy/i18n-core':
-        specifier: workspace:*
-        version: link:../i18n-core
+      '@shipeasy/sdk':
+        specifier: ^1.2.0
+        version: 1.2.0(zod@4.3.6)
     devDependencies:
       tsup:
         specifier: ^8.3.0
@@ -330,12 +321,9 @@ importers:
 
   packages/client-sdks/react:
     dependencies:
-      '@shipeasy/i18n-core':
-        specifier: workspace:*
-        version: link:../i18n-core
       '@shipeasy/sdk':
-        specifier: ^1.1.0
-        version: 1.1.0(zod@4.3.6)
+        specifier: ^1.2.0
+        version: 1.2.0(zod@4.3.6)
       react:
         specifier: '>=17.0.0'
         version: 19.2.5
@@ -440,9 +428,9 @@ importers:
 
   packages/devtools:
     dependencies:
-      '@shipeasy/i18n-core':
-        specifier: workspace:*
-        version: link:../client-sdks/i18n-core
+      '@shipeasy/sdk':
+        specifier: ^1.2.0
+        version: 1.2.0(zod@4.3.6)
     devDependencies:
       tsup:
         specifier: ^8.3.0
@@ -3378,6 +3366,15 @@ packages:
 
   '@shipeasy/sdk@1.1.0':
     resolution: {integrity: sha512-FIWLX9Toqiege51Rb/ilpZ+U36uTiB56feJCfCm+VMElvgu/IwnZBunGb+yCPgF2ifV7Ra8DGLlhIg1jPR72oQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      zod: ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@shipeasy/sdk@1.2.0':
+    resolution: {integrity: sha512-nf+lfb4n3fF4XMy7gV75CXaXrEkfKFuXYoxSlC2/oRh1S3fKwiEexPC+eBR2jhS5Esh9D3eEPZ3H7EE+HNa6Zg==}
     engines: {node: '>=20'}
     peerDependencies:
       zod: ^4.0.0
@@ -10810,6 +10807,12 @@ snapshots:
   '@shikijs/vscode-textmate@10.0.2': {}
 
   '@shipeasy/sdk@1.1.0(zod@4.3.6)':
+    dependencies:
+      murmurhash-js: 1.0.0
+    optionalDependencies:
+      zod: 4.3.6
+
+  '@shipeasy/sdk@1.2.0(zod@4.3.6)':
     dependencies:
       murmurhash-js: 1.0.0
     optionalDependencies:

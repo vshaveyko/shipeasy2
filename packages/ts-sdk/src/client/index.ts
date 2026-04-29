@@ -907,6 +907,34 @@ export const flags = {
   },
 };
 
+// ---- i18n label helpers (formerly @shipeasy/i18n-core) ----
+
+export const LABEL_MARKER_START = "￹";
+export const LABEL_MARKER_SEP = "￺";
+export const LABEL_MARKER_END = "￻";
+export const LABEL_MARKER_RE = /￹([^￺￻]+)￺([^￻]*)￻/g;
+
+export function encodeLabelMarker(key: string, value: string): string {
+  return `${LABEL_MARKER_START}${key}${LABEL_MARKER_SEP}${value}${LABEL_MARKER_END}`;
+}
+
+export interface LabelAttrs {
+  "data-label": string;
+  "data-variables"?: string;
+  "data-label-desc"?: string;
+}
+
+export function labelAttrs(
+  key: string,
+  variables?: Record<string, string | number>,
+  desc?: string,
+): LabelAttrs {
+  const attrs: LabelAttrs = { "data-label": key };
+  if (variables) attrs["data-variables"] = JSON.stringify(variables);
+  if (desc) attrs["data-label-desc"] = desc;
+  return attrs;
+}
+
 // Framework-specific element creator — injected once via i18n.configure().
 // Kept outside the object so tree-shakers can drop tEl entirely when not used.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -939,12 +967,7 @@ export const i18n = {
   tEl(key: string, variables?: Record<string, string | number>, desc?: string): any {
     const text = this.t(key, variables);
     if (!_createElement) return text;
-    // Build data-* attribute bag inline to avoid importing @shipeasy/i18n-core
-    // into every bundle that pulls in this singleton.
-    const props: Record<string, string> = { "data-label": key };
-    if (variables) props["data-variables"] = JSON.stringify(variables);
-    if (desc) props["data-label-desc"] = desc;
-    return _createElement("span", props, text);
+    return _createElement("span", labelAttrs(key, variables, desc), text);
   },
   /** Wire up the element creator once at app startup (call before any tEl use). */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

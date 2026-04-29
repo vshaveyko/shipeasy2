@@ -1,4 +1,4 @@
-import { LABEL_MARKER_RE, LABEL_MARKER_START } from "@shipeasy/i18n-core";
+import { LABEL_MARKER_RE, LABEL_MARKER_START } from "@shipeasy/sdk/client";
 import { DevtoolsApi } from "../api";
 import {
   getI18nDraftOverride,
