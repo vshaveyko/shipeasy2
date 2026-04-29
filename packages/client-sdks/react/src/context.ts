@@ -4,7 +4,7 @@ import { labelAttrs } from "@shipeasy/sdk/client";
 import type { ExperimentResult, User } from "@shipeasy/sdk/client";
 
 export interface ShipEasyI18nContextValue {
-  t: (key: string, variables?: Record<string, string | number>) => string;
+  t: (key: string, fallback: string, variables?: Record<string, string | number>) => string;
   ready: boolean;
   locale: string | null;
 }
@@ -33,7 +33,7 @@ export interface ShipeasyContextValue {
 const noop = () => {};
 
 const defaultI18n: ShipEasyI18nContextValue = {
-  t: (key) => key,
+  t: (_key, fallback) => fallback,
   ready: false,
   locale: null,
 };
@@ -60,15 +60,25 @@ export interface ShipEasyI18nHookValue extends ShipEasyI18nContextValue {
    * ShipEasy devtools "Edit labels" overlay can locate and inline-edit it.
    * Use `t()` for non-JSX contexts (attributes, titles, placeholders).
    */
-  tEl: (key: string, variables?: Record<string, string | number>, desc?: string) => ReactElement;
+  tEl: (
+    key: string,
+    fallback: string,
+    variables?: Record<string, string | number>,
+    desc?: string,
+  ) => ReactElement;
 }
 
 /** Backwards-compatible selector for code that only cares about i18n. */
 export function useShipEasyI18n(): ShipEasyI18nHookValue {
   const ctx = useContext(ShipeasyContext).i18n;
   const tEl = useCallback(
-    (key: string, variables?: Record<string, string | number>, desc?: string): ReactElement =>
-      createElement("span", labelAttrs(key, variables, desc), ctx.t(key, variables)),
+    (
+      key: string,
+      fallback: string,
+      variables?: Record<string, string | number>,
+      desc?: string,
+    ): ReactElement =>
+      createElement("span", labelAttrs(key, variables, desc), ctx.t(key, fallback, variables)),
     [ctx.t],
   );
   return { ...ctx, tEl };

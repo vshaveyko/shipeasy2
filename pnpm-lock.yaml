@@ -113,11 +113,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/devtools
       '@shipeasy/react':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../../packages/client-sdks/react
       '@shipeasy/sdk':
-        specifier: '*'
-        version: 1.1.0(zod@4.3.6)
+        specifier: workspace:*
+        version: link:../../packages/ts-sdk
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -268,8 +268,8 @@ importers:
   packages/client-sdks/react:
     dependencies:
       '@shipeasy/sdk':
-        specifier: ^1.2.0
-        version: 1.2.0(zod@4.3.6)
+        specifier: workspace:^
+        version: link:../../ts-sdk
       react:
         specifier: '>=17.0.0'
         version: 19.2.5
@@ -375,8 +375,8 @@ importers:
   packages/devtools:
     dependencies:
       '@shipeasy/sdk':
-        specifier: ^1.2.0
-        version: 1.2.0(zod@4.3.6)
+        specifier: workspace:^
+        version: link:../ts-sdk
     devDependencies:
       tsup:
         specifier: ^8.3.0
@@ -440,6 +440,31 @@ importers:
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
+
+  packages/ts-sdk:
+    dependencies:
+      murmurhash-js:
+        specifier: ^1.0.0
+        version: 1.0.0
+      zod:
+        specifier: ^4.0.0
+        version: 4.3.6
+    devDependencies:
+      '@types/murmurhash-js':
+        specifier: ^1.0.6
+        version: 1.0.7
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
+      wrangler:
+        specifier: ^4.83.0
+        version: 4.83.0(@cloudflare/workers-types@4.20260416.2)
 
   packages/worker:
     dependencies:
@@ -3312,15 +3337,6 @@ packages:
       zod:
         optional: true
 
-  '@shipeasy/sdk@1.2.0':
-    resolution: {integrity: sha512-nf+lfb4n3fF4XMy7gV75CXaXrEkfKFuXYoxSlC2/oRh1S3fKwiEexPC+eBR2jhS5Esh9D3eEPZ3H7EE+HNa6Zg==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      zod: ^4.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-
   '@sindresorhus/is@7.2.0':
     resolution: {integrity: sha512-P1Cz1dWaFfR4IR+U13mqqiGsLFf1KbayybWwdd2vfctdV6hDpUkgCY0nKOLLTMSoRd/jJNjtbqzf13K8DCCXQw==}
     engines: {node: '>=18'}
@@ -3746,6 +3762,9 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/murmurhash-js@1.0.7':
+    resolution: {integrity: sha512-XM6078Du3jaEJVwpxmPZsJQDMzWabjY4ILQQvW4VPBzTULd+Fjs2Z54s+OrLzDRxgs6J09YyDISnZDlltYAchw==}
 
   '@types/node-fetch@2.6.13':
     resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
@@ -10745,12 +10764,6 @@ snapshots:
     optionalDependencies:
       zod: 4.3.6
 
-  '@shipeasy/sdk@1.2.0(zod@4.3.6)':
-    dependencies:
-      murmurhash-js: 1.0.0
-    optionalDependencies:
-      zod: 4.3.6
-
   '@sindresorhus/is@7.2.0': {}
 
   '@sindresorhus/merge-streams@4.0.0': {}
@@ -11260,6 +11273,8 @@ snapshots:
   '@types/mdx@2.0.13': {}
 
   '@types/ms@2.1.0': {}
+
+  '@types/murmurhash-js@1.0.7': {}
 
   '@types/node-fetch@2.6.13':
     dependencies:

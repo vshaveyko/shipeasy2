@@ -14,6 +14,7 @@ import {
   LandingCtaFooter,
 } from "./landing/sections-static";
 import { RevealOnScroll } from "./landing/reveal-on-scroll";
+import { TestimonialsGate } from "./landing/testimonials-gate";
 
 /**
  * Statically rendered: no `await auth()` so Next 16 doesn't ship two SSR
@@ -41,7 +42,9 @@ export default function LandingPage() {
         <LandingMarquee />
         <StickyFeatures />
         <LandingWorkflow />
-        <LandingTestimonials />
+        <TestimonialsGate>
+          <LandingTestimonials />
+        </TestimonialsGate>
         <LandingPricing />
         <LandingFaq />
         <LandingCtaFooter />

@@ -27,6 +27,6 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@shipeasy/sdk": "^1.2.0"
+    "@shipeasy/sdk": "workspace:^"
   }
 }

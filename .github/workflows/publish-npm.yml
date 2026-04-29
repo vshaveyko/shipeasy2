@@ -33,7 +33,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm build
+      # Build only the publishable packages — the rest of the monorepo
+      # (docs, ui, worker) is built and deployed by Cloudflare Workers Builds
+      # and is not on the publish critical path.
+      - run: pnpm --filter "./packages/ts-sdk" --filter "./packages/client-sdks/**" build
 
       - name: Publish changed packages
         run: |

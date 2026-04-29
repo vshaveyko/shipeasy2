@@ -1,7 +1,6 @@
 packages:
   - "apps/*"
   - "packages/*"
-  - "!packages/ts-sdk"
   - "!packages/server-sdks/sdk-ruby"
   - "!packages/client-sdks/i18n-core"
   - "!packages/client-sdks/i18n-vue"

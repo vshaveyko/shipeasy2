@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { i18n } from "@shipeasy/sdk/client";
+import { flags, i18n } from "@shipeasy/sdk/client";
+import { useFlags, useMounted } from "./use-mounted";
 
 /**
  * Landing nav — static, no session lookup. The single CTA points at
@@ -12,6 +13,9 @@ import { i18n } from "@shipeasy/sdk/client";
  */
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
+  const mounted = useMounted();
+  useFlags();
+  const showBeta = mounted ? flags.get("landing_beta_badge") : false;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -29,10 +33,12 @@ export function LandingNav() {
         >
           <span className="lp-brand-mark" aria-hidden />
           <span>Shipeasy</span>
-          <span className="lp-badge ml-2">
-            <span className="lp-dot" />
-            beta
-          </span>
+          {showBeta ? (
+            <span className="lp-badge ml-2">
+              <span className="lp-dot" />
+              beta
+            </span>
+          ) : null}
         </Link>
 
         <div className="hidden gap-7 text-[13.5px] text-[var(--se-fg-2)] md:flex">
@@ -60,7 +66,12 @@ export function LandingNav() {
 
         <div className="flex items-center gap-2.5">
           <Link className="lp-btn lp-btn-primary" href="/auth/signin">
-            {i18n.tEl("landing.nav.cta", undefined, "Primary CTA in the landing nav")}{" "}
+            {i18n.tEl(
+              "landing.nav.cta",
+              "Install with Claude",
+              undefined,
+              "Primary CTA in the landing nav",
+            )}{" "}
             <ArrowRight className="size-3.5" />
           </Link>
         </div>
