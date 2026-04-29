@@ -33,7 +33,11 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
   const plan = getEffectivePlan(project);
   const env = await getEnvAsync();
 
-  await checkLimit(env.DB, identity.projectId, "sdk_keys", plan);
+  // Admin keys (CLI / devtools auth tokens) are not user-facing SDK keys and
+  // don't count toward the plan limit — only "server" and "client" keys do.
+  if (parsed.type !== "admin") {
+    await checkLimit(env.DB, identity.projectId, "sdk_keys", plan);
+  }
 
   const raw = `sdk_${parsed.type}_${crypto.randomUUID().replace(/-/g, "")}`;
   const hash = await sha256(raw);

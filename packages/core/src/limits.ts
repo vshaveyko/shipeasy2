@@ -1,6 +1,6 @@
 // checkLimit() — plan enforcement before every INSERT.
 
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNull, ne } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   gates,
@@ -113,10 +113,18 @@ export async function checkLimit(
       break;
     }
     case "sdk_keys": {
+      // Only "server" and "client" keys count against the plan limit.
+      // "admin" keys are internal CLI/devtools auth tokens and are unlimited.
       const row = await db
         .select({ n: count() })
         .from(sdkKeys)
-        .where(and(eq(sdkKeys.projectId, projectId), isNull(sdkKeys.revokedAt)));
+        .where(
+          and(
+            eq(sdkKeys.projectId, projectId),
+            isNull(sdkKeys.revokedAt),
+            ne(sdkKeys.type, "admin"),
+          ),
+        );
       n = row[0]?.n ?? 0;
       break;
     }

@@ -1,4 +1,10 @@
-"use strict";(()=>{var st=Object.defineProperty;var at=(e,t,o)=>t in e?st(e,t,{enumerable:!0,configurable:!0,writable:!0,value:o}):e[t]=o;var Q=(e,t,o)=>at(e,typeof t!="symbol"?t+"":t,o);var xe=`
+"use strict";
+(() => {
+  var st = Object.defineProperty;
+  var at = (e, t, o) =>
+    t in e ? st(e, t, { enumerable: !0, configurable: !0, writable: !0, value: o }) : (e[t] = o);
+  var ee = (e, t, o) => at(e, typeof t != "symbol" ? t + "" : t, o);
+  var xe = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :host {
@@ -1008,61 +1014,709 @@ select.se-input { cursor: pointer; }
  * is injected directly into document.head \u2014 these elements are in the
  * customer page DOM, outside our shadow root, so shadow CSS can't reach
  * them. */
-`;var ee="se_dt_session";function ye(){try{let e=sessionStorage.getItem(ee);if(e)return JSON.parse(e)}catch{}return null}function it(e){try{sessionStorage.setItem(ee,JSON.stringify(e))}catch{}}function we(){try{sessionStorage.removeItem(ee)}catch{}}async function Ee(e,t){let o=new URL(e.adminUrl).origin,n=window.location.origin,r=`shipeasy-devtools-auth-${Date.now()}`,a=window.open(`${e.adminUrl}/devtools-auth?origin=${encodeURIComponent(n)}`,r,"width=460,height=640,noopener=no");if(!a)throw new Error("Popup blocked. Allow popups for this site and try again.");try{a.focus()}catch{}return t(),new Promise((s,i)=>{let d=!1;function g(f,p){d||(d=!0,window.removeEventListener("message",c),clearInterval(k),clearTimeout(y),f?i(f):s(p))}function c(f){if(f.origin!==o)return;let p=f.data;if(!p||p.type!=="se:devtools-auth"||!p.token||!p.projectId)return;let b={token:p.token,projectId:p.projectId};it(b),g(null,b)}window.addEventListener("message",c);let x=Date.now(),k=setInterval(()=>{Date.now()-x<1500||a.closed&&!d&&g(new Error("Sign-in window closed before approval."))},500),y=setTimeout(()=>{g(new Error("Sign-in timed out after 10 minutes."))},6e5)})}var lt=/^(true|on|1|yes)$/i,dt=/^(false|off|0|no)$/i,ke=/^se(?:_|-|$)/;function W(e){return lt.test(e)?!0:dt.test(e)?!1:null}function te(e){if(e.startsWith("b64:"))try{let t=atob(e.slice(4).replace(/-/g,"+").replace(/_/g,"/"));return JSON.parse(t)}catch{return e}try{return JSON.parse(e)}catch{return e}}function Le(e){let t=JSON.stringify(e);return t.length<=60?t:`b64:${btoa(t).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}`}function G(){return typeof window>"u"?new URLSearchParams:new URLSearchParams(window.location.search)}function R(e,t){let o=G(),n=o.get(e);if(n!==null)return n;if(t){let r=o.get(t);if(r!==null)return r}return null}function C(e){if(typeof window>"u")return;let t=new URL(window.location.href);t.searchParams.set("se","1");for(let[o,n]of e)n===null?t.searchParams.delete(o):t.searchParams.set(o,n);window.location.assign(t.toString())}function Se(){if(typeof window>"u")return!1;let e=G();return e.has("se")||e.has("se_devtools")||e.has("se-devtools")}function D(){return typeof window>"u"?!1:G().has("se_edit_labels")}function ne(e){C([["se_edit_labels",e?"1":null]])}function oe(e){let t=R(`se_ks_${e}`)??R(`se_gate_${e}`)??R(`se-gate-${e}`);return t===null?null:W(t)}function Me(e,t,o="session"){C([[`se_ks_${e}`,t===null?null:t?"true":"false"],[`se_gate_${e}`,null],[`se-gate-${e}`,null]])}function re(e){let t=R(`se_config_${e}`,`se-config-${e}`);if(t!==null)return te(t)}function se(e,t,o="session"){C([[`se_config_${e}`,t==null?null:Le(t)],[`se-config-${e}`,null]])}function Te(e){let t=R(`se_exp_${e}`,`se-exp-${e}`);return t===null||t===""||t==="default"||t==="none"?null:t}function $e(e,t,o="session"){C([[`se_exp_${e}`,t],[`se-exp-${e}`,null]])}function J(){return R("se_i18n")}function Re(e,t="session"){C([["se_i18n",e]])}function ae(){return R("se_i18n_draft")}function _e(e,t="session"){C([["se_i18n_draft",e]])}function V(e){return R(`se_i18n_label_${e}`)}function ie(e,t,o="session"){C([[`se_i18n_label_${e}`,t]])}function Pe(){if(typeof window>"u")return;let e=new URL(window.location.href);for(let t of[...e.searchParams.keys()])ke.test(t)&&e.searchParams.delete(t);e.searchParams.set("se","1"),window.location.assign(e.toString())}function le(e,t){let o=new URL(t??(typeof window<"u"?window.location.href:"https://example.com/"));for(let n of[...o.searchParams.keys()])ke.test(n)&&o.searchParams.delete(n);e.openDevtools&&o.searchParams.set("se","1");for(let[n,r]of Object.entries(e.gates??{}))o.searchParams.set(`se_ks_${n}`,r?"true":"false");for(let[n,r]of Object.entries(e.experiments??{}))o.searchParams.set(`se_exp_${n}`,r);for(let[n,r]of Object.entries(e.configs??{}))o.searchParams.set(`se_config_${n}`,Le(r));e.i18nProfile&&o.searchParams.set("se_i18n",e.i18nProfile),e.i18nDraft&&o.searchParams.set("se_i18n_draft",e.i18nDraft);for(let[n,r]of Object.entries(e.i18nLabels??{}))o.searchParams.set(`se_i18n_label_${n}`,r);return o.toString()}function de(){let e={gates:{},experiments:{},configs:{},i18nLabels:{}};if(typeof window>"u")return e;let t=G();for(let[o,n]of t)if(o.startsWith("se_ks_")){let r=W(n);r!==null&&(e.gates[o.slice(6)]=r)}else if(o.startsWith("se_gate_")){let r=W(n);r!==null&&(e.gates[o.slice(8)]=r)}else if(o.startsWith("se-gate-")){let r=W(n);r!==null&&(e.gates[o.slice(8)]=r)}else o.startsWith("se_exp_")||o.startsWith("se-exp-")?e.experiments[o.slice(7)]=n:o.startsWith("se_config_")||o.startsWith("se-config-")?e.configs[o.slice(10)]=te(n):o==="se_i18n"?e.i18nProfile=n:o==="se_i18n_draft"?e.i18nDraft=n:o.startsWith("se_i18n_label_")&&(e.i18nLabels[o.slice(14)]=n);return e}function Ae(e){if(typeof window>"u")return;let t={...de(),...e,openDevtools:!0},o=le(t);window.location.assign(o)}var Y=class{constructor(t,o){Q(this,"adminUrl",t);Q(this,"token",o)}async get(t){let o=await fetch(`${this.adminUrl}${t}`,{headers:{Authorization:`Bearer ${this.token}`}});if(!o.ok){let r="";try{let a=await o.json();r=a.detail??a.error??""}catch{try{r=(await o.text()).slice(0,200)}catch{}}throw new Error(`${t} \u2192 HTTP ${o.status}${r?` \u2014 ${r}`:""}`)}let n=await o.json();return Array.isArray(n)?n:n.data??n}gates(){return this.get("/api/admin/gates")}async configs(){let t=await this.get("/api/admin/configs"),o="prod";return await Promise.all(t.map(async r=>{try{let a=await this.get(`/api/admin/configs/${r.id}`),s=a.valueJson!==void 0?a.valueJson:a.values?.[o]??null;return{...r,valueJson:s}}catch{return{...r,valueJson:null}}}))}experiments(){return this.get("/api/admin/experiments")}universes(){return this.get("/api/admin/universes")}profiles(){return this.get("/api/admin/i18n/profiles")}drafts(){return this.get("/api/admin/i18n/drafts")}async put(t,o){let n=await fetch(`${this.adminUrl}${t}`,{method:"PUT",headers:{Authorization:`Bearer ${this.token}`,"Content-Type":"application/json"},body:JSON.stringify(o)});if(!n.ok){let r="";try{let a=await n.json();r=a.detail??a.error??""}catch{try{r=(await n.text()).slice(0,200)}catch{}}throw new Error(`${t} \u2192 HTTP ${n.status}${r?` \u2014 ${r}`:""}`)}return await n.json()}async post(t,o){let n=await fetch(`${this.adminUrl}${t}`,{method:"POST",headers:{Authorization:`Bearer ${this.token}`,"Content-Type":"application/json"},body:JSON.stringify(o)});if(!n.ok){let r="";try{let a=await n.json();r=a.detail??a.error??""}catch{try{r=(await n.text()).slice(0,200)}catch{}}throw new Error(`${t} \u2192 HTTP ${n.status}${r?` \u2014 ${r}`:""}`)}return await n.json()}bugs(){return this.get("/api/admin/bugs")}createBug(t){return this.post("/api/admin/bugs",t)}featureRequests(){return this.get("/api/admin/feature-requests")}createFeatureRequest(t){return this.post("/api/admin/feature-requests",t)}async uploadAttachment(t){let o=new FormData;o.append("reportKind",t.reportKind),o.append("reportId",t.reportId),o.append("kind",t.kind),o.append("filename",t.filename),o.append("file",t.blob,t.filename);let n=await fetch(`${this.adminUrl}/api/admin/reports/attachments`,{method:"POST",headers:{Authorization:`Bearer ${this.token}`},body:o});if(!n.ok){let r="";try{r=(await n.json()).error??""}catch{}throw new Error(`upload failed \u2192 HTTP ${n.status}${r?` \u2014 ${r}`:""}`)}return await n.json()}upsertDraftKey(t,o,n){return this.post(`/api/admin/i18n/drafts/${encodeURIComponent(t)}/keys`,{key:o,value:n})}updateKeyById(t,o){return this.put(`/api/admin/i18n/keys/${encodeURIComponent(t)}`,{value:o})}async keys(t){let o=t?`?profile_id=${encodeURIComponent(t)}`:"",n=await this.get(`/api/admin/i18n/keys${o}`);return Array.isArray(n)?n:n&&Array.isArray(n.keys)?n.keys:[]}};function $(e){return`
+`;
+  var te = "se_dt_session";
+  function ye() {
+    try {
+      let e = sessionStorage.getItem(te);
+      if (e) return JSON.parse(e);
+    } catch {}
+    return null;
+  }
+  function it(e) {
+    try {
+      sessionStorage.setItem(te, JSON.stringify(e));
+    } catch {}
+  }
+  function we() {
+    try {
+      sessionStorage.removeItem(te);
+    } catch {}
+  }
+  async function Ee(e, t) {
+    let o = new URL(e.adminUrl).origin,
+      n = window.location.origin,
+      r = `shipeasy-devtools-auth-${Date.now()}`,
+      a = window.open(
+        `${e.adminUrl}/devtools-auth?origin=${encodeURIComponent(n)}`,
+        r,
+        "width=460,height=640,noopener=no",
+      );
+    if (!a) throw new Error("Popup blocked. Allow popups for this site and try again.");
+    try {
+      a.focus();
+    } catch {}
+    return (
+      t(),
+      new Promise((s, i) => {
+        let c = !1;
+        function g(f, d) {
+          c ||
+            ((c = !0),
+            window.removeEventListener("message", p),
+            clearInterval(w),
+            clearTimeout(y),
+            f ? i(f) : s(d));
+        }
+        function p(f) {
+          if (f.origin !== o) return;
+          let d = f.data;
+          if (!d || d.type !== "se:devtools-auth" || !d.token || !d.projectId) return;
+          let h = { token: d.token, projectId: d.projectId };
+          (it(h), g(null, h));
+        }
+        window.addEventListener("message", p);
+        let x = Date.now(),
+          w = setInterval(() => {
+            Date.now() - x < 1500 ||
+              (a.closed && !c && g(new Error("Sign-in window closed before approval.")));
+          }, 500),
+          y = setTimeout(() => {
+            g(new Error("Sign-in timed out after 10 minutes."));
+          }, 6e5);
+      })
+    );
+  }
+  var lt = /^(true|on|1|yes)$/i,
+    dt = /^(false|off|0|no)$/i,
+    ke = /^se(?:_|-|$)/;
+  function J(e) {
+    return lt.test(e) ? !0 : dt.test(e) ? !1 : null;
+  }
+  function ne(e) {
+    if (e.startsWith("b64:"))
+      try {
+        let t = atob(e.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
+        return JSON.parse(t);
+      } catch {
+        return e;
+      }
+    try {
+      return JSON.parse(e);
+    } catch {
+      return e;
+    }
+  }
+  function Le(e) {
+    let t = JSON.stringify(e);
+    return t.length <= 60
+      ? t
+      : `b64:${btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
+  }
+  function V() {
+    return typeof window > "u"
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search);
+  }
+  function R(e, t) {
+    let o = V(),
+      n = o.get(e);
+    if (n !== null) return n;
+    if (t) {
+      let r = o.get(t);
+      if (r !== null) return r;
+    }
+    return null;
+  }
+  function C(e) {
+    if (typeof window > "u") return;
+    let t = new URL(window.location.href);
+    t.searchParams.set("se", "1");
+    for (let [o, n] of e) n === null ? t.searchParams.delete(o) : t.searchParams.set(o, n);
+    window.location.assign(t.toString());
+  }
+  function Se() {
+    if (typeof window > "u") return !1;
+    let e = V();
+    return e.has("se") || e.has("se_devtools") || e.has("se-devtools");
+  }
+  function D() {
+    return typeof window > "u" ? !1 : V().has("se_edit_labels");
+  }
+  function oe(e) {
+    C([["se_edit_labels", e ? "1" : null]]);
+  }
+  function re(e) {
+    let t = R(`se_ks_${e}`) ?? R(`se_gate_${e}`) ?? R(`se-gate-${e}`);
+    return t === null ? null : J(t);
+  }
+  function Me(e, t, o = "session") {
+    C([
+      [`se_ks_${e}`, t === null ? null : t ? "true" : "false"],
+      [`se_gate_${e}`, null],
+      [`se-gate-${e}`, null],
+    ]);
+  }
+  function se(e) {
+    let t = R(`se_config_${e}`, `se-config-${e}`);
+    if (t !== null) return ne(t);
+  }
+  function ae(e, t, o = "session") {
+    C([
+      [`se_config_${e}`, t == null ? null : Le(t)],
+      [`se-config-${e}`, null],
+    ]);
+  }
+  function Te(e) {
+    let t = R(`se_exp_${e}`, `se-exp-${e}`);
+    return t === null || t === "" || t === "default" || t === "none" ? null : t;
+  }
+  function $e(e, t, o = "session") {
+    C([
+      [`se_exp_${e}`, t],
+      [`se-exp-${e}`, null],
+    ]);
+  }
+  function z() {
+    return R("se_i18n");
+  }
+  function Re(e, t = "session") {
+    C([["se_i18n", e]]);
+  }
+  function ie() {
+    return R("se_i18n_draft");
+  }
+  function _e(e, t = "session") {
+    C([["se_i18n_draft", e]]);
+  }
+  function Y(e) {
+    return R(`se_i18n_label_${e}`);
+  }
+  function le(e, t, o = "session") {
+    C([[`se_i18n_label_${e}`, t]]);
+  }
+  function Pe() {
+    if (typeof window > "u") return;
+    let e = new URL(window.location.href);
+    for (let t of [...e.searchParams.keys()]) ke.test(t) && e.searchParams.delete(t);
+    (e.searchParams.set("se", "1"), window.location.assign(e.toString()));
+  }
+  function de(e, t) {
+    let o = new URL(t ?? (typeof window < "u" ? window.location.href : "https://example.com/"));
+    for (let n of [...o.searchParams.keys()]) ke.test(n) && o.searchParams.delete(n);
+    e.openDevtools && o.searchParams.set("se", "1");
+    for (let [n, r] of Object.entries(e.gates ?? {}))
+      o.searchParams.set(`se_ks_${n}`, r ? "true" : "false");
+    for (let [n, r] of Object.entries(e.experiments ?? {})) o.searchParams.set(`se_exp_${n}`, r);
+    for (let [n, r] of Object.entries(e.configs ?? {})) o.searchParams.set(`se_config_${n}`, Le(r));
+    (e.i18nProfile && o.searchParams.set("se_i18n", e.i18nProfile),
+      e.i18nDraft && o.searchParams.set("se_i18n_draft", e.i18nDraft));
+    for (let [n, r] of Object.entries(e.i18nLabels ?? {}))
+      o.searchParams.set(`se_i18n_label_${n}`, r);
+    return o.toString();
+  }
+  function ce() {
+    let e = { gates: {}, experiments: {}, configs: {}, i18nLabels: {} };
+    if (typeof window > "u") return e;
+    let t = V();
+    for (let [o, n] of t)
+      if (o.startsWith("se_ks_")) {
+        let r = J(n);
+        r !== null && (e.gates[o.slice(6)] = r);
+      } else if (o.startsWith("se_gate_")) {
+        let r = J(n);
+        r !== null && (e.gates[o.slice(8)] = r);
+      } else if (o.startsWith("se-gate-")) {
+        let r = J(n);
+        r !== null && (e.gates[o.slice(8)] = r);
+      } else
+        o.startsWith("se_exp_") || o.startsWith("se-exp-")
+          ? (e.experiments[o.slice(7)] = n)
+          : o.startsWith("se_config_") || o.startsWith("se-config-")
+            ? (e.configs[o.slice(10)] = ne(n))
+            : o === "se_i18n"
+              ? (e.i18nProfile = n)
+              : o === "se_i18n_draft"
+                ? (e.i18nDraft = n)
+                : o.startsWith("se_i18n_label_") && (e.i18nLabels[o.slice(14)] = n);
+    return e;
+  }
+  function Ae(e) {
+    if (typeof window > "u") return;
+    let t = { ...ce(), ...e, openDevtools: !0 },
+      o = de(t);
+    window.location.assign(o);
+  }
+  var X = class {
+    constructor(t, o) {
+      ee(this, "adminUrl", t);
+      ee(this, "token", o);
+    }
+    async get(t) {
+      let o = await fetch(`${this.adminUrl}${t}`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+      });
+      if (!o.ok) {
+        let r = "";
+        try {
+          let a = await o.json();
+          r = a.detail ?? a.error ?? "";
+        } catch {
+          try {
+            r = (await o.text()).slice(0, 200);
+          } catch {}
+        }
+        throw new Error(`${t} \u2192 HTTP ${o.status}${r ? ` \u2014 ${r}` : ""}`);
+      }
+      let n = await o.json();
+      return Array.isArray(n) ? n : (n.data ?? n);
+    }
+    gates() {
+      return this.get("/api/admin/gates");
+    }
+    async configs() {
+      let t = await this.get("/api/admin/configs"),
+        o = "prod";
+      return await Promise.all(
+        t.map(async (r) => {
+          try {
+            let a = await this.get(`/api/admin/configs/${r.id}`),
+              s = a.valueJson !== void 0 ? a.valueJson : (a.values?.[o] ?? null);
+            return { ...r, valueJson: s };
+          } catch {
+            return { ...r, valueJson: null };
+          }
+        }),
+      );
+    }
+    experiments() {
+      return this.get("/api/admin/experiments");
+    }
+    universes() {
+      return this.get("/api/admin/universes");
+    }
+    profiles() {
+      return this.get("/api/admin/i18n/profiles");
+    }
+    drafts() {
+      return this.get("/api/admin/i18n/drafts");
+    }
+    async put(t, o) {
+      let n = await fetch(`${this.adminUrl}${t}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(o),
+      });
+      if (!n.ok) {
+        let r = "";
+        try {
+          let a = await n.json();
+          r = a.detail ?? a.error ?? "";
+        } catch {
+          try {
+            r = (await n.text()).slice(0, 200);
+          } catch {}
+        }
+        throw new Error(`${t} \u2192 HTTP ${n.status}${r ? ` \u2014 ${r}` : ""}`);
+      }
+      return await n.json();
+    }
+    async post(t, o) {
+      let n = await fetch(`${this.adminUrl}${t}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(o),
+      });
+      if (!n.ok) {
+        let r = "";
+        try {
+          let a = await n.json();
+          r = a.detail ?? a.error ?? "";
+        } catch {
+          try {
+            r = (await n.text()).slice(0, 200);
+          } catch {}
+        }
+        throw new Error(`${t} \u2192 HTTP ${n.status}${r ? ` \u2014 ${r}` : ""}`);
+      }
+      return await n.json();
+    }
+    bugs() {
+      return this.get("/api/admin/bugs");
+    }
+    createBug(t) {
+      return this.post("/api/admin/bugs", t);
+    }
+    featureRequests() {
+      return this.get("/api/admin/feature-requests");
+    }
+    createFeatureRequest(t) {
+      return this.post("/api/admin/feature-requests", t);
+    }
+    async uploadAttachment(t) {
+      let o = new FormData();
+      (o.append("reportKind", t.reportKind),
+        o.append("reportId", t.reportId),
+        o.append("kind", t.kind),
+        o.append("filename", t.filename),
+        o.append("file", t.blob, t.filename));
+      let n = await fetch(`${this.adminUrl}/api/admin/reports/attachments`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${this.token}` },
+        body: o,
+      });
+      if (!n.ok) {
+        let r = "";
+        try {
+          r = (await n.json()).error ?? "";
+        } catch {}
+        throw new Error(`upload failed \u2192 HTTP ${n.status}${r ? ` \u2014 ${r}` : ""}`);
+      }
+      return await n.json();
+    }
+    upsertDraftKey(t, o, n) {
+      return this.post(`/api/admin/i18n/drafts/${encodeURIComponent(t)}/keys`, {
+        key: o,
+        value: n,
+      });
+    }
+    updateKeyById(t, o) {
+      return this.put(`/api/admin/i18n/keys/${encodeURIComponent(t)}`, { value: o });
+    }
+    async keys(t) {
+      let o = t ? `?profile_id=${encodeURIComponent(t)}` : "",
+        n = await this.get(`/api/admin/i18n/keys${o}`);
+      return Array.isArray(n) ? n : n && Array.isArray(n.keys) ? n.keys : [];
+    }
+  };
+  function $(e) {
+    return `
     <div class="empty-state">
       <div class="empty-icon">${e.icon}</div>
-      <div class="empty-title">${ce(e.title)}</div>
-      <div class="empty-msg">${ce(e.message)}</div>
-      <a class="empty-cta" href="${e.ctaHref}" target="_blank" rel="noopener">${ce(e.ctaLabel)}</a>
-    </div>`}function ce(e){return e.replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t])}function ct(){return window.__shipeasy??null}function pt(e){let t=oe(e.name),o=ct()?.getFlag(e.name);return(t!==null?t:o??e.enabled)?'<span class="badge badge-on">ON</span>':'<span class="badge badge-off">OFF</span>'}function ut(e,t){let o=n=>t===(n==="on"?!0:n==="off"?!1:null)?" sel":"";return`
+      <div class="empty-title">${pe(e.title)}</div>
+      <div class="empty-msg">${pe(e.message)}</div>
+      <a class="empty-cta" href="${e.ctaHref}" target="_blank" rel="noopener">${pe(e.ctaLabel)}</a>
+    </div>`;
+  }
+  function pe(e) {
+    return e.replace(
+      /[&<>"']/g,
+      (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
+    );
+  }
+  function ct() {
+    return window.__shipeasy ?? null;
+  }
+  function pt(e) {
+    let t = re(e.name),
+      o = ct()?.getFlag(e.name);
+    return (t !== null ? t : (o ?? e.enabled))
+      ? '<span class="badge badge-on">ON</span>'
+      : '<span class="badge badge-off">OFF</span>';
+  }
+  function ut(e, t) {
+    let o = (n) => (t === (n === "on" ? !0 : n === "off" ? !1 : null) ? " sel" : "");
+    return `
     <div class="tog" data-gate="${e}">
       <button class="tog-btn${o("default")}" data-v="default">default</button>
       <button class="tog-btn${o("on")}" data-v="on">ON</button>
       <button class="tog-btn${o("off")}" data-v="off">OFF</button>
-    </div>`}async function Ce(e,t){e.innerHTML='<div class="loading">Loading gates\u2026</div>';let o;try{o=await t.gates()}catch(a){e.innerHTML=`<div class="err">Failed to load gates: ${String(a)}</div>`;return}if(o.length===0){e.innerHTML=$({icon:"\u26F3",title:"No gates yet",message:"Feature flags let you gate releases and ramp rollouts safely.",ctaLabel:"Create new gate",ctaHref:`${t.adminUrl}/dashboard/gates/new`});return}function n(){e.innerHTML=o.map(a=>`
+    </div>`;
+  }
+  async function Ce(e, t) {
+    e.innerHTML = '<div class="loading">Loading gates\u2026</div>';
+    let o;
+    try {
+      o = await t.gates();
+    } catch (a) {
+      e.innerHTML = `<div class="err">Failed to load gates: ${String(a)}</div>`;
+      return;
+    }
+    if (o.length === 0) {
+      e.innerHTML = $({
+        icon: "\u26F3",
+        title: "No gates yet",
+        message: "Feature flags let you gate releases and ramp rollouts safely.",
+        ctaLabel: "Create new gate",
+        ctaHref: `${t.adminUrl}/dashboard/gates/new`,
+      });
+      return;
+    }
+    function n() {
+      ((e.innerHTML = o
+        .map(
+          (a) => `
         <div class="row">
           <div>
             <div class="row-name">${a.name}</div>
-            <div class="row-sub">${(a.rolloutPct/100).toFixed(a.rolloutPct%100===0?0:2)}% rollout</div>
+            <div class="row-sub">${(a.rolloutPct / 100).toFixed(a.rolloutPct % 100 === 0 ? 0 : 2)}% rollout</div>
           </div>
           ${pt(a)}
-          ${ut(a.name,oe(a.name))}
-        </div>`).join(""),e.querySelectorAll(".tog-btn").forEach(a=>{a.addEventListener("click",()=>{let s=a.closest("[data-gate]").dataset.gate,i=a.dataset.v;Me(s,i==="default"?null:i==="on"),n()})})}n();let r=()=>n();window.addEventListener("se:state:update",r)}function ft(e){let t=typeof e=="string"?e:JSON.stringify(e);return t.length>40?t.slice(0,38)+"\u2026":t}function gt(e){return re(e)===void 0?"":'<span class="badge badge-run">overridden</span>'}async function He(e,t){e.innerHTML='<div class="loading">Loading configs\u2026</div>';let o;try{o=await t.configs()}catch(a){e.innerHTML=`<div class="err">Failed to load configs: ${String(a)}</div>`;return}if(o.length===0){e.innerHTML=$({icon:"\u2699",title:"No configs yet",message:"Remote config values you can tweak per-session without redeploying.",ctaLabel:"Create new config",ctaHref:`${t.adminUrl}/dashboard/configs/values/new`});return}let n=new Set;function r(){e.innerHTML=o.map(s=>{let i=re(s.name),l=i!==void 0?i:s.valueJson,d=n.has(s.name);return`
+          ${ut(a.name, re(a.name))}
+        </div>`,
+        )
+        .join("")),
+        e.querySelectorAll(".tog-btn").forEach((a) => {
+          a.addEventListener("click", () => {
+            let s = a.closest("[data-gate]").dataset.gate,
+              i = a.dataset.v;
+            (Me(s, i === "default" ? null : i === "on"), n());
+          });
+        }));
+    }
+    n();
+    let r = () => n();
+    window.addEventListener("se:state:update", r);
+  }
+  function ft(e) {
+    let t = typeof e == "string" ? e : JSON.stringify(e);
+    return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
+  }
+  function gt(e) {
+    return se(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
+  }
+  async function He(e, t) {
+    e.innerHTML = '<div class="loading">Loading configs\u2026</div>';
+    let o;
+    try {
+      o = await t.configs();
+    } catch (a) {
+      e.innerHTML = `<div class="err">Failed to load configs: ${String(a)}</div>`;
+      return;
+    }
+    if (o.length === 0) {
+      e.innerHTML = $({
+        icon: "\u2699",
+        title: "No configs yet",
+        message: "Remote config values you can tweak per-session without redeploying.",
+        ctaLabel: "Create new config",
+        ctaHref: `${t.adminUrl}/dashboard/configs/values/new`,
+      });
+      return;
+    }
+    let n = new Set();
+    function r() {
+      ((e.innerHTML = o
+        .map((s) => {
+          let i = se(s.name),
+            l = i !== void 0 ? i : s.valueJson,
+            c = n.has(s.name);
+          return `
           <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${s.name}">
             <div style="display:flex;align-items:center;gap:8px">
               <div class="row-name">${s.name}</div>
               ${gt(s.name)}
-              ${d?`<button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>`:`<button class="ibtn edit-btn" data-name="${s.name}">edit</button>`}
+              ${c ? `<button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>` : `<button class="ibtn edit-btn" data-name="${s.name}">edit</button>`}
             </div>
-            ${d?`
-                <textarea class="editor" data-name="${s.name}" rows="3">${JSON.stringify(l,null,2)}</textarea>
+            ${
+              c
+                ? `
+                <textarea class="editor" data-name="${s.name}" rows="3">${JSON.stringify(l, null, 2)}</textarea>
                 <div class="edit-row">
                   <button class="ibtn pri save-session" data-name="${s.name}">Save (session)</button>
                   <button class="ibtn save-local" data-name="${s.name}">Save (local)</button>
-                  ${i!==void 0?`<button class="ibtn danger clear-ov" data-name="${s.name}">clear</button>`:""}
-                </div>`:`<div class="mono val-display">${ft(l)}</div>`}
-          </div>`}).join(""),e.querySelectorAll(".edit-btn").forEach(s=>{s.addEventListener("click",()=>{n.add(s.dataset.name),r()})}),e.querySelectorAll(".cancel-edit").forEach(s=>{s.addEventListener("click",()=>{n.delete(s.dataset.name),r()})});function a(s,i){let l=s.dataset.name,d=e.querySelector(`textarea[data-name="${l}"]`);if(d)try{let g=JSON.parse(d.value);se(l,g,i),n.delete(l),r()}catch{d.style.borderColor="#f87171"}}e.querySelectorAll(".save-session").forEach(s=>{s.addEventListener("click",()=>a(s,"session"))}),e.querySelectorAll(".save-local").forEach(s=>{s.addEventListener("click",()=>a(s,"local"))}),e.querySelectorAll(".clear-ov").forEach(s=>{s.addEventListener("click",()=>{se(s.dataset.name,null),n.delete(s.dataset.name),r()})})}r()}function mt(){return window.__shipeasy??null}function vt(e){return`<span class="badge ${{running:"badge-run",draft:"badge-draft",stopped:"badge-stop",archived:"badge-stop"}[e]}">${e}</span>`}function bt(e){let t=Te(e.name),o=["control",...e.groups.map(r=>r.name)],n=[`<option value="" ${t===null?"selected":""}>default</option>`,...o.map(r=>`<option value="${r}" ${t===r?"selected":""}>${r}</option>`)].join("");return`<select class="sel-input exp-sel" data-name="${e.name}">${n}</select>`}function ht(e){let t=mt()?.getExperiment(e);return t?t.inExperiment?`<span class="badge badge-run">${t.group}</span>`:'<span class="badge badge-draft">not enrolled</span>':""}function xt(e){return`
+                  ${i !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${s.name}">clear</button>` : ""}
+                </div>`
+                : `<div class="mono val-display">${ft(l)}</div>`
+            }
+          </div>`;
+        })
+        .join("")),
+        e.querySelectorAll(".edit-btn").forEach((s) => {
+          s.addEventListener("click", () => {
+            (n.add(s.dataset.name), r());
+          });
+        }),
+        e.querySelectorAll(".cancel-edit").forEach((s) => {
+          s.addEventListener("click", () => {
+            (n.delete(s.dataset.name), r());
+          });
+        }));
+      function a(s, i) {
+        let l = s.dataset.name,
+          c = e.querySelector(`textarea[data-name="${l}"]`);
+        if (c)
+          try {
+            let g = JSON.parse(c.value);
+            (ae(l, g, i), n.delete(l), r());
+          } catch {
+            c.style.borderColor = "#f87171";
+          }
+      }
+      (e.querySelectorAll(".save-session").forEach((s) => {
+        s.addEventListener("click", () => a(s, "session"));
+      }),
+        e.querySelectorAll(".save-local").forEach((s) => {
+          s.addEventListener("click", () => a(s, "local"));
+        }),
+        e.querySelectorAll(".clear-ov").forEach((s) => {
+          s.addEventListener("click", () => {
+            (ae(s.dataset.name, null), n.delete(s.dataset.name), r());
+          });
+        }));
+    }
+    r();
+  }
+  function mt() {
+    return window.__shipeasy ?? null;
+  }
+  function vt(e) {
+    return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
+  }
+  function bt(e) {
+    let t = Te(e.name),
+      o = ["control", ...e.groups.map((r) => r.name)],
+      n = [
+        `<option value="" ${t === null ? "selected" : ""}>default</option>`,
+        ...o.map((r) => `<option value="${r}" ${t === r ? "selected" : ""}>${r}</option>`),
+      ].join("");
+    return `<select class="sel-input exp-sel" data-name="${e.name}">${n}</select>`;
+  }
+  function ht(e) {
+    let t = mt()?.getExperiment(e);
+    return t
+      ? t.inExperiment
+        ? `<span class="badge badge-run">${t.group}</span>`
+        : '<span class="badge badge-draft">not enrolled</span>'
+      : "";
+  }
+  function xt(e) {
+    return `
     <div class="row">
       <div style="flex:1;min-width:0">
         <div class="row-name">${e.name}</div>
       </div>
       ${vt(e.status)}
-      ${e.status==="running"?ht(e.name):""}
-      ${e.status==="running"?bt(e):""}
-    </div>`}function Oe(e,t,o,n){let r=o.filter(l=>l.universe===t.name);if(r.length===0){e.innerHTML=$({icon:"\u{1F9EA}",title:`No experiments in \u201C${t.name}\u201D yet`,message:"Launch an experiment in this universe to start measuring impact.",ctaLabel:"Create new experiment",ctaHref:`${n}/dashboard/experiments/new`});return}let a=r.filter(l=>l.status==="running"),s=r.filter(l=>l.status!=="running"),i=(l,d)=>l.length===0?"":`<div class="sec-head">${d}</div>${l.map(xt).join("")}`;e.innerHTML=i(a,"Running")+i(s,"Other"),e.querySelectorAll(".exp-sel").forEach(l=>{l.addEventListener("change",()=>{let d=l.dataset.name;$e(d,l.value||null)})})}async function Be(e,t){e.innerHTML='<div class="loading">Loading\u2026</div>';let o,n;try{[o,n]=await Promise.all([t.experiments(),t.universes()])}catch(s){e.innerHTML=`<div class="err">Failed to load: ${String(s)}</div>`;return}if(n.length===0){e.innerHTML=$({icon:"\u{1F30C}",title:"No universes yet",message:"Experiments live inside a universe \u2014 a named traffic segment with holdout control. Create one to get started.",ctaLabel:"Create a universe",ctaHref:`${t.adminUrl}/dashboard/experiments/universes`});return}let r={activeUniverse:n[0].name};function a(){let s=n.map(d=>`
-          <button class="tab${d.name===r.activeUniverse?" active":""}"
-                  data-universe="${d.name}">${d.name}</button>`).join("");e.innerHTML=`
+      ${e.status === "running" ? ht(e.name) : ""}
+      ${e.status === "running" ? bt(e) : ""}
+    </div>`;
+  }
+  function Oe(e, t, o, n) {
+    let r = o.filter((l) => l.universe === t.name);
+    if (r.length === 0) {
+      e.innerHTML = $({
+        icon: "\u{1F9EA}",
+        title: `No experiments in \u201C${t.name}\u201D yet`,
+        message: "Launch an experiment in this universe to start measuring impact.",
+        ctaLabel: "Create new experiment",
+        ctaHref: `${n}/dashboard/experiments/new`,
+      });
+      return;
+    }
+    let a = r.filter((l) => l.status === "running"),
+      s = r.filter((l) => l.status !== "running"),
+      i = (l, c) => (l.length === 0 ? "" : `<div class="sec-head">${c}</div>${l.map(xt).join("")}`);
+    ((e.innerHTML = i(a, "Running") + i(s, "Other")),
+      e.querySelectorAll(".exp-sel").forEach((l) => {
+        l.addEventListener("change", () => {
+          let c = l.dataset.name;
+          $e(c, l.value || null);
+        });
+      }));
+  }
+  async function Be(e, t) {
+    e.innerHTML = '<div class="loading">Loading\u2026</div>';
+    let o, n;
+    try {
+      [o, n] = await Promise.all([t.experiments(), t.universes()]);
+    } catch (s) {
+      e.innerHTML = `<div class="err">Failed to load: ${String(s)}</div>`;
+      return;
+    }
+    if (n.length === 0) {
+      e.innerHTML = $({
+        icon: "\u{1F30C}",
+        title: "No universes yet",
+        message:
+          "Experiments live inside a universe \u2014 a named traffic segment with holdout control. Create one to get started.",
+        ctaLabel: "Create a universe",
+        ctaHref: `${t.adminUrl}/dashboard/experiments/universes`,
+      });
+      return;
+    }
+    let r = { activeUniverse: n[0].name };
+    function a() {
+      let s = n
+        .map(
+          (c) => `
+          <button class="tab${c.name === r.activeUniverse ? " active" : ""}"
+                  data-universe="${c.name}">${c.name}</button>`,
+        )
+        .join("");
+      ((e.innerHTML = `
       <div class="tabs scroll">${s}</div>
-      <div class="tab-body" style="overflow-y:auto;flex:1"></div>`,e.querySelectorAll(".tab[data-universe]").forEach(d=>{d.addEventListener("click",()=>{r.activeUniverse=d.dataset.universe,a()})});let i=e.querySelector(".tab-body"),l=n.find(d=>d.name===r.activeUniverse);Oe(i,l,o,t.adminUrl)}a(),window.addEventListener("se:state:update",()=>{let s=e.querySelector(".tab-body"),i=n.find(l=>l.name===r.activeUniverse);s&&i&&Oe(s,i,o,t.adminUrl)})}var X="\uFFF9";var H=/￹([^￺￻]+)￺([^￻]*)￻/g;function yt(e){let t=new Map;for(let o of e){let n=o.key.split("."),r=n.length>1?n[0]:"(root)",a=n.length>1?n.slice(1):n;t.has(r)||t.set(r,{segment:r,children:[]});let s=t.get(r);for(let i=0;i<a.length;i++){let l=a[i],d=s.children.find(g=>g.segment===l);d||(d={segment:l,children:[]},s.children.push(d)),s=d}s.value=o.value,s.fullKey=o.key}for(let o of t.values())De(o);return t}function De(e){e.children.sort((t,o)=>{let n=t.value!==void 0,r=o.value!==void 0;return n!==r?n?1:-1:t.segment.localeCompare(o.segment)});for(let t of e.children)De(t)}function S(e){return e.replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t])}function ze(e,t){let o=t*14+6;if(e.value!==void 0){let r=e.fullKey?V(e.fullKey):null,a=r??e.value;return`
-      <div class="tree-row leaf" style="padding-left:${o}px" data-key="${S(e.fullKey??"")}">
+      <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
+        e.querySelectorAll(".tab[data-universe]").forEach((c) => {
+          c.addEventListener("click", () => {
+            ((r.activeUniverse = c.dataset.universe), a());
+          });
+        }));
+      let i = e.querySelector(".tab-body"),
+        l = n.find((c) => c.name === r.activeUniverse);
+      Oe(i, l, o, t.adminUrl);
+    }
+    (a(),
+      window.addEventListener("se:state:update", () => {
+        let s = e.querySelector(".tab-body"),
+          i = n.find((l) => l.name === r.activeUniverse);
+        s && i && Oe(s, i, o, t.adminUrl);
+      }));
+  }
+  var Z = "\uFFF9";
+  var H = /￹([^￺￻]+)￺([^￻]*)￻/g;
+  function yt(e) {
+    let t = new Map();
+    for (let o of e) {
+      let n = o.key.split("."),
+        r = n.length > 1 ? n[0] : "(root)",
+        a = n.length > 1 ? n.slice(1) : n;
+      t.has(r) || t.set(r, { segment: r, children: [] });
+      let s = t.get(r);
+      for (let i = 0; i < a.length; i++) {
+        let l = a[i],
+          c = s.children.find((g) => g.segment === l);
+        (c || ((c = { segment: l, children: [] }), s.children.push(c)), (s = c));
+      }
+      ((s.value = o.value), (s.fullKey = o.key));
+    }
+    for (let o of t.values()) De(o);
+    return t;
+  }
+  function De(e) {
+    e.children.sort((t, o) => {
+      let n = t.value !== void 0,
+        r = o.value !== void 0;
+      return n !== r ? (n ? 1 : -1) : t.segment.localeCompare(o.segment);
+    });
+    for (let t of e.children) De(t);
+  }
+  function S(e) {
+    return e.replace(
+      /[&<>"']/g,
+      (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
+    );
+  }
+  function ze(e, t) {
+    let o = t * 14 + 6;
+    if (e.value !== void 0) {
+      let r = e.fullKey ? Y(e.fullKey) : null,
+        a = r ?? e.value;
+      return `
+      <div class="tree-row leaf" style="padding-left:${o}px" data-key="${S(e.fullKey ?? "")}">
         <span class="tree-seg">${S(e.segment)}</span>
-        <span class="tree-val${r!==null?" overridden":""}" title="${S(a)}">${S(a)}</span>
-      </div>`}let n=e.children.map(r=>ze(r,t+1)).join("");return`
+        <span class="tree-val${r !== null ? " overridden" : ""}" title="${S(a)}">${S(a)}</span>
+      </div>`;
+    }
+    let n = e.children.map((r) => ze(r, t + 1)).join("");
+    return `
     <div class="tree-row branch" style="padding-left:${o}px">
       <span class="tree-caret">\u25BE</span>
       <span class="tree-seg">${S(e.segment)}</span>
     </div>
-    ${n}`}var _="__se_label_target",ue="__se_label_target_style",B=!1,pe=null,q=null,Ne=null,Ue=[];function wt(){if(document.getElementById(ue))return;let e=document.createElement("style");e.id=ue,e.textContent=`
+    ${n}`;
+  }
+  var _ = "__se_label_target",
+    fe = "__se_label_target_style",
+    O = !1,
+    ue = null,
+    q = null,
+    Ne = null,
+    Ue = [];
+  function wt() {
+    if (document.getElementById(fe)) return;
+    let e = document.createElement("style");
+    ((e.id = fe),
+      (e.textContent = `
     .${_} {
       outline: 2px solid #4ade80 !important;
       outline-offset: 2px !important;
@@ -1085,7 +1739,113 @@ select.se-input { cursor: pointer; }
       outline-color: #6ee7a0 !important;
       z-index: 1;
     }
-  `,document.head.appendChild(e)}function qe(){document.getElementById(ue)?.remove()}function fe(e=document.body){let t=document.createTreeWalker(e,NodeFilter.SHOW_TEXT),o=[],n=new Set(["SCRIPT","STYLE","NOSCRIPT","TEMPLATE"]),r;for(;r=t.nextNode();){let i=r.nodeValue??"";if(!i.includes(X)||n.has(r.parentElement?.tagName??"")||r.parentElement?.closest?.("[data-label]"))continue;let l=document.createDocumentFragment(),d=0;H.lastIndex=0;let g;for(;(g=H.exec(i))!==null;){g.index>d&&l.appendChild(document.createTextNode(i.slice(d,g.index)));let c=document.createElement("span");c.setAttribute("data-label",g[1]);let x=V(g[1]);c.textContent=x??g[2],l.appendChild(c),d=g.index+g[0].length}d<i.length&&l.appendChild(document.createTextNode(i.slice(d))),o.push([r,l])}for(let[i,l]of o)i.parentNode?.replaceChild(l,i);let a=window._sei18n_t;for(let i of Array.from(document.querySelectorAll("[data-label]"))){let l=i.textContent??"",d=i.getAttribute("data-label"),g=V(d);if(l.includes(X)){H.lastIndex=0;let c=H.exec(l);c&&(i.textContent=g??c[2])}else if(a)try{let c=i.dataset.variables?JSON.parse(i.dataset.variables):void 0,x=a(d,c);x&&x!==d?i.textContent=g??x:g&&(i.textContent=g)}catch{}}let s=["placeholder","alt","aria-label","title"];for(let i of s)for(let l of Array.from(document.querySelectorAll(`[${i}]`))){let d=l.getAttribute(i);if(!d.includes(X))continue;H.lastIndex=0;let g=H.exec(d);g&&l.setAttribute(i,g[2])}return o.length}function z(){return Array.from(document.querySelectorAll("[data-label]"))}function P(){q?.remove(),q=null,document.querySelectorAll(`.${_}.__se_label_active`).forEach(e=>{e.classList.remove("__se_label_active")})}async function Et(e,t,o,n){o.textContent=t,ie(e,t),window.dispatchEvent(new CustomEvent("se:i18n:edit",{detail:{key:e,value:t}}));let r=ae(),a=J(),s=Ne;if(!s||!r&&!a){P();return}let i=n.querySelector('[data-action="save"]'),l=n.querySelector(".lp-err");i.disabled=!0,i.textContent="Saving\u2026",l&&(l.textContent="");try{if(r)await s.upsertDraftKey(r,e,t);else if(a){let d=Ue.find(g=>g.key===e&&g.profileId===a);d&&await s.updateKeyById(d.id,t)}P()}catch(d){i.disabled=!1,i.textContent="Save",l&&(l.textContent=d instanceof Error?d.message:String(d))}}function kt(e,t){P(),e.classList.add("__se_label_active");let o=e.dataset.label??"",n=e.dataset.labelDesc??"",a=J()??"default";e.dataset.__seOriginal===void 0&&(e.dataset.__seOriginal=e.textContent??"");let s=e.textContent??"",i=document.createElement("div");i.className="label-popper",i.innerHTML=`
+  `),
+      document.head.appendChild(e));
+  }
+  function qe() {
+    document.getElementById(fe)?.remove();
+  }
+  function U(e = document.body) {
+    let t = document.createTreeWalker(e, NodeFilter.SHOW_TEXT),
+      o = [],
+      n = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]),
+      r;
+    for (; (r = t.nextNode()); ) {
+      let i = r.nodeValue ?? "";
+      if (
+        !i.includes(Z) ||
+        n.has(r.parentElement?.tagName ?? "") ||
+        r.parentElement?.closest?.("[data-label]")
+      )
+        continue;
+      let l = document.createDocumentFragment(),
+        c = 0;
+      H.lastIndex = 0;
+      let g;
+      for (; (g = H.exec(i)) !== null; ) {
+        g.index > c && l.appendChild(document.createTextNode(i.slice(c, g.index)));
+        let p = document.createElement("span");
+        p.setAttribute("data-label", g[1]);
+        let x = Y(g[1]);
+        ((p.textContent = x ?? g[2]), l.appendChild(p), (c = g.index + g[0].length));
+      }
+      (c < i.length && l.appendChild(document.createTextNode(i.slice(c))), o.push([r, l]));
+    }
+    for (let [i, l] of o) i.parentNode?.replaceChild(l, i);
+    let a = window._sei18n_t;
+    for (let i of Array.from(document.querySelectorAll("[data-label]"))) {
+      let l = i.textContent ?? "",
+        c = i.getAttribute("data-label"),
+        g = Y(c);
+      if (l.includes(Z)) {
+        H.lastIndex = 0;
+        let p = H.exec(l);
+        p && (i.textContent = g ?? p[2]);
+      } else if (a)
+        try {
+          let p = i.dataset.variables ? JSON.parse(i.dataset.variables) : void 0,
+            x = a(c, p);
+          x && x !== c ? (i.textContent = g ?? x) : g && (i.textContent = g);
+        } catch {}
+    }
+    let s = ["placeholder", "alt", "aria-label", "title"];
+    for (let i of s)
+      for (let l of Array.from(document.querySelectorAll(`[${i}]`))) {
+        let c = l.getAttribute(i);
+        if (!c.includes(Z)) continue;
+        H.lastIndex = 0;
+        let g = H.exec(c);
+        g && l.setAttribute(i, g[2]);
+      }
+    return o.length;
+  }
+  function N() {
+    return Array.from(document.querySelectorAll("[data-label]"));
+  }
+  function P() {
+    (q?.remove(),
+      (q = null),
+      document.querySelectorAll(`.${_}.__se_label_active`).forEach((e) => {
+        e.classList.remove("__se_label_active");
+      }));
+  }
+  async function Et(e, t, o, n) {
+    ((o.textContent = t),
+      le(e, t),
+      window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: e, value: t } })));
+    let r = ie(),
+      a = z(),
+      s = Ne;
+    if (!s || (!r && !a)) {
+      P();
+      return;
+    }
+    let i = n.querySelector('[data-action="save"]'),
+      l = n.querySelector(".lp-err");
+    ((i.disabled = !0), (i.textContent = "Saving\u2026"), l && (l.textContent = ""));
+    try {
+      if (r) await s.upsertDraftKey(r, e, t);
+      else if (a) {
+        let c = Ue.find((g) => g.key === e && g.profileId === a);
+        c && (await s.updateKeyById(c.id, t));
+      }
+      P();
+    } catch (c) {
+      ((i.disabled = !1),
+        (i.textContent = "Save"),
+        l && (l.textContent = c instanceof Error ? c.message : String(c)));
+    }
+  }
+  function kt(e, t) {
+    (P(), e.classList.add("__se_label_active"));
+    let o = e.dataset.label ?? "",
+      n = e.dataset.labelDesc ?? "",
+      a = z() ?? "default";
+    e.dataset.__seOriginal === void 0 && (e.dataset.__seOriginal = e.textContent ?? "");
+    let s = e.textContent ?? "",
+      i = document.createElement("div");
+    ((i.className = "label-popper"),
+      (i.innerHTML = `
     <div class="lp-head">
       <span class="lp-key mono">${S(o)}</span>
       <button class="lp-close" aria-label="Close">\u2715</button>
@@ -1097,7 +1857,7 @@ select.se-input { cursor: pointer; }
       </div>
       <div class="lp-field">
         <label>Description</label>
-        <span class="${n?"":"empty"}">${n?S(n):"No description"}</span>
+        <span class="${n ? "" : "empty"}">${n ? S(n) : "No description"}</span>
       </div>
       <div class="lp-field">
         <label>Value</label>
@@ -1108,29 +1868,561 @@ select.se-input { cursor: pointer; }
       <button class="ibtn" data-action="reset">Reset</button>
       <button class="ibtn pri" data-action="save">Save</button>
     </div>
-    <div class="lp-err"></div>`,t.appendChild(i);let l=e.getBoundingClientRect(),d=i.offsetHeight,g=i.offsetWidth,c=8,x=l.bottom+c;x+d>window.innerHeight-8&&(x=Math.max(8,l.top-d-c));let k=l.left;k+g>window.innerWidth-8&&(k=Math.max(8,window.innerWidth-g-8)),i.style.top=`${x}px`,i.style.left=`${k}px`;let y=i.querySelector(".lp-input");y.focus(),y.select(),i.querySelector(".lp-close").addEventListener("click",P),i.querySelector('[data-action="save"]').addEventListener("click",()=>{Et(o,y.value,e,i)}),i.querySelector('[data-action="reset"]').addEventListener("click",()=>{let f=e.dataset.__seOriginal??"";e.textContent=f,ie(o,null),window.dispatchEvent(new CustomEvent("se:i18n:edit",{detail:{key:o,value:null}})),P()}),i.addEventListener("click",f=>f.stopPropagation()),i.addEventListener("mousedown",f=>f.stopPropagation()),q=i}function Ie(e,t,o){if(B=e,pe?.(),pe=null,!e){P();for(let c of z())c.classList.remove(_);qe();return}wt();for(let c of z())c.classList.add(_);function n(c){return q!==null&&c.composedPath().includes(q)}function r(c){for(let x of c.composedPath())if(x instanceof HTMLElement&&x.hasAttribute("data-label"))return x;return null}let a=["mousedown","mouseup","pointerdown","pointerup","touchstart","touchend","dblclick","contextmenu","submit","auxclick"];function s(c){n(c)||r(c)&&(c.preventDefault(),c.stopPropagation(),c.stopImmediatePropagation())}function i(c){if(n(c))return;let x=r(c);x&&(c.preventDefault(),c.stopPropagation(),c.stopImmediatePropagation(),kt(x,t))}function l(c){q&&(n(c)||r(c)||P())}function d(c){c.key==="Escape"&&P()}let g=new MutationObserver(()=>{if(B){for(let c of z())c.classList.add(_);o()}});g.observe(document.body,{childList:!0,subtree:!0});for(let c of a)document.addEventListener(c,s,!0);document.addEventListener("click",i,!0),document.addEventListener("mousedown",l,!0),document.addEventListener("keydown",d),pe=()=>{for(let c of a)document.removeEventListener(c,s,!0);document.removeEventListener("click",i,!0),document.removeEventListener("mousedown",l,!0),document.removeEventListener("keydown",d),g.disconnect();for(let c of z())c.classList.remove(_);qe()}}async function Fe(e,t,o,n){e.innerHTML='<div class="loading">Loading i18n data\u2026</div>',o.innerHTML="",Ne=t;let r,a,s;try{[r,a,s]=await Promise.all([t.profiles(),t.drafts(),t.keys()])}catch(x){e.innerHTML=`<div class="err">Failed to load i18n data: ${String(x)}</div>`;return}Ue=s;let i=yt(s),l=Array.from(i.keys()),d={activeChunk:l[0]??null};function g(){if(l.length===0){e.innerHTML=$({icon:"\u{1F310}",title:"No translation keys yet",message:"Add keys in the admin and group them by namespace (e.g. checkout.title).",ctaLabel:"Create new key",ctaHref:`${t.adminUrl}/dashboard/i18n/keys`});return}let x=l.map(f=>`<button class="tab${f===d.activeChunk?" active":""}" data-chunk="${S(f)}">${S(f)}</button>`).join(""),k=d.activeChunk?i.get(d.activeChunk):null,y=k?k.children.map(f=>ze(f,0)).join(""):"";e.innerHTML=`
-      <div class="tabs scroll" id="chunk-tabs">${x}</div>
-      <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${y}</div>`,e.querySelectorAll(".tab[data-chunk]").forEach(f=>{f.addEventListener("click",()=>{d.activeChunk=f.dataset.chunk,g()})})}function c(){let x=J()??"",k=ae()??"",y=z().length,f=B?`Editing ${y} label${y===1?"":"s"}`:y===0?"No labels found":`Edit labels (${y})`,p=y===0?"No translatable elements found. Use t() / tEl() / <ShipEasyI18nString> in your templates.":"Toggle in-page label editing (reloads page)",b=['<option value="">Default</option>',...r.map(w=>`<option value="${S(w.id)}" ${x===w.id?"selected":""}>${S(w.name)}</option>`)].join(""),E=['<option value="">No draft</option>',...a.map(w=>`<option value="${S(w.id)}" ${k===w.id?"selected":""}>${S(w.name)}</option>`)].join("");o.innerHTML=`
-      <button class="subfoot-btn${B?" on":""}${y===0?" dim":""}" id="se-edit-toggle" title="${S(p)}">
+    <div class="lp-err"></div>`),
+      t.appendChild(i));
+    let l = e.getBoundingClientRect(),
+      c = i.offsetHeight,
+      g = i.offsetWidth,
+      p = 8,
+      x = l.bottom + p;
+    x + c > window.innerHeight - 8 && (x = Math.max(8, l.top - c - p));
+    let w = l.left;
+    (w + g > window.innerWidth - 8 && (w = Math.max(8, window.innerWidth - g - 8)),
+      (i.style.top = `${x}px`),
+      (i.style.left = `${w}px`));
+    let y = i.querySelector(".lp-input");
+    (y.focus(),
+      y.select(),
+      i.querySelector(".lp-close").addEventListener("click", P),
+      i.querySelector('[data-action="save"]').addEventListener("click", () => {
+        Et(o, y.value, e, i);
+      }),
+      i.querySelector('[data-action="reset"]').addEventListener("click", () => {
+        let f = e.dataset.__seOriginal ?? "";
+        ((e.textContent = f),
+          le(o, null),
+          window.dispatchEvent(
+            new CustomEvent("se:i18n:edit", { detail: { key: o, value: null } }),
+          ),
+          P());
+      }),
+      i.addEventListener("click", (f) => f.stopPropagation()),
+      i.addEventListener("mousedown", (f) => f.stopPropagation()),
+      (q = i));
+  }
+  function Ie(e, t, o) {
+    if (((O = e), ue?.(), (ue = null), !e)) {
+      P();
+      for (let p of N()) p.classList.remove(_);
+      qe();
+      return;
+    }
+    wt();
+    for (let p of N()) p.classList.add(_);
+    function n(p) {
+      return q !== null && p.composedPath().includes(q);
+    }
+    function r(p) {
+      for (let x of p.composedPath())
+        if (x instanceof HTMLElement && x.hasAttribute("data-label")) return x;
+      return null;
+    }
+    let a = [
+      "mousedown",
+      "mouseup",
+      "pointerdown",
+      "pointerup",
+      "touchstart",
+      "touchend",
+      "dblclick",
+      "contextmenu",
+      "submit",
+      "auxclick",
+    ];
+    function s(p) {
+      n(p) || (r(p) && (p.preventDefault(), p.stopPropagation(), p.stopImmediatePropagation()));
+    }
+    function i(p) {
+      if (n(p)) return;
+      let x = r(p);
+      x && (p.preventDefault(), p.stopPropagation(), p.stopImmediatePropagation(), kt(x, t));
+    }
+    function l(p) {
+      q && (n(p) || r(p) || P());
+    }
+    function c(p) {
+      p.key === "Escape" && P();
+    }
+    let g = new MutationObserver(() => {
+      if (O) {
+        for (let p of N()) p.classList.add(_);
+        o();
+      }
+    });
+    g.observe(document.body, { childList: !0, subtree: !0 });
+    for (let p of a) document.addEventListener(p, s, !0);
+    (document.addEventListener("click", i, !0),
+      document.addEventListener("mousedown", l, !0),
+      document.addEventListener("keydown", c),
+      (ue = () => {
+        for (let p of a) document.removeEventListener(p, s, !0);
+        (document.removeEventListener("click", i, !0),
+          document.removeEventListener("mousedown", l, !0),
+          document.removeEventListener("keydown", c),
+          g.disconnect());
+        for (let p of N()) p.classList.remove(_);
+        qe();
+      }));
+  }
+  async function Fe(e, t, o, n) {
+    ((e.innerHTML = '<div class="loading">Loading i18n data\u2026</div>'),
+      (o.innerHTML = ""),
+      (Ne = t));
+    let r, a, s;
+    try {
+      let w = z() ?? void 0;
+      [r, a, s] = await Promise.all([t.profiles(), t.drafts(), t.keys(w)]);
+    } catch (w) {
+      e.innerHTML = `<div class="err">Failed to load i18n data: ${String(w)}</div>`;
+      return;
+    }
+    Ue = s;
+    let i = yt(s),
+      l = Array.from(i.keys()),
+      c = { activeChunk: l[0] ?? null };
+    function g() {
+      if (l.length === 0) {
+        e.innerHTML = $({
+          icon: "\u{1F310}",
+          title: "No translation keys yet",
+          message: "Add keys in the admin and group them by namespace (e.g. checkout.title).",
+          ctaLabel: "Create new key",
+          ctaHref: `${t.adminUrl}/dashboard/i18n/keys`,
+        });
+        return;
+      }
+      let w = l
+          .map(
+            (d) =>
+              `<button class="tab${d === c.activeChunk ? " active" : ""}" data-chunk="${S(d)}">${S(d)}</button>`,
+          )
+          .join(""),
+        y = c.activeChunk ? i.get(c.activeChunk) : null,
+        f = y ? y.children.map((d) => ze(d, 0)).join("") : "";
+      ((e.innerHTML = `
+      <div class="tabs scroll" id="chunk-tabs">${w}</div>
+      <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${f}</div>`),
+        e.querySelectorAll(".tab[data-chunk]").forEach((d) => {
+          d.addEventListener("click", () => {
+            ((c.activeChunk = d.dataset.chunk), g());
+          });
+        }));
+    }
+    function p() {
+      let w = z() ?? "",
+        y = ie() ?? "";
+      U();
+      let f = N().length,
+        d = O
+          ? `Editing ${f} label${f === 1 ? "" : "s"}`
+          : f > 0
+            ? `Edit labels (${f})`
+            : "Edit labels",
+        h = O
+          ? "Disable in-page label editing"
+          : f === 0
+            ? "Enable in-page label editing \u2014 reloads page with ?se_edit_labels=1 to scan all translation strings"
+            : "Toggle in-page label editing (reloads page)",
+        E = [
+          '<option value="">Default</option>',
+          ...r.map(
+            (b) =>
+              `<option value="${S(b.id)}" ${w === b.id ? "selected" : ""}>${S(b.name)}</option>`,
+          ),
+        ].join(""),
+        L = [
+          '<option value="">No draft</option>',
+          ...a.map(
+            (b) =>
+              `<option value="${S(b.id)}" ${y === b.id ? "selected" : ""}>${S(b.name)}</option>`,
+          ),
+        ].join("");
+      ((o.innerHTML = `
+      <button class="subfoot-btn${O ? " on" : ""}" id="se-edit-toggle" title="${S(h)}">
         <span class="dot"></span>
-        ${S(f)}
+        ${S(d)}
       </button>
-      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${b}</select>
-      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${E}</select>`,o.querySelector("#se-edit-toggle").addEventListener("click",()=>{D()?ne(!1):B?(Ie(!1,n,()=>c()),c()):ne(!0)}),o.querySelector("#se-profile-sel").addEventListener("change",w=>{let h=w.target.value||null;Re(h)}),o.querySelector("#se-draft-sel").addEventListener("change",w=>{let h=w.target.value||null;_e(h)})}D()&&(fe(),B||Ie(!0,n,()=>c())),g(),c()}function N(e,t){let o=document.createElement("div");o.className="se-modal-overlay";let n=document.createElement("div");n.className=`se-modal se-modal-${t.size??"md"}`,o.appendChild(n);let r=document.createElement("div");r.className="se-modal-head";let a=document.createElement("div");a.className="se-modal-title",a.textContent=t.title;let s=document.createElement("button");s.className="se-modal-close",s.type="button",s.setAttribute("aria-label","Close"),s.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',r.appendChild(a),r.appendChild(s),n.appendChild(r);let i=document.createElement("div");i.className="se-modal-body",n.appendChild(i);function l(){o.removeEventListener("click",d),document.removeEventListener("keydown",g),o.remove(),t.onClose?.()}function d(c){c.target===o&&l()}function g(c){c.key==="Escape"&&l()}return o.addEventListener("click",d),document.addEventListener("keydown",g),s.addEventListener("click",l),e.appendChild(o),{body:i,root:n,close:l}}async function je(){if(!navigator.mediaDevices?.getDisplayMedia)throw new Error("Screen capture is not supported in this browser.");let e=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:!1});try{let t=document.createElement("video");t.srcObject=e,t.muted=!0,t.playsInline=!0,await new Promise((i,l)=>{let d=setTimeout(()=>l(new Error("Capture stream timed out")),5e3);t.onloadedmetadata=()=>{clearTimeout(d),i()},t.onerror=()=>{clearTimeout(d),l(new Error("Capture stream errored"))}}),await t.play(),await new Promise(i=>requestAnimationFrame(()=>i(null)));let o=t.videoWidth,n=t.videoHeight;if(!o||!n)throw new Error("Capture stream returned no frames.");let r=document.createElement("canvas");r.width=o,r.height=n;let a=r.getContext("2d");if(!a)throw new Error("Canvas 2d context unavailable");return a.drawImage(t,0,0,o,n),await new Promise((i,l)=>{r.toBlob(d=>d?i(d):l(new Error("toBlob failed")),"image/png")})}finally{e.getTracks().forEach(t=>t.stop())}}async function Ke(){if(!navigator.mediaDevices?.getDisplayMedia)throw new Error("Screen capture is not supported in this browser.");let e=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:!0}),o=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(s=>MediaRecorder.isTypeSupported(s))??"",n=o?new MediaRecorder(e,{mimeType:o}):new MediaRecorder(e),r=[];n.addEventListener("dataavailable",s=>{s.data&&s.data.size>0&&r.push(s.data)}),n.start(500),e.getVideoTracks()[0]?.addEventListener("ended",()=>{n.state!=="inactive"&&n.stop()});function a(){e.getTracks().forEach(s=>s.stop())}return{stop(){return new Promise((s,i)=>{if(n.state==="inactive"){if(a(),r.length===0){i(new Error("No recording data."));return}s(new Blob(r,{type:o||"video/webm"}));return}n.addEventListener("stop",()=>{a(),s(new Blob(r,{type:o||"video/webm"}))},{once:!0}),n.addEventListener("error",l=>i(l),{once:!0}),n.stop()})},cancel(){n.state!=="inactive"&&n.stop(),a()}}}var We=["#f87171","#fbbf24","#4ade80","#60a5fa"];async function Ge(e){let t=URL.createObjectURL(e),o=await new Promise((u,v)=>{let m=new Image;m.onload=()=>u(m),m.onerror=()=>v(new Error("Failed to load screenshot for annotation.")),m.src=t}),n=document.createElement("div");n.className="se-annot";let r=document.createElement("div");r.className="se-annot-toolbar",n.appendChild(r);let a="arrow",s=We[0],i=[];function l(u,v){let m=document.createElement("button");return m.type="button",m.className="se-annot-btn",m.dataset.tool=u,m.textContent=v,m.addEventListener("click",()=>{a=u,r.querySelectorAll("[data-tool]").forEach(L=>L.classList.toggle("on",L.dataset.tool===u))}),m}let d=l("arrow","\u2197 arrow");d.classList.add("on"),r.appendChild(d),r.appendChild(l("rect","\u25AD rect")),r.appendChild(l("text","T text"));let g=document.createElement("span");g.className="se-annot-sep",r.appendChild(g);for(let u of We){let v=document.createElement("button");v.type="button",v.className="se-annot-swatch",v.dataset.color=u,v.style.background=u,u===s&&v.classList.add("on"),v.addEventListener("click",()=>{s=u,r.querySelectorAll("[data-color]").forEach(m=>m.classList.toggle("on",m.dataset.color===u))}),r.appendChild(v)}let c=document.createElement("button");c.type="button",c.className="se-annot-btn",c.textContent="\u21B6 undo",c.addEventListener("click",()=>{i.pop(),w()}),r.appendChild(c);let x=document.createElement("button");x.type="button",x.className="se-annot-btn",x.textContent="clear",x.addEventListener("click",()=>{i.length=0,w()}),r.appendChild(x);let k=document.createElement("div");k.className="se-annot-stage",n.appendChild(k);let y=document.createElement("canvas");y.width=o.naturalWidth,y.height=o.naturalHeight,y.className="se-annot-canvas",y.style.cursor="crosshair",y.style.touchAction="none",k.appendChild(y);let f=y.getContext("2d");function p(u){let v=y.getBoundingClientRect(),m=y.width/v.width,L=y.height/v.height;return{x:(u.clientX-v.left)*m,y:(u.clientY-v.top)*L}}function b(){return Math.max(2,Math.round(o.naturalWidth/400))}function E(u){if(f.save(),f.strokeStyle=u.color,f.fillStyle=u.color,f.lineWidth=b(),f.lineCap="round",f.lineJoin="round",u.tool==="rect"){let v=Math.min(u.x1,u.x2),m=Math.min(u.y1,u.y2),L=Math.abs(u.x2-u.x1),M=Math.abs(u.y2-u.y1);f.strokeRect(v,m,L,M)}else if(u.tool==="arrow"){f.beginPath(),f.moveTo(u.x1,u.y1),f.lineTo(u.x2,u.y2),f.stroke();let v=Math.atan2(u.y2-u.y1,u.x2-u.x1),m=b()*5;f.beginPath(),f.moveTo(u.x2,u.y2),f.lineTo(u.x2-m*Math.cos(v-Math.PI/6),u.y2-m*Math.sin(v-Math.PI/6)),f.lineTo(u.x2-m*Math.cos(v+Math.PI/6),u.y2-m*Math.sin(v+Math.PI/6)),f.closePath(),f.fill()}else if(u.tool==="text"&&u.text){let v=Math.max(14,Math.round(o.naturalWidth/60));f.font=`600 ${v}px ui-sans-serif, system-ui, sans-serif`,f.textBaseline="top";let m=v*.3,M=f.measureText(u.text).width+m*2,T=v+m*2;f.fillStyle="rgba(0,0,0,0.55)",f.fillRect(u.x1,u.y1,M,T),f.fillStyle=u.color,f.fillText(u.text,u.x1+m,u.y1+m)}f.restore()}function w(u){f.clearRect(0,0,y.width,y.height),f.drawImage(o,0,0);for(let v of i)E(v);u&&E(u)}w();let h=null;return y.addEventListener("pointerdown",u=>{u.preventDefault();let v=p(u);if(a==="text"){let m=prompt("Annotation text:");m&&m.trim()&&(i.push({tool:"text",color:s,x1:v.x,y1:v.y,x2:v.x,y2:v.y,text:m.trim()}),w());return}h={x1:v.x,y1:v.y},y.setPointerCapture(u.pointerId)}),y.addEventListener("pointermove",u=>{if(!h)return;let v=p(u);w({tool:a,color:s,x1:h.x1,y1:h.y1,x2:v.x,y2:v.y})}),y.addEventListener("pointerup",u=>{if(!h)return;let v=p(u),m=Math.abs(v.x-h.x1),L=Math.abs(v.y-h.y1);(m>4||L>4)&&i.push({tool:a,color:s,x1:h.x1,y1:h.y1,x2:v.x,y2:v.y}),h=null,w()}),{root:n,async export(){let u=await new Promise((v,m)=>{y.toBlob(L=>L?v(L):m(new Error("toBlob failed")),"image/png")});return URL.revokeObjectURL(t),u}}}function U(e){return e.replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t])}function Lt(e){return`<span class="badge ${e==="open"?"badge-run":e==="resolved"?"badge-on":e==="wont_fix"?"badge-off":"badge-draft"}">${e.replace("_"," ")}</span>`}function St(e){let t=Date.now()-Date.parse(e),o=Math.floor(t/6e4);if(o<1)return"just now";if(o<60)return`${o}m ago`;let n=Math.floor(o/60);return n<24?`${n}h ago`:`${Math.floor(n/24)}d ago`}async function Je(e,t,o){async function n(){e.innerHTML='<div class="loading">Loading bugs\u2026</div>';let a;try{a=await t.bugs()}catch(i){e.innerHTML=`<div class="err">Failed to load bugs: ${U(String(i))}</div>`,r();return}e.innerHTML=`
+      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${E}</select>
+      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${L}</select>`),
+        o.querySelector("#se-edit-toggle").addEventListener("click", () => {
+          D() ? oe(!1) : O ? (Ie(!1, n, () => p()), p()) : oe(!0);
+        }),
+        o.querySelector("#se-profile-sel").addEventListener("change", (b) => {
+          let u = b.target.value || null;
+          Re(u);
+        }),
+        o.querySelector("#se-draft-sel").addEventListener("change", (b) => {
+          let u = b.target.value || null;
+          _e(u);
+        }));
+    }
+    (D() && (U(), O || Ie(!0, n, () => p())),
+      g(),
+      p(),
+      window.i18n?.on?.("update", () => {
+        (U(), p());
+      }));
+  }
+  function F(e, t) {
+    let o = document.createElement("div");
+    o.className = "se-modal-overlay";
+    let n = document.createElement("div");
+    ((n.className = `se-modal se-modal-${t.size ?? "md"}`), o.appendChild(n));
+    let r = document.createElement("div");
+    r.className = "se-modal-head";
+    let a = document.createElement("div");
+    ((a.className = "se-modal-title"), (a.textContent = t.title));
+    let s = document.createElement("button");
+    ((s.className = "se-modal-close"),
+      (s.type = "button"),
+      s.setAttribute("aria-label", "Close"),
+      (s.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>'),
+      r.appendChild(a),
+      r.appendChild(s),
+      n.appendChild(r));
+    let i = document.createElement("div");
+    ((i.className = "se-modal-body"), n.appendChild(i));
+    function l() {
+      (o.removeEventListener("click", c),
+        document.removeEventListener("keydown", g),
+        o.remove(),
+        t.onClose?.());
+    }
+    function c(p) {
+      p.target === o && l();
+    }
+    function g(p) {
+      p.key === "Escape" && l();
+    }
+    return (
+      o.addEventListener("click", c),
+      document.addEventListener("keydown", g),
+      s.addEventListener("click", l),
+      e.appendChild(o),
+      { body: i, root: n, close: l }
+    );
+  }
+  async function je() {
+    if (!navigator.mediaDevices?.getDisplayMedia)
+      throw new Error("Screen capture is not supported in this browser.");
+    let e = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !1 });
+    try {
+      let t = document.createElement("video");
+      ((t.srcObject = e),
+        (t.muted = !0),
+        (t.playsInline = !0),
+        await new Promise((i, l) => {
+          let c = setTimeout(() => l(new Error("Capture stream timed out")), 5e3);
+          ((t.onloadedmetadata = () => {
+            (clearTimeout(c), i());
+          }),
+            (t.onerror = () => {
+              (clearTimeout(c), l(new Error("Capture stream errored")));
+            }));
+        }),
+        await t.play(),
+        await new Promise((i) => requestAnimationFrame(() => i(null))));
+      let o = t.videoWidth,
+        n = t.videoHeight;
+      if (!o || !n) throw new Error("Capture stream returned no frames.");
+      let r = document.createElement("canvas");
+      ((r.width = o), (r.height = n));
+      let a = r.getContext("2d");
+      if (!a) throw new Error("Canvas 2d context unavailable");
+      return (
+        a.drawImage(t, 0, 0, o, n),
+        await new Promise((i, l) => {
+          r.toBlob((c) => (c ? i(c) : l(new Error("toBlob failed"))), "image/png");
+        })
+      );
+    } finally {
+      e.getTracks().forEach((t) => t.stop());
+    }
+  }
+  async function Ke() {
+    if (!navigator.mediaDevices?.getDisplayMedia)
+      throw new Error("Screen capture is not supported in this browser.");
+    let e = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !0 }),
+      o =
+        ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((s) =>
+          MediaRecorder.isTypeSupported(s),
+        ) ?? "",
+      n = o ? new MediaRecorder(e, { mimeType: o }) : new MediaRecorder(e),
+      r = [];
+    (n.addEventListener("dataavailable", (s) => {
+      s.data && s.data.size > 0 && r.push(s.data);
+    }),
+      n.start(500),
+      e.getVideoTracks()[0]?.addEventListener("ended", () => {
+        n.state !== "inactive" && n.stop();
+      }));
+    function a() {
+      e.getTracks().forEach((s) => s.stop());
+    }
+    return {
+      stop() {
+        return new Promise((s, i) => {
+          if (n.state === "inactive") {
+            if ((a(), r.length === 0)) {
+              i(new Error("No recording data."));
+              return;
+            }
+            s(new Blob(r, { type: o || "video/webm" }));
+            return;
+          }
+          (n.addEventListener(
+            "stop",
+            () => {
+              (a(), s(new Blob(r, { type: o || "video/webm" })));
+            },
+            { once: !0 },
+          ),
+            n.addEventListener("error", (l) => i(l), { once: !0 }),
+            n.stop());
+        });
+      },
+      cancel() {
+        (n.state !== "inactive" && n.stop(), a());
+      },
+    };
+  }
+  var We = ["#f87171", "#fbbf24", "#4ade80", "#60a5fa"];
+  async function Ge(e) {
+    let t = URL.createObjectURL(e),
+      o = await new Promise((u, v) => {
+        let m = new Image();
+        ((m.onload = () => u(m)),
+          (m.onerror = () => v(new Error("Failed to load screenshot for annotation."))),
+          (m.src = t));
+      }),
+      n = document.createElement("div");
+    n.className = "se-annot";
+    let r = document.createElement("div");
+    ((r.className = "se-annot-toolbar"), n.appendChild(r));
+    let a = "arrow",
+      s = We[0],
+      i = [];
+    function l(u, v) {
+      let m = document.createElement("button");
+      return (
+        (m.type = "button"),
+        (m.className = "se-annot-btn"),
+        (m.dataset.tool = u),
+        (m.textContent = v),
+        m.addEventListener("click", () => {
+          ((a = u),
+            r
+              .querySelectorAll("[data-tool]")
+              .forEach((k) => k.classList.toggle("on", k.dataset.tool === u)));
+        }),
+        m
+      );
+    }
+    let c = l("arrow", "\u2197 arrow");
+    (c.classList.add("on"),
+      r.appendChild(c),
+      r.appendChild(l("rect", "\u25AD rect")),
+      r.appendChild(l("text", "T text")));
+    let g = document.createElement("span");
+    ((g.className = "se-annot-sep"), r.appendChild(g));
+    for (let u of We) {
+      let v = document.createElement("button");
+      ((v.type = "button"),
+        (v.className = "se-annot-swatch"),
+        (v.dataset.color = u),
+        (v.style.background = u),
+        u === s && v.classList.add("on"),
+        v.addEventListener("click", () => {
+          ((s = u),
+            r
+              .querySelectorAll("[data-color]")
+              .forEach((m) => m.classList.toggle("on", m.dataset.color === u)));
+        }),
+        r.appendChild(v));
+    }
+    let p = document.createElement("button");
+    ((p.type = "button"),
+      (p.className = "se-annot-btn"),
+      (p.textContent = "\u21B6 undo"),
+      p.addEventListener("click", () => {
+        (i.pop(), L());
+      }),
+      r.appendChild(p));
+    let x = document.createElement("button");
+    ((x.type = "button"),
+      (x.className = "se-annot-btn"),
+      (x.textContent = "clear"),
+      x.addEventListener("click", () => {
+        ((i.length = 0), L());
+      }),
+      r.appendChild(x));
+    let w = document.createElement("div");
+    ((w.className = "se-annot-stage"), n.appendChild(w));
+    let y = document.createElement("canvas");
+    ((y.width = o.naturalWidth),
+      (y.height = o.naturalHeight),
+      (y.className = "se-annot-canvas"),
+      (y.style.cursor = "crosshair"),
+      (y.style.touchAction = "none"),
+      w.appendChild(y));
+    let f = y.getContext("2d");
+    function d(u) {
+      let v = y.getBoundingClientRect(),
+        m = y.width / v.width,
+        k = y.height / v.height;
+      return { x: (u.clientX - v.left) * m, y: (u.clientY - v.top) * k };
+    }
+    function h() {
+      return Math.max(2, Math.round(o.naturalWidth / 400));
+    }
+    function E(u) {
+      if (
+        (f.save(),
+        (f.strokeStyle = u.color),
+        (f.fillStyle = u.color),
+        (f.lineWidth = h()),
+        (f.lineCap = "round"),
+        (f.lineJoin = "round"),
+        u.tool === "rect")
+      ) {
+        let v = Math.min(u.x1, u.x2),
+          m = Math.min(u.y1, u.y2),
+          k = Math.abs(u.x2 - u.x1),
+          M = Math.abs(u.y2 - u.y1);
+        f.strokeRect(v, m, k, M);
+      } else if (u.tool === "arrow") {
+        (f.beginPath(), f.moveTo(u.x1, u.y1), f.lineTo(u.x2, u.y2), f.stroke());
+        let v = Math.atan2(u.y2 - u.y1, u.x2 - u.x1),
+          m = h() * 5;
+        (f.beginPath(),
+          f.moveTo(u.x2, u.y2),
+          f.lineTo(u.x2 - m * Math.cos(v - Math.PI / 6), u.y2 - m * Math.sin(v - Math.PI / 6)),
+          f.lineTo(u.x2 - m * Math.cos(v + Math.PI / 6), u.y2 - m * Math.sin(v + Math.PI / 6)),
+          f.closePath(),
+          f.fill());
+      } else if (u.tool === "text" && u.text) {
+        let v = Math.max(14, Math.round(o.naturalWidth / 60));
+        ((f.font = `600 ${v}px ui-sans-serif, system-ui, sans-serif`), (f.textBaseline = "top"));
+        let m = v * 0.3,
+          M = f.measureText(u.text).width + m * 2,
+          T = v + m * 2;
+        ((f.fillStyle = "rgba(0,0,0,0.55)"),
+          f.fillRect(u.x1, u.y1, M, T),
+          (f.fillStyle = u.color),
+          f.fillText(u.text, u.x1 + m, u.y1 + m));
+      }
+      f.restore();
+    }
+    function L(u) {
+      (f.clearRect(0, 0, y.width, y.height), f.drawImage(o, 0, 0));
+      for (let v of i) E(v);
+      u && E(u);
+    }
+    L();
+    let b = null;
+    return (
+      y.addEventListener("pointerdown", (u) => {
+        u.preventDefault();
+        let v = d(u);
+        if (a === "text") {
+          let m = prompt("Annotation text:");
+          m &&
+            m.trim() &&
+            (i.push({ tool: "text", color: s, x1: v.x, y1: v.y, x2: v.x, y2: v.y, text: m.trim() }),
+            L());
+          return;
+        }
+        ((b = { x1: v.x, y1: v.y }), y.setPointerCapture(u.pointerId));
+      }),
+      y.addEventListener("pointermove", (u) => {
+        if (!b) return;
+        let v = d(u);
+        L({ tool: a, color: s, x1: b.x1, y1: b.y1, x2: v.x, y2: v.y });
+      }),
+      y.addEventListener("pointerup", (u) => {
+        if (!b) return;
+        let v = d(u),
+          m = Math.abs(v.x - b.x1),
+          k = Math.abs(v.y - b.y1);
+        ((m > 4 || k > 4) && i.push({ tool: a, color: s, x1: b.x1, y1: b.y1, x2: v.x, y2: v.y }),
+          (b = null),
+          L());
+      }),
+      {
+        root: n,
+        async export() {
+          let u = await new Promise((v, m) => {
+            y.toBlob((k) => (k ? v(k) : m(new Error("toBlob failed"))), "image/png");
+          });
+          return (URL.revokeObjectURL(t), u);
+        },
+      }
+    );
+  }
+  function j(e) {
+    return e.replace(
+      /[&<>"']/g,
+      (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
+    );
+  }
+  function Lt(e) {
+    return `<span class="badge ${e === "open" ? "badge-run" : e === "resolved" ? "badge-on" : e === "wont_fix" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
+  }
+  function St(e) {
+    let t = Date.now() - Date.parse(e),
+      o = Math.floor(t / 6e4);
+    if (o < 1) return "just now";
+    if (o < 60) return `${o}m ago`;
+    let n = Math.floor(o / 60);
+    return n < 24 ? `${n}h ago` : `${Math.floor(n / 24)}d ago`;
+  }
+  async function Je(e, t, o) {
+    async function n() {
+      e.innerHTML = '<div class="loading">Loading bugs\u2026</div>';
+      let a;
+      try {
+        a = await t.bugs();
+      } catch (i) {
+        ((e.innerHTML = `<div class="err">Failed to load bugs: ${j(String(i))}</div>`), r());
+        return;
+      }
+      e.innerHTML = `
       <div class="se-feedback-head">
         <button class="ibtn pri" id="se-file-bug">+ File a bug</button>
         <a class="ibtn" target="_blank" rel="noopener" href="${t.adminUrl}/dashboard/bugs">Open dashboard \u2197</a>
       </div>
       <div class="se-feedback-list" id="se-bugs-list"></div>
-    `;let s=e.querySelector("#se-bugs-list");a.length===0?s.innerHTML='<div class="empty">No bugs filed yet. Spotted one? Hit \u201CFile a bug\u201D.</div>':s.innerHTML=a.map(i=>`
+    `;
+      let s = e.querySelector("#se-bugs-list");
+      (a.length === 0
+        ? (s.innerHTML =
+            '<div class="empty">No bugs filed yet. Spotted one? Hit \u201CFile a bug\u201D.</div>')
+        : (s.innerHTML = a
+            .map(
+              (i) => `
             <a class="row se-feedback-row" target="_blank" rel="noopener"
                href="${t.adminUrl}/dashboard/bugs/${i.id}">
               <div style="flex:1;min-width:0">
-                <div class="row-name">${U(i.title)}</div>
-                <div class="row-sub">${St(i.createdAt)}${i.reporterEmail?` \xB7 ${U(i.reporterEmail)}`:""}</div>
+                <div class="row-name">${j(i.title)}</div>
+                <div class="row-sub">${St(i.createdAt)}${i.reporterEmail ? ` \xB7 ${j(i.reporterEmail)}` : ""}</div>
               </div>
               ${Lt(i.status)}
-            </a>`).join(""),r()}function r(){e.querySelector("#se-file-bug")?.addEventListener("click",()=>Mt(t,o,n))}await n()}function Mt(e,t,o){let n=N(t,{title:"File a bug",size:"lg"}),r=[],a=null;n.body.innerHTML=`
+            </a>`,
+            )
+            .join("")),
+        r());
+    }
+    function r() {
+      e.querySelector("#se-file-bug")?.addEventListener("click", () => Mt(t, o, n));
+    }
+    await n();
+  }
+  function Mt(e, t, o) {
+    let n = F(t, { title: "File a bug", size: "lg" }),
+      r = [],
+      a = null;
+    n.body.innerHTML = `
     <div class="se-form">
       <label class="se-field">
         <span class="se-label">Title</span>
@@ -1166,30 +2458,207 @@ select.se-input { cursor: pointer; }
       <button type="button" class="ibtn" id="se-b-cancel">Cancel</button>
       <button type="button" class="ibtn pri" id="se-b-submit">Submit</button>
     </div>
-  `;let s=n.body.querySelector("#se-b-title"),i=n.body.querySelector("#se-b-steps"),l=n.body.querySelector("#se-b-actual"),d=n.body.querySelector("#se-b-expected"),g=n.body.querySelector("#se-b-attach"),c=n.body.querySelector("#se-b-status"),x=n.body.querySelector("#se-b-file"),k=n.body.querySelector("#se-b-record");function y(){if(r.length===0){g.innerHTML="";return}g.innerHTML=r.map((p,b)=>`
+  `;
+    let s = n.body.querySelector("#se-b-title"),
+      i = n.body.querySelector("#se-b-steps"),
+      l = n.body.querySelector("#se-b-actual"),
+      c = n.body.querySelector("#se-b-expected"),
+      g = n.body.querySelector("#se-b-attach"),
+      p = n.body.querySelector("#se-b-status"),
+      x = n.body.querySelector("#se-b-file"),
+      w = n.body.querySelector("#se-b-record");
+    function y() {
+      if (r.length === 0) {
+        g.innerHTML = "";
+        return;
+      }
+      ((g.innerHTML = r
+        .map(
+          (d, h) => `
           <div class="se-attach-item">
-            <span>${U(p.filename)} <span class="dim">(${(p.blob.size/1024).toFixed(0)} KB)</span></span>
-            <button type="button" class="ibtn danger" data-idx="${b}">remove</button>
-          </div>`).join(""),g.querySelectorAll("button[data-idx]").forEach(p=>{p.addEventListener("click",()=>{r.splice(Number(p.dataset.idx),1),y()})})}function f(p,b=!1){c.textContent=p,c.style.color=b?"var(--se-danger)":"var(--se-fg-3)"}n.body.querySelector("#se-b-screenshot").addEventListener("click",async()=>{f("Pick a screen/tab to capture\u2026");try{let p=await je();f(""),Tt(t,p,b=>{r.push({kind:"screenshot",filename:`screenshot-${Date.now()}.png`,blob:b}),y()})}catch(p){f(String(p instanceof Error?p.message:p),!0)}}),k.addEventListener("click",async()=>{if(a){try{k.disabled=!0,f("Finalizing recording\u2026");let p=await a.stop();a=null,k.textContent="\u23FA Record screen",k.classList.remove("danger"),r.push({kind:"recording",filename:`recording-${Date.now()}.webm`,blob:p}),y(),f("")}catch(p){f(String(p instanceof Error?p.message:p),!0)}finally{k.disabled=!1}return}f("Pick a screen/tab to record\u2026");try{a=await Ke(),k.textContent="\u25A0 Stop recording",k.classList.add("danger"),f("Recording\u2026 click stop when done.")}catch(p){f(String(p instanceof Error?p.message:p),!0),a=null}}),n.body.querySelector("#se-b-upload").addEventListener("click",()=>x.click()),x.addEventListener("change",()=>{let p=x.files?.[0];p&&(r.push({kind:"file",filename:p.name,blob:p}),x.value="",y())}),n.body.querySelector("#se-b-cancel").addEventListener("click",()=>{a&&a.cancel(),n.close()}),n.body.querySelector("#se-b-submit").addEventListener("click",async()=>{let p=n.body.querySelector("#se-b-submit"),b=s.value.trim();if(!b){f("Title is required",!0),s.focus();return}p.disabled=!0,f("Submitting\u2026");try{let E=await e.createBug({title:b,stepsToReproduce:i.value,actualResult:l.value,expectedResult:d.value,pageUrl:window.location.href,userAgent:navigator.userAgent,viewport:`${window.innerWidth}x${window.innerHeight}`});for(let w=0;w<r.length;w++){let h=r[w];f(`Uploading attachment ${w+1}/${r.length}\u2026`),await e.uploadAttachment({reportKind:"bug",reportId:E.id,kind:h.kind,filename:h.filename,blob:h.blob})}n.close(),o()}catch(E){f(String(E instanceof Error?E.message:E),!0),p.disabled=!1}})}function Tt(e,t,o){let n=N(e,{title:"Annotate screenshot",size:"lg"});n.body.innerHTML=`<div class="se-annot-host" id="se-annot-host"></div>
+            <span>${j(d.filename)} <span class="dim">(${(d.blob.size / 1024).toFixed(0)} KB)</span></span>
+            <button type="button" class="ibtn danger" data-idx="${h}">remove</button>
+          </div>`,
+        )
+        .join("")),
+        g.querySelectorAll("button[data-idx]").forEach((d) => {
+          d.addEventListener("click", () => {
+            (r.splice(Number(d.dataset.idx), 1), y());
+          });
+        }));
+    }
+    function f(d, h = !1) {
+      ((p.textContent = d), (p.style.color = h ? "var(--se-danger)" : "var(--se-fg-3)"));
+    }
+    (n.body.querySelector("#se-b-screenshot").addEventListener("click", async () => {
+      f("Pick a screen/tab to capture\u2026");
+      try {
+        let d = await je();
+        (f(""),
+          Tt(t, d, (h) => {
+            (r.push({ kind: "screenshot", filename: `screenshot-${Date.now()}.png`, blob: h }),
+              y());
+          }));
+      } catch (d) {
+        f(String(d instanceof Error ? d.message : d), !0);
+      }
+    }),
+      w.addEventListener("click", async () => {
+        if (a) {
+          try {
+            ((w.disabled = !0), f("Finalizing recording\u2026"));
+            let d = await a.stop();
+            ((a = null),
+              (w.textContent = "\u23FA Record screen"),
+              w.classList.remove("danger"),
+              r.push({ kind: "recording", filename: `recording-${Date.now()}.webm`, blob: d }),
+              y(),
+              f(""));
+          } catch (d) {
+            f(String(d instanceof Error ? d.message : d), !0);
+          } finally {
+            w.disabled = !1;
+          }
+          return;
+        }
+        f("Pick a screen/tab to record\u2026");
+        try {
+          ((a = await Ke()),
+            (w.textContent = "\u25A0 Stop recording"),
+            w.classList.add("danger"),
+            f("Recording\u2026 click stop when done."));
+        } catch (d) {
+          (f(String(d instanceof Error ? d.message : d), !0), (a = null));
+        }
+      }),
+      n.body.querySelector("#se-b-upload").addEventListener("click", () => x.click()),
+      x.addEventListener("change", () => {
+        let d = x.files?.[0];
+        d && (r.push({ kind: "file", filename: d.name, blob: d }), (x.value = ""), y());
+      }),
+      n.body.querySelector("#se-b-cancel").addEventListener("click", () => {
+        (a && a.cancel(), n.close());
+      }),
+      n.body.querySelector("#se-b-submit").addEventListener("click", async () => {
+        let d = n.body.querySelector("#se-b-submit"),
+          h = s.value.trim();
+        if (!h) {
+          (f("Title is required", !0), s.focus());
+          return;
+        }
+        ((d.disabled = !0), f("Submitting\u2026"));
+        try {
+          let E = await e.createBug({
+            title: h,
+            stepsToReproduce: i.value,
+            actualResult: l.value,
+            expectedResult: c.value,
+            pageUrl: window.location.href,
+            userAgent: navigator.userAgent,
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+          });
+          for (let L = 0; L < r.length; L++) {
+            let b = r[L];
+            (f(`Uploading attachment ${L + 1}/${r.length}\u2026`),
+              await e.uploadAttachment({
+                reportKind: "bug",
+                reportId: E.id,
+                kind: b.kind,
+                filename: b.filename,
+                blob: b.blob,
+              }));
+          }
+          (n.close(), o());
+        } catch (E) {
+          (f(String(E instanceof Error ? E.message : E), !0), (d.disabled = !1));
+        }
+      }));
+  }
+  function Tt(e, t, o) {
+    let n = F(e, { title: "Annotate screenshot", size: "lg" });
+    n.body.innerHTML = `<div class="se-annot-host" id="se-annot-host"></div>
     <div class="se-modal-footer">
       <button type="button" class="ibtn" id="se-a-cancel">Cancel</button>
       <button type="button" class="ibtn pri" id="se-a-save">Use screenshot</button>
-    </div>`;let r=n.body.querySelector("#se-annot-host");r.innerHTML='<div class="loading">Preparing annotator\u2026</div>',Ge(t).then(a=>{r.innerHTML="",r.appendChild(a.root),n.body.querySelector("#se-a-cancel").addEventListener("click",()=>n.close()),n.body.querySelector("#se-a-save").addEventListener("click",async()=>{let s=await a.export();n.close(),o(s)})}).catch(a=>{r.innerHTML=`<div class="err">${U(String(a))}</div>`})}function ge(e){return e.replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t])}function $t(e){return`<span class="badge ${e==="open"?"badge-run":e==="shipped"?"badge-on":e==="declined"?"badge-off":"badge-draft"}">${e.replace("_"," ")}</span>`}function Rt(e){let t=e.replace("_"," ");return`<span class="badge ${e==="critical"?"badge-off":e==="important"?"badge-run":"badge-draft"}">${t}</span>`}function _t(e){let t=Date.now()-Date.parse(e),o=Math.floor(t/6e4);if(o<1)return"just now";if(o<60)return`${o}m ago`;let n=Math.floor(o/60);return n<24?`${n}h ago`:`${Math.floor(n/24)}d ago`}async function Ve(e,t,o){async function n(){e.innerHTML='<div class="loading">Loading feature requests\u2026</div>';let r;try{r=await t.featureRequests()}catch(s){e.innerHTML=`<div class="err">Failed to load feature requests: ${ge(String(s))}</div>`;return}e.innerHTML=`
+    </div>`;
+    let r = n.body.querySelector("#se-annot-host");
+    ((r.innerHTML = '<div class="loading">Preparing annotator\u2026</div>'),
+      Ge(t)
+        .then((a) => {
+          ((r.innerHTML = ""),
+            r.appendChild(a.root),
+            n.body.querySelector("#se-a-cancel").addEventListener("click", () => n.close()),
+            n.body.querySelector("#se-a-save").addEventListener("click", async () => {
+              let s = await a.export();
+              (n.close(), o(s));
+            }));
+        })
+        .catch((a) => {
+          r.innerHTML = `<div class="err">${j(String(a))}</div>`;
+        }));
+  }
+  function ge(e) {
+    return e.replace(
+      /[&<>"']/g,
+      (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
+    );
+  }
+  function $t(e) {
+    return `<span class="badge ${e === "open" ? "badge-run" : e === "shipped" ? "badge-on" : e === "declined" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
+  }
+  function Rt(e) {
+    let t = e.replace("_", " ");
+    return `<span class="badge ${e === "critical" ? "badge-off" : e === "important" ? "badge-run" : "badge-draft"}">${t}</span>`;
+  }
+  function _t(e) {
+    let t = Date.now() - Date.parse(e),
+      o = Math.floor(t / 6e4);
+    if (o < 1) return "just now";
+    if (o < 60) return `${o}m ago`;
+    let n = Math.floor(o / 60);
+    return n < 24 ? `${n}h ago` : `${Math.floor(n / 24)}d ago`;
+  }
+  async function Ve(e, t, o) {
+    async function n() {
+      e.innerHTML = '<div class="loading">Loading feature requests\u2026</div>';
+      let r;
+      try {
+        r = await t.featureRequests();
+      } catch (s) {
+        e.innerHTML = `<div class="err">Failed to load feature requests: ${ge(String(s))}</div>`;
+        return;
+      }
+      e.innerHTML = `
       <div class="se-feedback-head">
         <button class="ibtn pri" id="se-file-fr">+ Request a feature</button>
         <a class="ibtn" target="_blank" rel="noopener" href="${t.adminUrl}/dashboard/feature-requests">Open dashboard \u2197</a>
       </div>
       <div class="se-feedback-list" id="se-fr-list"></div>
-    `;let a=e.querySelector("#se-fr-list");r.length===0?a.innerHTML='<div class="empty">No feature requests yet.</div>':a.innerHTML=r.map(s=>`
+    `;
+      let a = e.querySelector("#se-fr-list");
+      (r.length === 0
+        ? (a.innerHTML = '<div class="empty">No feature requests yet.</div>')
+        : (a.innerHTML = r
+            .map(
+              (s) => `
             <a class="row se-feedback-row" target="_blank" rel="noopener"
                href="${t.adminUrl}/dashboard/feature-requests/${s.id}">
               <div style="flex:1;min-width:0">
                 <div class="row-name">${ge(s.title)}</div>
-                <div class="row-sub">${_t(s.createdAt)}${s.reporterEmail?` \xB7 ${ge(s.reporterEmail)}`:""}</div>
+                <div class="row-sub">${_t(s.createdAt)}${s.reporterEmail ? ` \xB7 ${ge(s.reporterEmail)}` : ""}</div>
               </div>
               ${Rt(s.importance)}
               ${$t(s.status)}
-            </a>`).join(""),e.querySelector("#se-file-fr").addEventListener("click",()=>Pt(t,o,n))}await n()}function Pt(e,t,o){let n=N(t,{title:"Request a feature",size:"lg"});n.body.innerHTML=`
+            </a>`,
+            )
+            .join("")),
+        e.querySelector("#se-file-fr").addEventListener("click", () => Pt(t, o, n)));
+    }
+    await n();
+  }
+  function Pt(e, t, o) {
+    let n = F(t, { title: "Request a feature", size: "lg" });
+    n.body.innerHTML = `
     <div class="se-form">
       <label class="se-field">
         <span class="se-label">Title</span>
@@ -1217,18 +2686,319 @@ select.se-input { cursor: pointer; }
       <button type="button" class="ibtn" id="se-f-cancel">Cancel</button>
       <button type="button" class="ibtn pri" id="se-f-submit">Submit</button>
     </div>
-  `;let r=n.body.querySelector("#se-f-title"),a=n.body.querySelector("#se-f-desc"),s=n.body.querySelector("#se-f-use"),i=n.body.querySelector("#se-f-imp"),l=n.body.querySelector("#se-f-status");n.body.querySelector("#se-f-cancel").addEventListener("click",()=>n.close()),n.body.querySelector("#se-f-submit").addEventListener("click",async()=>{let d=r.value.trim();if(!d){l.textContent="Title is required",l.style.color="var(--se-danger)",r.focus();return}let g=n.body.querySelector("#se-f-submit");g.disabled=!0,l.textContent="Submitting\u2026",l.style.color="var(--se-fg-3)";try{await e.createFeatureRequest({title:d,description:a.value,useCase:s.value,importance:i.value,pageUrl:window.location.href,userAgent:navigator.userAgent}),n.close(),o()}catch(c){l.textContent=String(c instanceof Error?c.message:c),l.style.color="var(--se-danger)",g.disabled=!1}})}var At='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',Ct='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',Ht='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',Ot='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',Bt='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',qt='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',It='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',Dt='<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',Z={gates:{icon:At,label:"Gates"},configs:{icon:Ct,label:"Configs"},experiments:{icon:Ht,label:"Experiments"},i18n:{icon:Ot,label:"Translations"},bugs:{icon:Bt,label:"Bugs"},features:{icon:qt,label:"Feature requests"}},tt="se_l_overlay",me="se_l_active_panel";function zt(){try{let e=sessionStorage.getItem(me);if(e&&e in Z)return e}catch{}return null}function Ye(e){try{e===null?sessionStorage.removeItem(me):sessionStorage.setItem(me,e)}catch{}}var ve=240,Xe=580,be=180,Ze=700,Qe={edge:"right",offsetPct:50,panelWidth:340,panelHeight:460};function Nt(){try{let e=localStorage.getItem(tt);if(e)return{...Qe,...JSON.parse(e)}}catch{}return{...Qe}}function et(e){try{localStorage.setItem(tt,JSON.stringify(e))}catch{}}function Ut(e,t){let o=window.innerWidth,n=window.innerHeight,r=[[o-e,"right"],[e,"left"],[t,"top"],[n-t,"bottom"]];r.sort((l,d)=>l[0]-d[0]);let a=r[0][1],i=Math.max(5,Math.min(95,a==="left"||a==="right"?t/n*100:e/o*100));return{edge:a,offsetPct:i}}function F(e,t,o,n){let{edge:r,offsetPct:a,panelWidth:s,panelHeight:i}=n,l=window.innerWidth,d=window.innerHeight,g=r==="left"||r==="right",c=Math.max(ve,Math.min(s,l-80)),x=Math.max(be,Math.min(i,d-40)),k=a/100*(g?d:l),y=e.getBoundingClientRect(),f=g?y.width||52:y.height||52,p=e.style;p.top=p.bottom=p.left=p.right=p.transform="",p.borderTop=p.borderBottom=p.borderLeft=p.borderRight="",p.flexDirection=g?"column":"row",p.padding=g?"8px 6px":"6px 8px",r==="right"?(p.right="0",p.top=`${a}%`,p.transform="translateY(-50%)",p.borderRadius="10px 0 0 10px",p.borderRight="none",p.boxShadow="-3px 0 16px rgba(0,0,0,0.45)"):r==="left"?(p.left="0",p.top=`${a}%`,p.transform="translateY(-50%)",p.borderRadius="0 10px 10px 0",p.borderLeft="none",p.boxShadow="3px 0 16px rgba(0,0,0,0.45)"):r==="top"?(p.top="0",p.left=`${a}%`,p.transform="translateX(-50%)",p.borderRadius="0 0 10px 10px",p.borderTop="none",p.boxShadow="0 3px 16px rgba(0,0,0,0.45)"):(p.bottom="0",p.left=`${a}%`,p.transform="translateX(-50%)",p.borderRadius="10px 10px 0 0",p.borderBottom="none",p.boxShadow="0 -3px 16px rgba(0,0,0,0.45)");let b=t.style;if(b.top=b.bottom=b.left=b.right=b.transform="",b.borderTop=b.borderBottom=b.borderLeft=b.borderRight="",b.width=c+"px",b.height=x+"px",t.dataset.edge=r,r==="right"){let w=Math.max(10,Math.min(d-x-10,k-x/2));b.right=f+"px",b.top=w+"px",b.borderRadius="10px 0 0 10px",b.borderRight="none",b.boxShadow="-6px 0 24px rgba(0,0,0,0.4)"}else if(r==="left"){let w=Math.max(10,Math.min(d-x-10,k-x/2));b.left=f+"px",b.top=w+"px",b.borderRadius="0 10px 10px 0",b.borderLeft="none",b.boxShadow="6px 0 24px rgba(0,0,0,0.4)"}else if(r==="top"){let w=Math.max(10,Math.min(l-c-10,k-c/2));b.top=f+"px",b.left=w+"px",b.borderRadius="0 0 10px 10px",b.borderTop="none",b.boxShadow="0 6px 24px rgba(0,0,0,0.4)"}else{let w=Math.max(10,Math.min(l-c-10,k-c/2));b.bottom=f+"px",b.left=w+"px",b.borderRadius="10px 10px 0 0",b.borderBottom="none",b.boxShadow="0 -6px 24px rgba(0,0,0,0.4)"}let E=o.style;E.top=E.bottom=E.left=E.right=E.width=E.height="",o.dataset.dir=g?"ew":"ns",g?(E.width="10px",E.top="0",E.bottom="0",o.style.cursor="ew-resize",r==="right"?E.left="0":E.right="0"):(E.height="10px",E.left="0",E.right="0",o.style.cursor="ns-resize",r==="top"?E.bottom="0":E.top="0")}function nt(e){let t=document.createElement("div");t.setAttribute("id","shipeasy-devtools");let o=t.attachShadow({mode:"open"});o.innerHTML=`<style>${xe}</style><div id="toolbar"></div><div id="panel"></div>`;let n=o.getElementById("toolbar"),r=o.getElementById("panel");n.className="toolbar",r.className="panel";let a=document.createElement("div");a.className="resize-handle",r.appendChild(a);let s=document.createElement("div");s.className="panel-inner",r.appendChild(s);let i=Nt(),l=null,d=ye(),g=zt();requestAnimationFrame(()=>F(n,r,a,i));let c=document.createElement("div");c.className="drag-handle",c.title="ShipEasy DevTools \u2014 drag to reposition",c.innerHTML=Dt,n.appendChild(c),c.addEventListener("mousedown",h=>{h.preventDefault(),c.classList.add("dragging");let u=m=>{let{edge:L,offsetPct:M}=Ut(m.clientX,m.clientY);i={...i,edge:L,offsetPct:M},F(n,r,a,i)},v=()=>{c.classList.remove("dragging"),document.removeEventListener("mousemove",u),document.removeEventListener("mouseup",v),et(i)};document.addEventListener("mousemove",u),document.addEventListener("mouseup",v)});let x=new Map;for(let[h,{icon:u,label:v}]of Object.entries(Z)){let m=document.createElement("button");m.className="btn",m.title=v,m.innerHTML=u,m.addEventListener("click",()=>p(h)),n.appendChild(m),x.set(h,m)}a.addEventListener("mousedown",h=>{h.preventDefault(),h.stopPropagation(),a.classList.add("dragging");let u=h.clientX,v=h.clientY,m=i.panelWidth,L=i.panelHeight,{edge:M}=i,T=O=>{let K=O.clientX-u,he=O.clientY-v,I={...i};M==="right"&&(I.panelWidth=Math.max(ve,Math.min(Xe,m-K))),M==="left"&&(I.panelWidth=Math.max(ve,Math.min(Xe,m+K))),M==="top"&&(I.panelHeight=Math.max(be,Math.min(Ze,L+he))),M==="bottom"&&(I.panelHeight=Math.max(be,Math.min(Ze,L-he))),i=I,F(n,r,a,i)},A=()=>{a.classList.remove("dragging"),document.removeEventListener("mousemove",T),document.removeEventListener("mouseup",A),et(i)};document.addEventListener("mousemove",T),document.addEventListener("mouseup",A)});let k=()=>F(n,r,a,i);window.addEventListener("resize",k);function y(h){l=h,Ye(h),x.forEach((u,v)=>u.classList.toggle("active",v===h)),r.classList.add("open"),F(n,r,a,i),E(h)}function f(){r.classList.remove("open"),x.forEach(h=>h.classList.remove("active")),l=null,Ye(null)}function p(h){l===h?f():y(h)}function b(h,u){let v=typeof window<"u"&&window.location?window.location.host:"",m=v?`<span class="sub">${v}</span>`:"";return`
+  `;
+    let r = n.body.querySelector("#se-f-title"),
+      a = n.body.querySelector("#se-f-desc"),
+      s = n.body.querySelector("#se-f-use"),
+      i = n.body.querySelector("#se-f-imp"),
+      l = n.body.querySelector("#se-f-status");
+    (n.body.querySelector("#se-f-cancel").addEventListener("click", () => n.close()),
+      n.body.querySelector("#se-f-submit").addEventListener("click", async () => {
+        let c = r.value.trim();
+        if (!c) {
+          ((l.textContent = "Title is required"), (l.style.color = "var(--se-danger)"), r.focus());
+          return;
+        }
+        let g = n.body.querySelector("#se-f-submit");
+        ((g.disabled = !0),
+          (l.textContent = "Submitting\u2026"),
+          (l.style.color = "var(--se-fg-3)"));
+        try {
+          (await e.createFeatureRequest({
+            title: c,
+            description: a.value,
+            useCase: s.value,
+            importance: i.value,
+            pageUrl: window.location.href,
+            userAgent: navigator.userAgent,
+          }),
+            n.close(),
+            o());
+        } catch (p) {
+          ((l.textContent = String(p instanceof Error ? p.message : p)),
+            (l.style.color = "var(--se-danger)"),
+            (g.disabled = !1));
+        }
+      }));
+  }
+  var At =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
+    Ct =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
+    Ht =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
+    Ot =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
+    Bt =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
+    qt =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
+    It =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+    Dt =
+      '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
+    Q = {
+      gates: { icon: At, label: "Gates" },
+      configs: { icon: Ct, label: "Configs" },
+      experiments: { icon: Ht, label: "Experiments" },
+      i18n: { icon: Ot, label: "Translations" },
+      bugs: { icon: Bt, label: "Bugs" },
+      features: { icon: qt, label: "Feature requests" },
+    },
+    tt = "se_l_overlay",
+    me = "se_l_active_panel";
+  function zt() {
+    try {
+      let e = sessionStorage.getItem(me);
+      if (e && e in Q) return e;
+    } catch {}
+    return null;
+  }
+  function Ye(e) {
+    try {
+      e === null ? sessionStorage.removeItem(me) : sessionStorage.setItem(me, e);
+    } catch {}
+  }
+  var ve = 240,
+    Xe = 580,
+    be = 180,
+    Ze = 700,
+    Qe = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
+  function Nt() {
+    try {
+      let e = localStorage.getItem(tt);
+      if (e) return { ...Qe, ...JSON.parse(e) };
+    } catch {}
+    return { ...Qe };
+  }
+  function et(e) {
+    try {
+      localStorage.setItem(tt, JSON.stringify(e));
+    } catch {}
+  }
+  function Ut(e, t) {
+    let o = window.innerWidth,
+      n = window.innerHeight,
+      r = [
+        [o - e, "right"],
+        [e, "left"],
+        [t, "top"],
+        [n - t, "bottom"],
+      ];
+    r.sort((l, c) => l[0] - c[0]);
+    let a = r[0][1],
+      i = Math.max(5, Math.min(95, a === "left" || a === "right" ? (t / n) * 100 : (e / o) * 100));
+    return { edge: a, offsetPct: i };
+  }
+  function K(e, t, o, n) {
+    let { edge: r, offsetPct: a, panelWidth: s, panelHeight: i } = n,
+      l = window.innerWidth,
+      c = window.innerHeight,
+      g = r === "left" || r === "right",
+      p = Math.max(ve, Math.min(s, l - 80)),
+      x = Math.max(be, Math.min(i, c - 40)),
+      w = (a / 100) * (g ? c : l),
+      y = e.getBoundingClientRect(),
+      f = g ? y.width || 52 : y.height || 52,
+      d = e.style;
+    ((d.top = d.bottom = d.left = d.right = d.transform = ""),
+      (d.borderTop = d.borderBottom = d.borderLeft = d.borderRight = ""),
+      (d.flexDirection = g ? "column" : "row"),
+      (d.padding = g ? "8px 6px" : "6px 8px"),
+      r === "right"
+        ? ((d.right = "0"),
+          (d.top = `${a}%`),
+          (d.transform = "translateY(-50%)"),
+          (d.borderRadius = "10px 0 0 10px"),
+          (d.borderRight = "none"),
+          (d.boxShadow = "-3px 0 16px rgba(0,0,0,0.45)"))
+        : r === "left"
+          ? ((d.left = "0"),
+            (d.top = `${a}%`),
+            (d.transform = "translateY(-50%)"),
+            (d.borderRadius = "0 10px 10px 0"),
+            (d.borderLeft = "none"),
+            (d.boxShadow = "3px 0 16px rgba(0,0,0,0.45)"))
+          : r === "top"
+            ? ((d.top = "0"),
+              (d.left = `${a}%`),
+              (d.transform = "translateX(-50%)"),
+              (d.borderRadius = "0 0 10px 10px"),
+              (d.borderTop = "none"),
+              (d.boxShadow = "0 3px 16px rgba(0,0,0,0.45)"))
+            : ((d.bottom = "0"),
+              (d.left = `${a}%`),
+              (d.transform = "translateX(-50%)"),
+              (d.borderRadius = "10px 10px 0 0"),
+              (d.borderBottom = "none"),
+              (d.boxShadow = "0 -3px 16px rgba(0,0,0,0.45)")));
+    let h = t.style;
+    if (
+      ((h.top = h.bottom = h.left = h.right = h.transform = ""),
+      (h.borderTop = h.borderBottom = h.borderLeft = h.borderRight = ""),
+      (h.width = p + "px"),
+      (h.height = x + "px"),
+      (t.dataset.edge = r),
+      r === "right")
+    ) {
+      let L = Math.max(10, Math.min(c - x - 10, w - x / 2));
+      ((h.right = f + "px"),
+        (h.top = L + "px"),
+        (h.borderRadius = "10px 0 0 10px"),
+        (h.borderRight = "none"),
+        (h.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
+    } else if (r === "left") {
+      let L = Math.max(10, Math.min(c - x - 10, w - x / 2));
+      ((h.left = f + "px"),
+        (h.top = L + "px"),
+        (h.borderRadius = "0 10px 10px 0"),
+        (h.borderLeft = "none"),
+        (h.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
+    } else if (r === "top") {
+      let L = Math.max(10, Math.min(l - p - 10, w - p / 2));
+      ((h.top = f + "px"),
+        (h.left = L + "px"),
+        (h.borderRadius = "0 0 10px 10px"),
+        (h.borderTop = "none"),
+        (h.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
+    } else {
+      let L = Math.max(10, Math.min(l - p - 10, w - p / 2));
+      ((h.bottom = f + "px"),
+        (h.left = L + "px"),
+        (h.borderRadius = "10px 10px 0 0"),
+        (h.borderBottom = "none"),
+        (h.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
+    }
+    let E = o.style;
+    ((E.top = E.bottom = E.left = E.right = E.width = E.height = ""),
+      (o.dataset.dir = g ? "ew" : "ns"),
+      g
+        ? ((E.width = "10px"),
+          (E.top = "0"),
+          (E.bottom = "0"),
+          (o.style.cursor = "ew-resize"),
+          r === "right" ? (E.left = "0") : (E.right = "0"))
+        : ((E.height = "10px"),
+          (E.left = "0"),
+          (E.right = "0"),
+          (o.style.cursor = "ns-resize"),
+          r === "top" ? (E.bottom = "0") : (E.top = "0")));
+  }
+  function nt(e) {
+    let t = document.createElement("div");
+    t.setAttribute("id", "shipeasy-devtools");
+    let o = t.attachShadow({ mode: "open" });
+    o.innerHTML = `<style>${xe}</style><div id="toolbar"></div><div id="panel"></div>`;
+    let n = o.getElementById("toolbar"),
+      r = o.getElementById("panel");
+    ((n.className = "toolbar"), (r.className = "panel"));
+    let a = document.createElement("div");
+    ((a.className = "resize-handle"), r.appendChild(a));
+    let s = document.createElement("div");
+    ((s.className = "panel-inner"), r.appendChild(s));
+    let i = Nt(),
+      l = null,
+      c = ye(),
+      g = zt();
+    requestAnimationFrame(() => K(n, r, a, i));
+    let p = document.createElement("div");
+    ((p.className = "drag-handle"),
+      (p.title = "ShipEasy DevTools \u2014 drag to reposition"),
+      (p.innerHTML = Dt),
+      n.appendChild(p),
+      p.addEventListener("mousedown", (b) => {
+        (b.preventDefault(), p.classList.add("dragging"));
+        let u = (m) => {
+            let { edge: k, offsetPct: M } = Ut(m.clientX, m.clientY);
+            ((i = { ...i, edge: k, offsetPct: M }), K(n, r, a, i));
+          },
+          v = () => {
+            (p.classList.remove("dragging"),
+              document.removeEventListener("mousemove", u),
+              document.removeEventListener("mouseup", v),
+              et(i));
+          };
+        (document.addEventListener("mousemove", u), document.addEventListener("mouseup", v));
+      }));
+    let x = new Map();
+    for (let [b, { icon: u, label: v }] of Object.entries(Q)) {
+      let m = document.createElement("button");
+      ((m.className = "btn"),
+        (m.title = v),
+        (m.innerHTML = u),
+        m.addEventListener("click", () => d(b)),
+        n.appendChild(m),
+        x.set(b, m));
+    }
+    a.addEventListener("mousedown", (b) => {
+      (b.preventDefault(), b.stopPropagation(), a.classList.add("dragging"));
+      let u = b.clientX,
+        v = b.clientY,
+        m = i.panelWidth,
+        k = i.panelHeight,
+        { edge: M } = i,
+        T = (B) => {
+          let G = B.clientX - u,
+            he = B.clientY - v,
+            I = { ...i };
+          (M === "right" && (I.panelWidth = Math.max(ve, Math.min(Xe, m - G))),
+            M === "left" && (I.panelWidth = Math.max(ve, Math.min(Xe, m + G))),
+            M === "top" && (I.panelHeight = Math.max(be, Math.min(Ze, k + he))),
+            M === "bottom" && (I.panelHeight = Math.max(be, Math.min(Ze, k - he))),
+            (i = I),
+            K(n, r, a, i));
+        },
+        A = () => {
+          (a.classList.remove("dragging"),
+            document.removeEventListener("mousemove", T),
+            document.removeEventListener("mouseup", A),
+            et(i));
+        };
+      (document.addEventListener("mousemove", T), document.addEventListener("mouseup", A));
+    });
+    let w = () => K(n, r, a, i);
+    window.addEventListener("resize", w);
+    function y(b) {
+      ((l = b),
+        Ye(b),
+        x.forEach((u, v) => u.classList.toggle("active", v === b)),
+        r.classList.add("open"),
+        K(n, r, a, i),
+        E(b));
+    }
+    function f() {
+      (r.classList.remove("open"),
+        x.forEach((b) => b.classList.remove("active")),
+        (l = null),
+        Ye(null));
+    }
+    function d(b) {
+      l === b ? f() : y(b);
+    }
+    function h(b, u) {
+      let v = typeof window < "u" && window.location ? window.location.host : "",
+        m = v ? `<span class="sub">${v}</span>` : "";
+      return `
       <div class="panel-head">
         <span class="mk"></span>
         <span class="panel-title">
-          <span class="panel-title-icon">${h}</span>
+          <span class="panel-title-icon">${b}</span>
           <span class="panel-title-label">${u}</span>
           ${m}
         </span>
         <span class="live"><span class="dot"></span>LIVE</span>
         <button class="close" id="se-close" aria-label="Close">${It}</button>
-      </div>`}function E(h){let{icon:u,label:v}=Z[h];if(!d){w(h);return}let m=new Y(e.adminUrl,d.token);s.innerHTML=`
-      ${b(u,v)}
+      </div>`;
+    }
+    function E(b) {
+      let { icon: u, label: v } = Q[b];
+      if (!c) {
+        L(b);
+        return;
+      }
+      let m = new X(e.adminUrl, c.token);
+      ((s.innerHTML = `
+      ${h(u, v)}
       <div class="panel-body" id="se-body"></div>
       <div class="panel-subfoot" id="se-subfoot"></div>
       <div class="panel-footer">
@@ -1237,8 +3007,47 @@ select.se-input { cursor: pointer; }
         <button class="ibtn" id="se-apply-url" title="Persist current overrides to the address bar and reload">Apply via URL</button>
         <button class="ibtn danger" id="se-signout">Sign out</button>
         <button class="ibtn danger" id="se-clearall">Clear overrides</button>
-      </div>`,s.querySelector("#se-close").addEventListener("click",f),s.querySelector("#se-signout").addEventListener("click",()=>{we(),d=null,w(h)}),s.querySelector("#se-clearall").addEventListener("click",()=>{Pe(),E(h)}),s.querySelector("#se-apply-url").addEventListener("click",()=>{Ae()}),s.querySelector("#se-share").addEventListener("click",async()=>{let A=le({...de(),openDevtools:!0});try{await navigator.clipboard.writeText(A);let O=s.querySelector("#se-share"),K=O.textContent;O.textContent="Copied \u2713",setTimeout(()=>O.textContent=K,1500)}catch{prompt("Copy this URL:",A)}});let L=s.querySelector("#se-body"),M=s.querySelector("#se-subfoot");({gates:()=>Ce(L,m),configs:()=>He(L,m),experiments:()=>Be(L,m),i18n:()=>Fe(L,m,M,o),bugs:()=>Je(L,m,o),features:()=>Ve(L,m,o)})[h]().catch(A=>{L.innerHTML=`<div class="err">${String(A)}</div>`})}function w(h){let{icon:u,label:v}=Z[h];s.innerHTML=`
-      ${b(u,v)}
+      </div>`),
+        s.querySelector("#se-close").addEventListener("click", f),
+        s.querySelector("#se-signout").addEventListener("click", () => {
+          (we(), (c = null), L(b));
+        }),
+        s.querySelector("#se-clearall").addEventListener("click", () => {
+          (Pe(), E(b));
+        }),
+        s.querySelector("#se-apply-url").addEventListener("click", () => {
+          Ae();
+        }),
+        s.querySelector("#se-share").addEventListener("click", async () => {
+          let A = de({ ...ce(), openDevtools: !0 });
+          try {
+            await navigator.clipboard.writeText(A);
+            let B = s.querySelector("#se-share"),
+              G = B.textContent;
+            ((B.textContent = "Copied \u2713"), setTimeout(() => (B.textContent = G), 1500));
+          } catch {
+            prompt("Copy this URL:", A);
+          }
+        }));
+      let k = s.querySelector("#se-body"),
+        M = s.querySelector("#se-subfoot");
+      ({
+        gates: () => Ce(k, m),
+        configs: () => He(k, m),
+        experiments: () => Be(k, m),
+        i18n: () => Fe(k, m, M, o),
+        bugs: () => Je(k, m, o),
+        features: () => Ve(k, m, o),
+      })
+        [b]()
+        .catch((A) => {
+          k.innerHTML = `<div class="err">${String(A)}</div>`;
+        });
+    }
+    function L(b) {
+      let { icon: u, label: v } = Q[b];
+      ((s.innerHTML = `
+      ${h(u, v)}
       <div class="panel-body auth-mode">
         <div class="auth-box">
           <div class="auth-icon">\u{1F510}</div>
@@ -1248,4 +3057,105 @@ select.se-input { cursor: pointer; }
           <div class="auth-status" id="se-auth-status"></div>
           <div class="auth-err" id="se-auth-err"></div>
         </div>
-      </div>`,s.querySelector("#se-close").addEventListener("click",f),s.querySelector("#se-connect").addEventListener("click",async()=>{let m=s.querySelector("#se-connect"),L=s.querySelector("#se-auth-status"),M=s.querySelector("#se-auth-err");m.disabled=!0,m.textContent="Opening\u2026",L.textContent="",M.textContent="";try{d=await Ee(e,()=>{L.textContent="Waiting for approval in the opened tab\u2026",m.textContent="Waiting\u2026"}),E(h)}catch(T){M.textContent=T instanceof Error?T.message:String(T),L.textContent="",m.disabled=!1,m.textContent="Retry"}})}return document.body.appendChild(t),g&&requestAnimationFrame(()=>y(g)),{destroy(){window.removeEventListener("resize",k),t.remove()}}}function Ft(){if(typeof document<"u"){let e=document.currentScript;if(e?.src)try{return new URL(e.src).origin}catch{}let t=document.querySelectorAll("script[src]");for(let o of Array.from(t))if(o.src.includes("se-devtools.js"))try{return new URL(o.src).origin}catch{}}return typeof window<"u"?window.location.origin:""}var j=null;function ot(e={}){if(j||typeof window>"u"||typeof document>"u")return;let t={adminUrl:e.adminUrl??Ft()},{destroy:o}=nt(t);j=o}function jt(){j?.(),j=null}function rt(e={},t="Shift+Alt+S"){if(typeof window>"u")return()=>{};Se()&&ot(e);let o=t.split("+"),n=o[o.length-1],r=o.includes("Shift"),a=o.includes("Alt")||o.includes("Option"),s=o.includes("Ctrl")||o.includes("Control"),i=o.includes("Meta")||o.includes("Cmd"),l=/^[a-zA-Z]$/.test(n)?`Key${n.toUpperCase()}`:null;function d(g){(l?g.code===l:g.key.toLowerCase()===n.toLowerCase())&&g.shiftKey===r&&g.altKey===a&&g.ctrlKey===s&&g.metaKey===i&&(j?jt():ot(e))}return window.addEventListener("keydown",d),()=>window.removeEventListener("keydown",d)}if(typeof window<"u"){let e=window.__se_devtools_config??{};if(rt(e),D()){let t=!1,o=new MutationObserver(()=>n()),n=()=>{t||(t=!0,requestAnimationFrame(()=>{t=!1,o.disconnect(),fe(),o.observe(document.body,{childList:!0,subtree:!0})}))};n(),window.addEventListener("se:i18n:ready",()=>n(),{once:!0});let r=window;r.i18n?.on&&r.i18n.on("update",()=>n())}window.__se_devtools_ready=!0}})();
+      </div>`),
+        s.querySelector("#se-close").addEventListener("click", f),
+        s.querySelector("#se-connect").addEventListener("click", async () => {
+          let m = s.querySelector("#se-connect"),
+            k = s.querySelector("#se-auth-status"),
+            M = s.querySelector("#se-auth-err");
+          ((m.disabled = !0),
+            (m.textContent = "Opening\u2026"),
+            (k.textContent = ""),
+            (M.textContent = ""));
+          try {
+            ((c = await Ee(e, () => {
+              ((k.textContent = "Waiting for approval in the opened tab\u2026"),
+                (m.textContent = "Waiting\u2026"));
+            })),
+              E(b));
+          } catch (T) {
+            ((M.textContent = T instanceof Error ? T.message : String(T)),
+              (k.textContent = ""),
+              (m.disabled = !1),
+              (m.textContent = "Retry"));
+          }
+        }));
+    }
+    return (
+      document.body.appendChild(t),
+      g && requestAnimationFrame(() => y(g)),
+      {
+        destroy() {
+          (window.removeEventListener("resize", w), t.remove());
+        },
+      }
+    );
+  }
+  function Ft() {
+    if (typeof document < "u") {
+      let e = document.currentScript;
+      if (e?.src)
+        try {
+          return new URL(e.src).origin;
+        } catch {}
+      let t = document.querySelectorAll("script[src]");
+      for (let o of Array.from(t))
+        if (o.src.includes("se-devtools.js"))
+          try {
+            return new URL(o.src).origin;
+          } catch {}
+    }
+    return typeof window < "u" ? window.location.origin : "";
+  }
+  var W = null;
+  function ot(e = {}) {
+    if (W || typeof window > "u" || typeof document > "u") return;
+    let t = { adminUrl: e.adminUrl ?? Ft() },
+      { destroy: o } = nt(t);
+    W = o;
+  }
+  function jt() {
+    (W?.(), (W = null));
+  }
+  function rt(e = {}, t = "Shift+Alt+S") {
+    if (typeof window > "u") return () => {};
+    Se() && ot(e);
+    let o = t.split("+"),
+      n = o[o.length - 1],
+      r = o.includes("Shift"),
+      a = o.includes("Alt") || o.includes("Option"),
+      s = o.includes("Ctrl") || o.includes("Control"),
+      i = o.includes("Meta") || o.includes("Cmd"),
+      l = /^[a-zA-Z]$/.test(n) ? `Key${n.toUpperCase()}` : null;
+    function c(g) {
+      (l ? g.code === l : g.key.toLowerCase() === n.toLowerCase()) &&
+        g.shiftKey === r &&
+        g.altKey === a &&
+        g.ctrlKey === s &&
+        g.metaKey === i &&
+        (W ? jt() : ot(e));
+    }
+    return (window.addEventListener("keydown", c), () => window.removeEventListener("keydown", c));
+  }
+  if (typeof window < "u") {
+    let e = window.__se_devtools_config ?? {};
+    if ((rt(e), D())) {
+      let t = !1,
+        o = new MutationObserver(() => n()),
+        n = () => {
+          t ||
+            ((t = !0),
+            requestAnimationFrame(() => {
+              ((t = !1),
+                o.disconnect(),
+                U(),
+                o.observe(document.body, { childList: !0, subtree: !0 }));
+            }));
+        };
+      (n(), window.addEventListener("se:i18n:ready", () => n(), { once: !0 }));
+      let r = window;
+      r.i18n?.on && r.i18n.on("update", () => n());
+    }
+    window.__se_devtools_ready = !0;
+  }
+})();

@@ -516,7 +516,12 @@ export async function renderI18nPanel(
   let drafts: DraftRecord[];
   let keys: KeyRecord[];
   try {
-    [profiles, drafts, keys] = await Promise.all([api.profiles(), api.drafts(), api.keys()]);
+    const activeProfileId = getI18nProfileOverride() ?? undefined;
+    [profiles, drafts, keys] = await Promise.all([
+      api.profiles(),
+      api.drafts(),
+      api.keys(activeProfileId),
+    ]);
   } catch (err) {
     container.innerHTML = `<div class="err">Failed to load i18n data: ${String(err)}</div>`;
     return;
@@ -562,15 +567,18 @@ export async function renderI18nPanel(
   function renderSubfoot() {
     const activeProfile = getI18nProfileOverride() ?? "";
     const activeDraft = getI18nDraftOverride() ?? "";
+    // Scan first so tEl()/ShipEasyI18nString spans that are already in the DOM are counted.
+    scanAndReplaceMarkers();
     const labelCount = qualifyingLabels().length;
     const editLabel = editLabelsActive
       ? `Editing ${labelCount} label${labelCount === 1 ? "" : "s"}`
+      : labelCount > 0
+        ? `Edit labels (${labelCount})`
+        : "Edit labels";
+    const editTitle = editLabelsActive
+      ? "Disable in-page label editing"
       : labelCount === 0
-        ? "No labels found"
-        : `Edit labels (${labelCount})`;
-    const editTitle =
-      labelCount === 0
-        ? "No translatable elements found. Use t() / tEl() / <ShipEasyI18nString> in your templates."
+        ? "Enable in-page label editing — reloads page with ?se_edit_labels=1 to scan all translation strings"
         : "Toggle in-page label editing (reloads page)";
     const profileOpts = [
       `<option value="">Default</option>`,
@@ -588,7 +596,7 @@ export async function renderI18nPanel(
     ].join("");
 
     subfoot.innerHTML = `
-      <button class="subfoot-btn${editLabelsActive ? " on" : ""}${labelCount === 0 ? " dim" : ""}" id="se-edit-toggle" title="${escapeHtml(editTitle)}">
+      <button class="subfoot-btn${editLabelsActive ? " on" : ""}" id="se-edit-toggle" title="${escapeHtml(editTitle)}">
         <span class="dot"></span>
         ${escapeHtml(editLabel)}
       </button>
@@ -632,4 +640,13 @@ export async function renderI18nPanel(
 
   renderBody();
   renderSubfoot();
+
+  // When the CDN loader fetches a new locale after the panel has already
+  // rendered, the landing-page components re-render and add [data-label] spans.
+  // Subscribe so the subfoot label count stays accurate.
+  const w = window as Window & { i18n?: { on?: (ev: string, cb: () => void) => () => void } };
+  w.i18n?.on?.("update", () => {
+    scanAndReplaceMarkers();
+    renderSubfoot();
+  });
 }

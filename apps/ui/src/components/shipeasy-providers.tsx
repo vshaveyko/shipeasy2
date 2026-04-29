@@ -76,11 +76,12 @@ interface ShipeasyClientProvidersProps {
   user?: ShipeasyUser;
 }
 
-function I18nSubscriber() {
-  // Re-render the full subtree when translations arrive from the CDN.
-  // useSyncExternalStore is the correct React 18 primitive for external stores.
+// Wraps children so the whole subtree re-renders when translations arrive.
+// As a parent component, I18nBoundary's re-render propagates to all children
+// without requiring per-component useI18nLocale() hooks.
+function I18nBoundary({ children }: { children: ReactNode }) {
   useSyncExternalStore(subscribeToI18n, getLocaleSnapshot, getLocaleServerSnapshot);
-  return null;
+  return <>{children}</>;
 }
 
 export function ShipeasyClientProviders({ children, user }: ShipeasyClientProvidersProps) {
@@ -90,10 +91,9 @@ export function ShipeasyClientProviders({ children, user }: ShipeasyClientProvid
   }, []);
 
   return (
-    <>
-      <I18nSubscriber />
+    <I18nBoundary>
       {SDK_KEY ? <AutoIdentify user={user ?? {}} /> : null}
       {children}
-    </>
+    </I18nBoundary>
   );
 }
