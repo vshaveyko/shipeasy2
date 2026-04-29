@@ -117,7 +117,7 @@ importers:
         version: link:../../packages/client-sdks/react
       '@shipeasy/sdk':
         specifier: '*'
-        version: link:../../packages/ts-sdk
+        version: 1.1.0(zod@4.3.6)
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -334,8 +334,8 @@ importers:
         specifier: workspace:*
         version: link:../i18n-core
       '@shipeasy/sdk':
-        specifier: ^1.0.0
-        version: link:../../ts-sdk
+        specifier: ^1.1.0
+        version: 1.1.0(zod@4.3.6)
       react:
         specifier: '>=17.0.0'
         version: 19.2.5
@@ -369,7 +369,7 @@ importers:
     dependencies:
       '@shipeasy/sdk':
         specifier: '*'
-        version: link:../../ts-sdk
+        version: 1.1.0(zod@4.3.6)
     devDependencies:
       '@angular/core':
         specifier: ^17.0.0
@@ -388,7 +388,7 @@ importers:
     dependencies:
       '@shipeasy/sdk':
         specifier: '*'
-        version: link:../../ts-sdk
+        version: 1.1.0(zod@4.3.6)
     devDependencies:
       svelte:
         specifier: ^5.0.0
@@ -404,7 +404,7 @@ importers:
     dependencies:
       '@shipeasy/sdk':
         specifier: '*'
-        version: link:../../ts-sdk
+        version: 1.1.0(zod@4.3.6)
     devDependencies:
       tsup:
         specifier: ^8.3.0
@@ -483,7 +483,7 @@ importers:
         version: 1.29.0(zod@4.3.6)
       '@shipeasy/sdk':
         specifier: '*'
-        version: link:../ts-sdk
+        version: 1.1.0(zod@4.3.6)
       semver:
         specifier: ^7.6.0
         version: 7.7.4
@@ -506,31 +506,6 @@ importers:
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
-
-  packages/ts-sdk:
-    dependencies:
-      murmurhash-js:
-        specifier: ^1.0.0
-        version: 1.0.0
-      zod:
-        specifier: ^4.0.0
-        version: 4.3.6
-    devDependencies:
-      '@types/murmurhash-js':
-        specifier: ^1.0.6
-        version: 1.0.7
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.0
-        version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
-      wrangler:
-        specifier: ^4.83.0
-        version: 4.83.0(@cloudflare/workers-types@4.20260416.2)
 
   packages/worker:
     dependencies:
@@ -3401,6 +3376,15 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
+  '@shipeasy/sdk@1.1.0':
+    resolution: {integrity: sha512-FIWLX9Toqiege51Rb/ilpZ+U36uTiB56feJCfCm+VMElvgu/IwnZBunGb+yCPgF2ifV7Ra8DGLlhIg1jPR72oQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      zod: ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
   '@sindresorhus/is@7.2.0':
     resolution: {integrity: sha512-P1Cz1dWaFfR4IR+U13mqqiGsLFf1KbayybWwdd2vfctdV6hDpUkgCY0nKOLLTMSoRd/jJNjtbqzf13K8DCCXQw==}
     engines: {node: '>=18'}
@@ -3826,9 +3810,6 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
-
-  '@types/murmurhash-js@1.0.7':
-    resolution: {integrity: sha512-XM6078Du3jaEJVwpxmPZsJQDMzWabjY4ILQQvW4VPBzTULd+Fjs2Z54s+OrLzDRxgs6J09YyDISnZDlltYAchw==}
 
   '@types/node-fetch@2.6.13':
     resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
@@ -10828,6 +10809,12 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
+  '@shipeasy/sdk@1.1.0(zod@4.3.6)':
+    dependencies:
+      murmurhash-js: 1.0.0
+    optionalDependencies:
+      zod: 4.3.6
+
   '@sindresorhus/is@7.2.0': {}
 
   '@sindresorhus/merge-streams@4.0.0': {}
@@ -11337,8 +11324,6 @@ snapshots:
   '@types/mdx@2.0.13': {}
 
   '@types/ms@2.1.0': {}
-
-  '@types/murmurhash-js@1.0.7': {}
 
   '@types/node-fetch@2.6.13':
     dependencies:

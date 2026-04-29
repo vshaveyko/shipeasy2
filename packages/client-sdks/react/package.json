@@ -1,7 +1,7 @@
 {
   "name": "@shipeasy/react",
   "version": "1.0.0",
-  "description": "Shipeasy React adapter \u2014 <ShipeasyProvider>, useFlag, useConfig, useExperiment, useShipEasyI18n, plus the devtools overlay loader.",
+  "description": "Shipeasy React adapter — <ShipeasyProvider>, useFlag, useConfig, useExperiment, useShipEasyI18n, plus the devtools overlay loader.",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://shipeasy.ai",
   "repository": {
@@ -34,7 +34,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@shipeasy/sdk": "^1.0.0",
+    "@shipeasy/sdk": "^1.1.0",
     "@shipeasy/i18n-core": "workspace:*"
   },
   "peerDependencies": {
