@@ -265,60 +265,6 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
 
-  packages/client-sdks/i18n-angular:
-    dependencies:
-      '@shipeasy/sdk':
-        specifier: ^1.2.0
-        version: 1.2.0(zod@4.3.6)
-    devDependencies:
-      '@angular/common':
-        specifier: ^17.0.0
-        version: 17.3.12(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
-      '@angular/core':
-        specifier: ^17.0.0
-        version: 17.3.12(rxjs@7.8.2)(zone.js@0.15.1)
-      rxjs:
-        specifier: ^7.8.0
-        version: 7.8.2
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
-  packages/client-sdks/i18n-svelte:
-    dependencies:
-      '@shipeasy/sdk':
-        specifier: ^1.2.0
-        version: 1.2.0(zod@4.3.6)
-    devDependencies:
-      svelte:
-        specifier: ^5.0.0
-        version: 5.55.4(@typescript-eslint/types@8.58.2)
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-
-  packages/client-sdks/i18n-vue:
-    dependencies:
-      '@shipeasy/sdk':
-        specifier: ^1.2.0
-        version: 1.2.0(zod@4.3.6)
-    devDependencies:
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.7.4
-        version: 5.9.3
-      vue:
-        specifier: ^3.5.0
-        version: 3.5.32(typescript@5.9.3)
-
   packages/client-sdks/react:
     dependencies:
       '@shipeasy/sdk':
@@ -547,13 +493,6 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
-
-  '@angular/common@17.3.12':
-    resolution: {integrity: sha512-vabJzvrx76XXFrm1RJZ6o/CyG32piTB/1sfFfKHdlH1QrmArb8It4gyk9oEjZ1IkAD0HvBWlfWmn+T6Vx3pdUw==}
-    engines: {node: ^18.13.0 || >=20.9.0}
-    peerDependencies:
-      '@angular/core': 17.3.12
-      rxjs: ^6.5.3 || ^7.4.0
 
   '@angular/core@17.3.12':
     resolution: {integrity: sha512-MuFt5yKi161JmauUta4Dh0m8ofwoq6Ino+KoOtkYMBGsSx+A7dSm+DUxxNwdj7+DNyg3LjVGCFgBFnq4g8z06A==}
@@ -8136,12 +8075,6 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
-
-  '@angular/common@17.3.12(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)':
-    dependencies:
-      '@angular/core': 17.3.12(rxjs@7.8.2)(zone.js@0.15.1)
-      rxjs: 7.8.2
-      tslib: 2.8.1
 
   '@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.15.1)':
     dependencies:
