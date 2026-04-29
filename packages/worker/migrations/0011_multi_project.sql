@@ -22,7 +22,7 @@ CREATE TABLE `__new_projects` (
 	`updated_at` text NOT NULL
 );
 --> statement-breakpoint
-INSERT INTO `__new_projects` SELECT * FROM `projects`;
+INSERT INTO `__new_projects`("id", "name", "domain", "owner_email", "plan", "status", "stripe_customer_id", "stripe_subscription_id", "stripe_item_id_base", "stripe_item_id_experiments", "stripe_item_id_gates", "stripe_item_id_configs", "subscription_status", "current_period_end", "trial_ends_at", "cancel_at_period_end", "billing_interval", "created_at", "updated_at") SELECT "id", "name", "domain", "owner_email", "plan", "status", "stripe_customer_id", "stripe_subscription_id", "stripe_item_id_base", "stripe_item_id_experiments", "stripe_item_id_gates", "stripe_item_id_configs", "subscription_status", "current_period_end", "trial_ends_at", "cancel_at_period_end", "billing_interval", "created_at", "updated_at" FROM `projects`;
 --> statement-breakpoint
 DROP TABLE `projects`;
 --> statement-breakpoint
