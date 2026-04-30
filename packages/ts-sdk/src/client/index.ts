@@ -537,14 +537,16 @@ export class FlagsClientBrowser {
   }
 
   getFlag(name: string): boolean {
+    if (this.evalResult === null) return false;
     const ov = readGateOverride(name);
     if (ov !== null) return ov;
-    return this.evalResult?.flags[name] ?? false;
+    return this.evalResult.flags[name] ?? false;
   }
 
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
+    if (this.evalResult === null) return undefined;
     const ov = readConfigOverride(name);
-    const raw = ov !== undefined ? ov : this.evalResult?.configs?.[name];
+    const raw = ov !== undefined ? ov : this.evalResult.configs?.[name];
     if (raw === undefined) return undefined;
     if (!decode) return raw as T;
     try {
@@ -981,7 +983,7 @@ export const i18n = {
    * Falls back to a plain translated string if `createElement` was not
    * configured (e.g. server-side or in non-JSX contexts).
    */
-   
+
   tEl(
     key: string,
     fallback: string,

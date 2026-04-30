@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { flags, i18n } from "@shipeasy/sdk/client";
-import { useFlags, useMounted } from "./use-mounted";
 
 /**
  * Landing nav — static, no session lookup. The single CTA points at
@@ -13,9 +12,7 @@ import { useFlags, useMounted } from "./use-mounted";
  */
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
-  const mounted = useMounted();
-  useFlags();
-  const showBeta = mounted ? flags.get("landing_beta_badge") : false;
+  const showBeta = flags.get("landing_beta_badge");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);

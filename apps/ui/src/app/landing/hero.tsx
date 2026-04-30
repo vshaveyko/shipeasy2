@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Sparkles, Terminal } from "lucide-react";
 import { flags, i18n } from "@shipeasy/sdk/client";
-import { useFlags, useMounted } from "./use-mounted";
 
 interface HeroStat {
   label: string;
@@ -11,9 +10,7 @@ interface HeroStat {
 }
 
 export function LandingHero() {
-  const mounted = useMounted();
-  useFlags();
-  const stats = (mounted && flags.getConfig<HeroStat[]>("landing_hero_stats")) || null;
+  const stats = flags.getConfig<HeroStat[]>("landing_hero_stats") || null;
   return (
     <section className="lp-hero" id="top">
       <div className="mx-auto max-w-[1200px] px-7">

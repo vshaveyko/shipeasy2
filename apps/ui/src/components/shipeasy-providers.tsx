@@ -14,6 +14,12 @@ if (typeof window !== "undefined") {
 const SDK_KEY = process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "";
 const EDGE_URL = process.env.NEXT_PUBLIC_SHIPEASY_EDGE_URL ?? "https://cdn.shipeasy.ai";
 
+// Initialize the SDK at module evaluation time so _client exists before any
+// child component effects run (React fires child effects before parent effects).
+if (typeof window !== "undefined" && SDK_KEY) {
+  configureShipeasy({ sdkKey: SDK_KEY, baseUrl: EDGE_URL });
+}
+
 export interface ShipeasyUser {
   user_id?: string;
   email?: string;
@@ -23,9 +29,19 @@ export interface ShipeasyUser {
   [attr: string]: unknown;
 }
 
-/** Subscribe to flag/config/experiment evaluation updates for useSyncExternalStore. */
+// Version counter for FlagsBoundary — increments on every flag update so the
+// boundary sees a changed snapshot and re-renders its subtree once.
+let _flagsVersion = 0;
+
 function subscribeToFlags(cb: () => void): () => void {
-  return flags.subscribe(cb);
+  return flags.subscribe(() => {
+    _flagsVersion++;
+    cb();
+  });
+}
+
+function getFlagsSnapshot(): number {
+  return _flagsVersion;
 }
 
 /** Subscribe to i18n locale/translation updates for useSyncExternalStore. */
@@ -50,18 +66,6 @@ export function useI18nLocale(): string | null {
   return useSyncExternalStore(subscribeToI18n, getLocaleSnapshot, getLocaleServerSnapshot);
 }
 
-/**
- * React hook that re-renders the component whenever flag/config evaluations
- * update (e.g. after flags.identify() completes).
- */
-export function useFlags(): void {
-  useSyncExternalStore(
-    subscribeToFlags,
-    () => flags.ready,
-    () => false,
-  );
-}
-
 function AutoIdentify({ user }: { user: ShipeasyUser }) {
   const userKey = useMemo(() => JSON.stringify(user), [user]);
   useEffect(() => {
@@ -76,24 +80,27 @@ interface ShipeasyClientProvidersProps {
   user?: ShipeasyUser;
 }
 
-// Wraps children so the whole subtree re-renders when translations arrive.
-// As a parent component, I18nBoundary's re-render propagates to all children
-// without requiring per-component useI18nLocale() hooks.
+// Re-renders the whole subtree once when flag evaluations arrive so components
+// that call flags.get() / flags.getConfig() directly get the correct values
+// without needing per-component subscription hooks.
+function FlagsBoundary({ children }: { children: ReactNode }) {
+  useSyncExternalStore(subscribeToFlags, getFlagsSnapshot, () => 0);
+  return <>{children}</>;
+}
+
+// Re-renders when translations arrive.
 function I18nBoundary({ children }: { children: ReactNode }) {
   useSyncExternalStore(subscribeToI18n, getLocaleSnapshot, getLocaleServerSnapshot);
   return <>{children}</>;
 }
 
 export function ShipeasyClientProviders({ children, user }: ShipeasyClientProvidersProps) {
-  // Configure SDK once per client session. configureShipeasy is idempotent.
-  useEffect(() => {
-    if (SDK_KEY) configureShipeasy({ sdkKey: SDK_KEY, baseUrl: EDGE_URL });
-  }, []);
-
   return (
-    <I18nBoundary>
-      {SDK_KEY ? <AutoIdentify user={user ?? {}} /> : null}
-      {children}
-    </I18nBoundary>
+    <FlagsBoundary>
+      <I18nBoundary>
+        {SDK_KEY ? <AutoIdentify user={user ?? {}} /> : null}
+        {children}
+      </I18nBoundary>
+    </FlagsBoundary>
   );
 }
