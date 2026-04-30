@@ -69,10 +69,7 @@ export function ShipeasyProvider({
   // ---- i18n ----
   const [i18nReady, setI18nReady] = useState<boolean>(() => i18n.ready);
   const [locale, setLocale] = useState<string | null>(() => i18n.locale ?? ssrLocale ?? null);
-  const t = useCallback<ShipEasyI18nContextValue["t"]>(
-    (key, fallback, vars) => i18n.t(key, fallback, vars),
-    [],
-  );
+  const t = useCallback<ShipEasyI18nContextValue["t"]>((key, vars) => i18n.t(key, vars), []);
 
   useEffect(() => {
     if (i18n.ready) {

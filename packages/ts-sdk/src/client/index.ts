@@ -537,16 +537,14 @@ export class FlagsClientBrowser {
   }
 
   getFlag(name: string): boolean {
-    if (this.evalResult === null) return false;
     const ov = readGateOverride(name);
     if (ov !== null) return ov;
-    return this.evalResult.flags[name] ?? false;
+    return this.evalResult?.flags[name] ?? false;
   }
 
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
-    if (this.evalResult === null) return undefined;
     const ov = readConfigOverride(name);
-    const raw = ov !== undefined ? ov : this.evalResult.configs?.[name];
+    const raw = ov !== undefined ? ov : this.evalResult?.configs?.[name];
     if (raw === undefined) return undefined;
     if (!decode) return raw as T;
     try {
@@ -826,7 +824,7 @@ export function attachDevtools(
 //   configureShipeasy({ sdkKey: "...", baseUrl: "..." });
 //   await flags.identify({ user_id });
 //   flags.get("new_checkout");
-//   i18n.t("hero.title", "Welcome, {{name}}", { name });
+//   i18n.t("hero.title", { name });
 //
 // The React adapter wraps the same singletons and adds a re-render
 // subscription — it does not re-export them, so customers consistently
@@ -948,28 +946,10 @@ let _createElement: ((tag: string, props: object, children: string) => any) | nu
  * (SSR, missing script tag, before profile fetch completes), so call
  * sites never need to null-check.
  */
-function interpolate(template: string, variables?: Record<string, string | number>): string {
-  if (!variables) return template;
-  let out = template;
-  for (const name of Object.keys(variables)) {
-    out = out.replace(new RegExp(`\\{\\{${name}\\}\\}`, "g"), String(variables[name]));
-  }
-  return out;
-}
-
 export const i18n = {
-  /**
-   * Look up `key` in the active translation profile. When the profile
-   * hasn't been fetched yet (SSR, CDN downtime, missing key), interpolate
-   * `fallback` instead — `fallback` is the source-of-truth English copy
-   * and is mandatory so the page never renders a raw key.
-   */
-  t(key: string, fallback: string, variables?: Record<string, string | number>): string {
-    if (typeof window !== "undefined" && window.i18n) {
-      const v = window.i18n.t(key, variables);
-      if (v !== key) return v;
-    }
-    return interpolate(fallback, variables);
+  t(key: string, variables?: Record<string, string | number>): string {
+    if (typeof window !== "undefined" && window.i18n) return window.i18n.t(key, variables);
+    return key;
   },
   /**
    * Translate a key and return a framework element (e.g. React <span>)
@@ -983,14 +963,9 @@ export const i18n = {
    * Falls back to a plain translated string if `createElement` was not
    * configured (e.g. server-side or in non-JSX contexts).
    */
-
-  tEl(
-    key: string,
-    fallback: string,
-    variables?: Record<string, string | number>,
-    desc?: string,
-  ): any {
-    const text = this.t(key, fallback, variables);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tEl(key: string, variables?: Record<string, string | number>, desc?: string): any {
+    const text = this.t(key, variables);
     if (!_createElement) return text;
     return _createElement("span", labelAttrs(key, variables, desc), text);
   },
