@@ -36,8 +36,9 @@ jobs:
           cache: pnpm
 
       # npm 11.5.1+ is required for Trusted Publishing OIDC auto-detection.
-      # Node 22 ships with 10.x; bump to latest before any publish step.
-      - run: npm install -g npm@latest
+      # Node 22 ships with 10.x. The plain `npm i -g npm@latest` self-upgrade
+      # has a known MODULE_NOT_FOUND race; --force avoids the in-place rewrite.
+      - run: npm install -g npm@latest --force
 
       - run: pnpm install --frozen-lockfile
 
