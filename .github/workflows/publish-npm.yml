@@ -35,11 +35,6 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
-      # npm 11.5.1+ is required for Trusted Publishing OIDC auto-detection.
-      # Node 22 ships with 10.x. The plain `npm i -g npm@latest` self-upgrade
-      # has a known MODULE_NOT_FOUND race; --force avoids the in-place rewrite.
-      - run: npm install -g npm@latest --force
-
       - run: pnpm install --frozen-lockfile
 
       # Build only the publishable packages — the rest of the monorepo
@@ -69,10 +64,12 @@ jobs:
               echo "Already published: $PKG_NAME@$PKG_VERSION"
             else
               echo "Publishing $PKG_NAME@$PKG_VERSION ..."
-              # --provenance attaches the SLSA-style attestation that npm
-              # surfaces under "Provenance" — only available when authed via
-              # OIDC, which is exactly what Trusted Publishing gives us.
-              (cd "$pkg" && npm publish --access public --provenance)
+              # npx runs npm@latest in an ephemeral context — required because
+              # Trusted Publishing OIDC auto-detection is in npm 11.5.1+, and
+              # Node 22's bundled npm 10.x can't self-upgrade in place
+              # (MODULE_NOT_FOUND on promise-retry). --provenance attaches the
+              # SLSA-style attestation that OIDC auth makes available.
+              (cd "$pkg" && npx -y npm@latest publish --access public --provenance)
               echo "Published $PKG_NAME@$PKG_VERSION"
             fi
           done
