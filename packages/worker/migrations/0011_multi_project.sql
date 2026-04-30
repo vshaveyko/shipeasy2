@@ -1,4 +1,10 @@
-PRAGMA foreign_keys=OFF;
+-- D1 runs the whole migration file as a single transaction, so
+-- PRAGMA foreign_keys=OFF (which is per-connection and must be set
+-- outside a transaction) is silently ignored. defer_foreign_keys is
+-- the per-transaction equivalent — it lets the child-table FKs
+-- temporarily reference the dropped projects table while we recreate
+-- it; SQLite re-checks them at COMMIT.
+PRAGMA defer_foreign_keys=TRUE;
 --> statement-breakpoint
 CREATE TABLE `__new_projects` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -31,5 +37,3 @@ ALTER TABLE `__new_projects` RENAME TO `projects`;
 CREATE UNIQUE INDEX `projects_stripe_customer_id_unique` ON `projects` (`stripe_customer_id`);
 --> statement-breakpoint
 CREATE UNIQUE INDEX `projects_stripe_subscription_id_unique` ON `projects` (`stripe_subscription_id`);
---> statement-breakpoint
-PRAGMA foreign_keys=ON;
