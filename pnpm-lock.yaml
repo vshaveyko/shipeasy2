@@ -116,8 +116,8 @@ importers:
         specifier: '*'
         version: link:../../packages/client-sdks/react
       '@shipeasy/sdk':
-        specifier: ^2.0.1
-        version: 2.0.1(zod@4.3.6)
+        specifier: ^2.0.2
+        version: 2.0.2(zod@4.3.6)
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -3321,8 +3321,8 @@ packages:
       zod:
         optional: true
 
-  '@shipeasy/sdk@2.0.1':
-    resolution: {integrity: sha512-Ts/lU+NIpM8oS86OewaW2ivrFTzGpDJBK85hh8jMv2SbO9wxHC0yQaYR00tlPu4dZsuoJH4HpKdWZ/nU6sQqzg==}
+  '@shipeasy/sdk@2.0.2':
+    resolution: {integrity: sha512-stvUICNyRnmQl+eX+hJ89XXgqcc/RVgui9ehF4OWoLzzKZE/RxbTLisz+RBCTJor30v7p05WIkerwC/nCLtc9Q==}
     engines: {node: '>=20'}
     peerDependencies:
       zod: ^4.0.0
@@ -10763,7 +10763,7 @@ snapshots:
     optionalDependencies:
       zod: 4.3.6
 
-  '@shipeasy/sdk@2.0.1(zod@4.3.6)':
+  '@shipeasy/sdk@2.0.2(zod@4.3.6)':
     dependencies:
       murmurhash-js: 1.0.0
     optionalDependencies:

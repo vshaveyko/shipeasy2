@@ -853,6 +853,23 @@ export function _resetShipeasyForTests(): void {
   _client = null;
 }
 
+// Bootstrap payload injected by the server via `window.__SE_BOOTSTRAP`.
+// Allows flags.get/getConfig to return real values synchronously on first
+// render when the server has pre-evaluated them, without hitting _mountedAndReady.
+export interface BootstrapPayload {
+  flags: Record<string, boolean>;
+  configs: Record<string, unknown>;
+  experiments: Record<
+    string,
+    { inExperiment: boolean; group: string; params: Record<string, unknown> }
+  >;
+}
+
+function getBootstrap(): BootstrapPayload | null {
+  if (typeof window === "undefined") return null;
+  return (window as unknown as { __SE_BOOTSTRAP?: BootstrapPayload }).__SE_BOOTSTRAP ?? null;
+}
+
 // One-way latch set by FlagsBoundary after React hydration completes.
 // flags.get/getConfig return safe SSR defaults until this is true, which
 // prevents hydration mismatches on force-static pages when ?se_ks_* params
@@ -889,25 +906,44 @@ export const flags = {
     return _client.identify(user);
   },
   /**
-   * Read a feature gate. Returns false until FlagsBoundary mounts (SSR-safe).
-   * After mount, URL overrides (?se_ks_*) apply even without a configured client.
+   * Read a feature gate.
+   * Priority: URL override → server bootstrap (window.__SE_BOOTSTRAP) → CDN-fetched (post-mount) → false.
+   * The _mountedAndReady gate still applies for the CDN path to prevent hydration
+   * mismatches on force-static pages; bootstrap data is safe to read immediately
+   * because the server rendered with the same values.
    */
   get(name: string): boolean {
+    const ov = readGateOverride(name);
+    if (ov !== null) return ov;
+    const bs = getBootstrap();
+    if (bs !== null && name in bs.flags) return bs.flags[name];
     if (!_mountedAndReady) return false;
     if (_client) return _client.getFlag(name);
-    return readGateOverride(name) ?? false;
+    return false;
   },
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
+    const ov = readConfigOverride(name);
+    if (ov !== undefined) {
+      if (!decode) return ov as T;
+      try {
+        return decode(ov);
+      } catch {
+        return undefined;
+      }
+    }
+    const bs = getBootstrap();
+    if (bs !== null && name in bs.configs) {
+      const raw = bs.configs[name];
+      if (!decode) return raw as T;
+      try {
+        return decode(raw);
+      } catch {
+        return undefined;
+      }
+    }
     if (!_mountedAndReady) return undefined;
     if (_client) return _client.getConfig(name, decode);
-    const ov = readConfigOverride(name);
-    if (ov === undefined) return undefined;
-    if (!decode) return ov as T;
-    try {
-      return decode(ov);
-    } catch {
-      return undefined;
-    }
+    return undefined;
   },
   getExperiment<P extends Record<string, unknown>>(
     name: string,
@@ -1011,7 +1047,7 @@ export const i18n = {
    * Falls back to a plain translated string if `createElement` was not
    * configured (e.g. server-side or in non-JSX contexts).
    */
-   
+
   tEl(
     key: string,
     fallback: string,

@@ -108,6 +108,12 @@ interface ExpsBlob {
   experiments: Record<string, Experiment>;
 }
 
+export interface BootstrapPayload {
+  flags: Record<string, boolean>;
+  configs: Record<string, unknown>;
+  experiments: Record<string, ExperimentResult<Record<string, unknown>>>;
+}
+
 // ---- Evaluation helpers ----
 
 function isEnabled(v: 0 | 1 | boolean | undefined): boolean {
@@ -169,6 +175,60 @@ function evalGateInternal(gate: Gate, user: User): boolean {
   const uid = user.user_id ?? user.anonymous_id;
   if (!uid) return false;
   return murmur3(`${gate.salt}:${uid}`) % 10000 < gate.rolloutPct;
+}
+
+// ---- URL override helpers (for evaluate()) ----
+
+const TRUE_RX = /^(true|on|1|yes)$/i;
+const FALSE_RX = /^(false|off|0|no)$/i;
+
+function parseOverrideBool(raw: string): boolean | null {
+  if (TRUE_RX.test(raw)) return true;
+  if (FALSE_RX.test(raw)) return false;
+  return null;
+}
+
+function decodeOverrideConfigValue(raw: string): unknown {
+  if (raw.startsWith("b64:")) {
+    try {
+      const json = atob(raw.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(json);
+    } catch {
+      return raw;
+    }
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function parseOverrides(rawUrl: string): {
+  gates: Record<string, boolean>;
+  configs: Record<string, unknown>;
+  experiments: Record<string, string>;
+} {
+  const gates: Record<string, boolean> = {};
+  const configs: Record<string, unknown> = {};
+  const experiments: Record<string, string> = {};
+  try {
+    const url = new URL(rawUrl, "http://localhost");
+    for (const [k, v] of url.searchParams) {
+      if (k.startsWith("se_ks_")) {
+        const b = parseOverrideBool(v);
+        if (b !== null) gates[k.slice(6)] = b;
+      } else if (k.startsWith("se_cf_")) {
+        configs[k.slice(6)] = decodeOverrideConfigValue(v);
+      } else if (k.startsWith("se_config_")) {
+        configs[k.slice(10)] = decodeOverrideConfigValue(v);
+      } else if (k.startsWith("se_exp_")) {
+        const name = k.slice(7);
+        if (v && v !== "default" && v !== "none") experiments[name] = v;
+      }
+    }
+  } catch {}
+  return { gates, configs, experiments };
 }
 
 // ---- FlagsClient ----
@@ -351,6 +411,44 @@ export class FlagsClient {
       })
       .catch((err) => console.warn("[shipeasy] track failed:", String(err)));
   }
+
+  /**
+   * Evaluate all flags, configs, and experiments for a user against the locally
+   * cached blob (no network call). Applies ?se_ks_* / ?se_cf_* / ?se_exp_*
+   * overrides from the request URL when provided.
+   *
+   * Intended for SSR: call on the server, inject the result as
+   * `window.__SE_BOOTSTRAP` in the HTML, and the client SDK will read it
+   * synchronously without waiting for identify() to resolve.
+   */
+  evaluate(user: User, rawUrl?: string): BootstrapPayload {
+    const flags: Record<string, boolean> = {};
+    const configs: Record<string, unknown> = {};
+    const experiments: Record<string, ExperimentResult<Record<string, unknown>>> = {};
+
+    for (const [name, gate] of Object.entries(this.flagsBlob?.gates ?? {})) {
+      flags[name] = evalGateInternal(gate, user);
+    }
+
+    for (const [name, entry] of Object.entries(this.flagsBlob?.configs ?? {})) {
+      configs[name] = entry.value;
+    }
+
+    for (const [name] of Object.entries(this.expsBlob?.experiments ?? {})) {
+      experiments[name] = this.getExperiment(name, user, {});
+    }
+
+    if (rawUrl) {
+      const ov = parseOverrides(rawUrl);
+      Object.assign(flags, ov.gates);
+      Object.assign(configs, ov.configs);
+      for (const [name, group] of Object.entries(ov.experiments)) {
+        experiments[name] = { inExperiment: true, group, params: {} };
+      }
+    }
+
+    return { flags, configs, experiments };
+  }
 }
 
 // ---- i18n SSR helpers (formerly @shipeasy/i18n-core/server) ----
@@ -471,5 +569,13 @@ export const flags = {
   },
   track(userId: string, eventName: string, props?: Record<string, unknown>): void {
     _server?.track(userId, eventName, props);
+  },
+  /**
+   * Evaluate all flags / configs / experiments for a user against the locally
+   * cached blob. Pass the request URL to apply ?se_ks_* / ?se_cf_* / ?se_exp_*
+   * overrides. Returns an empty payload when the blob hasn't been fetched yet.
+   */
+  evaluate(user: User, rawUrl?: string): BootstrapPayload {
+    return _server?.evaluate(user, rawUrl) ?? { flags: {}, configs: {}, experiments: {} };
   },
 };
