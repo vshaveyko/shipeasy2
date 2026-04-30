@@ -18,6 +18,12 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Trusted Publishing: id-token lets npm exchange the GitHub OIDC token
+    # for short-lived publish credentials. No NPM_TOKEN needed once the
+    # package is enrolled in npmjs.com → "Trusted Publisher".
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -25,9 +31,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
           cache: pnpm
+
+      # npm 11.5.1+ is required for Trusted Publishing OIDC auto-detection.
+      # Node 22 ships with 10.x; bump to latest before any publish step.
+      - run: npm install -g npm@latest
 
       - run: pnpm install --frozen-lockfile
 
@@ -58,9 +68,10 @@ jobs:
               echo "Already published: $PKG_NAME@$PKG_VERSION"
             else
               echo "Publishing $PKG_NAME@$PKG_VERSION ..."
-              (cd "$pkg" && npm publish --access public)
+              # --provenance attaches the SLSA-style attestation that npm
+              # surfaces under "Provenance" — only available when authed via
+              # OIDC, which is exactly what Trusted Publishing gives us.
+              (cd "$pkg" && npm publish --access public --provenance)
               echo "Published $PKG_NAME@$PKG_VERSION"
             fi
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
