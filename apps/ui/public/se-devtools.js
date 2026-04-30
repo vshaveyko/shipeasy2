@@ -22,7 +22,7 @@
     Ot(t || !e || !e.__esModule ? oe(n, "default", { value: e, enumerable: !0 }) : n, e)
   );
   var S = (e, t, n) => Pt(e, typeof t != "symbol" ? t + "" : t, n);
-  var ot = Ct((cr, rt) => {
+  var ot = Ct((dr, rt) => {
     "use strict";
     var xe = Object.defineProperty,
       Vt = Object.getOwnPropertyDescriptor,
@@ -53,7 +53,7 @@
       encodeLabelMarker: () => xn,
       flags: () => hn,
       getShipeasyClient: () => vn,
-      i18n: () => wn,
+      i18n: () => yn,
       isDevtoolsRequested: () => he,
       labelAttrs: () => nt,
       loadDevtools: () => be,
@@ -418,14 +418,12 @@
           this.evalResult = e;
         }
         getFlag(e) {
-          if (this.evalResult === null) return !1;
           let t = Ve(e);
-          return t !== null ? t : (this.evalResult.flags[e] ?? !1);
+          return t !== null ? t : (this.evalResult?.flags[e] ?? !1);
         }
         getConfig(e, t) {
-          if (this.evalResult === null) return;
           let n = Xe(e),
-            r = n !== void 0 ? n : this.evalResult.configs?.[e];
+            r = n !== void 0 ? n : this.evalResult?.configs?.[e];
           if (r !== void 0) {
             if (!t) return r;
             try {
@@ -639,58 +637,47 @@
       let r = { "data-label": e };
       return (t && (r["data-variables"] = JSON.stringify(t)), n && (r["data-label-desc"] = n), r);
     }
-    var me = null;
-    function yn(e, t) {
-      if (!t) return e;
-      let n = e;
-      for (let r of Object.keys(t))
-        n = n.replace(new RegExp(`\\{\\{${r}\\}\\}`, "g"), String(t[r]));
-      return n;
-    }
-    var wn = {
-      t(e, t, n) {
-        if (typeof window < "u" && window.i18n) {
-          let r = window.i18n.t(e, n);
-          if (r !== e) return r;
-        }
-        return yn(t, n);
-      },
-      tEl(e, t, n, r) {
-        let o = this.t(e, t, n);
-        return me ? me("span", nt(e, n, r), o) : o;
-      },
-      configure(e) {
-        me = e.createElement;
-      },
-      get locale() {
-        return typeof window < "u" && window.i18n ? window.i18n.locale : null;
-      },
-      get ready() {
-        return typeof window < "u" && window.i18n ? !!window.i18n.locale : !1;
-      },
-      whenReady() {
-        return typeof window > "u" || window.i18n?.locale
-          ? Promise.resolve()
-          : new Promise((e) => {
-              let t = () => e();
-              window.addEventListener("se:i18n:ready", t, { once: !0 });
-            });
-      },
-      onUpdate(e) {
-        if (typeof window > "u") return () => {};
-        if (window.i18n) return window.i18n.on("update", e);
-        let t = () => {},
-          n = () => {
-            window.i18n && (t = window.i18n.on("update", e));
-          };
-        return (
-          window.addEventListener("se:i18n:ready", n, { once: !0 }),
-          () => {
-            (window.removeEventListener("se:i18n:ready", n), t());
-          }
-        );
-      },
-    };
+    var me = null,
+      yn = {
+        t(e, t) {
+          return typeof window < "u" && window.i18n ? window.i18n.t(e, t) : e;
+        },
+        tEl(e, t, n) {
+          let r = this.t(e, t);
+          return me ? me("span", nt(e, t, n), r) : r;
+        },
+        configure(e) {
+          me = e.createElement;
+        },
+        get locale() {
+          return typeof window < "u" && window.i18n ? window.i18n.locale : null;
+        },
+        get ready() {
+          return typeof window < "u" && window.i18n ? !!window.i18n.locale : !1;
+        },
+        whenReady() {
+          return typeof window > "u" || window.i18n?.locale
+            ? Promise.resolve()
+            : new Promise((e) => {
+                let t = () => e();
+                window.addEventListener("se:i18n:ready", t, { once: !0 });
+              });
+        },
+        onUpdate(e) {
+          if (typeof window > "u") return () => {};
+          if (window.i18n) return window.i18n.on("update", e);
+          let t = () => {},
+            n = () => {
+              window.i18n && (t = window.i18n.on("update", e));
+            };
+          return (
+            window.addEventListener("se:i18n:ready", n, { once: !0 }),
+            () => {
+              (window.removeEventListener("se:i18n:ready", n), t());
+            }
+          );
+        },
+      };
   });
   var Me = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2341,7 +2328,7 @@ select.se-input { cursor: pointer; }
       }));
   }
   var R = Ht(ot(), 1);
-  function En(e) {
+  function wn(e) {
     let t = new Map();
     for (let n of e) {
       let r = n.key.split("."),
@@ -2399,7 +2386,7 @@ select.se-input { cursor: pointer; }
     I = null,
     dt = null,
     ct = [];
-  function kn() {
+  function En() {
     if (document.getElementById(we)) return;
     let e = document.createElement("style");
     ((e.id = we),
@@ -2496,7 +2483,7 @@ select.se-input { cursor: pointer; }
         e.classList.remove("__se_label_active");
       }));
   }
-  async function Ln(e, t, n, r) {
+  async function kn(e, t, n, r) {
     ((n.textContent = t),
       pe(e, t),
       window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: e, value: t } })));
@@ -2523,7 +2510,7 @@ select.se-input { cursor: pointer; }
         d && (d.textContent = c instanceof Error ? c.message : String(c)));
     }
   }
-  function Sn(e, t) {
+  function Ln(e, t) {
     (O(), e.classList.add("__se_label_active"));
     let n = e.dataset.label ?? "",
       r = e.dataset.labelDesc ?? "",
@@ -2572,7 +2559,7 @@ select.se-input { cursor: pointer; }
       v.select(),
       a.querySelector(".lp-close").addEventListener("click", O),
       a.querySelector('[data-action="save"]').addEventListener("click", () => {
-        Ln(n, v.value, e, a);
+        kn(n, v.value, e, a);
       }),
       a.querySelector('[data-action="reset"]').addEventListener("click", () => {
         let p = e.dataset.__seOriginal ?? "";
@@ -2594,7 +2581,7 @@ select.se-input { cursor: pointer; }
       st();
       return;
     }
-    kn();
+    En();
     for (let u of j()) u.classList.add(C);
     function r(u) {
       return I !== null && u.composedPath().includes(I);
@@ -2622,7 +2609,7 @@ select.se-input { cursor: pointer; }
     function a(u) {
       if (r(u)) return;
       let w = o(u);
-      w && (u.preventDefault(), u.stopPropagation(), u.stopImmediatePropagation(), Sn(w, t));
+      w && (u.preventDefault(), u.stopPropagation(), u.stopImmediatePropagation(), Ln(w, t));
     }
     function d(u) {
       I && (r(u) || o(u) || O());
@@ -2664,7 +2651,7 @@ select.se-input { cursor: pointer; }
       return;
     }
     ct = s;
-    let a = En(s),
+    let a = wn(s),
       d = Array.from(a.keys()),
       c = { activeChunk: d[0] ?? null };
     function g() {
@@ -3053,10 +3040,10 @@ select.se-input { cursor: pointer; }
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function _n(e) {
+  function Sn(e) {
     return `<span class="badge ${e === "open" ? "badge-run" : e === "resolved" ? "badge-on" : e === "wont_fix" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
   }
-  function Mn(e) {
+  function _n(e) {
     let t = Date.now() - Date.parse(e),
       n = Math.floor(t / 6e4);
     if (n < 1) return "just now";
@@ -3092,20 +3079,20 @@ select.se-input { cursor: pointer; }
                href="${t.adminUrl}/dashboard/bugs/${a.id}">
               <div style="flex:1;min-width:0">
                 <div class="row-name">${J(a.title)}</div>
-                <div class="row-sub">${Mn(a.createdAt)}${a.reporterEmail ? ` \xB7 ${J(a.reporterEmail)}` : ""}</div>
+                <div class="row-sub">${_n(a.createdAt)}${a.reporterEmail ? ` \xB7 ${J(a.reporterEmail)}` : ""}</div>
               </div>
-              ${_n(a.status)}
+              ${Sn(a.status)}
             </a>`,
             )
             .join("")),
         o());
     }
     function o() {
-      e.querySelector("#se-file-bug")?.addEventListener("click", () => Tn(t, n, r));
+      e.querySelector("#se-file-bug")?.addEventListener("click", () => Mn(t, n, r));
     }
     await r();
   }
-  function Tn(e, t, n) {
+  function Mn(e, t, n) {
     let r = G(t, { title: "File a bug", size: "lg" }),
       o = [],
       i = null;
@@ -3182,7 +3169,7 @@ select.se-input { cursor: pointer; }
       try {
         let l = await pt();
         (p(""),
-          Rn(t, l, (b) => {
+          Tn(t, l, (b) => {
             (o.push({ kind: "screenshot", filename: `screenshot-${Date.now()}.png`, blob: b }),
               v());
           }));
@@ -3261,7 +3248,7 @@ select.se-input { cursor: pointer; }
         }
       }));
   }
-  function Rn(e, t, n) {
+  function Tn(e, t, n) {
     let r = G(e, { title: "Annotate screenshot", size: "lg" });
     r.body.innerHTML = `<div class="se-annot-host" id="se-annot-host"></div>
     <div class="se-modal-footer">
@@ -3290,14 +3277,14 @@ select.se-input { cursor: pointer; }
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function $n(e) {
+  function Rn(e) {
     return `<span class="badge ${e === "open" ? "badge-run" : e === "shipped" ? "badge-on" : e === "declined" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
   }
-  function An(e) {
+  function $n(e) {
     let t = e.replace("_", " ");
     return `<span class="badge ${e === "critical" ? "badge-off" : e === "important" ? "badge-run" : "badge-draft"}">${t}</span>`;
   }
-  function Pn(e) {
+  function An(e) {
     let t = Date.now() - Date.parse(e),
       n = Math.floor(t / 6e4);
     if (n < 1) return "just now";
@@ -3332,18 +3319,18 @@ select.se-input { cursor: pointer; }
                href="${t.adminUrl}/dashboard/feature-requests/${s.id}">
               <div style="flex:1;min-width:0">
                 <div class="row-name">${Ee(s.title)}</div>
-                <div class="row-sub">${Pn(s.createdAt)}${s.reporterEmail ? ` \xB7 ${Ee(s.reporterEmail)}` : ""}</div>
+                <div class="row-sub">${An(s.createdAt)}${s.reporterEmail ? ` \xB7 ${Ee(s.reporterEmail)}` : ""}</div>
               </div>
-              ${An(s.importance)}
-              ${$n(s.status)}
+              ${$n(s.importance)}
+              ${Rn(s.status)}
             </a>`,
             )
             .join("")),
-        e.querySelector("#se-file-fr").addEventListener("click", () => Cn(t, n, r)));
+        e.querySelector("#se-file-fr").addEventListener("click", () => Pn(t, n, r)));
     }
     await r();
   }
-  function Cn(e, t, n) {
+  function Pn(e, t, n) {
     let r = G(t, { title: "Request a feature", size: "lg" });
     r.body.innerHTML = `
     <div class="se-form">
@@ -3408,33 +3395,33 @@ select.se-input { cursor: pointer; }
         }
       }));
   }
-  var On =
+  var Cn =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
-    Hn =
+    On =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
-    Bn =
+    Hn =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
-    Dn =
+    Bn =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
-    qn =
+    Dn =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
-    In =
+    qn =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
-    Un =
+    In =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
-    Nn =
+    Un =
       '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
     re = {
-      gates: { icon: On, label: "Gates" },
-      configs: { icon: Hn, label: "Configs" },
-      experiments: { icon: Bn, label: "Experiments" },
-      i18n: { icon: Dn, label: "Translations" },
-      bugs: { icon: qn, label: "Bugs" },
-      features: { icon: In, label: "Feature requests" },
+      gates: { icon: Cn, label: "Gates" },
+      configs: { icon: On, label: "Configs" },
+      experiments: { icon: Hn, label: "Experiments" },
+      i18n: { icon: Bn, label: "Translations" },
+      bugs: { icon: Dn, label: "Bugs" },
+      features: { icon: qn, label: "Feature requests" },
     },
     kt = "se_l_overlay",
     ke = "se_l_active_panel";
-  function zn() {
+  function Nn() {
     try {
       let e = sessionStorage.getItem(ke);
       if (e && e in re) return e;
@@ -3451,7 +3438,7 @@ select.se-input { cursor: pointer; }
     Se = 180,
     yt = 700,
     wt = { edge: "right", offsetPct: 50, panelWidth: 340, panelHeight: 460 };
-  function Kn() {
+  function zn() {
     try {
       let e = localStorage.getItem(kt);
       if (e) return { ...wt, ...JSON.parse(e) };
@@ -3463,7 +3450,7 @@ select.se-input { cursor: pointer; }
       localStorage.setItem(kt, JSON.stringify(e));
     } catch {}
   }
-  function Fn(e, t) {
+  function Kn(e, t) {
     let n = window.innerWidth,
       r = window.innerHeight,
       o = [
@@ -3583,20 +3570,20 @@ select.se-input { cursor: pointer; }
     ((i.className = "resize-handle"), o.appendChild(i));
     let s = document.createElement("div");
     ((s.className = "panel-inner"), o.appendChild(s));
-    let a = Kn(),
+    let a = zn(),
       d = null,
       c = Te(),
-      g = zn();
+      g = Nn();
     requestAnimationFrame(() => V(r, o, i, a));
     let u = document.createElement("div");
     ((u.className = "drag-handle"),
       (u.title = "ShipEasy DevTools \u2014 drag to reposition"),
-      (u.innerHTML = Nn),
+      (u.innerHTML = Un),
       r.appendChild(u),
       u.addEventListener("mousedown", (x) => {
         (x.preventDefault(), u.classList.add("dragging"));
         let f = (m) => {
-            let { edge: k, offsetPct: T } = Fn(m.clientX, m.clientY);
+            let { edge: k, offsetPct: T } = Kn(m.clientX, m.clientY);
             ((a = { ...a, edge: k, offsetPct: T }), V(r, o, i, a));
           },
           h = () => {
@@ -3674,7 +3661,7 @@ select.se-input { cursor: pointer; }
           ${m}
         </span>
         <span class="live"><span class="dot"></span>LIVE</span>
-        <button class="close" id="se-close" aria-label="Close">${Un}</button>
+        <button class="close" id="se-close" aria-label="Close">${In}</button>
       </div>`;
     }
     function E(x) {
@@ -3778,7 +3765,7 @@ select.se-input { cursor: pointer; }
       }
     );
   }
-  function jn() {
+  function Fn() {
     if (typeof document < "u") {
       let e = document.currentScript;
       if (e?.src)
@@ -3797,11 +3784,11 @@ select.se-input { cursor: pointer; }
   var X = null;
   function St(e = {}) {
     if (X || typeof window > "u" || typeof document > "u") return;
-    let t = { adminUrl: e.adminUrl ?? jn() },
+    let t = { adminUrl: e.adminUrl ?? Fn() },
       { destroy: n } = Lt(t);
     X = n;
   }
-  function Wn() {
+  function jn() {
     (X?.(), (X = null));
   }
   function _t(e = {}, t = "Shift+Alt+S") {
@@ -3820,7 +3807,7 @@ select.se-input { cursor: pointer; }
         g.altKey === i &&
         g.ctrlKey === s &&
         g.metaKey === a &&
-        (X ? Wn() : St(e));
+        (X ? jn() : St(e));
     }
     return (window.addEventListener("keydown", c), () => window.removeEventListener("keydown", c));
   }
