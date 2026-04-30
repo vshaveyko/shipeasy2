@@ -27,7 +27,7 @@
     "@shipeasy/core": "workspace:*",
     "@shipeasy/devtools": "workspace:*",
     "@shipeasy/react": "*",
-    "@shipeasy/sdk": "^2.0.0",
+    "@shipeasy/sdk": "^2.0.1",
     "@shipeasy/shared": "workspace:*",
     "@tanstack/react-virtual": "^3.13.24",
     "class-variance-authority": "^0.7.1",
