@@ -83,8 +83,15 @@ interface ShipeasyClientProvidersProps {
 // Re-renders the whole subtree once when flag evaluations arrive so components
 // that call flags.get() / flags.getConfig() directly get the correct values
 // without needing per-component subscription hooks.
+//
+// Also calls flags.notifyMounted() after hydration to unlock flag reads —
+// flags.get() returns false until this fires to prevent hydration mismatches
+// on force-static pages when ?se_ks_* override params are in the URL.
 function FlagsBoundary({ children }: { children: ReactNode }) {
   useSyncExternalStore(subscribeToFlags, getFlagsSnapshot, () => 0);
+  useEffect(() => {
+    flags.notifyMounted();
+  }, []);
   return <>{children}</>;
 }
 

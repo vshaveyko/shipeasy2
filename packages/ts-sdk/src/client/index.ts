@@ -853,6 +853,12 @@ export function _resetShipeasyForTests(): void {
   _client = null;
 }
 
+// One-way latch set by FlagsBoundary after React hydration completes.
+// flags.get/getConfig return safe SSR defaults until this is true, which
+// prevents hydration mismatches on force-static pages when ?se_ks_* params
+// are present in the URL.
+let _mountedAndReady = false;
+
 // Listener set for the no-client case: lets FlagsBoundary subscribe to
 // se:override:change events (dispatched by devtools on URL param changes).
 const _standaloneListeners = new Set<() => void>();
@@ -882,15 +888,18 @@ export const flags = {
     }
     return _client.identify(user);
   },
-  /** Read a feature gate. URL overrides (?se_ks_*) apply even without a configured client. */
+  /**
+   * Read a feature gate. Returns false until FlagsBoundary mounts (SSR-safe).
+   * After mount, URL overrides (?se_ks_*) apply even without a configured client.
+   */
   get(name: string): boolean {
+    if (!_mountedAndReady) return false;
     if (_client) return _client.getFlag(name);
-    // No client (SDK key not configured): still honour devtools URL overrides.
     return readGateOverride(name) ?? false;
   },
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
+    if (!_mountedAndReady) return undefined;
     if (_client) return _client.getConfig(name, decode);
-    // No client: still honour devtools URL config overrides.
     const ov = readConfigOverride(name);
     if (ov === undefined) return undefined;
     if (!decode) return ov as T;
@@ -919,6 +928,18 @@ export const flags = {
   },
   flush(): Promise<void> {
     return _client?.flush() ?? Promise.resolve();
+  },
+  /**
+   * Called by FlagsBoundary after React hydration to unlock flag reads.
+   * Dispatches se:override:change so subscribers (FlagsBoundary) re-render
+   * once with real values — URL overrides and server-evaluated flags.
+   */
+  notifyMounted(): void {
+    if (_mountedAndReady) return;
+    _mountedAndReady = true;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("se:override:change"));
+    }
   },
   /** Subscribe for change notifications (identify/override). Used by framework adapters. */
   subscribe(listener: () => void): () => void {
@@ -990,9 +1011,14 @@ export const i18n = {
    * Falls back to a plain translated string if `createElement` was not
    * configured (e.g. server-side or in non-JSX contexts).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tEl(key: string, variables?: Record<string, string | number>, desc?: string): any {
-    const text = this.t(key, variables);
+   
+  tEl(
+    key: string,
+    fallback: string,
+    variables?: Record<string, string | number>,
+    desc?: string,
+  ): any {
+    const text = this.t(key, variables) || fallback;
     if (!_createElement) return text;
     return _createElement("span", labelAttrs(key, variables, desc), text);
   },
