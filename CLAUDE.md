@@ -17,6 +17,29 @@ pnpm + Turborepo monorepo. Workspaces are declared in `pnpm-workspace.yaml` (`ap
 
 Note: the top-level `README.md` is an untouched `create-next-app` stub and does not describe this project — ignore it in favor of `experiment-platform/README.md`.
 
+## Upstream SDK packages — DO NOT EDIT IN-TREE
+
+The published SDKs are owned by separate repos and are pulled in here for monorepo dev convenience only. Edits to their source belong upstream, not in this repo. The submodule mapping (per `.gitmodules`):
+
+| Path                            | Upstream repo                              | npm package          |
+| ------------------------------- | ------------------------------------------ | -------------------- |
+| `packages/ts-sdk`               | `git@github.com:shipeasy-ai/sdk.git`       | `@shipeasy/sdk`      |
+| `packages/client-sdks/react`    | `git@github.com:shipeasy-ai/sdk-react.git` | `@shipeasy/react`    |
+| `packages/server-sdks/sdk-ruby` | `git@github.com:shipeasy-ai/sdk-ruby.git`  | `@shipeasy/sdk-ruby` |
+
+Hard rules:
+
+1. **Never edit files inside the paths above from this repo.** Those changes either get tracked as inline content in `vshaveyko/shipeasy2` (current broken state — `git ls-tree HEAD` shows `040000 tree` instead of `160000 commit`) or get silently dropped on the next submodule sync. Either way they don't reach the published package. If a change is needed, clone the upstream repo, commit there, and push.
+2. **Never add a publish workflow for these packages to `.github/workflows/` here.** Each upstream repo owns its own `publish.yml` (release-triggered, OIDC Trusted Publishing). The workflow file in `vshaveyko/shipeasy2` would only ever publish from the wrong repo identity, which npm rejects (the OIDC token's `repository` claim won't match the package's Trusted Publisher rule).
+3. **Consumers in this repo (e.g. `apps/ui`, `packages/devtools`) depend on the npm registry version of these packages**, never on `workspace:*`. Keep the `!packages/ts-sdk` exclusion in `pnpm-workspace.yaml` so pnpm doesn't shadow the registry resolution with a local checkout.
+4. **To ship an SDK change end-to-end:**
+   - clone or `cd` into the upstream submodule's checkout
+   - make the change there, run that repo's tests, commit, push to its `main`
+   - bump version in its `package.json`, tag/release on GitHub — its publish workflow runs
+   - in this repo, bump the consumer dep version in `apps/ui/package.json` (e.g. `^2.0.0`) and run `pnpm install`
+   - update call sites here, type-check, commit
+5. **If you find yourself editing `packages/ts-sdk/src/...` in this repo, stop.** That's the symptom of the in-tree drift. The change belongs in `shipeasy-ai/sdk`.
+
 ## Deploy
 
 **Cloudflare Workers Builds deploys every Worker in this repo — do NOT add a GitHub Actions workflow for CF deploys.** Build and deploy commands are configured per-Worker in the Cloudflare dashboard. See [`DEPLOY.md`](DEPLOY.md) for the exact commands, the three Workers in play (`shipeasy`, `shipeasy-worker`, `shipeasy-docs`), and the migration flow. D1 schema changes go live via `wrangler d1 migrations apply` wired into each Worker's Build command, not as a separate step.

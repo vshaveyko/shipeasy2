@@ -67,3 +67,4 @@ dist/
 !.dev.vars.example
 packages/*/dist/
 packages/*/*.gem
+.claude/scheduled_tasks.lock
