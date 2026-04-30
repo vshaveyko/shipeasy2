@@ -853,6 +853,19 @@ export function _resetShipeasyForTests(): void {
   _client = null;
 }
 
+// Listener set for the no-client case: lets FlagsBoundary subscribe to
+// se:override:change events (dispatched by devtools on URL param changes).
+const _standaloneListeners = new Set<() => void>();
+let _standaloneOverrideWired = false;
+
+function wireStandaloneOverride(): void {
+  if (_standaloneOverrideWired || typeof window === "undefined") return;
+  _standaloneOverrideWired = true;
+  window.addEventListener("se:override:change", () => {
+    for (const cb of _standaloneListeners) cb();
+  });
+}
+
 /**
  * Universal flags facade. Methods return safe defaults when the singleton
  * hasn't been configured yet (false / undefined / `notIn` experiment), so
@@ -869,12 +882,23 @@ export const flags = {
     }
     return _client.identify(user);
   },
-  /** Read a feature gate. Returns false until identify() resolves. */
+  /** Read a feature gate. URL overrides (?se_ks_*) apply even without a configured client. */
   get(name: string): boolean {
-    return _client?.getFlag(name) ?? false;
+    if (_client) return _client.getFlag(name);
+    // No client (SDK key not configured): still honour devtools URL overrides.
+    return readGateOverride(name) ?? false;
   },
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
-    return _client?.getConfig(name, decode);
+    if (_client) return _client.getConfig(name, decode);
+    // No client: still honour devtools URL config overrides.
+    const ov = readConfigOverride(name);
+    if (ov === undefined) return undefined;
+    if (!decode) return ov as T;
+    try {
+      return decode(ov);
+    } catch {
+      return undefined;
+    }
   },
   getExperiment<P extends Record<string, unknown>>(
     name: string,
@@ -898,8 +922,11 @@ export const flags = {
   },
   /** Subscribe for change notifications (identify/override). Used by framework adapters. */
   subscribe(listener: () => void): () => void {
-    if (!_client) return () => {};
-    return _client.subscribe(listener);
+    if (_client) return _client.subscribe(listener);
+    // No client configured — still wire se:override:change so devtools can trigger re-renders.
+    _standaloneListeners.add(listener);
+    wireStandaloneOverride();
+    return () => _standaloneListeners.delete(listener);
   },
   /** True once identify() has completed and flags are available. */
   get ready(): boolean {
