@@ -98,6 +98,28 @@ A "workflow" means any user-visible path in `apps/ui` — a new page, auth flow,
 - Smoke-level coverage is the baseline: assert the page loads, the core copy/CTAs render, and primary links/redirects go where they claim. Add deeper assertions (form submit, happy-path navigation, access-control redirects) whenever the workflow involves state or side effects.
 - Browsers are installed with `pnpm --filter @shipeasy/ui exec playwright install chromium`. CI must run this before `pnpm test`.
 
+## SDK design rules
+
+**HARD RULE: All SDK APIs must work from vanilla JS. No React-only APIs.**
+
+Any feature added to `@shipeasy/sdk` (client or server) must be callable from plain JavaScript without any React dependency. React-specific conveniences (`@shipeasy/react`, hooks, context) are allowed as a thin wrapper on top, but the underlying API must be framework-agnostic. Do not ship features that only work via React hooks or require a React Provider to function.
+
+**HARD RULE: One key, one configure call. No separate i18n configuration.**
+
+Flags, experiments, and i18n are all part of the same SDK and share a single `apiKey`. Configuration happens once:
+
+```ts
+// Server (layout.tsx root layout):
+import { shipeasy } from "@shipeasy/sdk/server";
+await shipeasy({ apiKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "" });
+
+// Client (e.g. in a useEffect):
+import { shipeasy } from "@shipeasy/sdk/client";
+shipeasy({ apiKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "" });
+```
+
+Never create custom wrappers, helpers, or utility files in `apps/ui/src/lib/` to configure the SDK. Never add separate `i18n.init()` calls, separate `flags.configure()` calls, or separate `fetchLabelsForSSR` calls outside the SDK's own `shipeasy()` entry point. The SDK owns its own initialisation.
+
 ## Conventions worth knowing
 
 - Workspace packages import each other as `@shipeasy/<name>` via `workspace:*`. `@shipeasy/core` exposes TS sources directly (no build artifact), so type-check in consumers will pick up changes immediately but CI still needs `^build` dependencies for bundled packages.

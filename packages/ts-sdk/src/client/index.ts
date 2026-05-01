@@ -833,6 +833,31 @@ export function attachDevtools(
 let _client: FlagsClientBrowser | null = null;
 
 /** Configure the singleton. Idempotent — re-calling with the same opts is a no-op. */
+// ---- Unified top-level configure API ----
+
+export interface ShipeasyClientConfig {
+  /** SDK key — same value used on the server via shipeasy(). */
+  apiKey: string;
+  /** Override the ShipEasy CDN/edge base URL. Defaults to https://cdn.shipeasy.ai. */
+  baseUrl?: string;
+  /** Override the admin URL for the devtools overlay (dev use). */
+  adminUrl?: string;
+}
+
+/**
+ * Initialise the ShipEasy client SDK and wire up lazy devtools.
+ * Call this once at app startup (e.g. in a useEffect in your root layout).
+ * Returns a cleanup function — call it on unmount to remove event listeners.
+ */
+export function shipeasy(opts: ShipeasyClientConfig): () => void {
+  const client = configureShipeasy({
+    sdkKey: opts.apiKey,
+    baseUrl: opts.baseUrl ?? "https://cdn.shipeasy.ai",
+  });
+  flags.notifyMounted();
+  return attachDevtools(client, { adminUrl: opts.adminUrl });
+}
+
 export function configureShipeasy(opts: FlagsClientBrowserOptions): FlagsClientBrowser {
   if (_client) return _client;
   _client = new FlagsClientBrowser(opts);
@@ -863,6 +888,11 @@ export interface BootstrapPayload {
     string,
     { inExperiment: boolean; group: string; params: Record<string, unknown> }
   >;
+  /** Set by getBootstrapHtml() for auto-init. Not part of evaluate() output. */
+  apiKey?: string;
+  apiUrl?: string;
+  /** When true, tEl() returns marker-wrapped strings for devtools label editing. */
+  editLabels?: boolean;
 }
 
 function getBootstrap(): BootstrapPayload | null {
@@ -907,30 +937,19 @@ export const flags = {
   },
   /**
    * Read a feature gate.
-   * Priority: URL override → server bootstrap (window.__SE_BOOTSTRAP) → CDN-fetched (post-mount) → false.
-   * The _mountedAndReady gate still applies for the CDN path to prevent hydration
-   * mismatches on force-static pages; bootstrap data is safe to read immediately
-   * because the server rendered with the same values.
+   * Priority: bootstrap → CDN/URL-override (post-mount) → false.
+   * Bootstrap is safe before mount because the server rendered with the same values.
+   * Everything else gates on _mountedAndReady to prevent hydration mismatches on
+   * force-static pages where SSR has no flag data.
    */
   get(name: string): boolean {
-    const ov = readGateOverride(name);
-    if (ov !== null) return ov;
     const bs = getBootstrap();
     if (bs !== null && name in bs.flags) return bs.flags[name];
     if (!_mountedAndReady) return false;
-    if (_client) return _client.getFlag(name);
-    return false;
+    if (_client) return _client.getFlag(name); // includes URL overrides + evalResult
+    return readGateOverride(name) ?? false;
   },
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
-    const ov = readConfigOverride(name);
-    if (ov !== undefined) {
-      if (!decode) return ov as T;
-      try {
-        return decode(ov);
-      } catch {
-        return undefined;
-      }
-    }
     const bs = getBootstrap();
     if (bs !== null && name in bs.configs) {
       const raw = bs.configs[name];
@@ -943,7 +962,14 @@ export const flags = {
     }
     if (!_mountedAndReady) return undefined;
     if (_client) return _client.getConfig(name, decode);
-    return undefined;
+    const ov = readConfigOverride(name);
+    if (ov === undefined) return undefined;
+    if (!decode) return ov as T;
+    try {
+      return decode(ov);
+    } catch {
+      return undefined;
+    }
   },
   getExperiment<P extends Record<string, unknown>>(
     name: string,
@@ -968,10 +994,13 @@ export const flags = {
   /**
    * Called by FlagsBoundary after React hydration to unlock flag reads.
    * Dispatches se:override:change so subscribers (FlagsBoundary) re-render
-   * once with real values — URL overrides and server-evaluated flags.
+   * once with real values — URL overrides and CDN-loaded flags.
+   *
+   * Always dispatches even if already mounted: in React hydration-recovery
+   * renders the latch is already true so the early-return guard would swallow
+   * the event, leaving the re-mounted subtree stuck with stale (empty) values.
    */
   notifyMounted(): void {
-    if (_mountedAndReady) return;
     _mountedAndReady = true;
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("se:override:change"));
@@ -1024,6 +1053,44 @@ export function labelAttrs(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _createElement: ((tag: string, props: object, children: string) => any) | null = null;
 
+// ---- SSR i18n store -----------------------------------------------------------
+//
+// The server SDK (@shipeasy/sdk/server) populates an AsyncLocalStorage-backed
+// store per request and registers a getter under a shared Symbol so this client
+// module can reach it without a direct import (the two are separate bundles).
+//
+// In the browser the symbol is never set, so getSSRI18nStore() returns null and
+// all paths fall back to window.i18n (populated by the CDN loader script) or to
+// the hardcoded fallback string in tEl().
+
+const _I18N_SSR_SYM = Symbol.for("@shipeasy/sdk:ssr-i18n");
+const _EDIT_MODE_SSR_SYM = Symbol.for("@shipeasy/sdk:ssr-edit-mode");
+
+function getSSRI18nStore(): { strings: Record<string, string>; locale: string } | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (globalThis as any)[_I18N_SSR_SYM]?.() ?? null;
+}
+
+function isEditLabelsMode(): boolean {
+  if (typeof window !== "undefined") {
+    // Client: check bootstrap payload (set by server) or live URL param.
+     
+    return (
+      !!(window as any).__SE_BOOTSTRAP?.editLabels ||
+      new URLSearchParams(location.search).has("se_edit_labels")
+    );
+  }
+  // SSR: read directly from globalThis where the server SDK writes it.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const val = (globalThis as any)[_EDIT_MODE_SSR_SYM];
+  return typeof val === "boolean" ? val : typeof val === "function" ? val() : false;
+}
+
+function interpolate(raw: string, variables?: Record<string, string | number>): string {
+  if (!variables) return raw;
+  return raw.replace(/\{\{(\w+)\}\}/g, (_, k) => String(variables[k] ?? `{{${k}}}`));
+}
+
 /**
  * Universal i18n facade. Backed by the `window.i18n` global the loader
  * script installs. Returns the key itself when the loader hasn't run
@@ -1033,6 +1100,9 @@ let _createElement: ((tag: string, props: object, children: string) => any) | nu
 export const i18n = {
   t(key: string, variables?: Record<string, string | number>): string {
     if (typeof window !== "undefined" && window.i18n) return window.i18n.t(key, variables);
+    // SSR: check ALS store set by @shipeasy/sdk/server i18n.init()
+    const store = getSSRI18nStore();
+    if (store?.strings[key]) return interpolate(store.strings[key], variables);
     return key;
   },
   /**
@@ -1054,9 +1124,19 @@ export const i18n = {
     variables?: Record<string, string | number>,
     desc?: string,
   ): any {
-    const text = this.t(key, variables) || fallback;
-    if (!_createElement) return text;
-    return _createElement("span", labelAttrs(key, variables, desc), text);
+    // Use translations when window.i18n (browser) or SSR store (server) has the key.
+    const hasTranslation =
+      (typeof window !== "undefined" && Boolean(window.i18n)) ||
+      Boolean(getSSRI18nStore()?.strings[key]);
+    const translated = hasTranslation ? this.t(key, variables) : undefined;
+    // window.i18n.t() returns the key itself when the key is not found.
+    // Treat that as "not translated" and fall back to the hardcoded string.
+    const text = translated && translated !== key ? translated : fallback;
+    // In edit-labels mode: embed Unicode markers so the devtools overlay's
+    // scanAndReplaceMarkers() can find and wrap this text node — no createElement needed.
+    if (isEditLabelsMode()) return encodeLabelMarker(key, text);
+    if (_createElement) return _createElement("span", labelAttrs(key, variables, desc), text);
+    return text;
   },
   /** Wire up the element creator once at app startup (call before any tEl use). */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1097,3 +1177,13 @@ export const i18n = {
     };
   },
 };
+
+// Auto-init from window.__SE_BOOTSTRAP.apiKey when the bundle loads.
+// The inline bootstrap script (written by getBootstrapHtml) always runs before
+// deferred/module JS bundles, so __SE_BOOTSTRAP is present by the time this runs.
+if (typeof window !== "undefined") {
+  const _initBs = (window as unknown as { __SE_BOOTSTRAP?: BootstrapPayload }).__SE_BOOTSTRAP;
+  if (_initBs?.apiKey && !_client) {
+    shipeasy({ apiKey: _initBs.apiKey, baseUrl: _initBs.apiUrl });
+  }
+}

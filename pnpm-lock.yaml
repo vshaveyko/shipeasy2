@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@shipeasy/sdk': file:packages/ts-sdk
+
 importers:
 
   .:
@@ -112,12 +115,9 @@ importers:
       '@shipeasy/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
-      '@shipeasy/react':
-        specifier: '*'
-        version: link:../../packages/client-sdks/react
       '@shipeasy/sdk':
-        specifier: ^2.0.2
-        version: 2.0.2(zod@4.3.6)
+        specifier: file:../../packages/ts-sdk
+        version: file:packages/ts-sdk(zod@4.3.6)
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -268,8 +268,8 @@ importers:
   packages/client-sdks/react:
     dependencies:
       '@shipeasy/sdk':
-        specifier: ^1.2.0
-        version: 1.2.0(zod@4.3.6)
+        specifier: file:../../ts-sdk
+        version: file:packages/ts-sdk(zod@4.3.6)
       react:
         specifier: '>=17.0.0'
         version: 19.2.5
@@ -302,8 +302,8 @@ importers:
   packages/client-sdks/sdk-angular:
     dependencies:
       '@shipeasy/sdk':
-        specifier: '*'
-        version: 1.1.0(zod@4.3.6)
+        specifier: file:../../ts-sdk
+        version: file:packages/ts-sdk(zod@4.3.6)
     devDependencies:
       '@angular/core':
         specifier: ^17.0.0
@@ -321,8 +321,8 @@ importers:
   packages/client-sdks/sdk-svelte:
     dependencies:
       '@shipeasy/sdk':
-        specifier: '*'
-        version: 1.1.0(zod@4.3.6)
+        specifier: file:../../ts-sdk
+        version: file:packages/ts-sdk(zod@4.3.6)
     devDependencies:
       svelte:
         specifier: ^5.0.0
@@ -337,8 +337,8 @@ importers:
   packages/client-sdks/sdk-vue:
     dependencies:
       '@shipeasy/sdk':
-        specifier: '*'
-        version: 1.1.0(zod@4.3.6)
+        specifier: file:../../ts-sdk
+        version: file:packages/ts-sdk(zod@4.3.6)
     devDependencies:
       tsup:
         specifier: ^8.3.0
@@ -375,8 +375,8 @@ importers:
   packages/devtools:
     dependencies:
       '@shipeasy/sdk':
-        specifier: ^1.2.0
-        version: 1.2.0(zod@4.3.6)
+        specifier: file:../ts-sdk
+        version: file:packages/ts-sdk(zod@4.3.6)
     devDependencies:
       tsup:
         specifier: ^8.3.0
@@ -416,8 +416,8 @@ importers:
         specifier: ^1.0.0
         version: 1.29.0(zod@4.3.6)
       '@shipeasy/sdk':
-        specifier: '*'
-        version: 1.1.0(zod@4.3.6)
+        specifier: file:../ts-sdk
+        version: file:packages/ts-sdk(zod@4.3.6)
       semver:
         specifier: ^7.6.0
         version: 7.7.4
@@ -3303,26 +3303,8 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
-  '@shipeasy/sdk@1.1.0':
-    resolution: {integrity: sha512-FIWLX9Toqiege51Rb/ilpZ+U36uTiB56feJCfCm+VMElvgu/IwnZBunGb+yCPgF2ifV7Ra8DGLlhIg1jPR72oQ==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      zod: ^4.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-
-  '@shipeasy/sdk@1.2.0':
-    resolution: {integrity: sha512-nf+lfb4n3fF4XMy7gV75CXaXrEkfKFuXYoxSlC2/oRh1S3fKwiEexPC+eBR2jhS5Esh9D3eEPZ3H7EE+HNa6Zg==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      zod: ^4.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-
-  '@shipeasy/sdk@2.0.2':
-    resolution: {integrity: sha512-stvUICNyRnmQl+eX+hJ89XXgqcc/RVgui9ehF4OWoLzzKZE/RxbTLisz+RBCTJor30v7p05WIkerwC/nCLtc9Q==}
+  '@shipeasy/sdk@file:packages/ts-sdk':
+    resolution: {directory: packages/ts-sdk, type: directory}
     engines: {node: '>=20'}
     peerDependencies:
       zod: ^4.0.0
@@ -10751,19 +10733,7 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@shipeasy/sdk@1.1.0(zod@4.3.6)':
-    dependencies:
-      murmurhash-js: 1.0.0
-    optionalDependencies:
-      zod: 4.3.6
-
-  '@shipeasy/sdk@1.2.0(zod@4.3.6)':
-    dependencies:
-      murmurhash-js: 1.0.0
-    optionalDependencies:
-      zod: 4.3.6
-
-  '@shipeasy/sdk@2.0.2(zod@4.3.6)':
+  '@shipeasy/sdk@file:packages/ts-sdk(zod@4.3.6)':
     dependencies:
       murmurhash-js: 1.0.0
     optionalDependencies:

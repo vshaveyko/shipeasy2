@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { Sparkles, Terminal } from "lucide-react";
-import { flags, i18n } from "@shipeasy/sdk/client";
+import { i18n } from "@shipeasy/sdk/client";
 
-interface HeroStat {
+export interface HeroStat {
   label: string;
   value: string;
 }
 
-export function LandingHero() {
-  const stats = flags.getConfig<HeroStat[]>("landing_hero_stats") || null;
+export function LandingHero({ stats }: { stats?: HeroStat[] | null }) {
   return (
     <section className="lp-hero" id="top">
       <div className="mx-auto max-w-[1200px] px-7">

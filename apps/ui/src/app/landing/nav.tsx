@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { flags, i18n } from "@shipeasy/sdk/client";
+import { i18n } from "@shipeasy/sdk/client";
 
 /**
  * Landing nav — static, no session lookup. The single CTA points at
  * /auth/signin, which is responsible for routing signed-in users straight
  * through to the dashboard.
  */
-export function LandingNav() {
+export function LandingNav({ showBeta = false }: { showBeta?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
-  const showBeta = flags.get("landing_beta_badge");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);

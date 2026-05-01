@@ -1,16 +1,11 @@
-"use client";
-
-import { flags } from "@shipeasy/sdk/client";
-
-interface AnnouncementBarConfig {
+export interface AnnouncementBarConfig {
   enabled?: boolean;
   text?: string;
   href?: string;
   accent?: "green" | "amber" | "blue";
 }
 
-export function AnnouncementBar() {
-  const cfg = flags.getConfig<AnnouncementBarConfig>("landing_announcement_bar");
+export function AnnouncementBar({ cfg }: { cfg?: AnnouncementBarConfig }) {
   if (!cfg?.enabled || !cfg.text) return null;
   const color =
     cfg.accent === "amber"

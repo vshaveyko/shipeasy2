@@ -34,7 +34,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@shipeasy/sdk": "^1.2.0"
+    "@shipeasy/sdk": "^2.0.3"
   },
   "peerDependencies": {
     "react": ">=17.0.0",
