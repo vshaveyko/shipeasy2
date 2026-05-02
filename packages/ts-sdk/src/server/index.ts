@@ -475,20 +475,78 @@ interface I18nStore {
 
 const _i18nALS = new AsyncLocalStorage<I18nStore>();
 
-// Register i18n getter into global symbol so the client module can read it
-// during SSR without importing this server module.
-(globalThis as Record<symbol, unknown>)[_I18N_SSR_SYM] = () => _i18nALS.getStore() ?? null;
+// i18n strings are not request-specific — they're per-profile data shared by
+// every visitor on the same locale. React Server Components each render in
+// their own async context, so layout's `enterWith()` doesn't propagate to the
+// page's renderer. To make the SSR strings reachable across components in the
+// same request (and across module-instance boundaries between Next.js's RSC,
+// SSR and edge layers), we also park them on a registry-shared globalThis Map
+// keyed by profile. ALS is still the read fast path; the global Map is the
+// fallback when an async resource boundary blanked the store.
+const _I18N_CACHE_SYM = Symbol.for("@shipeasy/sdk:ssr-i18n-cache");
+type I18nCache = Map<string, I18nStore>;
+const _i18nCache: I18nCache =
+  ((globalThis as Record<symbol, unknown>)[_I18N_CACHE_SYM] as I18nCache | undefined) ??
+  ((globalThis as Record<symbol, unknown>)[_I18N_CACHE_SYM] = new Map<string, I18nStore>());
 
-// Edit mode: stored directly on globalThis (not via closure) so that all
-// module instances in different Next.js webpack layers (RSC, SSR, etc.)
-// share the same value rather than each closure capturing its own copy.
-// Not request-safe for concurrent requests, but acceptable for this
-// dev-only devtools feature. Only initialize if absent — the RSC layer
-// runs shipeasy() and sets the real value before the SSR layer module
-// initializes; overwriting it here would reset `true` back to `false`.
-if ((globalThis as Record<symbol, unknown>)[_EDIT_MODE_SSR_SYM] === undefined) {
-  (globalThis as Record<symbol, unknown>)[_EDIT_MODE_SSR_SYM] = false;
+// Register i18n getter into global symbol so the client module can read it
+// during SSR without importing this server module. Read order:
+//   1. Current async-context's ALS store (set by this request's i18n.init)
+//   2. Global per-profile cache populated by any earlier successful fetch
+//      (lets sibling Server Components share strings even when their async
+//      contexts were spawned independently and ALS doesn't propagate).
+(globalThis as Record<symbol, unknown>)[_I18N_SSR_SYM] = () => {
+  const fromALS = _i18nALS.getStore();
+  if (fromALS && Object.keys(fromALS.strings).length > 0) return fromALS;
+  // Fall back to the most-recently-populated profile entry. With a single
+  // app-wide profile this is unambiguous; multi-profile apps should pass
+  // i18nDefaultProfile per request and accept that this fallback is best-effort.
+  for (const v of _i18nCache.values()) {
+    if (Object.keys(v.strings).length > 0) return v;
+  }
+  return fromALS ?? null;
+};
+
+// Edit mode: per-request via AsyncLocalStorage to prevent one request's
+// `?se_edit_labels=1` from poisoning every other concurrent request in the
+// same isolate (CF Workers / Node SSR).
+//
+// Next.js bundles this module separately into RSC, SSR and edge layers, so
+// each gets its own JS evaluation. To make all of them agree on ONE ALS
+// instance (otherwise the setter in layer A writes to a different store than
+// the getter in layer B reads from), the ALS itself is parked on globalThis
+// under a registry-shared Symbol.for() key.
+const _EDIT_MODE_ALS_SYM = Symbol.for("@shipeasy/sdk:ssr-edit-mode-als");
+type GlobalWithALS = Record<symbol, unknown> & {
+  [_EDIT_MODE_ALS_SYM]?: AsyncLocalStorage<boolean>;
+};
+const _editModeALS: AsyncLocalStorage<boolean> =
+  ((globalThis as GlobalWithALS)[_EDIT_MODE_ALS_SYM] as AsyncLocalStorage<boolean> | undefined) ??
+  ((globalThis as GlobalWithALS)[_EDIT_MODE_ALS_SYM] = new AsyncLocalStorage<boolean>());
+
+// Reads check ALS first (correct per-request value when async context still
+// chains through to the renderer); fall back to a process-global last-write
+// when React's render boundary spawned a fresh async resource that lost the
+// ALS store. The fallback can be wrong under concurrent requests with
+// different edit-modes — accepted because (a) edit mode is a dev-time
+// flag rarely toggled per request and (b) ALS still wins when it has data.
+const _EDIT_MODE_FALLBACK_SYM = Symbol.for("@shipeasy/sdk:ssr-edit-mode-fallback");
+type GlobalWithFallback = Record<symbol, unknown> & { [_EDIT_MODE_FALLBACK_SYM]?: boolean };
+if ((globalThis as GlobalWithFallback)[_EDIT_MODE_FALLBACK_SYM] === undefined) {
+  (globalThis as GlobalWithFallback)[_EDIT_MODE_FALLBACK_SYM] = false;
 }
+Object.defineProperty(globalThis, _EDIT_MODE_SSR_SYM, {
+  get: () =>
+    _editModeALS.getStore() ??
+    ((globalThis as GlobalWithFallback)[_EDIT_MODE_FALLBACK_SYM] as boolean | undefined) ??
+    false,
+  set: (v: unknown) => {
+    const b = Boolean(v);
+    _editModeALS.enterWith(b);
+    (globalThis as GlobalWithFallback)[_EDIT_MODE_FALLBACK_SYM] = b;
+  },
+  configurable: true,
+});
 
 export interface I18nForRequest {
   strings: Record<string, string>;
@@ -510,10 +568,22 @@ export const i18n = {
    * @param cdnBaseUrl Optional override for the i18n CDN (default: cdn.i18n.shipeasy.ai)
    */
   async init(key: string, profile: string, cdnBaseUrl?: string): Promise<void> {
-    if (_i18nALS.getStore() !== undefined) return;
+    // Skip if THIS request's ALS already has loaded strings.
+    const existingALS = _i18nALS.getStore();
+    if (existingALS && Object.keys(existingALS.strings).length > 0) return;
+    // Skip the fetch if the global cache already has it (any prior request, or
+    // a sibling Server Component in this request that ran first with a good
+    // key). Still call enterWith so this async ctx's getStore() works.
+    const cached = _i18nCache.get(profile);
+    if (cached && Object.keys(cached.strings).length > 0) {
+      _i18nALS.enterWith(cached);
+      return;
+    }
     const labels = await fetchLabelsForSSR({ key, profile, cdnBaseUrl }).catch(() => null);
     const locale = profile.split(":")[0] || "en";
-    _i18nALS.enterWith({ strings: labels?.strings ?? {}, locale });
+    const store: I18nStore = { strings: labels?.strings ?? {}, locale };
+    if (Object.keys(store.strings).length > 0) _i18nCache.set(profile, store);
+    _i18nALS.enterWith(store);
   },
 
   /**
@@ -541,14 +611,25 @@ export interface FetchLabelsOptions {
   timeoutMs?: number;
 }
 
-const DEFAULT_I18N_CDN = "https://cdn.i18n.shipeasy.ai";
+// The SDK ships a single CDN host. The historical "labels manifest" endpoint
+// (`cdn.i18n.shipeasy.ai/labels/{key}/{profile}/manifest.json`) was never wired
+// up in the worker, so SSR i18n always returned empty strings — and the page
+// rendered raw `{{var}}` templates and key fallbacks. The actual production
+// endpoint is `cdn.shipeasy.ai/sdk/i18n/strings`, the same one the client
+// loader hits, returning `{ locale, strings }` for the requested profile.
+const DEFAULT_I18N_CDN = "https://cdn.shipeasy.ai";
 
-async function fetchJson<T>(url: string, timeoutMs = 2000): Promise<T> {
+async function fetchJson<T>(
+  url: string,
+  timeoutMs = 2000,
+  headers?: Record<string, string>,
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
+      headers,
       next: { revalidate: 60 },
     } as RequestInit);
     if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
@@ -560,15 +641,18 @@ async function fetchJson<T>(url: string, timeoutMs = 2000): Promise<T> {
 
 export async function fetchLabelsForSSR(opts: FetchLabelsOptions): Promise<LabelFile | null> {
   const cdn = opts.cdnBaseUrl ?? DEFAULT_I18N_CDN;
-  const chunk = opts.chunk ?? "index";
   try {
-    const manifest = await fetchJson<Record<string, string>>(
-      `${cdn}/labels/${opts.key}/${opts.profile}/manifest.json`,
+    const body = await fetchJson<{ locale: string; strings: Record<string, string> }>(
+      `${cdn}/sdk/i18n/strings?profile=${encodeURIComponent(opts.profile)}`,
       opts.timeoutMs,
+      { "X-SDK-Key": opts.key },
     );
-    const fileUrl = manifest[chunk];
-    if (!fileUrl) return null;
-    return await fetchJson<LabelFile>(fileUrl, opts.timeoutMs);
+    return {
+      v: 1,
+      profile: opts.profile,
+      chunk: opts.chunk ?? "default",
+      strings: body.strings ?? {},
+    };
   } catch {
     return null;
   }
@@ -583,6 +667,12 @@ export async function fetchLabelsForSSR(opts: FetchLabelsOptions): Promise<Label
 // that loads before the configure() call is harmless.
 
 let _server: FlagsClient | null = null;
+// Remembered from the FIRST shipeasy() call, used as a default for later calls
+// in the same request that omit `clientKey` (e.g. page.tsx after layout.tsx).
+// Without this, a `shipeasy({ apiKey: SERVER_KEY })` in the page would call
+// `i18n.init` with the server key, which the `/sdk/i18n/strings` endpoint
+// rejects with 401 — and SSR translations silently disappear.
+let _rememberedClientKey: string | null = null;
 
 export function configureShipeasyServer(opts: FlagsClientOptions): FlagsClient {
   if (_server) return _server;
@@ -642,7 +732,11 @@ export async function shipeasy(opts: ShipeasyServerConfig): Promise<ShipeasyServ
     console.warn("[shipeasy] apiKey not set — falling back to clientKey for server requests.");
   }
   const apiKey = opts.apiKey ?? opts.clientKey ?? "";
-  const clientKey = opts.clientKey ?? opts.apiKey ?? "";
+  // Resolution order: explicit opts.clientKey → remembered from first call →
+  // apiKey (last-resort, will 401 against /sdk/i18n/strings but matches old
+  // behaviour for non-i18n setups).
+  const clientKey = opts.clientKey ?? _rememberedClientKey ?? opts.apiKey ?? "";
+  if (opts.clientKey && !_rememberedClientKey) _rememberedClientKey = opts.clientKey;
   const profile = opts.i18nDefaultProfile ?? "en:prod";
   flags.configure({ apiKey });
   // Resolve URL overrides: explicit opts.urlOverrides wins; otherwise try to
