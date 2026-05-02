@@ -50,19 +50,26 @@ export async function renderGatesPanel(container: Element, api: DevtoolsApi): Pr
   }
 
   function render() {
-    container.innerHTML = gates
+    const rows = gates
       .map(
         (g) => `
-        <div class="row">
-          <div>
-            <div class="row-name">${g.name}</div>
-            <div class="row-sub">${(g.rolloutPct / 100).toFixed(g.rolloutPct % 100 === 0 ? 0 : 2)}% rollout</div>
-          </div>
-          ${badge(g)}
-          ${togGroup(g.name, getGateOverride(g.name))}
-        </div>`,
+        <tr>
+          <td class="col-name">${g.name}</td>
+          <td class="col-sub">${(g.rolloutPct / 100).toFixed(g.rolloutPct % 100 === 0 ? 0 : 2)}%</td>
+          <td class="col-badge">${badge(g)}</td>
+          <td class="col-control">${togGroup(g.name, getGateOverride(g.name))}</td>
+        </tr>`,
       )
       .join("");
+    container.innerHTML = `
+      <div class="dt-scroll">
+        <table class="dt-table">
+          <thead><tr>
+            <th>Name</th><th style="text-align:right">Rollout</th><th>Live</th><th style="text-align:right">Override</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
 
     container.querySelectorAll<HTMLButtonElement>(".tog-btn").forEach((btn) => {
       btn.addEventListener("click", () => {

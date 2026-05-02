@@ -40,37 +40,49 @@ export async function renderConfigsPanel(container: Element, api: DevtoolsApi): 
   const editing = new Set<string>();
 
   function render() {
-    container.innerHTML = configs
+    const rows = configs
       .map((c) => {
         const ov = getConfigOverride(c.name);
         const effective = ov !== undefined ? ov : c.valueJson;
         const isEditing = editing.has(c.name);
 
-        return `
-          <div class="row" style="flex-direction:column;align-items:stretch;gap:4px" data-config="${c.name}">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div class="row-name">${c.name}</div>
-              ${overrideBadge(c.name)}
-              ${
-                isEditing
-                  ? `<button class="ibtn cancel-edit" data-name="${c.name}">cancel</button>`
-                  : `<button class="ibtn edit-btn" data-name="${c.name}">edit</button>`
-              }
-            </div>
-            ${
-              isEditing
-                ? `
+        if (isEditing) {
+          return `
+            <tr data-config="${c.name}">
+              <td colspan="4">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  <span class="col-name" style="flex:1">${c.name}</span>
+                  ${overrideBadge(c.name)}
+                  <button class="ibtn cancel-edit" data-name="${c.name}">cancel</button>
+                </div>
                 <textarea class="editor" data-name="${c.name}" rows="3">${JSON.stringify(effective, null, 2)}</textarea>
-                <div class="edit-row">
+                <div class="edit-row" style="display:flex;gap:6px;margin-top:6px">
                   <button class="ibtn pri save-session" data-name="${c.name}">Save (session)</button>
                   <button class="ibtn save-local" data-name="${c.name}">Save (local)</button>
                   ${ov !== undefined ? `<button class="ibtn danger clear-ov" data-name="${c.name}">clear</button>` : ""}
-                </div>`
-                : `<div class="mono val-display">${displayValue(effective)}</div>`
-            }
-          </div>`;
+                </div>
+              </td>
+            </tr>`;
+        }
+        return `
+          <tr data-config="${c.name}">
+            <td class="col-name">${c.name}</td>
+            <td class="col-value">${displayValue(effective)}</td>
+            <td class="col-badge">${overrideBadge(c.name)}</td>
+            <td class="col-control"><button class="ibtn edit-btn" data-name="${c.name}">edit</button></td>
+          </tr>`;
       })
       .join("");
+
+    container.innerHTML = `
+      <div class="dt-scroll">
+        <table class="dt-table">
+          <thead><tr>
+            <th>Name</th><th>Value</th><th>Override</th><th></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
 
     // Wire edit buttons
     container.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach((btn) => {

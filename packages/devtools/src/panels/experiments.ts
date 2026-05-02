@@ -36,14 +36,27 @@ function liveVariant(name: string): string {
 }
 
 function renderExperimentRow(e: ExperimentRecord): string {
+  const isRunning = e.status === "running";
   return `
-    <div class="row">
-      <div style="flex:1;min-width:0">
-        <div class="row-name">${e.name}</div>
-      </div>
-      ${statusBadge(e.status)}
-      ${e.status === "running" ? liveVariant(e.name) : ""}
-      ${e.status === "running" ? variantSelect(e) : ""}
+    <tr>
+      <td class="col-name">${e.name}</td>
+      <td class="col-badge">${statusBadge(e.status)}</td>
+      <td class="col-badge">${isRunning ? liveVariant(e.name) : ""}</td>
+      <td class="col-control">${isRunning ? variantSelect(e) : ""}</td>
+    </tr>`;
+}
+
+function renderExperimentTable(items: ExperimentRecord[], label: string): string {
+  if (items.length === 0) return "";
+  return `
+    <div class="sec-head">${label}</div>
+    <div class="dt-scroll">
+      <table class="dt-table">
+        <thead><tr>
+          <th>Name</th><th>Status</th><th>Live</th><th style="text-align:right">Override</th>
+        </tr></thead>
+        <tbody>${items.map(renderExperimentRow).join("")}</tbody>
+      </table>
     </div>`;
 }
 
@@ -69,12 +82,9 @@ function renderUniverseTab(
 
   const running = bucket.filter((e) => e.status === "running");
   const other = bucket.filter((e) => e.status !== "running");
-  const section = (items: ExperimentRecord[], label: string) =>
-    items.length === 0
-      ? ""
-      : `<div class="sec-head">${label}</div>${items.map(renderExperimentRow).join("")}`;
 
-  container.innerHTML = section(running, "Running") + section(other, "Other");
+  container.innerHTML =
+    renderExperimentTable(running, "Running") + renderExperimentTable(other, "Other");
 
   container.querySelectorAll<HTMLSelectElement>(".exp-sel").forEach((sel) => {
     sel.addEventListener("change", () => {

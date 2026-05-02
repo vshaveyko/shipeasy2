@@ -341,6 +341,73 @@ export const STYLES = `
   margin-bottom: 1px;
 }
 .row:hover { background: var(--se-bg-1); }
+
+/* Tabular layout — for gates / configs / experiments lists where columns
+   should align across rows. Wrapping table in .dt-scroll keeps the panel
+   chrome (header, footer) fixed while the table body scrolls when content
+   exceeds panel width or height. */
+.dt-scroll {
+  overflow: auto;
+  width: 100%;
+  max-height: 100%;
+}
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.dt-table th,
+.dt-table td {
+  padding: 7px 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--se-line);
+  text-align: left;
+}
+.dt-table tr:last-child td { border-bottom: none; }
+.dt-table tbody tr:hover { background: var(--se-bg-1); }
+.dt-table th {
+  font-family: var(--se-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--se-fg-4);
+  padding-top: 6px;
+  padding-bottom: 6px;
+  background: var(--se-bg-1);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+.dt-table td.col-name {
+  font-family: var(--se-mono);
+  font-size: 11.5px;
+  color: var(--se-fg-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 200px;
+}
+.dt-table td.col-sub {
+  font-family: var(--se-mono);
+  font-size: 10.5px;
+  color: var(--se-fg-4);
+  white-space: nowrap;
+  text-align: right;
+}
+.dt-table td.col-value {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: var(--se-fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.dt-table td.col-control { text-align: right; white-space: nowrap; }
+.dt-table td.col-badge   { text-align: center; white-space: nowrap; }
 .row-ic {
   width: 22px;
   height: 22px;

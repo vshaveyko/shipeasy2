@@ -77,7 +77,10 @@ const PANEL_MAX_H = 700;
 const DEFAULT_STATE: OverlayState = {
   edge: "right",
   offsetPct: 50,
-  panelWidth: 340,
+  // Panels render tabular data (gates, configs, experiments) where override
+  // controls live in the rightmost column. 340px cuts off the override toggle;
+  // 440px fits comfortably for typical key lengths.
+  panelWidth: 440,
   panelHeight: 460,
 };
 
