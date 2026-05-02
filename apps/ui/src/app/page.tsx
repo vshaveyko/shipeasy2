@@ -16,6 +16,10 @@ import {
 import { RevealOnScroll } from "./landing/reveal-on-scroll";
 import { TestimonialsGate } from "./landing/testimonials-gate";
 
+// Render at request time so flag/i18n changes (and ?se_edit_labels) are picked up
+// without a redeploy. The whole page reads from KV anyway, so the cost is negligible.
+export const dynamic = "force-dynamic";
+
 export default async function LandingPage({
   searchParams,
 }: {
