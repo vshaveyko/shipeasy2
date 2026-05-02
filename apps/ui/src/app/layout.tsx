@@ -11,8 +11,10 @@ import "./globals.css";
 // the fallback string, which renders to the user as a bare key. Force the SSR
 // flag off; the client still opts into edit mode via `?se_edit_labels` directly.
 Object.defineProperty(globalThis, Symbol.for("@shipeasy/sdk:ssr-edit-mode"), {
-  value: false,
-  writable: false,
+  get: () => false,
+  set: () => {
+    /* swallow SDK writes; SSR edit mode stays off across all requests */
+  },
   configurable: true,
 });
 
