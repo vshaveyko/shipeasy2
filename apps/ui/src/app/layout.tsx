@@ -5,6 +5,17 @@ import { headers } from "next/headers";
 import { shipeasy } from "@shipeasy/sdk/server";
 import "./globals.css";
 
+// SDK 2.1.7 stores SSR edit-labels mode on `globalThis` without AsyncLocalStorage,
+// so a single `?se_edit_labels=1` request poisons every subsequent SSR in the
+// same Workers isolate — making `tEl()` emit invisible label markers instead of
+// the fallback string, which renders to the user as a bare key. Force the SSR
+// flag off; the client still opts into edit mode via `?se_edit_labels` directly.
+Object.defineProperty(globalThis, Symbol.for("@shipeasy/sdk:ssr-edit-mode"), {
+  value: false,
+  writable: false,
+  configurable: true,
+});
+
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 const instrumentSerif = Instrument_Serif({
