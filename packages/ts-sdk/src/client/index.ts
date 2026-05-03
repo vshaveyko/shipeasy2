@@ -537,14 +537,16 @@ export class FlagsClientBrowser {
   }
 
   getFlag(name: string): boolean {
+    if (this.evalResult === null) return false;
     const ov = readGateOverride(name);
     if (ov !== null) return ov;
-    return this.evalResult?.flags[name] ?? false;
+    return this.evalResult.flags[name] ?? false;
   }
 
   getConfig<T = unknown>(name: string, decode?: (raw: unknown) => T): T | undefined {
+    if (this.evalResult === null) return undefined;
     const ov = readConfigOverride(name);
-    const raw = ov !== undefined ? ov : this.evalResult?.configs?.[name];
+    const raw = ov !== undefined ? ov : this.evalResult.configs?.[name];
     if (raw === undefined) return undefined;
     if (!decode) return raw as T;
     try {
@@ -824,7 +826,7 @@ export function attachDevtools(
 //   configureShipeasy({ sdkKey: "...", baseUrl: "..." });
 //   await flags.identify({ user_id });
 //   flags.get("new_checkout");
-//   i18n.t("hero.title", { name });
+//   i18n.t("hero.title", "Welcome, {{name}}", { name });
 //
 // The React adapter wraps the same singletons and adds a re-render
 // subscription — it does not re-export them, so customers consistently
@@ -1048,10 +1050,12 @@ export function labelAttrs(
   return attrs;
 }
 
-// Framework-specific element creator — injected once via i18n.configure().
-// Kept outside the object so tree-shakers can drop tEl entirely when not used.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _createElement: ((tag: string, props: object, children: string) => any) | null = null;
+// Legacy hook — kept so existing callers of `i18n.configure({ createElement })`
+// don't break, but no longer consumed by tEl/rich. New code should use
+// `configure({ components })` to override rich-text tag rendering.
+let _createElement: ((tag: string, props: object, children: string) => unknown) | null = null;
+// Touched only to silence unused-variable warnings under strict tsconfigs.
+void _createElement;
 
 // ---- SSR i18n store -----------------------------------------------------------
 //
@@ -1074,7 +1078,7 @@ function getSSRI18nStore(): { strings: Record<string, string>; locale: string } 
 function isEditLabelsMode(): boolean {
   if (typeof window !== "undefined") {
     // Client: check bootstrap payload (set by server) or live URL param.
-     
+
     return (
       !!(window as any).__SE_BOOTSTRAP?.editLabels ||
       new URLSearchParams(location.search).has("se_edit_labels")
@@ -1086,9 +1090,118 @@ function isEditLabelsMode(): boolean {
   return typeof val === "boolean" ? val : typeof val === "function" ? val() : false;
 }
 
-function interpolate(raw: string, variables?: Record<string, string | number>): string {
+export type I18nVariables = Record<string, string | number | null | undefined>;
+export type I18nTagRenderer = (content: string) => unknown;
+export type I18nRichComponents = Record<string, I18nTagRenderer>;
+
+// ---- Branded string types ----
+//
+// Both brands are optional phantom properties so plain string literals are
+// assignable in either direction:
+//   - any `string` flows into a parameter typed `I18nKey` (the brand widens
+//     out), so callers don't need to cast every key literal.
+//   - the result of `i18n.t()` (`I18nString`) is also a `string` and can be
+//     passed anywhere a string is expected, while still being narrowable in
+//     APIs that want to enforce "this came from i18n".
+//
+// Use `I18nKey` to type config maps / catalogs of translation keys. Use
+// `I18nString` for component props / fn args that should only accept
+// translated text (e.g. `title: I18nString`) — TS will then nudge callers
+// toward `i18n.t(...)` instead of hardcoded literals via a lint rule.
+
+declare const __i18nKeyBrand: unique symbol;
+declare const __i18nStringBrand: unique symbol;
+
+export type I18nKey = string & { readonly [__i18nKeyBrand]?: never };
+export type I18nString = string & { readonly [__i18nStringBrand]?: never };
+
+function interpolate(raw: string, variables?: I18nVariables): string {
   if (!variables) return raw;
-  return raw.replace(/\{\{(\w+)\}\}/g, (_, k) => String(variables[k] ?? `{{${k}}}`));
+  return raw.replace(/\{\{(\w+)\}\}/g, (placeholder, k) => {
+    const v = variables[k];
+    return v != null ? String(v) : placeholder;
+  });
+}
+
+// ---- Built-in HTML tag renderers for i18n.rich() ----
+//
+// Default renderers for common inline HTML tags. In the browser they return
+// real DOM nodes via `document.createElement`. In Node/SSR they return the
+// equivalent HTML string. Detected once at module load so callers don't have
+// to pay the typeof check per call.
+
+const _IS_BROWSER = typeof document !== "undefined";
+const _RICH_HTML_TAGS = [
+  "b",
+  "i",
+  "u",
+  "s",
+  "em",
+  "strong",
+  "del",
+  "ins",
+  "mark",
+  "small",
+  "code",
+  "pre",
+  "kbd",
+  "sub",
+  "sup",
+  "span",
+  "a",
+  "p",
+  "br",
+  "hr",
+] as const;
+
+function _makeBuiltinTags(): I18nRichComponents {
+  const tags: I18nRichComponents = {};
+  for (const tag of _RICH_HTML_TAGS) {
+    tags[tag] = _IS_BROWSER
+      ? (text: string) => {
+          const el = document.createElement(tag);
+          if (tag !== "br" && tag !== "hr") el.textContent = text;
+          return el;
+        }
+      : (text: string) => (tag === "br" || tag === "hr" ? `<${tag}>` : `<${tag}>${text}</${tag}>`);
+  }
+  return tags;
+}
+
+const _builtinTags: I18nRichComponents = _makeBuiltinTags();
+let _configuredComponents: I18nRichComponents = {};
+
+// Match either <tag>content</tag> or self-closing <tag/>. Tag names are
+// limited to ASCII identifier characters — we don't try to support arbitrary
+// XML names, which keeps the regex safe and the AST shallow.
+const _RICH_TAG_RE = /<(\w+)(?:\s*\/>|>([\s\S]*?)<\/\1>)/g;
+
+function _parseRichText(text: string, components: I18nRichComponents): unknown {
+  const parts: unknown[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let allStrings = true;
+
+  _RICH_TAG_RE.lastIndex = 0;
+  while ((match = _RICH_TAG_RE.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    const tag = match[1];
+    const content = match[2] ?? "";
+    const renderer = components[tag] ?? _configuredComponents[tag] ?? _builtinTags[tag];
+    if (renderer) {
+      const rendered = renderer(content);
+      if (typeof rendered !== "string") allStrings = false;
+      parts.push(rendered);
+    } else {
+      // No renderer — fall back to passthrough text content.
+      parts.push(content);
+    }
+    lastIndex = _RICH_TAG_RE.lastIndex;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+
+  if (allStrings) return parts.join("");
+  return parts;
 }
 
 /**
@@ -1097,13 +1210,78 @@ function interpolate(raw: string, variables?: Record<string, string | number>): 
  * (SSR, missing script tag, before profile fetch completes), so call
  * sites never need to null-check.
  */
-export const i18n = {
-  t(key: string, variables?: Record<string, string | number>): string {
-    if (typeof window !== "undefined" && window.i18n) return window.i18n.t(key, variables);
-    // SSR: check ALS store set by @shipeasy/sdk/server i18n.init()
-    const store = getSSRI18nStore();
-    if (store?.strings[key]) return interpolate(store.strings[key], variables);
+function _resolveTranslation(key: string, variables?: I18nVariables): string | undefined {
+  if (typeof window !== "undefined" && window.i18n) {
+    const v = window.i18n.t(key, variables as Record<string, string | number> | undefined);
+    return v === key ? undefined : v;
+  }
+  const store = getSSRI18nStore();
+  if (store?.strings[key]) return interpolate(store.strings[key], variables);
+  return undefined;
+}
+
+export interface I18nFacade {
+  t<F extends string>(key: I18nKey, fallback: F, variables?: I18nVariables): F & I18nString;
+  t(key: I18nKey, variables?: I18nVariables): I18nString;
+  rich(
+    key: I18nKey,
+    fallback: string,
+    components?: I18nRichComponents,
+    variables?: I18nVariables,
+  ): unknown;
+  tEl<F extends string>(
+    key: I18nKey,
+    fallback: F,
+    variables?: I18nVariables,
+    desc?: string,
+  ): F & I18nString;
+  configure(opts: {
+    components?: I18nRichComponents;
+    createElement?: (tag: string, props: object, children: string) => unknown;
+  }): void;
+  readonly locale: string | null;
+  readonly ready: boolean;
+  whenReady(): Promise<void>;
+  onUpdate(cb: () => void): () => void;
+}
+
+export const i18n: I18nFacade = {
+  t(key: string, fallbackOrVars?: string | I18nVariables, maybeVars?: I18nVariables): string {
+    let fallback: string | undefined;
+    let variables: I18nVariables | undefined;
+    if (typeof fallbackOrVars === "string") {
+      fallback = fallbackOrVars;
+      variables = maybeVars;
+    } else {
+      variables = fallbackOrVars;
+    }
+    const resolved = _resolveTranslation(key, variables);
+    if (resolved !== undefined) return resolved;
+    if (fallback !== undefined) return interpolate(fallback, variables);
     return key;
+  },
+  /**
+   * Translate a key whose value contains `<tag>content</tag>` segments and
+   * render the tagged segments via per-call `components`, `configure()`-supplied
+   * components, or the built-in HTML tag renderers.
+   *
+   * Return shape:
+   *   - all renderers return strings → returns a concatenated `string`
+   *   - any renderer returns a non-string (e.g. JSX, DOM node) → returns
+   *     `Array<string | T>` and the caller is responsible for rendering
+   *
+   * Framework-agnostic: this method does pure string parsing + callback
+   * execution. No React / DOM dependency in the SDK itself.
+   */
+  rich(
+    key: string,
+    fallback: string,
+    components?: I18nRichComponents,
+    variables?: I18nVariables,
+  ): unknown {
+    const resolved = _resolveTranslation(key, variables);
+    const raw = resolved ?? interpolate(fallback, variables);
+    return _parseRichText(raw, components ?? {});
   },
   /**
    * Translate a key and return a framework element (e.g. React <span>)
@@ -1118,30 +1296,33 @@ export const i18n = {
    * configured (e.g. server-side or in non-JSX contexts).
    */
 
-  tEl(
-    key: string,
-    fallback: string,
-    variables?: Record<string, string | number>,
-    desc?: string,
-  ): any {
-    // Use translations when window.i18n (browser) or SSR store (server) has the key.
-    const hasTranslation =
-      (typeof window !== "undefined" && Boolean(window.i18n)) ||
-      Boolean(getSSRI18nStore()?.strings[key]);
-    const translated = hasTranslation ? this.t(key, variables) : undefined;
-    // window.i18n.t() returns the key itself when the key is not found.
-    // Treat that as "not translated" and fall back to the hardcoded string.
-    const text = translated && translated !== key ? translated : fallback;
-    // In edit-labels mode: embed Unicode markers so the devtools overlay's
-    // scanAndReplaceMarkers() can find and wrap this text node — no createElement needed.
-    if (isEditLabelsMode()) return encodeLabelMarker(key, text);
-    if (_createElement) return _createElement("span", labelAttrs(key, variables, desc), text);
-    return text;
+  /**
+   * @deprecated Use `t(key, fallback, variables)` instead. tEl() now delegates
+   * to t() and returns the translated string. Prior behaviour (createElement
+   * wrapping + edit-mode markers) was a devtools feature that conflicted with
+   * type-safe usage and has been removed.
+   */
+  tEl<F extends string>(key: string, fallback: F, variables?: I18nVariables, _desc?: string): F {
+    if (isEditLabelsMode()) {
+      const resolved = _resolveTranslation(key, variables);
+      const text = resolved ?? interpolate(fallback, variables);
+      return encodeLabelMarker(key, text) as F;
+    }
+    return (this as I18nFacade).t<F>(key, fallback, variables);
   },
-  /** Wire up the element creator once at app startup (call before any tEl use). */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  configure(opts: { createElement: (tag: string, props: object, children: string) => any }): void {
-    _createElement = opts.createElement;
+  /**
+   * Configure global rich-text component overrides and (legacy) the createElement
+   * factory. `components` registers default renderers used by `rich()` when no
+   * per-call override is supplied (e.g. swap `<a>` for a framework Link).
+   */
+  configure(opts: {
+    components?: I18nRichComponents;
+    createElement?: (tag: string, props: object, children: string) => unknown;
+  }): void {
+    if (opts.components) {
+      _configuredComponents = { ..._configuredComponents, ...opts.components };
+    }
+    if (opts.createElement) _createElement = opts.createElement;
   },
   get locale(): string | null {
     if (typeof window !== "undefined" && window.i18n) return window.i18n.locale;
