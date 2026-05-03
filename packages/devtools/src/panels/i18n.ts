@@ -320,6 +320,31 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
   const profileOverride = getI18nProfileOverride();
   const profileLabel = profileOverride ?? "default";
 
+  // Runtime interpolation variables passed to t()/tEl() at render time.
+  // tEl() stores them on data-variables as a JSON blob — surfacing them here
+  // helps a translator see what {{name}} / {{count}} etc. resolved to in this
+  // particular render so they can write a sensible translation.
+  let variables: Record<string, string | number> | null = null;
+  if (target.dataset.variables) {
+    try {
+      variables = JSON.parse(target.dataset.variables) as Record<string, string | number>;
+    } catch {
+      variables = null;
+    }
+  }
+  const variableEntries = variables ? Object.entries(variables) : [];
+  const variablesHtml = variableEntries.length
+    ? `<div class="lp-field">
+        <label>Variables</label>
+        <div class="lp-vars">${variableEntries
+          .map(
+            ([k, v]) =>
+              `<div class="lp-var"><span class="lp-var-k mono">${escapeHtml(k)}</span><span class="lp-var-v">${escapeHtml(String(v))}</span></div>`,
+          )
+          .join("")}</div>
+      </div>`
+    : "";
+
   // Capture the pre-edit value exactly once so Reset can restore it.
   if (target.dataset.__seOriginal === undefined) {
     target.dataset.__seOriginal = target.textContent ?? "";
@@ -342,6 +367,7 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
         <label>Description</label>
         <span class="${desc ? "" : "empty"}">${desc ? escapeHtml(desc) : "No description"}</span>
       </div>
+      ${variablesHtml}
       <div class="lp-field">
         <label>Value</label>
         <textarea class="lp-input" spellcheck="false">${escapeHtml(currentValue)}</textarea>

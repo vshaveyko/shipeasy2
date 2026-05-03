@@ -839,6 +839,32 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
   line-height: 1.4;
 }
 .lp-field > span.empty { color: var(--se-fg-4); font-style: italic; }
+.lp-vars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  background: var(--se-bg-2);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--se-r-sm);
+}
+.lp-var {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.lp-var-k {
+  color: var(--se-accent, var(--se-fg-2));
+  flex-shrink: 0;
+}
+.lp-var-k::after { content: ":"; color: var(--se-fg-4); margin-left: 1px; }
+.lp-var-v {
+  color: var(--se-fg);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
 .lp-input {
   all: unset;
   display: block;
