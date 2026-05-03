@@ -221,6 +221,15 @@ importers:
 
   packages/cli:
     dependencies:
+      '@babel/parser':
+        specifier: ^7.29.0
+        version: 7.29.2
+      '@babel/traverse':
+        specifier: ^7.29.0
+        version: 7.29.0
+      '@babel/types':
+        specifier: ^7.29.0
+        version: 7.29.0
       '@shipeasy/mcp':
         specifier: workspace:*
         version: link:../mcp
