@@ -1,6 +1,6 @@
 ---
 name: i18n
-description: Add translatable text to Shipeasy UI components — wrapping hardcoded strings with tEl(), creating keys in the backend, and publishing them to CDN. Triggers for "translate", "i18n", "add a key", "make this translatable", or any request involving landing page copy or text changes.
+description: Add translatable text to Shipeasy UI components — wrapping hardcoded strings with t(), creating keys in the backend, and publishing them to CDN. Triggers for "translate", "i18n", "add a key", "make this translatable", or any request involving landing page copy or text changes.
 user-invocable: true
 ---
 
@@ -18,7 +18,7 @@ Run these to understand what's already translated and what profiles exist:
 
 ## The Pattern
 
-Every piece of user-visible text in a client component becomes a `tEl()` call:
+Every piece of user-visible text in a client component becomes a `t()` call:
 
 ```tsx
 import { i18n } from "@shipeasy/sdk/client";
@@ -27,13 +27,13 @@ import { i18n } from "@shipeasy/sdk/client";
 <button>Install with Claude</button>
 
 // After (translatable):
-<button>{i18n.tEl("landing.nav.cta", "Install with Claude")}</button>
+<button>{i18n.t("landing.nav.cta", "Install with Claude")}</button>
 ```
 
-### `tEl()` signature
+### `t()` signature
 
 ```ts
-i18n.tEl(
+i18n.t(
   key: string,       // dot-separated key, e.g. "landing.hero.badge"
   fallback: string,  // shown when translation isn't loaded yet
   variables?: Record<string, string | number>,  // for {{interpolation}}
@@ -55,7 +55,7 @@ Examples: `landing.nav.cta`, `landing.hero.title_suffix`, `landing.pricing.toggl
 
 ```tsx
 {
-  i18n.tEl("landing.hero.meta_install", "{{seconds}}s install", { seconds: "8" });
+  i18n.t("landing.hero.meta_install", "{{seconds}}s install", { seconds: "8" });
 }
 ```
 
@@ -73,7 +73,7 @@ Find hardcoded strings in the target component. For landing page components they
 - `apps/ui/src/app/landing/testimonials-gate.tsx`
 - `apps/ui/src/app/landing/announcement-bar.tsx`
 
-### 2. Wrap strings with `tEl()`
+### 2. Wrap strings with `t()`
 
 Import `i18n` from `@shipeasy/sdk/client` and replace each string. Keep the original text as the `fallback` — it renders until the CDN profile loads.
 
@@ -83,12 +83,12 @@ import { i18n } from "@shipeasy/sdk/client";
 
 // Wrap inline text:
 {
-  i18n.tEl("landing.hero.badge", "Shipeasy speaks MCP — installs in Claude in 12 seconds");
+  i18n.t("landing.hero.badge", "Shipeasy speaks MCP — installs in Claude in 12 seconds");
 }
 
 // Wrap with a description for translators:
 {
-  i18n.tEl(
+  i18n.t(
     "landing.hero.title_suffix",
     "faster, just by asking Claude.",
     undefined,
@@ -98,7 +98,7 @@ import { i18n } from "@shipeasy/sdk/client";
 
 // With interpolated variables:
 {
-  i18n.tEl("landing.hero.meta_install", "{{seconds}}s install", { seconds: "<8ms" });
+  i18n.t("landing.hero.meta_install", "{{seconds}}s install", { seconds: "<8ms" });
 }
 ```
 
@@ -158,7 +158,7 @@ Adding two new keys to the hero section:
 
 // After:
 <p className="lp-hero-sub">
-  {i18n.tEl("landing.hero.sub", "Ship faster with AI-native tools.", undefined, "Hero subheading")}
+  {i18n.t("landing.hero.sub", "Ship faster with AI-native tools.", undefined, "Hero subheading")}
 </p>
 ```
 

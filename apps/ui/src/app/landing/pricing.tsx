@@ -92,21 +92,9 @@ export function LandingPricing() {
     <section className="lp-section" id="pricing">
       <div className="mx-auto max-w-[1200px] px-7">
         <div className="lp-sec-head lp-reveal lp-in">
-          <div className="lp-sec-eyebrow">
-            {i18n.tEl(
-              "landing.pricing.eyebrow",
-              "Pricing",
-              undefined,
-              "Pricing section eyebrow label",
-            )}
-          </div>
+          <div className="lp-sec-eyebrow">{i18n.t("landing.pricing.eyebrow", "Pricing")}</div>
           <h2 className="lp-sec-title">
-            {i18n.tEl(
-              "landing.pricing.title",
-              "Free to start. Fair as you grow.",
-              undefined,
-              "Pricing section headline",
-            )}
+            {i18n.t("landing.pricing.title", "Free to start. Fair as you grow.")}
           </h2>
         </div>
 
@@ -118,12 +106,7 @@ export function LandingPricing() {
               className={period === "monthly" ? "lp-active" : ""}
               onClick={() => setPeriod("monthly")}
             >
-              {i18n.tEl(
-                "landing.pricing.toggle_monthly",
-                "Monthly",
-                undefined,
-                "Billing period toggle: monthly",
-              )}
+              {i18n.t("landing.pricing.toggle_monthly", "Monthly")}
             </button>
             <button
               role="tab"
@@ -131,12 +114,7 @@ export function LandingPricing() {
               className={period === "annual" ? "lp-active" : ""}
               onClick={() => setPeriod("annual")}
             >
-              {i18n.tEl(
-                "landing.pricing.toggle_annual",
-                "Annual",
-                undefined,
-                "Billing period toggle: annual",
-              )}{" "}
+              {i18n.t("landing.pricing.toggle_annual", "Annual")}{" "}
               <span
                 style={{
                   color: "var(--se-accent)",
@@ -170,12 +148,7 @@ export function LandingPricing() {
                 {p.per && <span className="lp-per">{p.per}</span>}
               </div>
               <div className="lp-plan-desc">
-                {i18n.tEl(
-                  p.keys.descKey,
-                  p.keys.descFallback,
-                  p.keys.descVars,
-                  `${p.name} plan description`,
-                )}
+                {i18n.t(p.keys.descKey, p.keys.descFallback, p.keys.descVars)}
               </div>
               <ul>
                 {p.features.map((f) => (
@@ -190,12 +163,7 @@ export function LandingPricing() {
                   className={`lp-btn lp-cta ${p.cta.primary ? "lp-btn-primary" : "lp-btn-ghost"}`}
                   href={p.cta.href}
                 >
-                  {i18n.tEl(
-                    p.keys.ctaKey,
-                    p.keys.ctaFallback,
-                    p.keys.ctaVars,
-                    `${p.name} plan CTA button`,
-                  )}{" "}
+                  {i18n.t(p.keys.ctaKey, p.keys.ctaFallback, p.keys.ctaVars)}{" "}
                   <ArrowRight className="size-3.5" />
                 </a>
               ) : (
@@ -203,12 +171,7 @@ export function LandingPricing() {
                   className={`lp-btn lp-cta ${p.cta.primary ? "lp-btn-primary" : "lp-btn-ghost"}`}
                   href={p.cta.href}
                 >
-                  {i18n.tEl(
-                    p.keys.ctaKey,
-                    p.keys.ctaFallback,
-                    p.keys.ctaVars,
-                    `${p.name} plan CTA button`,
-                  )}{" "}
+                  {i18n.t(p.keys.ctaKey, p.keys.ctaFallback, p.keys.ctaVars)}{" "}
                   <ArrowRight className="size-3.5" />
                 </Link>
               )}

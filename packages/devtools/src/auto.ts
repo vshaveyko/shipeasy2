@@ -22,7 +22,7 @@ if (typeof window !== "undefined") {
   // When ?se_edit_labels=1 is present, scan the DOM and replace Unicode
   // markers with <span data-label="key"> elements — even if the overlay is
   // not open.  We need to run AFTER:
-  //   1. React has hydrated and rendered all tEl() / t() call sites, AND
+  //   1. React has hydrated and rendered all t() call sites, AND
   //   2. The i18n CDN loader has fetched translations and installed window.i18n
   //
   // The safest trigger is window.i18n.on("update") which fires when the CDN

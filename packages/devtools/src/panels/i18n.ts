@@ -161,7 +161,7 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
     // literal Unicode marker characters in its source text, which would be
     // mistakenly parsed as label markers.
     if (SKIP_TAGS.has(node.parentElement?.tagName ?? "")) continue;
-    // Skip text nodes already inside a [data-label] span — tEl() / ShipEasyI18nString
+    // Skip text nodes already inside a [data-label] span — t() / ShipEasyI18nString
     // wraps t() output in a span with data-label already set; the inner text node
     // would otherwise produce a nested span with the same key (double-wrap).
     if ((node.parentElement as Element)?.closest?.("[data-label]")) continue;
@@ -192,7 +192,7 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
 
   for (const [n, frag] of replacements) n.parentNode?.replaceChild(frag, n);
 
-  // tEl() / ShipEasyI18nString spans already carry data-label. Their text may be:
+  // t() / ShipEasyI18nString spans already carry data-label. Their text may be:
   //   A) A marker string — SDK's t() was also patched (unlikely but handled).
   //   B) The raw key — SDK's internal store has no translations yet.
   //   C) The clean translated text — SDK already has translations loaded.
@@ -320,8 +320,8 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
   const profileOverride = getI18nProfileOverride();
   const profileLabel = profileOverride ?? "default";
 
-  // Runtime interpolation variables passed to t()/tEl() at render time.
-  // tEl() stores them on data-variables as a JSON blob — surfacing them here
+  // Runtime interpolation variables passed to t() at render time.
+  // t() stores them on data-variables as a JSON blob — surfacing them here
   // helps a translator see what {{name}} / {{count}} etc. resolved to in this
   // particular render so they can write a sensible translation.
   let variables: Record<string, string | number> | null = null;
@@ -593,7 +593,7 @@ export async function renderI18nPanel(
   function renderSubfoot() {
     const activeProfile = getI18nProfileOverride() ?? "";
     const activeDraft = getI18nDraftOverride() ?? "";
-    // Scan first so tEl()/ShipEasyI18nString spans that are already in the DOM are counted.
+    // Scan first so t()/ShipEasyI18nString spans that are already in the DOM are counted.
     scanAndReplaceMarkers();
     const labelCount = qualifyingLabels().length;
     const editLabel = editLabelsActive
@@ -634,7 +634,7 @@ export async function renderI18nPanel(
         // Turning off: remove the URL param and reload — markers disappear.
         setEditLabelsMode(false);
       } else if (editLabelsActive) {
-        // In-page labels (from ShipEasyI18nString / tEl) are already in DOM:
+        // In-page labels (from ShipEasyI18nString / t()) are already in DOM:
         // just toggle the highlight off without a reload.
         toggleEditLabels(false, shadow, () => renderSubfoot());
         renderSubfoot();

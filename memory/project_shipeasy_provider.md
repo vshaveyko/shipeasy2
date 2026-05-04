@@ -6,7 +6,7 @@ type: project
 
 ShipeasyProvider in `packages/client-sdks/react/src/provider.tsx` had three gaps vs the hand-rolled `shipeasy-providers.tsx`:
 
-1. **Missing `i18n.configure({ createElement })`** — without this at module level, `i18n.tEl()` returns plain text on server but elements on client → React hydration mismatch. Added at module level in provider.tsx.
+1. **Missing `i18n.configure({ createElement })`** — without this at module level, `i18n.t()` returns plain text on server but elements on client → React hydration mismatch. Added at module level in provider.tsx.
 
 2. **Broken `useSyncExternalStore` snapshot** — was returning `getShipeasyClient()` (same object reference every render) so React never detected a change. Fixed with a `useRef` version counter incremented in the subscribe callback.
 
