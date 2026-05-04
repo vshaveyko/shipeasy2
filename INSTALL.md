@@ -27,14 +27,18 @@ Self-heal:
 - Not in a repo → `git init` (only with user confirmation if the directory is
   non-empty; safe in a freshly scaffolded app).
 
-Detect the target framework once and reuse the result:
+Detect the target framework once and reuse the result. There is no CLI
+wrapper — read `package.json` and the file layout directly:
 
 ```bash
-shipeasy-mcp call detect_project    # if MCP already registered
-# OR equivalent inline node script reading package.json
+cat package.json | grep -E '"next"|"react"|"vite"' || true
+test -f src/app/layout.tsx && echo "→ nextjs-app (src/app)"
+test -f app/layout.tsx     && echo "→ nextjs-app (app)"
+test -f pages/_document.tsx && echo "→ nextjs-pages"
+test -f index.html         && echo "→ react-vite (or static HTML)"
 ```
 
-Decision tree from `detect_project` output:
+Decision tree:
 
 | Framework signal                                      | Treat as           |
 | ----------------------------------------------------- | ------------------ |
@@ -42,6 +46,12 @@ Decision tree from `detect_project` output:
 | `next` dep, no app dir                                | `nextjs-pages`     |
 | Vite/CRA + `index.html`                               | `react-vite`       |
 | Other                                                 | `unknown` (manual) |
+
+If the MCP server is registered and active in your assistant, the
+`detect_project` MCP tool returns the same information in structured form —
+prefer it for richer detection (it also reports installed Shipeasy packages,
+existing env vars, and SDK version skew). The MCP server has **no** `call`
+shell wrapper; invocations go through the assistant's MCP client.
 
 ---
 
@@ -55,20 +65,49 @@ The published packages (npm registry):
 | `@shipeasy/react` | Optional thin React wrapper (only if React is detected)             |
 
 ```bash
-# Use the project's package manager — detect via package-manager-detector
-pnpm add @shipeasy/sdk
-pnpm add @shipeasy/react        # only if React is present
-# or npm install / yarn add / bun add
+# Detect the package manager via package-manager-detector (or by lockfile),
+# then install BOTH packages in a single command. Installing them separately
+# can cause npm to drop @shipeasy/sdk from package.json once @shipeasy/react
+# is added (since @shipeasy/react also depends on the SDK), which surfaces
+# as a build-time "Module not found" several steps later.
+pnpm add @shipeasy/sdk @shipeasy/react       # always install both together
+# or: npm install @shipeasy/sdk @shipeasy/react
+# or: yarn add @shipeasy/sdk @shipeasy/react
+# Skip @shipeasy/react if the project has no React.
 ```
 
-Verify:
+**Pre-flight: zod peer dep.** The SDK declares `zod ^4.0.0` as a peerOptional
+dep. Despite "optional", **npm always errors with `ERESOLVE`** when the
+project pins `zod` major `< 4` (most projects do today — pnpm and yarn
+handle peerOptional correctly, npm doesn't). Check first and pick the right
+install command:
 
 ```bash
-node -e "console.log(require('@shipeasy/sdk/package.json').version)"
+npm ls zod                                          # or: pnpm why zod
+# zod major 4.x → use the plain command:
+pnpm add @shipeasy/sdk @shipeasy/react
+# zod major 3.x or anything else (the common case with npm) → override:
+npm install --legacy-peer-deps @shipeasy/sdk @shipeasy/react
+# pnpm: --strict-peer-dependencies=false
 ```
 
-Self-heal: if the package manager command fails because of a stale lockfile,
-run `pnpm install` (or equivalent) once and retry.
+Verify both packages are pinned in `package.json` and resolved in the
+lockfile:
+
+```bash
+npm ls @shipeasy/sdk @shipeasy/react
+# or: test -d node_modules/@shipeasy/sdk && test -d node_modules/@shipeasy/react && echo OK
+```
+
+(Don't `require('@shipeasy/sdk/package.json')` — that subpath isn't in
+`exports`.)
+
+Self-heal:
+
+- Stale lockfile / version conflicts → `pnpm install` (or equivalent) once,
+  then retry.
+- `@shipeasy/sdk` missing from `package.json` after the install (npm
+  pruning quirk) → re-run the **combined** install command above.
 
 ### Recommended dev installs
 
@@ -77,12 +116,15 @@ project), so future projects reuse the same auth token:
 
 ```bash
 npm i -g @shipeasy/cli @shipeasy/mcp
-shipeasy --version
+shipeasy --version            # confirm on PATH
 shipeasy-mcp --version
 ```
 
 If global install is blocked (e.g. corporate npm), fall back to
 `npx -y @shipeasy/cli@latest <cmd>` and `npx -y @shipeasy/mcp@latest`.
+
+The CLI and MCP server share `~/.config/shipeasy/config.json` — log in once
+(step 2) and both pick up the same session.
 
 ---
 
@@ -106,8 +148,11 @@ Verify:
 
 ```bash
 shipeasy whoami
-# Project:    proj_…
-# Email:      …
+# Project:    <uuid>
+# (Email line only present if the OAuth provider supplied one)
+# Worker URL: https://cdn.shipeasy.ai
+# App URL:    https://shipeasy.ai
+# Saved at:   <iso-timestamp>
 ```
 
 Self-heal:
@@ -151,14 +196,14 @@ old keys with `shipeasy keys revoke <id>` only after confirming with the user.
 
 Write keys to whatever the **target app** already uses. Pick the first match:
 
-| Detected store                                 | Action                                                  |
-| ---------------------------------------------- | ------------------------------------------------------- |
-| `wrangler.toml` / `wrangler.jsonc`             | `wrangler secret put SHIPEASY_SERVER_KEY` (interactive) |
-| `.env.local` exists or `.gitignore` lists it   | append to `.env.local`                                  |
-| Vercel project (`vercel.json` / `.vercel/`)    | `vercel env add SHIPEASY_SERVER_KEY production`         |
-| Netlify (`netlify.toml`)                       | `netlify env:set SHIPEASY_SERVER_KEY …`                 |
-| Doppler / Infisical / 1Password CLI configured | use their CLI                                           |
-| Nothing detected                               | create `.env.local`, add to `.gitignore`                |
+| Detected store                                 | Action                                                                        |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| `wrangler.toml` / `wrangler.jsonc`             | `wrangler secret put SHIPEASY_SERVER_KEY` (interactive)                       |
+| Next.js / Vite / Astro / SvelteKit / Remix     | append to `.env.local` (create if missing — already gitignored by convention) |
+| Vercel project (`vercel.json` / `.vercel/`)    | `vercel env add SHIPEASY_SERVER_KEY production`                               |
+| Netlify (`netlify.toml`)                       | `netlify env:set SHIPEASY_SERVER_KEY …`                                       |
+| Doppler / Infisical / 1Password CLI configured | use their CLI                                                                 |
+| Nothing detected                               | create `.env.local`, ensure it's in `.gitignore`                              |
 
 Variables to write:
 
@@ -193,47 +238,102 @@ There is **one** entry point per runtime. Do not write wrappers in
 
 ### Server (Next.js App Router root layout — once)
 
+The layout file is at `src/app/layout.tsx` **or** `app/layout.tsx` (no `src/`
+prefix) — both are valid. Edit whichever exists. The `shipeasy()` call uses
+`await`, which means the layout function must be `async` — convert it if it
+isn't already.
+
 ```ts
-// src/app/layout.tsx
+// app/layout.tsx (or src/app/layout.tsx)
 import { shipeasy } from "@shipeasy/sdk/server";
 
-await shipeasy({ apiKey: process.env.SHIPEASY_SERVER_KEY ?? "" });
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await shipeasy({ apiKey: process.env.SHIPEASY_SERVER_KEY ?? "" });
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
 ```
 
-### Client (root client component or app entry)
+### Client (only needed for SPA-style projects)
+
+For Next.js App Router with the i18n loader script (step 6) installed, you
+**don't** need a separate client `shipeasy()` call — the loader handles
+client-side initialisation. Skip ahead to step 6.
+
+For Vite / CRA / plain HTML / projects without the loader, add a one-time
+client init at the app entry. In Next.js with no loader, create a tiny
+`'use client'` wrapper and import it from your root layout:
 
 ```ts
+// app/_shipeasy-client.tsx
+"use client";
 import { shipeasy } from "@shipeasy/sdk/client";
-shipeasy({ apiKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "" });
+import { useEffect } from "react";
+
+export function ShipeasyClient() {
+  useEffect(() => {
+    shipeasy({ apiKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "" });
+  }, []);
+  return null;
+}
 ```
 
-For Vite / plain HTML, use the loader script tag instead of a JS import — see
-the next step.
+```tsx
+// app/layout.tsx — add inside <body>
+<ShipeasyClient />
+```
+
+For Vite / CRA / plain HTML, call `shipeasy({ apiKey: … })` once near the top
+of `main.ts` / `main.tsx`.
 
 ---
 
 ## 6. Inject the i18n loader script (optional but recommended)
 
 Only do this if the target app will display user-visible copy. The CLI
-auto-injects into the right file based on framework:
+auto-injects into the right file based on framework, and reuses the existing
+client key from your `.env*` file (or from a previous run's `.shipeasy`
+file) so it doesn't burn a new key on every install.
 
 ```bash
-shipeasy i18n install-loader --profile default
+shipeasy i18n install-loader --profile <name>
 ```
+
+Profile name:
+
+- If you already have a profile (most projects start with `en:prod`), pass
+  `--profile en:prod`. Confirm with `shipeasy i18n profiles list`.
+- If you want a `default` profile for a fresh project, create it first:
+  `shipeasy i18n profiles create default --locales en`.
+- The CLI does **not** auto-create the profile — it must exist before
+  publishing.
 
 Effect:
 
-- `nextjs-app` → adds `<script>` to `src/app/layout.tsx` `<head>`.
+- `nextjs-app` → adds `<script>` to `src/app/layout.tsx` or
+  `app/layout.tsx` `<head>`. (Your layout must have a literal `<head>`
+  element. With Next.js 13+ Metadata API there often isn't one — add an
+  empty `<head />` or use `--print` and paste manually.)
 - `nextjs-pages` → adds to `pages/_document.tsx`.
 - `react-vite` / static → adds to `index.html`.
-- A new client SDK key is auto-created if not passed via `--data-key` and
-  saved to `.shipeasy/` in the project root.
+- The CLI resolves the client SDK key in this order: `--data-key` flag →
+  `.shipeasy` file (cached from a prior run) →
+  `NEXT_PUBLIC_SHIPEASY_CLIENT_KEY` /
+  `VITE_SHIPEASY_CLIENT_KEY` /
+  `PUBLIC_SHIPEASY_CLIENT_KEY` /
+  `SHIPEASY_CLIENT_KEY` from the project's `.env*` file → finally, create a
+  new key (last resort).
+- The `.shipeasy` cache file (a single JSON file, not a directory) is
+  appended to `.gitignore` automatically when written.
 
 Verify:
 
 ```bash
 git diff --stat
-grep -r 'data-key=' --include='*.tsx' --include='*.html' src .
+grep -r 'data-key=' --include='*.tsx' --include='*.html' src . app . index.html 2>/dev/null
 ```
 
 Self-heal: if the file the CLI tried to edit doesn't exist, pass
@@ -273,12 +373,31 @@ exist (assistant not installed) and refuses to overwrite a malformed JSON
 config — both visible in the output. Re-run with `--force` only after a human
 confirms.
 
-### Install agent skills
+### Install skills + slash commands
+
+`shipeasy plugin install` is the recommended command for Claude Code — it
+drops slash commands into `.claude/commands/` and skills into
+`.claude/skills/` (the canonical paths Claude Code reads natively, so they
+work without a `/plugin` registration step). It also writes a plugin
+manifest under `.claude/plugins/shipeasy/` for users who want the
+marketplace-style layout.
+
+`shipeasy skills install` is a subset — skills only, no slash commands. Use
+it when slash commands aren't supported by your assistant (Cursor,
+Windsurf, etc.) or when you want skills without commands.
+
+| Command                   | Lands in                                                            |
+| ------------------------- | ------------------------------------------------------------------- |
+| `shipeasy plugin install` | `.claude/commands/`, `.claude/skills/`, `.claude/plugins/shipeasy/` |
+| `shipeasy skills install` | `.claude/skills/`                                                   |
 
 ```bash
+# Recommended for Claude Code (auto-picks up — no /plugin registration):
+shipeasy plugin install
+
+# Or, skills only:
 shipeasy skills list                      # show bundled skills
-shipeasy skills install                   # all of them, project-scope
-shipeasy skills install shipeasy-setup shipeasy-i18n --scope user
+shipeasy skills install                   # → .claude/skills/
 ```
 
 Available skills (shipped with `@shipeasy/cli`):
@@ -290,20 +409,13 @@ Available skills (shipped with `@shipeasy/cli`):
 | `shipeasy-flags`       | "feature flag", "kill switch", "rollout"                     |
 | `shipeasy-experiments` | "A/B test", "experiment", "variant"                          |
 
-### Install the Claude plugin (slash commands + bundled skills)
-
-```bash
-shipeasy plugin install                   # to .claude/plugins/shipeasy/ (project)
-shipeasy plugin install --scope user      # to ~/.claude/plugins/shipeasy/
-```
-
-Contributes:
-
-- Slash commands: `/shipeasy-setup`, `/shipeasy-i18n-extract`,
-  `/shipeasy-i18n-migrate`, `/shipeasy-flag`, `/shipeasy-experiment`.
-- A `.mcp.json` registering `@shipeasy/mcp` (so plugin alone is enough — you
-  do not also need `shipeasy mcp install` if the plugin is installed).
-- A copy of the four skills above.
+The plugin also contributes slash commands — `/shipeasy-setup`,
+`/shipeasy-i18n-extract`, `/shipeasy-i18n-migrate`, `/shipeasy-flag`,
+`/shipeasy-experiment` — and a plugin-scoped `.mcp.json` registering
+`@shipeasy/mcp`. If you used `shipeasy plugin install`, you can skip
+`shipeasy mcp install` for Claude Code (the plugin's own `.mcp.json` covers
+it). For Cursor / Windsurf you still want `shipeasy mcp install --scope
+project`.
 
 Restart Claude Code (or reload its plugin/skill index) to pick up the new
 contributions.
@@ -312,24 +424,48 @@ contributions.
 
 ## 8. Find or create the first translation keys
 
-Discovery first — never invent keys blindly:
+### 8a. Confirm the profile exists
+
+Pick the profile name you'll use for new keys, and create it if missing:
+
+```bash
+shipeasy i18n profiles list
+# If empty or your target name isn't there:
+shipeasy i18n profiles create default --locales en
+```
+
+`default` is what the loader (step 6) was installed against. `en:prod` is
+the conventional name some older projects use — pick one and stick with it
+for the rest of this guide.
+
+### 8b. Discover translatable strings
+
+Never invent keys blindly:
 
 ```bash
 shipeasy i18n scan src --json > /tmp/scan.json
+# (use `app` instead of `src` for projects without a src/ root)
 ```
 
-Output rows fall into two kinds:
+Each row has a `kind` field — the values you'll see most often:
 
-- `wrapped` — already a `t('key', …)` call. Make sure those keys exist on
-  the server.
-- `candidate` — looks translatable but isn't wrapped. The agent decides
-  which to wrap (usually anything visible in JSX text or `aria-label` /
-  `placeholder` / `title` attributes).
+| `kind`                                                         | Meaning                                   |
+| -------------------------------------------------------------- | ----------------------------------------- |
+| `jsx_text`                                                     | Visible JSX text — top extraction target. |
+| `jsx_attr`                                                     | `aria-label`, `placeholder`, `title`, …   |
+| `template_literal`                                             | Backtick string with interpolation.       |
+| `wrapped` (only with `--keys-only`)                            | Already a `t('key', …)` call site.        |
+| `call_arg` / `object_prop` / `variable_init` / `array_element` | Other string positions.                   |
+
+The agent decides which `jsx_*` rows to wrap (usually all of them; skip
+test fixtures, dev URLs, and class-name strings).
+
+### 8c. Wrap and/or push keys
 
 For each chosen candidate, either:
 
-a. **Wrap in code** with the `i18n` skill's `t()` pattern, then push the
-key/value pair, **or**
+a. **Wrap in code** with the `i18n` skill's `t()` pattern (see skill
+`shipeasy-i18n`), then push the key/value pair, **or**
 b. **Push directly** as raw key/value if it's a label that has no code site
 yet (rare).
 
@@ -347,24 +483,35 @@ echo '{"landing.hero.title":"Ship faster with Shipeasy"}' > /tmp/keys.json
 shipeasy i18n push /tmp/keys.json --profile default
 ```
 
-Verify (MCP only — there is no CLI wrapper for validate):
+### 8d. Validate and publish
+
+CLI:
+
+```bash
+shipeasy i18n validate --profile default       # checks wrapped t(...) calls
+shipeasy i18n publish  --profile default       # publishes chunk to CDN
+```
+
+Or via MCP (preferred — typed errors):
 
 ```
 mcp tool: i18n_validate_keys { "profile": "default" }
+mcp tool: i18n_publish_profile { "profile": "default", "chunk": "default" }
 ```
+
+Note: `i18n_validate_keys` (and `shipeasy i18n validate`) only check that
+wrapped `t(...)` references in code resolve to keys on the server — they do
+**not** scan the discovery output. A "no i18n key references found" result
+right after a 900-row scan is expected if no calls have been wrapped yet; it
+is not an error.
 
 Self-heal:
 
 - `409 key exists` → fine, leave it.
 - `401` → token expired, re-run `shipeasy login`, retry once.
 - `429` plan-limit → surface to user; do not auto-upgrade plan.
-- Profile missing → `mcp tool i18n_create_profile { "name": "default", "locales": ["en"] }`.
-
-Publish the profile so the CDN picks it up:
-
-```
-mcp tool: i18n_publish_profile { "profile": "default", "chunk": "default" }
-```
+- `Profile '<name>' not found` → run `shipeasy i18n profiles create <name>
+--locales en` (or `mcp tool: i18n_create_profile { ... }`) and retry.
 
 Verify in the browser: load any page that uses the loader script — the
 devtools panel (`?se=1`) should list the new keys under the Translations tab.
