@@ -1,3 +1,21 @@
 [submodule "packages/ts-sdk"]
 	path = packages/ts-sdk
 	url = git@github.com:shipeasy-ai/sdk.git
+[submodule "packages/server-sdks/sdk-python"]
+	path = packages/server-sdks/sdk-python
+	url = git@github.com:shipeasy-ai/sdk-python.git
+[submodule "packages/server-sdks/sdk-go"]
+	path = packages/server-sdks/sdk-go
+	url = git@github.com:shipeasy-ai/sdk-go.git
+[submodule "packages/server-sdks/sdk-java"]
+	path = packages/server-sdks/sdk-java
+	url = git@github.com:shipeasy-ai/sdk-java.git
+[submodule "packages/server-sdks/sdk-kotlin"]
+	path = packages/server-sdks/sdk-kotlin
+	url = git@github.com:shipeasy-ai/sdk-kotlin.git
+[submodule "packages/server-sdks/sdk-php"]
+	path = packages/server-sdks/sdk-php
+	url = git@github.com:shipeasy-ai/sdk-php.git
+[submodule "packages/server-sdks/sdk-swift"]
+	path = packages/server-sdks/sdk-swift
+	url = git@github.com:shipeasy-ai/sdk-swift.git
