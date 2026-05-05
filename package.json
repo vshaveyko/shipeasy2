@@ -31,10 +31,7 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3"
-    ],
-    "overrides": {
-      "@shipeasy/sdk": "file:packages/ts-sdk"
-    }
+    ]
   },
   "devDependencies": {
     "@types/node": "^20.19.39",

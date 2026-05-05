@@ -17,28 +17,25 @@ pnpm + Turborepo monorepo. Workspaces are declared in `pnpm-workspace.yaml` (`ap
 
 Note: the top-level `README.md` is an untouched `create-next-app` stub and does not describe this project — ignore it in favor of `experiment-platform/README.md`.
 
-## Upstream SDK packages — DO NOT EDIT IN-TREE
+## Upstream SDK packages
 
-The published SDKs are owned by separate repos and are pulled in here for monorepo dev convenience only. Edits to their source belong upstream, not in this repo. The submodule mapping (per `.gitmodules`):
+The published SDKs are owned by separate repos and pulled in here as git submodules. The mapping (per `.gitmodules`):
 
-| Path                            | Upstream repo                              | npm package          |
-| ------------------------------- | ------------------------------------------ | -------------------- |
-| `packages/ts-sdk`               | `git@github.com:shipeasy-ai/sdk.git`       | `@shipeasy/sdk`      |
-| `packages/client-sdks/react`    | `git@github.com:shipeasy-ai/sdk-react.git` | `@shipeasy/react`    |
-| `packages/server-sdks/sdk-ruby` | `git@github.com:shipeasy-ai/sdk-ruby.git`  | `@shipeasy/sdk-ruby` |
+| Path                            | Upstream repo                              | npm package          | Submodule state                              |
+| ------------------------------- | ------------------------------------------ | -------------------- | -------------------------------------------- |
+| `packages/ts-sdk`               | `git@github.com:shipeasy-ai/sdk.git`       | `@shipeasy/sdk`      | Proper gitlink (`160000`)                    |
+| `packages/client-sdks/react`    | `git@github.com:shipeasy-ai/sdk-react.git` | `@shipeasy/react`    | **Broken** — inline tree (`040000`), drifted |
+| `packages/server-sdks/sdk-ruby` | `git@github.com:shipeasy-ai/sdk-ruby.git`  | `@shipeasy/sdk-ruby` | **Broken** — inline tree (`040000`), drifted |
 
-Hard rules:
+Rules:
 
-1. **Never edit files inside the paths above from this repo.** Those changes either get tracked as inline content in `vshaveyko/shipeasy2` (current broken state — `git ls-tree HEAD` shows `040000 tree` instead of `160000 commit`) or get silently dropped on the next submodule sync. Either way they don't reach the published package. If a change is needed, clone the upstream repo, commit there, and push.
-2. **Never add a publish workflow for these packages to `.github/workflows/` here.** Each upstream repo owns its own `publish.yml` (release-triggered, OIDC Trusted Publishing). The workflow file in `vshaveyko/shipeasy2` would only ever publish from the wrong repo identity, which npm rejects (the OIDC token's `repository` claim won't match the package's Trusted Publisher rule).
-3. **Consumers in this repo (e.g. `apps/ui`, `packages/devtools`) depend on the npm registry version of these packages**, never on `workspace:*`. Keep the `!packages/ts-sdk` exclusion in `pnpm-workspace.yaml` so pnpm doesn't shadow the registry resolution with a local checkout.
-4. **To ship an SDK change end-to-end:**
-   - clone or `cd` into the upstream submodule's checkout
-   - make the change there, run that repo's tests, commit, push to its `main`
-   - bump version in its `package.json`, tag/release on GitHub — its publish workflow runs
-   - in this repo, bump the consumer dep version in `apps/ui/package.json` (e.g. `^2.0.0`) and run `pnpm install`
-   - update call sites here, type-check, commit
-5. **If you find yourself editing `packages/ts-sdk/src/...` in this repo, stop.** That's the symptom of the in-tree drift. The change belongs in `shipeasy-ai/sdk`.
+1. **Never edit files inside these paths from the monorepo's commit.** Edit inside the submodule's working tree, commit + push to the submodule's own remote, then bump the gitlink in the parent. If you commit `packages/<sdk>/...` files into the parent, you bake the contents into the parent's tree (the broken `040000` state) and the change never reaches npm. ts-sdk is now a proper `160000` gitlink — keep it that way: stage the gitlink (`git add packages/ts-sdk`), not individual files inside it.
+2. **Never add a publish workflow for these packages to `.github/workflows/` here.** Each upstream repo owns its own `publish.yml` (release-triggered, OIDC Trusted Publishing). A workflow file in this repo would publish from the wrong repo identity and npm would reject it (OIDC `repository` claim mismatch with the package's Trusted Publisher rule).
+3. **Never `npm publish` from a local checkout.** Always tag a release on the upstream repo and let CI publish — that's what gives the npm package provenance attestation. Manual publishes bypass git and create the kind of drift documented in `CHANGELOG.md` of `shipeasy-ai/sdk` (versions 2.1.2–2.1.7 were manually published and never tagged; 2.1.8 reconciled the gap).
+4. **Never add a pnpm `overrides` entry that points `@shipeasy/sdk` at the local `packages/ts-sdk` path.** That short-circuits the registry and causes consumers to silently use uncommitted local edits, which then get manually `npm publish`ed without ever being tagged. Consumers depend on the published npm version (e.g. `apps/ui` pins `^2.1.8`) — that's the only resolution path.
+5. **To ship an SDK change end-to-end:** `cd packages/ts-sdk`, edit, commit + push to its `main`, bump version in its `package.json` + CHANGELOG, tag a release on GitHub (publish workflow fires). Then back in the monorepo: `git add packages/ts-sdk` to bump the gitlink, bump the consumer dep version in `apps/ui/package.json`, `pnpm install`, commit.
+
+The react and sdk-ruby submodules have not yet been converted from inline trees to proper gitlinks because they have **bidirectional drift** from upstream (local has files upstream doesn't, and vice versa). Reconciling them requires per-file decisions; until that happens, treat their paths as fragile and avoid edits inside them.
 
 ## Deploy
 
