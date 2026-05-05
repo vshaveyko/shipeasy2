@@ -243,29 +243,86 @@ prefix) — both are valid. Edit whichever exists. The `shipeasy()` call uses
 `await`, which means the layout function must be `async` — convert it if it
 isn't already.
 
-```ts
+**Canonical pattern — render `getBootstrapHtml()` into `<head>`.** The return
+value of `shipeasy()` is not optional: `getBootstrapHtml()` emits the inline
+script that (a) seeds `window.__SE_BOOTSTRAP` with SSR'd flags + i18n
+strings, (b) installs a synchronous `window.i18n` shim so `i18n.t()` works
+on first paint, (c) appends the CDN i18n loader with the **correct profile +
+client key**, and (d) lazily injects the `se-devtools.js` loader when
+`?se` / `?se_devtools` is in the URL. If you discard the return value and
+hand-roll a `<script src=".../loader.js">` tag, you skip all four — the
+client renders untranslated keys until the loader hydrates, devtools never
+appears in production, and you have to keep the `data-profile` /
+`data-key` attributes in sync by hand.
+
+**Profile defaults to `en:prod`.** Both the SSR string fetch and the
+runtime loader script use `en:prod` unless you pass
+`i18nDefaultProfile: "..."` to `shipeasy()`. Publish to `en:prod` unless
+you have a reason to deviate — see step 8a.
+
+```tsx
 // app/layout.tsx (or src/app/layout.tsx)
+import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { shipeasy } from "@shipeasy/sdk/server";
+import { i18n } from "@shipeasy/sdk/client"; // works on the server too — reads SSR ALS
+
+async function configureShipeasy() {
+  const h = await headers();
+  return shipeasy({
+    apiKey: process.env.SHIPEASY_SERVER_KEY ?? "",
+    clientKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "",
+    urlOverrides: h.get("x-se-search") ?? undefined,
+  });
+}
+
+// Translatable metadata MUST go through generateMetadata — the top-level
+// `export const metadata` is evaluated at module import time, before any
+// async server work runs, so `i18n.t()` would always return the raw key.
+export async function generateMetadata(): Promise<Metadata> {
+  await configureShipeasy();
+  return {
+    title: "My App",
+    description: i18n.t("layout.description"),
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  await shipeasy({ apiKey: process.env.SHIPEASY_SERVER_KEY ?? "" });
+  const seConfig = await configureShipeasy();
   return (
     <html lang="en">
+      <head>
+        {/* eslint-disable-next-line react/no-danger */}
+        <script dangerouslySetInnerHTML={{ __html: seConfig.getBootstrapHtml() }} />
+      </head>
       <body>{children}</body>
     </html>
   );
 }
 ```
 
+`shipeasy()` is safe to call twice per request — `flags.configure` /
+`flags.initOnce` / `i18n.init` are all idempotent (per-request ALS cache,
+keyed by profile).
+
+If you only need flags + experiments (no translatable copy anywhere), the
+minimal form `await shipeasy({ apiKey: process.env.SHIPEASY_SERVER_KEY })`
+still works — but **you should still render `getBootstrapHtml()`**,
+otherwise client-side flag evaluation pays an extra network round-trip on
+first paint and devtools won't load.
+
 ### Client (only needed for SPA-style projects)
 
-For Next.js App Router with the i18n loader script (step 6) installed, you
-**don't** need a separate client `shipeasy()` call — the loader handles
-client-side initialisation. Skip ahead to step 6.
+For Next.js App Router using the canonical pattern above, you **don't**
+need a separate client `shipeasy()` call — `getBootstrapHtml()` already
+appends the i18n loader (which handles client-side flag/i18n init) and the
+devtools loader. Skip ahead to step 6 only if you're publishing translation
+keys; setup is otherwise complete.
 
-For Vite / CRA / plain HTML / projects without the loader, add a one-time
-client init at the app entry. In Next.js with no loader, create a tiny
-`'use client'` wrapper and import it from your root layout:
+For Vite / CRA / plain HTML / projects without an SSR root layout, add a
+one-time client init at the app entry. In Next.js without the bootstrap
+script, create a tiny `'use client'` wrapper and import it from your root
+layout:
 
 ```ts
 // app/_shipeasy-client.tsx
@@ -291,12 +348,22 @@ of `main.ts` / `main.tsx`.
 
 ---
 
-## 6. Inject the i18n loader script (optional but recommended)
+## 6. Inject the i18n loader script (only if you skipped `getBootstrapHtml()`)
 
-Only do this if the target app will display user-visible copy. The CLI
-auto-injects into the right file based on framework, and reuses the existing
-client key from your `.env*` file (or from a previous run's `.shipeasy`
-file) so it doesn't burn a new key on every install.
+**Skip this step entirely for Next.js App Router projects that followed the
+canonical pattern in step 5.** `getBootstrapHtml()` already inlines the
+loader with the correct `data-key` / `data-profile`, plus the SSR string
+payload and the devtools loader — running `install-loader` on top adds a
+second `<script src=".../loader.js">` tag that races the inline one and
+needs its profile kept in sync by hand.
+
+This step exists for: (a) `nextjs-pages` (no root layout), (b) `react-vite`
+/ static HTML (no SSR), (c) any framework where you can't render
+`getBootstrapHtml()` into the document head.
+
+The CLI auto-injects into the right file based on framework, and reuses the
+existing client key from your `.env*` file (or from a previous run's
+`.shipeasy` file) so it doesn't burn a new key on every install.
 
 ```bash
 shipeasy i18n install-loader --profile <name>
@@ -434,9 +501,12 @@ shipeasy i18n profiles list
 shipeasy i18n profiles create default --locales en
 ```
 
-`default` is what the loader (step 6) was installed against. `en:prod` is
-the conventional name some older projects use — pick one and stick with it
-for the rest of this guide.
+**Use `en:prod`.** It's what `getBootstrapHtml()` and the server SDK's SSR
+fetch default to — picking anything else means every install needs a
+manual override and is the most common reason translations look like they
+"didn't take effect" after a deploy. Older guides mention `default`; that
+was the CLI's pre-2.1 default and it no longer matches the SDK's runtime
+defaults.
 
 ### 8b. Discover translatable strings
 

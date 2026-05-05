@@ -113,8 +113,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/devtools
       '@shipeasy/sdk':
-        specifier: ^2.1.8
-        version: 2.1.8
+        specifier: ^2.1.9
+        version: 2.1.9
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -3277,6 +3277,10 @@ packages:
 
   '@shipeasy/sdk@2.1.8':
     resolution: {integrity: sha512-31teqE9epCFRC7Vmfkv2QHXhP7/r/FxdNOZ/8i55MTEBPmGMG/xdnUhoqJjKWWKojB0jB9zudvBS/tnkc8FSrQ==}
+    engines: {node: '>=20'}
+
+  '@shipeasy/sdk@2.1.9':
+    resolution: {integrity: sha512-VMyA9kqkYz5JN2HtnI/CzRb78z5kEdmEVdKmATroVb8/eGKEjsFiEgQVdYD83saP3Aq33v3lQY5P9+9Zowr/jg==}
     engines: {node: '>=20'}
 
   '@sindresorhus/is@7.2.0':
@@ -10664,6 +10668,10 @@ snapshots:
   '@shikijs/vscode-textmate@10.0.2': {}
 
   '@shipeasy/sdk@2.1.8':
+    dependencies:
+      murmurhash-js: 1.0.0
+
+  '@shipeasy/sdk@2.1.9':
     dependencies:
       murmurhash-js: 1.0.0
 
