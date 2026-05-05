@@ -548,8 +548,9 @@ Secrets:   <store name> ← SHIPEASY_SERVER_KEY, <PUBLIC|NEXT_PUBLIC|VITE>_SHIPE
 Keys live: <N> i18n keys pushed to profile `default` (en)
 
 Next:
-  • Wrap user-visible copy with i18n.t('<key>', '<fallback>')
+  • Review `git status` / `git diff --stat` and commit (see step 11)
   • Run `shipeasy i18n scan src` to find unwrapped strings
+  • Wrap user-visible copy with i18n.t('<key>')
   • Open the dashboard:  https://app.shipeasy.ai/projects/<project_id>
 ```
 
@@ -588,6 +589,55 @@ Bundled with `@shipeasy/cli` and installable via `shipeasy skills install`:
 - `shipeasy-i18n` — wrapping copy, creating + publishing keys.
 - `shipeasy-flags` — feature gates and rollouts.
 - `shipeasy-experiments` — A/B tests.
+
+---
+
+## 11. Ask the user to commit the changes
+
+Onboarding wrote real, lasting changes to the repo. Show the user the diff
+footprint and propose a commit — **never run `git commit` yourself**.
+
+```bash
+git status
+git diff --stat
+```
+
+Expected modified / untracked entries (skip any rows that don't apply):
+
+| Path                                                           | What it is                             | Commit?                                                                                                                            |
+| -------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json` + lockfile                                      | new SDK + React deps                   | yes                                                                                                                                |
+| `app/layout.tsx` (or `src/app/layout.tsx`)                     | server SDK init + loader `<script>`    | yes                                                                                                                                |
+| `<files modified by codemod>`                                  | wrapped strings + `i18n.t(...)` calls  | yes — best in a separate commit; the diff is large                                                                                 |
+| `src/i18n/en.json` or `i18n/en.json`                           | seed translation keys (codemod output) | yes — pairs with the codemod commit                                                                                                |
+| `.mcp.json`                                                    | project MCP server registration        | usually yes — teammates inherit the same MCP server                                                                                |
+| `.cursor/mcp.json`, `.windsurf/mcp.json`                       | per-assistant MCP registration         | optional — commit if everyone uses that assistant, otherwise gitignore                                                             |
+| `.claude/commands/shipeasy-*.md`, `.claude/skills/shipeasy-*/` | slash commands and skills              | check `.gitignore` — many repos gitignore `.claude/` entirely. If so, leave them local; teammates re-run `shipeasy plugin install` |
+| `.shipeasy`                                                    | client-key cache (auto-gitignored)     | no                                                                                                                                 |
+| `.env.local`                                                   | server + client keys                   | **NEVER** — must remain gitignored                                                                                                 |
+
+Hard rules:
+
+- **Never commit `.env.local`.** It contains the server key. Confirm it
+  appears in `.gitignore` before suggesting any `git add`.
+- **Never `git add -A` / `git add .`.** Stage only the files above by name —
+  the user may have other in-flight work in the tree.
+- **Never run `git commit` or `git push` yourself** unless the user has
+  explicitly authorised it for this session. The right pattern is to
+  print the proposed command and let the user run it.
+
+Suggest a single-commit message like the one below and ask the user to
+proceed (or to split into multiple commits if they prefer):
+
+```bash
+git add <the paths from the table above>
+git commit -m "chore: onboard Shipeasy (SDK + i18n loader + MCP)"
+```
+
+If the codemod modified many source files, suggest splitting into two
+commits — one for the install plumbing (deps, layout, env, MCP) and one
+for the codemod-applied i18n wrapping (rewritten files + `en.json`) — so
+the diff stays reviewable.
 
 ---
 
