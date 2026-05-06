@@ -3069,6 +3069,11 @@ select.se-input { cursor: pointer; }
         B = k.kind === "attr" ? `attribute \xB7 ${C(k.attr ?? "")}` : "text content";
       ((c.innerHTML = `
       <div class="lp-field">
+        <label>Value</label>
+        <textarea class="lp-input" spellcheck="false">${C(A)}</textarea>
+      </div>
+      ${E}
+      <div class="lp-field">
         <label>Current profile</label>
         <span>${C(o)}</span>
       </div>
@@ -3079,11 +3084,6 @@ select.se-input { cursor: pointer; }
       <div class="lp-field">
         <label>Description</label>
         <span class="${S ? "" : "empty"}">${S ? C(S) : "No description"}</span>
-      </div>
-      ${E}
-      <div class="lp-field">
-        <label>Value</label>
-        <textarea class="lp-input" spellcheck="false">${C(A)}</textarea>
       </div>`),
         (x.textContent = ""),
         (b.disabled = !1),

@@ -652,6 +652,11 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
 
     bodyEl.innerHTML = `
       <div class="lp-field">
+        <label>Value</label>
+        <textarea class="lp-input" spellcheck="false">${escapeHtml(editable)}</textarea>
+      </div>
+      ${variablesHtml}
+      <div class="lp-field">
         <label>Current profile</label>
         <span>${escapeHtml(profileLabel)}</span>
       </div>
@@ -662,11 +667,6 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
       <div class="lp-field">
         <label>Description</label>
         <span class="${desc ? "" : "empty"}">${desc ? escapeHtml(desc) : "No description"}</span>
-      </div>
-      ${variablesHtml}
-      <div class="lp-field">
-        <label>Value</label>
-        <textarea class="lp-input" spellcheck="false">${escapeHtml(editable)}</textarea>
       </div>`;
 
     errEl.textContent = "";
