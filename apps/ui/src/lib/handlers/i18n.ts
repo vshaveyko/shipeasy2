@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull, like, or, sum } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, like, or, sum } from "drizzle-orm";
 import { ApiError, getDb, rebuildI18nProfile } from "@shipeasy/core";
 import {
   labelProfiles,
@@ -140,7 +140,17 @@ export async function listKeys(
   const where = and(projectFilter, profileFilter, prefixFilter, searchFilter);
 
   const [rows, countRows] = await Promise.all([
-    baseSelect.where(where).limit(limit).offset(offset),
+    // Stable order so callers paginating with LIMIT/OFFSET (devtools panel,
+    // dashboard sections) don't see duplicates and missing rows. Without an
+    // explicit orderBy, D1/SQLite is free to return rows in any order — and
+    // the order can differ between consecutive page queries, which silently
+    // drops keys (e.g. `common.member`) from the devtools tree even when
+    // they're in the DB.
+    baseSelect
+      .where(where)
+      .orderBy(asc(labelKeys.profileId), asc(labelKeys.key))
+      .limit(limit)
+      .offset(offset),
     db
       .select({ n: count() })
       .from(labelKeys)
