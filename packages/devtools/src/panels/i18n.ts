@@ -279,14 +279,37 @@ function reverseWrapPlainText(): void {
   const strings = bootstrap?.i18n?.strings;
   if (!strings) return;
 
-  // Build value→key map; only keys with a unique value are reverse-lookupable.
-  // Keys with duplicate values are dropped to avoid mis-attributing text to
-  // the wrong key (e.g. "Dashboard" mapped to several distinct keys).
-  const uniqueByValue = new Map<string, string | null>();
+  // Pass 1: exact-match map for plain (no `{{var}}`) values. Keys are
+  // reverse-lookupable only when their value is unique across the dict —
+  // otherwise we'd mis-attribute "Dashboard" to one of several distinct keys.
+  const exactByValue = new Map<string, string | null>();
+  // Pass 2: regex map for values containing `{{var}}` interpolation. The
+  // regex anchors to ^…$ so a text node only matches when its full content
+  // fits the template (no substring matches).
+  const templated: Array<{ key: string; regex: RegExp }> = [];
+
+  const PLACEHOLDER_RE = /\{\{(\w+)\}\}/g;
+
   for (const [k, v] of Object.entries(strings)) {
     if (typeof v !== "string" || v.length === 0) continue;
-    if (uniqueByValue.has(v)) uniqueByValue.set(v, null);
-    else uniqueByValue.set(v, k);
+    if (v.includes("{{")) {
+      // Escape regex metachars in the literal portions, then replace each
+      // `{{var}}` with `.+?` (non-empty, non-greedy) so any interpolated
+      // value matches but empty placeholders don't.
+      let pattern = "";
+      let last = 0;
+      PLACEHOLDER_RE.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = PLACEHOLDER_RE.exec(v)) !== null) {
+        pattern += escapeRegex(v.slice(last, m.index)) + ".+?";
+        last = m.index + m[0].length;
+      }
+      pattern += escapeRegex(v.slice(last));
+      templated.push({ key: k, regex: new RegExp(`^${pattern}$`) });
+      continue;
+    }
+    if (exactByValue.has(v)) exactByValue.set(v, null);
+    else exactByValue.set(v, k);
   }
 
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "TEXTAREA", "INPUT"]);
@@ -301,13 +324,26 @@ function reverseWrapPlainText(): void {
     if (parent.closest("[data-label], #shipeasy-devtools, #se-edit-labels-exit")) continue;
     const trimmed = (node.nodeValue ?? "").trim();
     if (!trimmed) continue;
-    const key = uniqueByValue.get(trimmed);
-    if (!key) continue;
-    // Only wrap when the parent's full text content equals this single value
-    // — otherwise we'd be lifting a fragment out of a sentence.
-    if ((parent.textContent ?? "").trim() !== trimmed) continue;
-    // Skip if parent itself already qualifies as a label host.
-    if (parent.hasAttribute("data-label")) continue;
+
+    let key: string | null | undefined = exactByValue.get(trimmed);
+    if (key === null) continue; // ambiguous exact match — skip
+    if (!key) {
+      // Try templated patterns. Wrap only when exactly one regex matches.
+      let matched: string | null = null;
+      let ambiguous = false;
+      for (const { key: tk, regex } of templated) {
+        if (regex.test(trimmed)) {
+          if (matched) {
+            ambiguous = true;
+            break;
+          }
+          matched = tk;
+        }
+      }
+      if (ambiguous || !matched) continue;
+      key = matched;
+    }
+
     wraps.push({ node, key });
   }
 
@@ -316,11 +352,14 @@ function reverseWrapPlainText(): void {
     if (!parent) continue;
     const span = document.createElement("span");
     span.setAttribute("data-label", key);
-    span.textContent = node.nodeValue ?? "";
     const override = getI18nLabelOverride(key);
-    if (override !== null) span.textContent = override;
+    span.textContent = override ?? node.nodeValue ?? "";
     parent.replaceChild(span, node);
   }
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 interface LabelAttrEntry {
