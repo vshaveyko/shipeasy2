@@ -775,8 +775,12 @@ export function toggleEditLabels(
   const SWALLOW_EVENTS = [
     "mousedown",
     "mouseup",
+    "mouseover",
+    "mouseout",
     "pointerdown",
     "pointerup",
+    "pointerover",
+    "pointerout",
     "touchstart",
     "touchend",
     "dblclick",
@@ -785,9 +789,21 @@ export function toggleEditLabels(
     "auxclick",
   ] as const;
 
+  // Hold Alt/Option to bypass the edit-mode interception — clicks/taps fall
+  // through to the underlying app (link navigation, button onClick, etc.) so
+  // you can drive the page normally without leaving edit mode.
+  function isPassThrough(e: Event): boolean {
+    return (
+      "altKey" in e &&
+      typeof (e as { altKey?: unknown }).altKey === "boolean" &&
+      (e as { altKey: boolean }).altKey
+    );
+  }
+
   function suppress(e: Event) {
     if (pathHasPopper(e)) return;
     if (!pathLabelTarget(e)) return;
+    if (isPassThrough(e)) return;
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
@@ -797,6 +813,7 @@ export function toggleEditLabels(
     if (pathHasPopper(e)) return;
     const el = pathLabelTarget(e);
     if (!el) return;
+    if (isPassThrough(e)) return;
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
