@@ -147,6 +147,20 @@ export async function findProjectById(d1: D1Database, id: string) {
   return rows[0] ?? null;
 }
 
+export async function findProjectByOwnerAndDomain(
+  d1: D1Database,
+  ownerEmail: string,
+  domain: string,
+) {
+  const db = getDb(d1);
+  const rows = await db
+    .select()
+    .from(projects)
+    .where(and(eq(projects.ownerEmail, ownerEmail), eq(projects.domain, domain))!)
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function insertProject(
   d1: D1Database,
   row: typeof projects.$inferInsert,

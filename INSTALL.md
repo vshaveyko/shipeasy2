@@ -155,11 +155,11 @@ What happens:
 2. CLI calls `POST {api_base}/auth/device/start`.
 3. Default browser opens at `{app_base}/cli-auth?state=…&source=cli`.
 4. The user signs in / signs up (GitHub, Google, magic link).
-5. The dashboard prompts the user to **pick or create a project**.
-   - **For a fresh app install: choose "Create new project"** and name it
-     after the app/repo (e.g. `acme-web`, `shouks`, `marketing-site`).
-   - Only pick an existing project if you are _re-installing_ into a repo
-     that already had a `.shipeasy` (and the existing project_id matches).
+5. The dashboard prompts the user to **pick or create a project**. Pick
+   _any_ project you already own — it doesn't have to be the project you
+   want this app to use; the next sub-step (2b) creates the right one
+   programmatically. If this is your first time, the dashboard creates an
+   initial scratch project for you here. Either way is fine.
 6. CLI polls `/auth/device/poll` until it gets `{ token, project_id }`.
 7. Token written to `~/.config/shipeasy/config.json` (mode 0600).
 
@@ -184,35 +184,62 @@ Self-heal:
   open the dashboard URL in a private/incognito window, and re-run
   `shipeasy login`.
 
-### 2b. Bind the repo to that project — **MANDATORY**
+### 2b. Upsert this app's project, keyed by domain — **MANDATORY**
 
 ```bash
-shipeasy bind                              # binds to creds.project_id (the one you just picked)
-# Or, to bind to a different project than the CLI session is logged into:
-shipeasy bind <project_id> --name <name>
+# Idempotent: creates the project on first run, no-ops on later runs.
+# Bind happens automatically (writes .shipeasy in cwd).
+shipeasy projects upsert --domain <domain>
+# Optional human-readable name (defaults to <domain> on first create):
+shipeasy projects upsert --domain shouks.app --name shouks
 ```
 
 The CLI session in `~/.config/shipeasy/config.json` is **per-machine, not
-per-repo**. Without `.shipeasy`, every push from this directory would
-silently route to whatever project the machine was last logged into —
-even if that's a _completely unrelated_ app. This is the single biggest
-source of "why did my keys land on the wrong project?" incidents.
+per-repo**. Without a `.shipeasy` binding, every push from this directory
+would silently route to whatever project the machine was last logged
+into — even if that's a _completely unrelated_ app. This is the single
+biggest source of "why did my keys land on the wrong project?"
+incidents.
 
-**Always run `shipeasy bind` immediately after `shipeasy login`, in the
-target app's repo root.** Make it the same muscle memory as `git init` +
-`git remote add origin`.
+`projects upsert` solves the bootstrap in one shot:
 
-What `bind` does:
+1. Looks up `(owner_email, domain)` against your account. The owner is
+   inferred from the project the CLI session token is currently scoped
+   to, so step 2a's "any project you already own" really is fine — only
+   the email matters.
+2. If a project with that domain already exists under your account →
+   returns it unchanged (`created: false`).
+3. If not → creates a fresh project, named `--name` (or the domain),
+   under the same owner, on the free plan.
+4. Writes `.shipeasy` with `{ project_id, project_name }` at the cwd.
+   Pass `--no-bind` if you really must skip step 4 (you almost never
+   want to).
 
-- Writes `.shipeasy` (JSON) at the cwd with
-  `{ "project_id": "<uuid>", "project_name": "<name>" }`.
-- The file is searched **walk-up like `.git`** — bind once at the repo
-  root and every `cwd` underneath inherits it.
-- **`.shipeasy` is checked in.** It carries no secrets — only the public
-  `project_id` — and it must travel with the repo so every teammate's CLI
-  and every CI run targets the same project. (The optional
-  `i18n.client_key` field embedded later by `install-loader` is a
-  `sdk_client_…` key, also public-by-design.) **Do not gitignore it.**
+**Use the production domain, not a placeholder.** Domain is the natural
+key, so `acme.com` is right; `localhost` or `app1` is wrong. Re-running
+the same command on every developer's machine and in CI converges on the
+same `project_id`, which is the whole point.
+
+What `.shipeasy` carries:
+
+- Public `project_id` only. No secrets.
+- Optional `i18n.client_key` cache (a public `sdk_client_…` token,
+  populated later by `install-loader`).
+- Searched **walk-up like `.git`** — bind once at the repo root and every
+  `cwd` underneath inherits it.
+- **Checked in alongside the repo.** Do not gitignore it. Teammates and
+  CI need the same binding.
+
+**Manual fallback.** To bind to an existing `project_id` you already know
+(e.g. recovering after someone deleted `.shipeasy`), the lower-level
+command still exists:
+
+```bash
+shipeasy bind <project_id> --name <name>
+```
+
+`projects upsert` is the right command for fresh installs; `bind` is for
+recovery.
 
 Once bound, every mutating CLI/MCP operation enforces the binding:
 
@@ -240,7 +267,7 @@ git status             # .shipeasy should appear as new (commit it)
 Self-heal:
 
 - `This command writes to a Shipeasy project, but no project is bound …`
-  → you skipped 2b; run `shipeasy bind` now.
+  → you skipped 2b; run `shipeasy projects upsert --domain <domain>` now.
 - Bound `project_id` is wrong → re-edit `.shipeasy` directly or re-run
   `shipeasy bind <correct_id>`.
 - A teammate's PR landed without `.shipeasy` → bind from the repo root
@@ -720,6 +747,8 @@ Next:
 | ----------------------------------- | -------------------------------------------------- |
 | Who am I logged in as?              | `shipeasy whoami`                                  |
 | Re-auth                             | `shipeasy logout && shipeasy login`                |
+| Create-or-get app's project + bind  | `shipeasy projects upsert --domain <domain>`       |
+| Bind cwd to a known project         | `shipeasy bind <project_id> --name <name>`         |
 | List / create / revoke keys         | `shipeasy keys {list,create,revoke}`               |
 | Find translatable strings           | `shipeasy i18n scan [paths...]`                    |
 | Push translations                   | `shipeasy i18n push <file.json> --profile default` |
@@ -732,6 +761,9 @@ Next:
 
 Auth / discovery: `auth_check`, `auth_login`, `auth_logout`, `detect_project`,
 `list_resources`, `get_resource`, `get_sdk_snippet`.
+
+Projects: `projects_upsert` (find-or-create by domain + auto-bind; the
+right tool to call first on a fresh repo before any other write tool).
 
 Experiments: `exp_create_gate`, `exp_create_config`, `exp_create_experiment`,
 `exp_start_experiment`, `exp_stop_experiment`, `exp_experiment_status`.
@@ -803,12 +835,13 @@ the diff stays reviewable.
 
 ## Agent operating rules (read this if you are the agent)
 
-1. **One project per app, always bound.** Every fresh install creates a
-   new Shipeasy project (step 2a — pick "Create new project") and binds
-   the repo to it via `shipeasy bind` (step 2b). Never reuse a project
-   across two unrelated apps; never skip the bind. If `.shipeasy` is
-   missing or wrong, _fix that first_ — every subsequent step depends on
-   it. Commit `.shipeasy` to the repo; do not gitignore it.
+1. **One project per app, always bound.** Every fresh install runs
+   `shipeasy projects upsert --domain <production-domain>` (step 2b),
+   which is idempotent on `(owner_email, domain)` and writes
+   `.shipeasy`. Never reuse a project across two unrelated apps; never
+   skip the bind. If `.shipeasy` is missing or wrong, _fix that first_ —
+   every subsequent step depends on it. Commit `.shipeasy` to the repo;
+   do not gitignore it.
 2. **One configure call.** Never create custom `lib/shipeasy.ts` wrappers.
    The SDK has its own entry — `shipeasy({ apiKey })` from
    `@shipeasy/sdk/{server,client}`. Anything else is wrong.

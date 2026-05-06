@@ -1,7 +1,10 @@
 import { and, eq, gte, count } from "drizzle-orm";
+import { z } from "zod";
 import {
   ApiError,
   findProjectById,
+  findProjectByOwnerAndDomain,
+  insertProject,
   updateProject as updateProjectRow,
   getDb,
 } from "@shipeasy/core";
@@ -40,6 +43,80 @@ export async function updateProject(identity: AdminIdentity, id: string, input: 
   await updateProjectRow(env.DB, id, patch);
   await writeAudit(identity, "project.update", "project", id, parsed);
   return getProject(identity, id);
+}
+
+/**
+ * Upsert a project keyed by `(owner_email, domain)`.
+ *
+ * The owner is derived from the project the caller's CLI session token is
+ * already scoped to — i.e., a CLI session for project A under
+ * cdewqzx@gmail.com can mint additional projects under the same owner. This
+ * is intentional: it gives the install flow a way to create per-app
+ * projects without forcing the user back to the dashboard, while still
+ * preventing one tenant from creating projects under another tenant's
+ * email.
+ *
+ * Idempotent: second call with the same `(owner_email, domain)` returns
+ * the existing row with `created: false`.
+ */
+const projectUpsertSchema = z.object({
+  domain: z
+    .string()
+    .min(1)
+    .max(253)
+    .regex(/^[a-z0-9.-]+$/i, "domain must be a hostname-like string (a-z, 0-9, dot, hyphen)"),
+  name: z.string().min(1).max(100).optional(),
+});
+
+export async function upsertProject(identity: AdminIdentity, input: unknown) {
+  const parsed = projectUpsertSchema.parse(input);
+  const env = await getEnvAsync();
+
+  // Resolve owner via the caller's currently-scoped project (the CLI session
+  // is project-scoped, not user-scoped, so this is the only path).
+  const callerProject = await findProjectById(env.DB, identity.projectId);
+  if (!callerProject) throw new ApiError("Caller project not found", 404);
+  const ownerEmail = callerProject.ownerEmail;
+
+  const existing = await findProjectByOwnerAndDomain(env.DB, ownerEmail, parsed.domain);
+  if (existing) {
+    return {
+      id: existing.id,
+      name: existing.name,
+      domain: existing.domain,
+      owner_email: existing.ownerEmail,
+      created: false,
+    };
+  }
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const name = parsed.name ?? parsed.domain;
+  await insertProject(env.DB, {
+    id,
+    name,
+    domain: parsed.domain,
+    ownerEmail,
+    plan: "free",
+    status: "active",
+    subscriptionStatus: "none",
+    cancelAtPeriodEnd: 0,
+    billingInterval: "monthly",
+    createdAt: now,
+    updatedAt: now,
+  });
+  await writeAudit(identity, "project.create", "project", id, {
+    name,
+    domain: parsed.domain,
+    via: "upsert",
+  });
+  return {
+    id,
+    name,
+    domain: parsed.domain,
+    owner_email: ownerEmail,
+    created: true,
+  };
 }
 
 export async function updateProjectPlan(identity: AdminIdentity, id: string, input: unknown) {
