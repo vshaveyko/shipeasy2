@@ -234,25 +234,65 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
   }
 
   // Marker strings can also land in HTML attributes (placeholder, alt, aria-label,
-  // title) where text nodes never exist.  We can't add edit affordance there, but
-  // we must strip the garbage markers so screen readers and browser tooltips are
-  // not affected.
-  const ATTR_NAMES = ["placeholder", "alt", "aria-label", "title"];
-  for (const attr of ATTR_NAMES) {
-    for (const el of Array.from(document.querySelectorAll<Element>(`[${attr}]`))) {
-      const v = el.getAttribute(attr)!;
+  // title, value, …) where text nodes never exist. Strip the markers so screen
+  // readers and browser tooltips render the clean translated value, and record
+  // each (attr, key) pair as JSON on the host element so the edit popper can
+  // surface a tab for every translatable attribute.
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
+    const existing = readLabelAttrs(el);
+    const byAttr = new Map<string, LabelAttrEntry>();
+    for (const e of existing) byAttr.set(e.attr, e);
+
+    let changed = false;
+    for (const attribute of Array.from(el.attributes)) {
+      const v = attribute.value;
       if (!v.includes(LABEL_MARKER_START)) continue;
       LABEL_MARKER_RE.lastIndex = 0;
       const m = LABEL_MARKER_RE.exec(v);
-      if (m) el.setAttribute(attr, m[2]);
+      if (!m) continue;
+      const key = m[1];
+      const original = m[2];
+      const override = getI18nLabelOverride(key);
+      el.setAttribute(attribute.name, override ?? original);
+      byAttr.set(attribute.name, { attr: attribute.name, key, original });
+      changed = true;
     }
+    if (changed) writeLabelAttrs(el, Array.from(byAttr.values()));
   }
 
   return replacements.length;
 }
 
+interface LabelAttrEntry {
+  attr: string;
+  key: string;
+  original: string;
+}
+
+function readLabelAttrs(el: HTMLElement): LabelAttrEntry[] {
+  const raw = el.getAttribute("data-label-attrs");
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw) as unknown;
+    if (Array.isArray(v)) return v as LabelAttrEntry[];
+  } catch {
+    /* malformed — discard */
+  }
+  return [];
+}
+
+function writeLabelAttrs(el: HTMLElement, entries: LabelAttrEntry[]): void {
+  if (entries.length === 0) {
+    el.removeAttribute("data-label-attrs");
+    return;
+  }
+  el.setAttribute("data-label-attrs", JSON.stringify(entries));
+}
+
+const LABEL_SELECTOR = "[data-label], [data-label-attrs]";
+
 function qualifyingLabels(): HTMLElement[] {
-  return Array.from(document.querySelectorAll<HTMLElement>("[data-label]"));
+  return Array.from(document.querySelectorAll<HTMLElement>(LABEL_SELECTOR));
 }
 
 function closePopper() {
@@ -263,21 +303,41 @@ function closePopper() {
   });
 }
 
+// A single editable surface in the popper — either an element's text node
+// (existing case, target is the [data-label] span) or one translated HTML
+// attribute on the target element (new case).
+interface Surface {
+  kind: "text" | "attr";
+  key: string;
+  target: HTMLElement;
+  attr?: string;
+  variables?: Record<string, string | number> | null;
+  desc?: string;
+}
+
+function applySurface(surface: Surface, value: string): void {
+  if (surface.kind === "text") {
+    surface.target.textContent = value;
+  } else if (surface.attr) {
+    surface.target.setAttribute(surface.attr, value);
+    const entries = readLabelAttrs(surface.target);
+    const idx = entries.findIndex((e) => e.attr === surface.attr);
+    if (idx >= 0) {
+      entries[idx] = { ...entries[idx], original: value };
+      writeLabelAttrs(surface.target, entries);
+    }
+  }
+}
+
 /**
  * Persist a label value to the active draft or profile via the admin API.
  * Falls back to URL-param override-only when no API is available or when
  * neither a draft nor a non-default profile is selected.
  */
-async function saveLabel(
-  key: string,
-  value: string,
-  target: HTMLElement,
-  popper: HTMLElement,
-): Promise<void> {
-  // Update DOM and URL override immediately for instant visual feedback.
-  target.textContent = value;
-  setI18nLabelOverride(key, value);
-  window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key, value } }));
+async function saveLabel(surface: Surface, value: string, popper: HTMLElement): Promise<void> {
+  applySurface(surface, value);
+  setI18nLabelOverride(surface.key, value);
+  window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: surface.key, value } }));
 
   const draftId = getI18nDraftOverride();
   const profileId = getI18nProfileOverride();
@@ -296,9 +356,9 @@ async function saveLabel(
 
   try {
     if (draftId) {
-      await api.upsertDraftKey(draftId, key, value);
+      await api.upsertDraftKey(draftId, surface.key, value);
     } else if (profileId) {
-      const match = panelKeys.find((k) => k.key === key && k.profileId === profileId);
+      const match = panelKeys.find((k) => k.key === surface.key && k.profileId === profileId);
       if (match) {
         await api.updateKeyById(match.id, value);
       }
@@ -311,57 +371,169 @@ async function saveLabel(
   }
 }
 
+function parseVariables(el: HTMLElement): Record<string, string | number> | null {
+  const raw = el.dataset.variables;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Record<string, string | number>;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Collect all editable surfaces reachable from a label-bearing target. If the
+ * target is a [data-label] text span, that span is the single surface (existing
+ * single-textarea UX). If the target carries [data-label-attrs] (e.g. an
+ * <input> whose placeholder was translated), we surface every recorded
+ * attribute — and any [data-label] descendants too, so a single click on a
+ * button-like element exposes both its visible text and its aria-label.
+ */
+function collectSurfaces(target: HTMLElement): Surface[] {
+  const out: Surface[] = [];
+
+  if (target.hasAttribute("data-label")) {
+    out.push({
+      kind: "text",
+      key: target.dataset.label ?? "",
+      target,
+      variables: parseVariables(target),
+      desc: target.dataset.labelDesc ?? "",
+    });
+  }
+
+  if (target.hasAttribute("data-label-attrs")) {
+    // Descendant text spans first — they'll appear before attribute tabs.
+    if (!target.hasAttribute("data-label")) {
+      const inner = Array.from(target.querySelectorAll<HTMLElement>("[data-label]"));
+      for (const el of inner) {
+        out.push({
+          kind: "text",
+          key: el.dataset.label ?? "",
+          target: el,
+          variables: parseVariables(el),
+          desc: el.dataset.labelDesc ?? "",
+        });
+      }
+    }
+    for (const entry of readLabelAttrs(target)) {
+      out.push({
+        kind: "attr",
+        key: entry.key,
+        target,
+        attr: entry.attr,
+      });
+    }
+  }
+
+  return out;
+}
+
+function surfaceCurrentValue(s: Surface): string {
+  if (s.kind === "text") return s.target.textContent ?? "";
+  return s.attr ? (s.target.getAttribute(s.attr) ?? "") : "";
+}
+
+function surfaceTabLabel(s: Surface, allSurfaces: Surface[]): string {
+  if (s.kind === "attr") return s.attr ?? "attr";
+  // For text surfaces, prefer the last `.`-segment of the key; if multiple text
+  // tabs collide on the same segment, fall back to the full key.
+  const seg = s.key.split(".").pop() || s.key;
+  const dupes = allSurfaces.filter(
+    (o) => o.kind === "text" && (o.key.split(".").pop() || o.key) === seg,
+  ).length;
+  return dupes > 1 ? s.key : "Text";
+}
+
 function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
   closePopper();
   target.classList.add("__se_label_active");
 
-  const key = target.dataset.label ?? "";
-  const desc = target.dataset.labelDesc ?? "";
+  const surfaces = collectSurfaces(target);
+  if (surfaces.length === 0) return;
+
   const profileOverride = getI18nProfileOverride();
   const profileLabel = profileOverride ?? "default";
 
-  // Runtime interpolation variables passed to t() at render time.
-  // t() stores them on data-variables as a JSON blob — surfacing them here
-  // helps a translator see what {{name}} / {{count}} etc. resolved to in this
-  // particular render so they can write a sensible translation.
-  let variables: Record<string, string | number> | null = null;
-  if (target.dataset.variables) {
-    try {
-      variables = JSON.parse(target.dataset.variables) as Record<string, string | number>;
-    } catch {
-      variables = null;
-    }
-  }
-  const variableEntries = variables ? Object.entries(variables) : [];
-  const variablesHtml = variableEntries.length
-    ? `<div class="lp-field">
-        <label>Variables</label>
-        <div class="lp-vars">${variableEntries
-          .map(
-            ([k, v]) =>
-              `<div class="lp-var"><span class="lp-var-k mono">${escapeHtml(k)}</span><span class="lp-var-v">${escapeHtml(String(v))}</span></div>`,
-          )
-          .join("")}</div>
-      </div>`
-    : "";
-
-  // Capture the pre-edit value exactly once so Reset can restore it.
-  if (target.dataset.__seOriginal === undefined) {
-    target.dataset.__seOriginal = target.textContent ?? "";
-  }
-  const currentValue = target.textContent ?? "";
+  // Per-surface original values, captured on first activation so Reset can
+  // restore even after several edits across tabs.
+  const originals = new Map<number, string>();
+  let activeIdx = 0;
 
   const popper = document.createElement("div");
   popper.className = "label-popper";
+
+  const tabsHtml =
+    surfaces.length > 1
+      ? `<div class="lp-tabs">${surfaces
+          .map((s, i) => {
+            const label = surfaceTabLabel(s, surfaces);
+            const attrChip =
+              s.kind === "attr"
+                ? `<span class="lp-tab-attr">${escapeHtml(s.attr ?? "")}</span>`
+                : "";
+            const cls = i === 0 ? "lp-tab active" : "lp-tab";
+            return `<button class="${cls}" data-surface-idx="${i}">${escapeHtml(s.kind === "attr" ? "@" : label)}${s.kind === "attr" ? attrChip : ""}</button>`;
+          })
+          .join("")}</div>`
+      : "";
+
   popper.innerHTML = `
     <div class="lp-head">
-      <span class="lp-key mono">${escapeHtml(key)}</span>
+      <span class="lp-key mono"></span>
       <button class="lp-close" aria-label="Close">✕</button>
     </div>
-    <div class="lp-body">
+    ${tabsHtml}
+    <div class="lp-body"></div>
+    <div class="lp-actions">
+      <button class="ibtn" data-action="reset">Reset</button>
+      <button class="ibtn pri" data-action="save">Save</button>
+    </div>
+    <div class="lp-err"></div>`;
+
+  shadow.appendChild(popper);
+
+  const keyEl = popper.querySelector<HTMLElement>(".lp-key")!;
+  const bodyEl = popper.querySelector<HTMLElement>(".lp-body")!;
+  const errEl = popper.querySelector<HTMLElement>(".lp-err")!;
+  const saveBtn = popper.querySelector<HTMLButtonElement>('[data-action="save"]')!;
+  const resetBtn = popper.querySelector<HTMLButtonElement>('[data-action="reset"]')!;
+
+  function activeSurface(): Surface {
+    return surfaces[activeIdx];
+  }
+
+  function renderActive() {
+    const s = activeSurface();
+    if (!originals.has(activeIdx)) originals.set(activeIdx, surfaceCurrentValue(s));
+
+    keyEl.textContent = s.key;
+
+    const variableEntries = s.variables ? Object.entries(s.variables) : [];
+    const variablesHtml = variableEntries.length
+      ? `<div class="lp-field">
+          <label>Variables</label>
+          <div class="lp-vars">${variableEntries
+            .map(
+              ([k, v]) =>
+                `<div class="lp-var"><span class="lp-var-k mono">${escapeHtml(k)}</span><span class="lp-var-v">${escapeHtml(String(v))}</span></div>`,
+            )
+            .join("")}</div>
+        </div>`
+      : "";
+
+    const desc = s.desc ?? "";
+    const surfaceLabel =
+      s.kind === "attr" ? `attribute · ${escapeHtml(s.attr ?? "")}` : "text content";
+
+    bodyEl.innerHTML = `
       <div class="lp-field">
         <label>Current profile</label>
         <span>${escapeHtml(profileLabel)}</span>
+      </div>
+      <div class="lp-field">
+        <label>Surface</label>
+        <span class="mono">${surfaceLabel}</span>
       </div>
       <div class="lp-field">
         <label>Description</label>
@@ -370,16 +542,32 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
       ${variablesHtml}
       <div class="lp-field">
         <label>Value</label>
-        <textarea class="lp-input" spellcheck="false">${escapeHtml(currentValue)}</textarea>
-      </div>
-    </div>
-    <div class="lp-actions">
-      <button class="ibtn" data-action="reset">Reset</button>
-      <button class="ibtn pri" data-action="save">Save</button>
-    </div>
-    <div class="lp-err"></div>`;
+        <textarea class="lp-input" spellcheck="false">${escapeHtml(surfaceCurrentValue(s))}</textarea>
+      </div>`;
 
-  shadow.appendChild(popper);
+    errEl.textContent = "";
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save";
+
+    const input = bodyEl.querySelector<HTMLTextAreaElement>(".lp-input")!;
+    input.focus();
+    input.select();
+  }
+
+  // Tab clicks
+  popper.querySelectorAll<HTMLButtonElement>(".lp-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.surfaceIdx);
+      if (idx === activeIdx) return;
+      activeIdx = idx;
+      popper.querySelectorAll(".lp-tab").forEach((el, i) => {
+        el.classList.toggle("active", i === activeIdx);
+      });
+      renderActive();
+    });
+  });
+
+  renderActive();
 
   // Position: default below target, flip above if bottom overflows viewport.
   const rect = target.getBoundingClientRect();
@@ -397,31 +585,31 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
   popper.style.top = `${top}px`;
   popper.style.left = `${left}px`;
 
-  const input = popper.querySelector<HTMLTextAreaElement>(".lp-input")!;
-  input.focus();
-  input.select();
-
   popper.querySelector(".lp-close")!.addEventListener("click", closePopper);
-  popper.querySelector('[data-action="save"]')!.addEventListener("click", () => {
-    void saveLabel(key, input.value, target, popper);
+  saveBtn.addEventListener("click", () => {
+    const input = bodyEl.querySelector<HTMLTextAreaElement>(".lp-input")!;
+    void saveLabel(activeSurface(), input.value, popper);
   });
-  popper.querySelector('[data-action="reset"]')!.addEventListener("click", () => {
-    const original = target.dataset.__seOriginal ?? "";
-    target.textContent = original;
-    setI18nLabelOverride(key, null);
-    window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key, value: null } }));
+  resetBtn.addEventListener("click", () => {
+    const s = activeSurface();
+    const original = originals.get(activeIdx) ?? "";
+    applySurface(s, original);
+    setI18nLabelOverride(s.key, null);
+    window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: s.key, value: null } }));
     closePopper();
   });
 
-  // Keep typed changes isolated to the popper — stop bubbling events that
-  // could re-trigger the click handler on the underlying target.
   popper.addEventListener("click", (e) => e.stopPropagation());
   popper.addEventListener("mousedown", (e) => e.stopPropagation());
 
   activePopper = popper;
 }
 
-function toggleEditLabels(enable: boolean, shadow: ShadowRoot, onAfterEdit: () => void): void {
+export function toggleEditLabels(
+  enable: boolean,
+  shadow: ShadowRoot,
+  onAfterEdit: () => void,
+): void {
   editLabelsActive = enable;
   cleanupEditLabels?.();
   cleanupEditLabels = null;
@@ -445,7 +633,12 @@ function toggleEditLabels(enable: boolean, shadow: ShadowRoot, onAfterEdit: () =
 
   function pathLabelTarget(e: Event): HTMLElement | null {
     for (const node of e.composedPath()) {
-      if (node instanceof HTMLElement && node.hasAttribute("data-label")) return node;
+      if (
+        node instanceof HTMLElement &&
+        (node.hasAttribute("data-label") || node.hasAttribute("data-label-attrs"))
+      ) {
+        return node;
+      }
     }
     return null;
   }
@@ -503,7 +696,11 @@ function toggleEditLabels(enable: boolean, shadow: ShadowRoot, onAfterEdit: () =
     for (const el of qualifyingLabels()) el.classList.add(LABEL_CLASS);
     onAfterEdit();
   });
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributeFilter: ["data-label", "data-label-attrs"],
+  });
 
   for (const type of SWALLOW_EVENTS) {
     document.addEventListener(type, suppress, true);

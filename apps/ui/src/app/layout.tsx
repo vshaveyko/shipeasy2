@@ -49,6 +49,35 @@ export default async function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
+        {/*
+          Edit-labels marker shim: when ?se_edit_labels=1 is present, intercept
+          the very first assignment of window.i18n (done synchronously by the
+          inline bootstrap below, then again by the CDN loader) and wrap its
+          .t() so every translation gets emitted as ￹key￺value￻. The devtools
+          overlay scans the DOM for these markers to enable in-place editing.
+          Must run BEFORE the bootstrap script — otherwise the inline t() has
+          already populated the React tree without markers.
+        */}
+        {/* eslint-disable-next-line react/no-danger */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(!new URLSearchParams(location.search).has('se_edit_labels'))return;var R;function P(v){if(!v||typeof v.t!=='function'||v.__sePatched)return;var O=v.t.bind(v);v.__sePatched=true;window._sei18n_t=O;v.t=function(k,vars){var r=O(k,vars);return r===k?k:'\\uFFF9'+k+'\\uFFFA'+r+'\\uFFFB';};}Object.defineProperty(window,'i18n',{configurable:true,get:function(){return R;},set:function(v){P(v);R=v;}});})();`,
+          }}
+        />
+        {/*
+          Dev/local override: the SDK bootstrap hardcodes
+          https://shipeasy.ai/se-devtools.js for the devtools loader. In dev we
+          want the local /se-devtools.js bundle that ships with this app, so
+          rewrite the src right when the script element is appended.
+        */}
+        {process.env.NODE_ENV !== "production" && (
+          // eslint-disable-next-line react/no-danger
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){var O=Document.prototype.appendChild;function W(n){return n&&n.tagName==='SCRIPT'&&typeof n.src==='string'&&n.src.indexOf('shipeasy.ai/se-devtools.js')!==-1;}var H=HTMLHeadElement.prototype.appendChild;HTMLHeadElement.prototype.appendChild=function(n){if(W(n))n.src='/se-devtools.js';return H.call(this,n);};})();`,
+            }}
+          />
+        )}
         {/* eslint-disable-next-line react/no-danger */}
         <script dangerouslySetInnerHTML={{ __html: seConfig.getBootstrapHtml() }} />
         {children}

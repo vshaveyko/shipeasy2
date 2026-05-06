@@ -498,6 +498,13 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   }
 
   document.body.appendChild(host);
+  // Next.js dev hydration occasionally clears body children that were appended
+  // before React rehydrated — re-append on the next tick if that happened.
+  setTimeout(() => {
+    if (!document.getElementById("shipeasy-devtools")) {
+      document.body.appendChild(host);
+    }
+  }, 100);
 
   // Auto-reopen the panel that was active before a value-change reload.
   // applyAndReload (overrides.ts) reloads the page on every override edit,

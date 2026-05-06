@@ -2,7 +2,7 @@
 // loadOnTrigger() sets up the Shift+Alt+S hotkey and ?se-devtools URL param detection.
 import { loadOnTrigger, isDevtoolsRequested } from "./index";
 import { isEditLabelsModeActive } from "./overrides";
-import { scanAndReplaceMarkers } from "./panels/i18n";
+import { scanAndReplaceMarkers, toggleEditLabels } from "./panels/i18n";
 import type { DevtoolsOptions } from "./types";
 
 interface AutoGlobals {
@@ -18,6 +18,7 @@ if (typeof window !== "undefined") {
   // popup opens on the admin app that served the script.
   const cfg = (window as Window & AutoGlobals).__se_devtools_config ?? {};
   loadOnTrigger(cfg);
+  void isDevtoolsRequested;
 
   // When ?se_edit_labels=1 is present, scan the DOM and replace Unicode
   // markers with <span data-label="key"> elements — even if the overlay is
@@ -50,13 +51,31 @@ if (typeof window !== "undefined") {
         scanScheduled = false;
         observer.disconnect(); // pause — don't react to our own writes
         scanAndReplaceMarkers();
-        observer.observe(document.body, { childList: true, subtree: true }); // resume
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+        }); // resume
       });
     };
 
     // First pass: run now (translations may already be present) and again when
     // the CDN loader fires se:i18n:ready (in case it fires before this script).
     scheduleScan();
+
+    // Auto-activate the click-to-edit handler for ?se_edit_labels=1, so the
+    // tabbed popper opens on click without requiring the user to manually flip
+    // the toggle in the i18n panel (which gates behind dashboard auth).  Wait
+    // for the overlay shadow root to mount, then arm the handler.
+    const armEditMode = () => {
+      const host = document.getElementById("shipeasy-devtools");
+      if (!host?.shadowRoot) {
+        setTimeout(armEditMode, 100);
+        return;
+      }
+      toggleEditLabels(true, host.shadowRoot, () => scheduleScan());
+    };
+    armEditMode();
     window.addEventListener("se:i18n:ready", () => scheduleScan(), { once: true });
 
     // Also subscribe via window.i18n.on("update") if the loader is already installed.
