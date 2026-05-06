@@ -12,6 +12,28 @@ export interface DevtoolsSession {
   projectId: string;
 }
 
+export interface ProjectModules {
+  translations: boolean;
+  configs: boolean;
+  gates: boolean;
+  experiments: boolean;
+  feedback: boolean;
+}
+
+export interface ProjectRecord {
+  id: string;
+  name: string;
+  domain: string | null;
+  modules: ProjectModules;
+}
+
+/** Mirrors `originAllowed` in packages/worker/src/lib/auth.ts. */
+export function projectOwnsHost(host: string, domain: string | null): boolean {
+  if (!domain) return false;
+  if (domain.startsWith("*.")) return host.endsWith(domain.slice(1));
+  return host === domain || host === `www.${domain}`;
+}
+
 export interface GateRecord {
   id: string;
   name: string;

@@ -45,7 +45,7 @@ export function ApproveButton({ origin, email }: Props) {
   const [selected, setSelected] = useState<string>("");
 
   useEffect(() => {
-    listDevtoolsProjectsAction()
+    listDevtoolsProjectsAction(origin)
       .then((list) => {
         setProjectList(list);
         if (list.length === 1) setSelected(list[0].id);
@@ -55,14 +55,14 @@ export function ApproveButton({ origin, email }: Props) {
         setPhase("error");
         setError(e instanceof Error ? e.message : String(e));
       });
-  }, []);
+  }, [origin]);
 
   async function onApprove() {
     if (!selected) return;
     setPhase("pending");
     setError(null);
     try {
-      const result = await approveDevtoolsAuthAction(selected);
+      const result = await approveDevtoolsAuthAction(selected, origin);
       if (window.opener) {
         window.opener.postMessage(
           {
@@ -96,9 +96,17 @@ export function ApproveButton({ origin, email }: Props) {
   }
 
   if (projectList.length === 0) {
+    let host = origin;
+    try {
+      host = new URL(origin).host;
+    } catch {
+      /* keep raw origin */
+    }
     return (
       <p className="text-muted-foreground text-center text-sm">
-        No projects found for <strong>{email}</strong>.
+        No project owned by <strong>{email}</strong> is configured for{" "}
+        <code className="font-mono text-xs">{host}</code>. Add this domain in your project&apos;s
+        dashboard settings, then try again.
       </p>
     );
   }

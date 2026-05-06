@@ -10,6 +10,7 @@ import type {
   GateRecord,
   KeyRecord,
   ProfileRecord,
+  ProjectRecord,
   UniverseRecord,
 } from "./types";
 
@@ -17,7 +18,35 @@ export class DevtoolsApi {
   constructor(
     readonly adminUrl: string,
     public readonly token: string,
+    public readonly projectId: string,
   ) {}
+
+  async project(): Promise<ProjectRecord> {
+    const raw = await this.get<{
+      id: string;
+      name: string;
+      domain: string | null;
+      moduleTranslations?: boolean | number;
+      moduleConfigs?: boolean | number;
+      moduleGates?: boolean | number;
+      moduleExperiments?: boolean | number;
+      moduleFeedback?: boolean | number;
+    }>(`/api/admin/projects/${encodeURIComponent(this.projectId)}`);
+    const b = (v: boolean | number | undefined): boolean =>
+      v === undefined || v === true || v === 1;
+    return {
+      id: raw.id,
+      name: raw.name,
+      domain: raw.domain,
+      modules: {
+        translations: b(raw.moduleTranslations),
+        configs: b(raw.moduleConfigs),
+        gates: b(raw.moduleGates),
+        experiments: b(raw.moduleExperiments),
+        feedback: b(raw.moduleFeedback),
+      },
+    };
+  }
 
   private async get<T>(path: string): Promise<T> {
     const res = await fetch(`${this.adminUrl}${path}`, {

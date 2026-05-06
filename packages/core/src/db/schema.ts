@@ -58,9 +58,27 @@ export const projects = sqliteTable("projects", {
   billingInterval: text("billing_interval", { enum: ["monthly", "annual"] })
     .notNull()
     .default("monthly"),
+  // Per-project module toggles. Control which surfaces (admin tabs, devtools
+  // panels) are exposed for this project. All default to enabled so existing
+  // projects keep their full feature set after the migration.
+  moduleTranslations: integer("module_translations", { mode: "boolean" }).notNull().default(true),
+  moduleConfigs: integer("module_configs", { mode: "boolean" }).notNull().default(true),
+  moduleGates: integer("module_gates", { mode: "boolean" }).notNull().default(true),
+  moduleExperiments: integer("module_experiments", { mode: "boolean" }).notNull().default(true),
+  moduleFeedback: integer("module_feedback", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+export const PROJECT_MODULE_KEYS = [
+  "translations",
+  "configs",
+  "gates",
+  "experiments",
+  "feedback",
+] as const;
+export type ProjectModuleKey = (typeof PROJECT_MODULE_KEYS)[number];
+export type ProjectModules = Record<ProjectModuleKey, boolean>;
 
 export type ProjectMemberRole = "admin" | "editor" | "viewer";
 export type ProjectMemberStatus = "active" | "pending" | "removed";

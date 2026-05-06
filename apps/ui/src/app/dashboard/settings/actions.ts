@@ -10,7 +10,15 @@ export async function updateProjectAction(formData: FormData) {
     const identity = await getIdentity();
     const name = formData.get("name") as string;
     const domain = (formData.get("domain") as string) || undefined;
-    await updateProject(identity, identity.projectId, { name, domain });
+    await updateProject(identity, identity.projectId, {
+      name,
+      domain,
+      moduleTranslations: formData.get("moduleTranslations") === "on",
+      moduleConfigs: formData.get("moduleConfigs") === "on",
+      moduleGates: formData.get("moduleGates") === "on",
+      moduleExperiments: formData.get("moduleExperiments") === "on",
+      moduleFeedback: formData.get("moduleFeedback") === "on",
+    });
     revalidatePath("/dashboard/settings");
     return ok("Settings saved");
   } catch (e) {

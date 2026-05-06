@@ -39,6 +39,11 @@ export async function updateProject(identity: AdminIdentity, id: string, input: 
   const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (parsed.name !== undefined) patch.name = parsed.name;
   if (parsed.domain !== undefined) patch.domain = parsed.domain;
+  if (parsed.moduleTranslations !== undefined) patch.moduleTranslations = parsed.moduleTranslations;
+  if (parsed.moduleConfigs !== undefined) patch.moduleConfigs = parsed.moduleConfigs;
+  if (parsed.moduleGates !== undefined) patch.moduleGates = parsed.moduleGates;
+  if (parsed.moduleExperiments !== undefined) patch.moduleExperiments = parsed.moduleExperiments;
+  if (parsed.moduleFeedback !== undefined) patch.moduleFeedback = parsed.moduleFeedback;
 
   await updateProjectRow(env.DB, id, patch);
   await writeAudit(identity, "project.update", "project", id, parsed);

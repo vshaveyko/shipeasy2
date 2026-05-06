@@ -41,6 +41,13 @@ export default async function SettingsPage() {
             projectId={project?.id ?? projectId ?? ""}
             name={project?.name ?? ""}
             domain={project?.domain ?? ""}
+            modules={{
+              translations: project?.moduleTranslations ?? true,
+              configs: project?.moduleConfigs ?? true,
+              gates: project?.moduleGates ?? true,
+              experiments: project?.moduleExperiments ?? true,
+              feedback: project?.moduleFeedback ?? true,
+            }}
           />
         </CardContent>
       </Card>

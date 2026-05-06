@@ -12,6 +12,11 @@ export const projectUpdateSchema = z.object({
     .max(253)
     .regex(/^[a-zA-Z0-9][a-zA-Z0-9\-.*]+[a-zA-Z0-9]$/, "Must be a valid hostname or wildcard")
     .optional(),
+  moduleTranslations: z.boolean().optional(),
+  moduleConfigs: z.boolean().optional(),
+  moduleGates: z.boolean().optional(),
+  moduleExperiments: z.boolean().optional(),
+  moduleFeedback: z.boolean().optional(),
 });
 
 export const projectPlanUpdateSchema = z.object({

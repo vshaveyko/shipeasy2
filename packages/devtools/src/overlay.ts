@@ -14,9 +14,43 @@ import { renderExperimentsPanel } from "./panels/experiments";
 import { renderI18nPanel, toggleEditLabels, scanAndReplaceMarkers } from "./panels/i18n";
 import { renderBugsPanel } from "./panels/bugs";
 import { renderFeatureRequestsPanel } from "./panels/feature-requests";
-import type { DevtoolsOptions, DevtoolsSession } from "./types";
+import type { DevtoolsOptions, DevtoolsSession, ProjectRecord } from "./types";
+import { projectOwnsHost } from "./types";
 
 type PanelKey = "gates" | "configs" | "experiments" | "i18n" | "bugs" | "features";
+
+// Maps a panel key to the project module that gates it. `bugs` and `features`
+// share the single `feedback` module — they're the same admin surface split
+// into two devtools panels.
+const PANEL_MODULE: Record<PanelKey, keyof ProjectRecord["modules"]> = {
+  gates: "gates",
+  configs: "configs",
+  experiments: "experiments",
+  i18n: "translations",
+  bugs: "feedback",
+  features: "feedback",
+};
+
+const PROJECT_CACHE_KEY = "se_dt_project";
+
+function loadCachedProject(): ProjectRecord | null {
+  try {
+    const raw = sessionStorage.getItem(PROJECT_CACHE_KEY);
+    if (raw) return JSON.parse(raw) as ProjectRecord;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function saveCachedProject(p: ProjectRecord | null): void {
+  try {
+    if (p === null) sessionStorage.removeItem(PROJECT_CACHE_KEY);
+    else sessionStorage.setItem(PROJECT_CACHE_KEY, JSON.stringify(p));
+  } catch {
+    /* ignore */
+  }
+}
 type Edge = "top" | "right" | "bottom" | "left";
 
 interface OverlayState {
@@ -269,6 +303,14 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   let state: OverlayState = loadOverlayState();
   let activeKey: PanelKey | null = null;
   let session: DevtoolsSession | null = loadSession();
+  let project: ProjectRecord | null = loadCachedProject();
+  // Drop a stale cached project from a previous session's projectId — without
+  // this, signing into a different project on the same origin would briefly
+  // reuse the old project's modules + name in the header.
+  if (project && session && project.id !== session.projectId) {
+    project = null;
+    saveCachedProject(null);
+  }
   const initialPanel = loadActivePanel();
 
   // ── Initial layout ────────────────────────────────────────────────────────────
@@ -302,19 +344,37 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   });
 
   // ── Toolbar buttons ───────────────────────────────────────────────────────────
+  // Buttons are (re)rendered whenever the project's enabled-modules change so
+  // a toggle in dashboard settings is reflected the next time the overlay
+  // mounts. `buttons` is the live map of currently-mounted buttons.
   const buttons = new Map<PanelKey, HTMLButtonElement>();
-  for (const [key, { icon, label }] of Object.entries(PANELS) as [
-    PanelKey,
-    { icon: string; label: string },
-  ][]) {
-    const btn = document.createElement("button");
-    btn.className = "btn";
-    btn.title = label;
-    btn.innerHTML = icon;
-    btn.addEventListener("click", () => togglePanel(key));
-    toolbar.appendChild(btn);
-    buttons.set(key, btn);
+
+  function isPanelEnabled(key: PanelKey): boolean {
+    if (!project) return true; // pre-auth or first-load: show everything; we'll filter once project loads
+    return project.modules[PANEL_MODULE[key]];
   }
+
+  function renderToolbarButtons(): void {
+    for (const btn of buttons.values()) btn.remove();
+    buttons.clear();
+    for (const [key, { icon, label }] of Object.entries(PANELS) as [
+      PanelKey,
+      { icon: string; label: string },
+    ][]) {
+      if (!isPanelEnabled(key)) continue;
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      btn.title = label;
+      btn.innerHTML = icon;
+      btn.addEventListener("click", () => togglePanel(key));
+      toolbar.appendChild(btn);
+      buttons.set(key, btn);
+    }
+    // If the active panel was just disabled, close it.
+    if (activeKey && !isPanelEnabled(activeKey)) closePanel();
+  }
+
+  renderToolbarButtons();
 
   // ── Resize handle ─────────────────────────────────────────────────────────────
   resizeHandle.addEventListener("mousedown", (e) => {
@@ -375,13 +435,46 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   }
 
   function togglePanel(key: PanelKey) {
+    if (!isPanelEnabled(key)) return;
     if (activeKey === key) closePanel();
     else openPanel(key);
   }
 
+  async function ensureProjectLoaded(api: DevtoolsApi): Promise<void> {
+    if (project && project.id === api.projectId) return;
+    try {
+      const p = await api.project();
+      // Origin lock: if the loaded project's domain doesn't cover this host,
+      // the cached session belongs to a different customer (e.g. user signed
+      // into shipeasy from shouks.com). Forcibly sign out so they re-auth and
+      // pick a project that's actually configured for this domain.
+      const host = window.location.host;
+      if (p.domain && !projectOwnsHost(host, p.domain)) {
+        clearSession();
+        saveCachedProject(null);
+        session = null;
+        project = null;
+        renderToolbarButtons();
+        if (activeKey) renderAuthPrompt(activeKey);
+        return;
+      }
+      project = p;
+      saveCachedProject(p);
+      renderToolbarButtons();
+    } catch {
+      // Fall through — leave panels visible if we can't load project meta.
+    }
+  }
+
   function panelHeader(icon: string, label: string): string {
     const origin = typeof window !== "undefined" && window.location ? window.location.host : "";
-    const sub = origin ? `<span class="sub">${origin}</span>` : "";
+    const projectName = project?.name ?? "";
+    // Show the connected project's name (and its configured domain when it
+    // differs from the page origin) so the user can tell at a glance which
+    // project's data they're looking at — important when the same browser
+    // has signed into devtools for multiple projects across origins.
+    const scope = projectName ? `${projectName}` : origin;
+    const sub = scope ? `<span class="sub">${scope}</span>` : "";
     return `
       <div class="panel-head">
         <span class="mk"></span>
@@ -403,7 +496,23 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       return;
     }
 
-    const api = new DevtoolsApi(opts.adminUrl, session.token);
+    const api = new DevtoolsApi(opts.adminUrl, session.token, session.projectId);
+    void ensureProjectLoaded(api).then(() => {
+      // After the project loads, re-render the header (so the project name
+      // appears) and bail if the just-opened panel turns out to be disabled.
+      if (activeKey && !isPanelEnabled(activeKey)) {
+        closePanel();
+        return;
+      }
+      const head = panelInner.querySelector(".panel-head");
+      if (head && activeKey) {
+        const { icon, label } = PANELS[activeKey];
+        const newHead = document.createElement("div");
+        newHead.innerHTML = panelHeader(icon, label);
+        head.replaceWith(newHead.firstElementChild!);
+        panelInner.querySelector("#se-close")?.addEventListener("click", closePanel);
+      }
+    });
 
     panelInner.innerHTML = `
       ${panelHeader(icon, label)}
@@ -420,7 +529,10 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     panelInner.querySelector("#se-close")!.addEventListener("click", closePanel);
     panelInner.querySelector("#se-signout")!.addEventListener("click", () => {
       clearSession();
+      saveCachedProject(null);
       session = null;
+      project = null;
+      renderToolbarButtons();
       renderAuthPrompt(key);
     });
     panelInner.querySelector("#se-clearall")!.addEventListener("click", () => {
@@ -498,14 +610,19 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     });
   }
 
-  document.body.appendChild(host);
-  // Next.js dev hydration occasionally clears body children that were appended
-  // before React rehydrated — re-append on the next tick if that happened.
-  setTimeout(() => {
+  // Mount on <html>, not <body>. React owns <body>'s subtree and on a
+  // hydration mismatch (React error #418) re-renders body from scratch,
+  // wiping any externally-appended children. ?se_edit_labels=1 reliably
+  // triggers that mismatch (SSR marker strings vs. CSR translated text).
+  // Nodes hung off documentElement are outside React's reconciliation root
+  // and survive.
+  document.documentElement.appendChild(host);
+  const reattach = () => {
     if (!document.getElementById("shipeasy-devtools")) {
-      document.body.appendChild(host);
+      document.documentElement.appendChild(host);
     }
-  }, 100);
+  };
+  new MutationObserver(reattach).observe(document.documentElement, { childList: true });
 
   // Re-arm edit-labels handlers against THIS shadow root. auto.ts arms them
   // once at script-load against whichever host existed then, but the user can

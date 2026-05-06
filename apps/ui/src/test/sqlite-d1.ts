@@ -18,6 +18,7 @@ const MIGRATIONS = [
   join(__dirname, "../../../../packages/worker/migrations/0009_mixed_zzzax.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0010_add_project_domain.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0011_multi_project.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0012_project_modules.sql"),
 ];
 
 class SqliteStatement {
