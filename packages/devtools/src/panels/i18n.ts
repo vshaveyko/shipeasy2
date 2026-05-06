@@ -514,20 +514,13 @@ function collectSurfaces(target: HTMLElement): Surface[] {
     });
   }
 
+  // We don't recurse into descendant [data-label] spans here. The capture-
+  // phase click handler picks the most-specific labeled element on the path,
+  // so clicking an inner span gives you just that span; clicking the wrapper
+  // (e.g. a NAV with aria-label only) gives you the wrapper's surfaces.
+  // Surfacing every descendant from a wrapper produced cluttered popovers
+  // with tabs all labeled "Text" for unrelated keys.
   if (target.hasAttribute("data-label-attrs")) {
-    // Descendant text spans first — they'll appear before attribute tabs.
-    if (!target.hasAttribute("data-label")) {
-      const inner = Array.from(target.querySelectorAll<HTMLElement>("[data-label]"));
-      for (const el of inner) {
-        out.push({
-          kind: "text",
-          key: el.dataset.label ?? "",
-          target: el,
-          variables: parseVariables(el),
-          desc: el.dataset.labelDesc ?? "",
-        });
-      }
-    }
     for (const entry of readLabelAttrs(target)) {
       out.push({
         kind: "attr",
@@ -548,13 +541,13 @@ function surfaceCurrentValue(s: Surface): string {
 
 function surfaceTabLabel(s: Surface, allSurfaces: Surface[]): string {
   if (s.kind === "attr") return s.attr ?? "attr";
-  // For text surfaces, prefer the last `.`-segment of the key; if multiple text
-  // tabs collide on the same segment, fall back to the full key.
+  // Show the last `.`-segment of the key so siblings stay distinguishable.
+  // If two text surfaces share the same segment, fall back to the full key.
   const seg = s.key.split(".").pop() || s.key;
   const dupes = allSurfaces.filter(
     (o) => o.kind === "text" && (o.key.split(".").pop() || o.key) === seg,
   ).length;
-  return dupes > 1 ? s.key : "Text";
+  return dupes > 1 ? s.key : seg;
 }
 
 function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
@@ -575,20 +568,20 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
   const popper = document.createElement("div");
   popper.className = "label-popper";
 
-  const tabsHtml =
-    surfaces.length > 1
-      ? `<div class="lp-tabs">${surfaces
-          .map((s, i) => {
-            const label = surfaceTabLabel(s, surfaces);
-            const attrChip =
-              s.kind === "attr"
-                ? `<span class="lp-tab-attr">${escapeHtml(s.attr ?? "")}</span>`
-                : "";
-            const cls = i === 0 ? "lp-tab active" : "lp-tab";
-            return `<button class="${cls}" data-surface-idx="${i}">${escapeHtml(s.kind === "attr" ? "@" : label)}${s.kind === "attr" ? attrChip : ""}</button>`;
-          })
-          .join("")}</div>`
-      : "";
+  // Always render the tabs row, even with a single surface, so the popper
+  // shape is consistent between "this label has only text" and "this label
+  // has text + attrs" cases.
+  const tabsHtml = `<div class="lp-tabs">${surfaces
+    .map((s, i) => {
+      const label = surfaceTabLabel(s, surfaces);
+      const cls = i === 0 ? "lp-tab active" : "lp-tab";
+      const inner =
+        s.kind === "attr"
+          ? `@<span class="lp-tab-attr">${escapeHtml(s.attr ?? "")}</span>`
+          : escapeHtml(label);
+      return `<button class="${cls}" data-surface-idx="${i}">${inner}</button>`;
+    })
+    .join("")}</div>`;
 
   popper.innerHTML = `
     <div class="lp-head">
@@ -672,7 +665,7 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
       </div>
       ${variablesHtml}
       <div class="lp-field">
-        <label>Template</label>
+        <label>Value</label>
         <textarea class="lp-input" spellcheck="false">${escapeHtml(editable)}</textarea>
       </div>`;
 
