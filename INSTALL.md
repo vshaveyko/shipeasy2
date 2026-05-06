@@ -158,9 +158,66 @@ shipeasy whoami
 Self-heal:
 
 - `Not logged in` → re-run `shipeasy login`. Don't loop more than twice.
+- Stale token (`401` from any later step) → `shipeasy logout && shipeasy login`.
 - Headless / SSH session → re-run with `--no-browser` and surface the URL to
   the user verbatim. Do not paste tokens or codes back to chat.
-- Stale token (`401` from any later step) → `shipeasy logout && shipeasy login`.
+
+---
+
+## 2.5. Bind the directory to its project (required, one line)
+
+The CLI session in `~/.config/shipeasy/config.json` defaults to whatever
+project the user picked at `shipeasy login` time. That default is
+**per-machine**, not per-repo — and it is the single biggest source of
+"why did my keys land on the wrong project?" support tickets. Binding the
+directory to a specific project_id stops that, hard.
+
+```bash
+shipeasy bind <project_id>             # ← REQUIRED
+# Or, when binding the same project the CLI session is logged into:
+shipeasy bind                           # defaults to creds.project_id
+```
+
+What it does:
+
+- Writes `.shipeasy` (JSON) at the cwd with `{ "project_id": "...", "project_name": "..." }`.
+- That file is searched **walk-up like `.git`** — bind once at the repo
+  root and every `cwd` underneath inherits it.
+- **`.shipeasy` is checked in.** It carries no secrets — only the public
+  project*id — and it must travel with the repo so every teammate's CLI
+  and every CI run targets the same project. (The optional
+  `i18n.client_key` field embedded by `install-loader` is a `sdk_client*…`
+  key, also public-by-design.)
+
+Once bound, every mutating CLI/MCP operation enforces it:
+
+- `shipeasy keys create`, `shipeasy i18n push|publish|profiles create|install-loader`,
+  `shipeasy flags create|enable|disable|delete`,
+  `shipeasy experiments create|start|stop` — all refuse to run unless
+  `.shipeasy` (or an explicit `--project <id>`) supplies the target.
+- Same for the MCP write tools (`i18n_push_keys`, `i18n_create_key`,
+  `i18n_create_profile`, `i18n_publish_profile`, `i18n_install_loader`,
+  `exp_create_*`, `exp_start_*`, `exp_stop_*`). MCP has no `--project`
+  flag — binding is the only way.
+- If the bound project differs from the CLI session, the CLI prints a
+  one-liner notice and uses the bound project (the API will 401 if the
+  session token doesn't have access; that's the right failure mode).
+
+Verify:
+
+```bash
+shipeasy whoami        # last line should now read: Bound dir: <uuid> (<name>)
+cat .shipeasy
+```
+
+Self-heal:
+
+- `This command writes to a Shipeasy project, but no project is bound …`
+  → run `shipeasy bind <project_id>` (or `--project <id>` for one-off).
+- Bound project_id is wrong → re-edit `.shipeasy` directly or re-run
+  `shipeasy bind <correct_id>`.
+- A teammate's PR landed without `.shipeasy` → bind it from the repo root
+  and commit. Don't .gitignore it.
 
 ---
 
@@ -393,8 +450,10 @@ Effect:
   `PUBLIC_SHIPEASY_CLIENT_KEY` /
   `SHIPEASY_CLIENT_KEY` from the project's `.env*` file → finally, create a
   new key (last resort).
-- The `.shipeasy` cache file (a single JSON file, not a directory) is
-  appended to `.gitignore` automatically when written.
+- The `.shipeasy` file (a single JSON file, not a directory) is **checked
+  in** alongside the rest of the repo — it holds the project binding
+  (step 2.5) and the cached `i18n.client_key` (a public `sdk_client_…`
+  token, safe to commit). Don't add it to `.gitignore`.
 
 Verify:
 
@@ -593,9 +652,10 @@ devtools panel (`?se=1`) should list the new keys under the Translations tab.
 Run these in order. All must pass before reporting "done":
 
 ```bash
-shipeasy whoami                         # auth OK
+shipeasy whoami                         # auth OK; "Bound dir:" line shows project_id
+test -f .shipeasy && grep project_id .shipeasy   # binding present
 shipeasy keys list                      # >= 1 server, >= 1 client key
-git diff --stat                         # expected files: layout.tsx, .env.local, .gitignore, .shipeasy/
+git diff --stat                         # expected: layout.tsx, .env.local, .gitignore, .shipeasy
 pnpm build || npm run build             # target app still builds
 ```
 
@@ -683,7 +743,7 @@ Expected modified / untracked entries (skip any rows that don't apply):
 | `.mcp.json`                                                    | project MCP server registration        | usually yes — teammates inherit the same MCP server                                                                                |
 | `.cursor/mcp.json`, `.windsurf/mcp.json`                       | per-assistant MCP registration         | optional — commit if everyone uses that assistant, otherwise gitignore                                                             |
 | `.claude/commands/shipeasy-*.md`, `.claude/skills/shipeasy-*/` | slash commands and skills              | check `.gitignore` — many repos gitignore `.claude/` entirely. If so, leave them local; teammates re-run `shipeasy plugin install` |
-| `.shipeasy`                                                    | client-key cache (auto-gitignored)     | no                                                                                                                                 |
+| `.shipeasy`                                                    | project binding + client-key cache     | **yes — required.** Carries the project_id every CLI/MCP write enforces against. Public-only fields, safe to commit.               |
 | `.env.local`                                                   | server + client keys                   | **NEVER** — must remain gitignored                                                                                                 |
 
 Hard rules:
