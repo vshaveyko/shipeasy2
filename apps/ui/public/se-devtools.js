@@ -2109,6 +2109,10 @@ select.se-input { cursor: pointer; }
     return typeof window > "u" ? !1 : le().has("se_edit_labels");
   }
   function Y(e) {
+    if (!e && typeof document < "u")
+      try {
+        document.cookie = "se_edit_labels=;path=/;max-age=0;samesite=lax";
+      } catch {}
     U([["se_edit_labels", e ? "1" : null]]);
   }
   function ye(e) {

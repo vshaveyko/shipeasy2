@@ -118,6 +118,16 @@ export function isEditLabelsModeActive(): boolean {
 
 /** Toggle the edit-labels mode by adding/removing ?se_edit_labels and reloading. */
 export function setEditLabelsMode(on: boolean): void {
+  // Clear the SSR-detection cookie when turning off so the next render stops
+  // marker-wrapping. The inline patcher rewrites the cookie when the URL
+  // param is present, so we don't need to set it here on `on=true`.
+  if (!on && typeof document !== "undefined") {
+    try {
+      document.cookie = "se_edit_labels=;path=/;max-age=0;samesite=lax";
+    } catch {
+      /* cookies blocked — best-effort */
+    }
+  }
   applyAndReload([["se_edit_labels", on ? "1" : null]]);
 }
 
