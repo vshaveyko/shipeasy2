@@ -1,5 +1,8 @@
 // Shipeasy edge worker — SDK hot path, CLI device auth, analysis cron + queue.
 // See experiment-platform/03-worker-endpoints.md for the authoritative contract.
+//
+// Build trigger: touched here to force CF Workers Builds to re-run for this
+// worker after .gitmodules switched to HTTPS submodule URLs (c9dba47).
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
