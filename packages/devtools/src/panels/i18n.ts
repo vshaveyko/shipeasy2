@@ -1,4 +1,10 @@
-import { LABEL_MARKER_RE, LABEL_MARKER_START } from "@shipeasy/sdk/client";
+import { LABEL_MARKER_START } from "@shipeasy/sdk/client";
+
+// Accept both the legacy 2-section marker (`￹key￺value￻`, SDK ≤ 2.1.10) and
+// the 3-section format with vars JSON (`￹key￺varsJson￺value￻`, SDK ≥ 2.1.11).
+// The middle vars section is optional so devtools keeps working against
+// customer apps that haven't bumped their SDK yet.
+const LABEL_MARKER_RE = /￹([^￺￻]+)￺(?:([^￺￻]*)￺)?([^￻]*)￻/g;
 import { DevtoolsApi } from "../api";
 import {
   getI18nDraftOverride,
