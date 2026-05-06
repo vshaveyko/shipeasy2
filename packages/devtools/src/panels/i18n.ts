@@ -177,10 +177,25 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
       if (m.index > lastIdx) {
         frag.appendChild(document.createTextNode(text.slice(lastIdx, m.index)));
       }
+      const key = m[1];
+      const varsJson = m[2];
+      const value = m[3];
       const span = document.createElement("span");
-      span.setAttribute("data-label", m[1]);
-      const override = getI18nLabelOverride(m[1]);
-      span.textContent = override ?? m[2];
+      span.setAttribute("data-label", key);
+      if (varsJson) span.setAttribute("data-variables", varsJson);
+      const override = getI18nLabelOverride(key);
+      // The override is a template (with `{{var}}` placeholders preserved by
+      // the popper validator). Interpolate it with the call-site's vars so the
+      // displayed text matches what the SDK would have rendered.
+      let parsedVars: Record<string, unknown> | null = null;
+      if (varsJson) {
+        try {
+          parsedVars = JSON.parse(varsJson);
+        } catch {
+          parsedVars = null;
+        }
+      }
+      span.textContent = override !== null ? interpolate(override, parsedVars) : value;
       frag.appendChild(span);
       lastIdx = m.index + m[0].length;
     }
@@ -215,10 +230,15 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
     const override = getI18nLabelOverride(key);
 
     if (text.includes(LABEL_MARKER_START)) {
-      // Span text is a marker string — extract the translated value.
+      // Span text is a marker string — extract the translated value (m[3] in
+      // the 3-section format) and stash the vars JSON onto the span.
       LABEL_MARKER_RE.lastIndex = 0;
       const m = LABEL_MARKER_RE.exec(text);
-      if (m) el.textContent = override ?? m[2];
+      if (m) {
+        if (m[2]) el.setAttribute("data-variables", m[2]);
+        const parsedVars = m[2] ? safeParseJSON(m[2]) : null;
+        el.textContent = override !== null ? interpolate(override, parsedVars) : m[3];
+      }
     } else if (origT) {
       // Span text is the raw key or already-translated text from the SDK's own t().
       // Look up the real translation via the stashed original CDN t(), no side-effects.
@@ -227,8 +247,8 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
           ? (JSON.parse(el.dataset.variables) as Record<string, string | number>)
           : undefined;
         const translated = origT(key, variables);
-        if (translated && translated !== key) el.textContent = override ?? translated;
-        else if (override) el.textContent = override;
+        if (override !== null) el.textContent = interpolate(override, variables ?? null);
+        else if (translated && translated !== key) el.textContent = translated;
       } catch {
         // JSON.parse failure — leave textContent unchanged
       }
@@ -253,7 +273,7 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
       const m = LABEL_MARKER_RE.exec(v);
       if (!m) continue;
       const key = m[1];
-      const original = m[2];
+      const original = m[3];
       const override = getI18nLabelOverride(key);
       el.setAttribute(attribute.name, override ?? original);
       byAttr.set(attribute.name, { attr: attribute.name, key, original });
@@ -262,113 +282,43 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
     if (changed) writeLabelAttrs(el, Array.from(byAttr.values()));
   }
 
-  // Server Components render i18n.t() output as plain text (no markers, no
-  // [data-label] span) — RSCs don't re-execute on the client, so the patched
-  // window.i18n.t never wraps these strings. Reverse-lookup unique values in
-  // the bootstrap strings dictionary and wrap matching leaf text nodes so they
-  // become editable too.
-  reverseWrapPlainText();
-
   return replacements.length;
-}
-
-function reverseWrapPlainText(): void {
-  const bootstrap = (
-    window as Window & { __SE_BOOTSTRAP?: { i18n?: { strings?: Record<string, string> } } }
-  ).__SE_BOOTSTRAP;
-  const strings = bootstrap?.i18n?.strings;
-  if (!strings) return;
-
-  // Pass 1: exact-match map for plain (no `{{var}}`) values. Keys are
-  // reverse-lookupable only when their value is unique across the dict —
-  // otherwise we'd mis-attribute "Dashboard" to one of several distinct keys.
-  const exactByValue = new Map<string, string | null>();
-  // Pass 2: regex map for values containing `{{var}}` interpolation. The
-  // regex anchors to ^…$ so a text node only matches when its full content
-  // fits the template (no substring matches).
-  const templated: Array<{ key: string; regex: RegExp }> = [];
-
-  const PLACEHOLDER_RE = /\{\{(\w+)\}\}/g;
-
-  for (const [k, v] of Object.entries(strings)) {
-    if (typeof v !== "string" || v.length === 0) continue;
-    if (v.includes("{{")) {
-      // Escape regex metachars in the literal portions, then replace each
-      // `{{var}}` with `.+?` (non-empty, non-greedy) so any interpolated
-      // value matches but empty placeholders don't.
-      let pattern = "";
-      let literalChars = 0;
-      let last = 0;
-      PLACEHOLDER_RE.lastIndex = 0;
-      let m: RegExpExecArray | null;
-      while ((m = PLACEHOLDER_RE.exec(v)) !== null) {
-        const lit = v.slice(last, m.index);
-        pattern += escapeRegex(lit) + ".+?";
-        literalChars += lit.length;
-        last = m.index + m[0].length;
-      }
-      const tailLit = v.slice(last);
-      pattern += escapeRegex(tailLit);
-      literalChars += tailLit.length;
-      // Reject templates with too little literal anchoring (e.g. "{{var0}}"
-      // alone) — their regex degenerates to `^.+?$` and matches any non-empty
-      // text on the page, which would produce massive false-positive wrapping.
-      if (literalChars < 2) continue;
-      templated.push({ key: k, regex: new RegExp(`^${pattern}$`) });
-      continue;
-    }
-    if (exactByValue.has(v)) exactByValue.set(v, null);
-    else exactByValue.set(v, k);
-  }
-
-  const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "TEXTAREA", "INPUT"]);
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  const wraps: Array<{ node: Text; key: string }> = [];
-
-  let node: Text | null;
-  while ((node = walker.nextNode() as Text | null)) {
-    const parent = node.parentElement;
-    if (!parent) continue;
-    if (SKIP_TAGS.has(parent.tagName)) continue;
-    if (parent.closest("[data-label], #shipeasy-devtools, #se-edit-labels-exit")) continue;
-    const trimmed = (node.nodeValue ?? "").trim();
-    if (!trimmed) continue;
-
-    let key: string | null | undefined = exactByValue.get(trimmed);
-    if (key === null) continue; // ambiguous exact match — skip
-    if (!key) {
-      // Try templated patterns. Wrap only when exactly one regex matches.
-      let matched: string | null = null;
-      let ambiguous = false;
-      for (const { key: tk, regex } of templated) {
-        if (regex.test(trimmed)) {
-          if (matched) {
-            ambiguous = true;
-            break;
-          }
-          matched = tk;
-        }
-      }
-      if (ambiguous || !matched) continue;
-      key = matched;
-    }
-
-    wraps.push({ node, key });
-  }
-
-  for (const { node, key } of wraps) {
-    const parent = node.parentNode;
-    if (!parent) continue;
-    const span = document.createElement("span");
-    span.setAttribute("data-label", key);
-    const override = getI18nLabelOverride(key);
-    span.textContent = override ?? node.nodeValue ?? "";
-    parent.replaceChild(span, node);
-  }
 }
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function listPlaceholders(template: string): string[] {
+  const out: string[] = [];
+  const re = /\{\{(\w+)\}\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(template)) !== null) out.push(m[1]);
+  return out;
+}
+
+function interpolate(template: string, vars: Record<string, unknown> | null | undefined): string {
+  if (!vars) return template;
+  return template.replace(/\{\{(\w+)\}\}/g, (_, p) => {
+    const v = vars[p];
+    return v != null ? String(v) : `{{${p}}}`;
+  });
+}
+
+function safeParseJSON(s: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+}
+
+function getDictTemplate(key: string): string | null {
+  const bs = (
+    window as Window & { __SE_BOOTSTRAP?: { i18n?: { strings?: Record<string, string> } } }
+  ).__SE_BOOTSTRAP;
+  const t = bs?.i18n?.strings?.[key];
+  return typeof t === "string" ? t : null;
 }
 
 interface LabelAttrEntry {
@@ -442,10 +392,38 @@ function applySurface(surface: Surface, value: string): void {
  * Falls back to URL-param override-only when no API is available or when
  * neither a draft nor a non-default profile is selected.
  */
-async function saveLabel(surface: Surface, value: string, popper: HTMLElement): Promise<void> {
-  applySurface(surface, value);
-  setI18nLabelOverride(surface.key, value);
-  window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: surface.key, value } }));
+async function saveLabel(surface: Surface, template: string, popper: HTMLElement): Promise<void> {
+  const errEl = popper.querySelector<HTMLElement>(".lp-err");
+  const saveBtn = popper.querySelector<HTMLButtonElement>('[data-action="save"]')!;
+
+  // Validate that no `{{var}}` placeholder was renamed or removed. The original
+  // template comes from the dict (or the override if one already exists); the
+  // edited value is `template` (textarea contents).
+  const overrideTemplate = getI18nLabelOverride(surface.key);
+  const dictTemplate = getDictTemplate(surface.key);
+  const expected = listPlaceholders(overrideTemplate ?? dictTemplate ?? "");
+  const provided = listPlaceholders(template);
+  const missing = expected.filter((p) => !provided.includes(p));
+  const added = provided.filter((p) => !expected.includes(p));
+  if (missing.length || added.length) {
+    if (errEl) {
+      const parts: string[] = [];
+      if (missing.length) parts.push(`missing {{${missing.join("}}, {{")}}}`);
+      if (added.length) parts.push(`unknown {{${added.join("}}, {{")}}}`);
+      errEl.textContent = `Placeholders must match exactly — ${parts.join("; ")}.`;
+    }
+    return;
+  }
+
+  // The DOM shows the *interpolated* form so the page reflects the edit
+  // immediately. Backend persists the template (with placeholders).
+  const vars = surface.variables ?? {};
+  const interpolated = interpolate(template, vars);
+  applySurface(surface, interpolated);
+  setI18nLabelOverride(surface.key, template);
+  window.dispatchEvent(
+    new CustomEvent("se:i18n:edit", { detail: { key: surface.key, value: template } }),
+  );
 
   const draftId = getI18nDraftOverride();
   const profileId = getI18nProfileOverride();
@@ -456,19 +434,17 @@ async function saveLabel(surface: Surface, value: string, popper: HTMLElement): 
     return;
   }
 
-  const saveBtn = popper.querySelector<HTMLButtonElement>('[data-action="save"]')!;
-  const errEl = popper.querySelector<HTMLElement>(".lp-err");
   saveBtn.disabled = true;
   saveBtn.textContent = "Saving…";
   if (errEl) errEl.textContent = "";
 
   try {
     if (draftId) {
-      await api.upsertDraftKey(draftId, surface.key, value);
+      await api.upsertDraftKey(draftId, surface.key, template);
     } else if (profileId) {
       const match = panelKeys.find((k) => k.key === surface.key && k.profileId === profileId);
       if (match) {
-        await api.updateKeyById(match.id, value);
+        await api.updateKeyById(match.id, template);
       }
     }
     closePopper();
@@ -617,14 +593,25 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
 
     keyEl.textContent = s.key;
 
-    const variableEntries = s.variables ? Object.entries(s.variables) : [];
+    // Editable value is the TEMPLATE (with `{{var}}` placeholders intact),
+    // sourced from the dict. Falls back to the rendered value when the dict
+    // doesn't have the key (older bundle, draft-only, etc).
+    const dictTemplate = getDictTemplate(s.key);
+    const overrideTemplate = getI18nLabelOverride(s.key);
+    const editable = overrideTemplate ?? dictTemplate ?? surfaceCurrentValue(s);
+
+    // Variables now arrive as JSON in `data-variables` (set by the scanner
+    // from the marker's varsJson section). For attribute surfaces we don't
+    // currently propagate vars — that's fine; attributes rarely use them.
+    const vars = s.variables ?? {};
+    const variableEntries = Object.entries(vars);
     const variablesHtml = variableEntries.length
       ? `<div class="lp-field">
-          <label>Variables</label>
+          <label>Variables (read-only)</label>
           <div class="lp-vars">${variableEntries
             .map(
               ([k, v]) =>
-                `<div class="lp-var"><span class="lp-var-k mono">${escapeHtml(k)}</span><span class="lp-var-v">${escapeHtml(String(v))}</span></div>`,
+                `<div class="lp-var"><span class="lp-var-k mono">${escapeHtml(`{{${k}}}`)}</span><span class="lp-var-v">${escapeHtml(String(v))}</span></div>`,
             )
             .join("")}</div>
         </div>`
@@ -649,8 +636,8 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
       </div>
       ${variablesHtml}
       <div class="lp-field">
-        <label>Value</label>
-        <textarea class="lp-input" spellcheck="false">${escapeHtml(surfaceCurrentValue(s))}</textarea>
+        <label>Template</label>
+        <textarea class="lp-input" spellcheck="false">${escapeHtml(editable)}</textarea>
       </div>`;
 
     errEl.textContent = "";
