@@ -198,15 +198,36 @@ export class DevtoolsApi {
   }
 
   async keys(profileId?: string): Promise<KeyRecord[]> {
-    const qs = profileId ? `?profile_id=${encodeURIComponent(profileId)}` : "";
-    // /api/admin/i18n/keys returns `{ keys, total }` (paginated shape) — unwrap.
-    // get() only auto-extracts arrays or `{data: …}`, so we handle this one
-    // explicitly here rather than complicating the generic unwrapper.
-    const body = await this.get<KeyRecord[] | { keys: KeyRecord[] }>(`/api/admin/i18n/keys${qs}`);
-    if (Array.isArray(body)) return body;
-    if (body && Array.isArray((body as { keys?: KeyRecord[] }).keys)) {
-      return (body as { keys: KeyRecord[] }).keys;
+    // The admin endpoint paginates with a default page size of 200. The
+    // devtools panel needs *every* key for the project (we render the full
+    // tree client-side), so we page through using the `total` from the first
+    // response instead of relying on the backend's default cap.
+    const PAGE = 500;
+    const params = (offset: number) => {
+      const sp = new URLSearchParams();
+      if (profileId) sp.set("profile_id", profileId);
+      sp.set("limit", String(PAGE));
+      sp.set("offset", String(offset));
+      return `?${sp.toString()}`;
+    };
+
+    const fetchPage = async (offset: number): Promise<{ keys: KeyRecord[]; total: number }> => {
+      const body = await this.get<KeyRecord[] | { keys: KeyRecord[]; total?: number }>(
+        `/api/admin/i18n/keys${params(offset)}`,
+      );
+      if (Array.isArray(body)) return { keys: body, total: body.length };
+      const keys = (body as { keys?: KeyRecord[] }).keys ?? [];
+      const total = (body as { total?: number }).total ?? keys.length;
+      return { keys, total };
+    };
+
+    const first = await fetchPage(0);
+    const all = first.keys.slice();
+    while (all.length < first.total && first.keys.length > 0) {
+      const next = await fetchPage(all.length);
+      if (next.keys.length === 0) break;
+      all.push(...next.keys);
     }
-    return [];
+    return all;
   }
 }

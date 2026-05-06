@@ -752,16 +752,30 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
 }
 .tree-row:hover { background: var(--se-bg-1); }
 .tree-row.branch > .tree-seg { color: var(--se-fg-2); font-weight: 600; }
-.tree-row.leaf   > .tree-seg { color: var(--se-fg-2); font-family: var(--se-mono); }
-.tree-row.leaf   > .tree-val {
-  flex: 1;
+/* Leaf rows render as a 2-column grid so the key segment and value align
+   like table columns across every row, regardless of segment length. The
+   indent (depth padding) is applied via inline padding-left on the row. */
+.tree-row.leaf {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 12px;
+}
+.tree-row.leaf > .tree-seg {
+  color: var(--se-fg-2);
+  font-family: var(--se-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.tree-row.leaf > .tree-val {
   text-align: right;
   color: var(--se-fg-3);
   font-style: italic;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 60%;
+  min-width: 0;
 }
 .tree-row.leaf > .tree-val.overridden {
   color: var(--se-accent);
@@ -823,6 +837,37 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
   font-size: 13px;
 }
 .lp-close:hover { color: var(--se-fg); background: var(--se-bg-2); }
+.lp-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 8px;
+  background: var(--se-bg-1);
+  border-bottom: 1px solid var(--se-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lp-tabs::-webkit-scrollbar { display: none; }
+.lp-tab {
+  all: unset;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 7px 9px;
+  color: var(--se-fg-3);
+  border-bottom: 1.5px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s;
+}
+.lp-tab:hover { color: var(--se-fg-2); }
+.lp-tab.active { color: var(--se-fg); border-bottom-color: var(--se-accent); }
+.lp-tab .lp-tab-attr {
+  font-family: var(--se-mono);
+  font-size: 10px;
+  color: var(--se-fg-4);
+  margin-left: 4px;
+}
+.lp-tab.active .lp-tab-attr { color: var(--se-accent); }
 .lp-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
 .lp-field { display: flex; flex-direction: column; gap: 3px; }
 .lp-field > label {
