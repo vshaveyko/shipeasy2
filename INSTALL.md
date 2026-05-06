@@ -128,7 +128,22 @@ The CLI and MCP server share `~/.config/shipeasy/config.json` — log in once
 
 ---
 
-## 2. Authenticate (browser, PKCE device flow)
+## 2. Authenticate AND connect to a dedicated project (required)
+
+This is one logical step in two parts: authenticate the machine, then
+**bind this repo to its own Shipeasy project**. Both must complete or
+later steps will refuse to run. **Skipping the binding is not an option** —
+the CLI and MCP tools refuse all mutating operations until `.shipeasy`
+exists.
+
+> **Hard rule: one Shipeasy project per website / repo / app.** Never reuse
+> a project across two unrelated apps. The whole point of the binding is
+> to isolate i18n keys, flags, experiments, and SDK keys per app — sharing
+> projects collapses that isolation and corrupts every consumer's data.
+> If you find yourself about to bind two unrelated apps to the same
+> `project_id`, stop and create a new project instead.
+
+### 2a. Log in
 
 ```bash
 shipeasy login
@@ -141,6 +156,10 @@ What happens:
 3. Default browser opens at `{app_base}/cli-auth?state=…&source=cli`.
 4. The user signs in / signs up (GitHub, Google, magic link).
 5. The dashboard prompts the user to **pick or create a project**.
+   - **For a fresh app install: choose "Create new project"** and name it
+     after the app/repo (e.g. `acme-web`, `shouks`, `marketing-site`).
+   - Only pick an existing project if you are _re-installing_ into a repo
+     that already had a `.shipeasy` (and the existing project_id matches).
 6. CLI polls `/auth/device/poll` until it gets `{ token, project_id }`.
 7. Token written to `~/.config/shipeasy/config.json` (mode 0600).
 
@@ -148,76 +167,87 @@ Verify:
 
 ```bash
 shipeasy whoami
-# Project:    <uuid>
-# (Email line only present if the OAuth provider supplied one)
+# Project:    <uuid>            ← the project you picked/created above
 # Worker URL: https://cdn.shipeasy.ai
 # App URL:    https://shipeasy.ai
 # Saved at:   <iso-timestamp>
+# Bound dir:  — (run `shipeasy bind` to bind this directory)   ← still empty
 ```
 
 Self-heal:
 
 - `Not logged in` → re-run `shipeasy login`. Don't loop more than twice.
 - Stale token (`401` from any later step) → `shipeasy logout && shipeasy login`.
-- Headless / SSH session → re-run with `--no-browser` and surface the URL to
-  the user verbatim. Do not paste tokens or codes back to chat.
+- Headless / SSH session → re-run with `--no-browser` and surface the URL
+  to the user verbatim. Do not paste tokens or codes back to chat.
+- Browser already had a session for the _wrong_ user → `shipeasy logout`,
+  open the dashboard URL in a private/incognito window, and re-run
+  `shipeasy login`.
 
----
-
-## 2.5. Bind the directory to its project (required, one line)
-
-The CLI session in `~/.config/shipeasy/config.json` defaults to whatever
-project the user picked at `shipeasy login` time. That default is
-**per-machine**, not per-repo — and it is the single biggest source of
-"why did my keys land on the wrong project?" support tickets. Binding the
-directory to a specific project_id stops that, hard.
+### 2b. Bind the repo to that project — **MANDATORY**
 
 ```bash
-shipeasy bind <project_id>             # ← REQUIRED
-# Or, when binding the same project the CLI session is logged into:
-shipeasy bind                           # defaults to creds.project_id
+shipeasy bind                              # binds to creds.project_id (the one you just picked)
+# Or, to bind to a different project than the CLI session is logged into:
+shipeasy bind <project_id> --name <name>
 ```
 
-What it does:
+The CLI session in `~/.config/shipeasy/config.json` is **per-machine, not
+per-repo**. Without `.shipeasy`, every push from this directory would
+silently route to whatever project the machine was last logged into —
+even if that's a _completely unrelated_ app. This is the single biggest
+source of "why did my keys land on the wrong project?" incidents.
 
-- Writes `.shipeasy` (JSON) at the cwd with `{ "project_id": "...", "project_name": "..." }`.
-- That file is searched **walk-up like `.git`** — bind once at the repo
+**Always run `shipeasy bind` immediately after `shipeasy login`, in the
+target app's repo root.** Make it the same muscle memory as `git init` +
+`git remote add origin`.
+
+What `bind` does:
+
+- Writes `.shipeasy` (JSON) at the cwd with
+  `{ "project_id": "<uuid>", "project_name": "<name>" }`.
+- The file is searched **walk-up like `.git`** — bind once at the repo
   root and every `cwd` underneath inherits it.
 - **`.shipeasy` is checked in.** It carries no secrets — only the public
-  project*id — and it must travel with the repo so every teammate's CLI
+  `project_id` — and it must travel with the repo so every teammate's CLI
   and every CI run targets the same project. (The optional
-  `i18n.client_key` field embedded by `install-loader` is a `sdk_client*…`
-  key, also public-by-design.)
+  `i18n.client_key` field embedded later by `install-loader` is a
+  `sdk_client_…` key, also public-by-design.) **Do not gitignore it.**
 
-Once bound, every mutating CLI/MCP operation enforces it:
+Once bound, every mutating CLI/MCP operation enforces the binding:
 
-- `shipeasy keys create`, `shipeasy i18n push|publish|profiles create|install-loader`,
-  `shipeasy flags create|enable|disable|delete`,
-  `shipeasy experiments create|start|stop` — all refuse to run unless
-  `.shipeasy` (or an explicit `--project <id>`) supplies the target.
-- Same for the MCP write tools (`i18n_push_keys`, `i18n_create_key`,
-  `i18n_create_profile`, `i18n_publish_profile`, `i18n_install_loader`,
-  `exp_create_*`, `exp_start_*`, `exp_stop_*`). MCP has no `--project`
-  flag — binding is the only way.
+- CLI: `keys create|revoke`, `flags create|enable|disable|delete`,
+  `experiments create|start|stop`,
+  `i18n push|publish|profiles create|install-loader` — all refuse to run
+  unless `.shipeasy` (or an explicit `--project <id>`) supplies the
+  target.
+- MCP: `i18n_push_keys`, `i18n_create_key`, `i18n_create_profile`,
+  `i18n_publish_profile`, `i18n_install_loader`, `exp_create_*`,
+  `exp_start_*`, `exp_stop_*` — same. **MCP has no `--project` flag**, so
+  binding is the only way to make the write tools work.
 - If the bound project differs from the CLI session, the CLI prints a
-  one-liner notice and uses the bound project (the API will 401 if the
-  session token doesn't have access; that's the right failure mode).
+  one-line notice and uses the bound project. The API rejects with 401 if
+  the session token doesn't have access; that's the correct failure mode.
 
 Verify:
 
 ```bash
-shipeasy whoami        # last line should now read: Bound dir: <uuid> (<name>)
-cat .shipeasy
+shipeasy whoami        # last line: "Bound dir: <uuid> (<name>)"
+cat .shipeasy          # has project_id; no secrets
+git status             # .shipeasy should appear as new (commit it)
 ```
 
 Self-heal:
 
 - `This command writes to a Shipeasy project, but no project is bound …`
-  → run `shipeasy bind <project_id>` (or `--project <id>` for one-off).
-- Bound project_id is wrong → re-edit `.shipeasy` directly or re-run
+  → you skipped 2b; run `shipeasy bind` now.
+- Bound `project_id` is wrong → re-edit `.shipeasy` directly or re-run
   `shipeasy bind <correct_id>`.
-- A teammate's PR landed without `.shipeasy` → bind it from the repo root
-  and commit. Don't .gitignore it.
+- A teammate's PR landed without `.shipeasy` → bind from the repo root
+  and commit. Don't gitignore it.
+- `.shipeasy` is in `.gitignore` from a stale install → remove it from
+  `.gitignore` and commit `.shipeasy`. The legacy "auto-gitignored
+  cache" behaviour was removed when binding became mandatory.
 
 ---
 
@@ -452,7 +482,7 @@ Effect:
   new key (last resort).
 - The `.shipeasy` file (a single JSON file, not a directory) is **checked
   in** alongside the rest of the repo — it holds the project binding
-  (step 2.5) and the cached `i18n.client_key` (a public `sdk_client_…`
+  (step 2b) and the cached `i18n.client_key` (a public `sdk_client_…`
   token, safe to commit). Don't add it to `.gitignore`.
 
 Verify:
@@ -773,15 +803,21 @@ the diff stays reviewable.
 
 ## Agent operating rules (read this if you are the agent)
 
-1. **One configure call.** Never create custom `lib/shipeasy.ts` wrappers.
+1. **One project per app, always bound.** Every fresh install creates a
+   new Shipeasy project (step 2a — pick "Create new project") and binds
+   the repo to it via `shipeasy bind` (step 2b). Never reuse a project
+   across two unrelated apps; never skip the bind. If `.shipeasy` is
+   missing or wrong, _fix that first_ — every subsequent step depends on
+   it. Commit `.shipeasy` to the repo; do not gitignore it.
+2. **One configure call.** Never create custom `lib/shipeasy.ts` wrappers.
    The SDK has its own entry — `shipeasy({ apiKey })` from
    `@shipeasy/sdk/{server,client}`. Anything else is wrong.
-2. **Vanilla JS surface.** Anything you build on top must work without React.
+3. **Vanilla JS surface.** Anything you build on top must work without React.
    `@shipeasy/react` is a thin wrapper, not a requirement.
-3. **Confirm before destructive operations.** Revoking keys, rewriting an
+4. **Confirm before destructive operations.** Revoking keys, rewriting an
    existing `mcpServers` config, or force-pushing always asks first.
-4. **Never log server keys.** Strip them from any output you echo back.
-5. **Self-heal once, then escalate.** If a step fails twice, stop and ask
+5. **Never log server keys.** Strip them from any output you echo back.
+6. **Self-heal once, then escalate.** If a step fails twice, stop and ask
    the user — do not loop.
-6. **Verify, don't trust.** After every mutating step run the matching
+7. **Verify, don't trust.** After every mutating step run the matching
    verification command above before proceeding.
