@@ -11,7 +11,15 @@
   "name": "shipeasy",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-04-30",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // nodejs_als enables AsyncLocalStorage.enterWith() in workerd. Without it
+  // Next 16's RSC rendering crashes every request with
+  // "asyncLocalStorage.enterWith() is not implemented". Must come alongside
+  // nodejs_compat (not as a replacement).
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_als",
+    "global_fetch_strictly_public",
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets",
