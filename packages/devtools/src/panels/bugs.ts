@@ -173,7 +173,7 @@ function openBugModal(api: DevtoolsApi, shadow: ShadowRoot, onSubmitted: () => v
   modal.body.querySelector("#se-b-screenshot")!.addEventListener("click", async () => {
     setStatus("Pick a screen/tab to capture…");
     try {
-      const blob = await captureScreenshot();
+      const blob = await captureScreenshot(shadow.host as HTMLElement);
       setStatus("");
       openAnnotateModal(shadow, blob, (annotated) => {
         attachments.push({
@@ -213,7 +213,7 @@ function openBugModal(api: DevtoolsApi, shadow: ShadowRoot, onSubmitted: () => v
     }
     setStatus("Pick a screen/tab to record…");
     try {
-      recording = await startRecording();
+      recording = await startRecording(shadow.host as HTMLElement);
       recordBtn.textContent = "■ Stop recording";
       recordBtn.classList.add("danger");
       setStatus("Recording… click stop when done.");

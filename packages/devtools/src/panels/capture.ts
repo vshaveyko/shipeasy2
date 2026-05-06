@@ -12,7 +12,18 @@ declare global {
   }
 }
 
-export async function captureScreenshot(): Promise<Blob> {
+// Hide the entire devtools shadow host (sidebar + any open modal) so it doesn't
+// appear in the captured frame / recording. Returns a restore function.
+function hideHost(host: HTMLElement | null | undefined): () => void {
+  if (!host) return () => {};
+  const prev = host.style.visibility;
+  host.style.visibility = "hidden";
+  return () => {
+    host.style.visibility = prev;
+  };
+}
+
+export async function captureScreenshot(host?: HTMLElement | null): Promise<Blob> {
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error("Screen capture is not supported in this browser.");
   }
@@ -20,6 +31,7 @@ export async function captureScreenshot(): Promise<Blob> {
     video: { frameRate: 30 },
     audio: false,
   });
+  const restore = hideHost(host);
   try {
     const video = document.createElement("video");
     video.srcObject = stream;
@@ -39,6 +51,9 @@ export async function captureScreenshot(): Promise<Blob> {
       };
     });
     await video.play();
+    // Two rAF ticks: one for the visibility:hidden repaint to land in the
+    // capture stream, one for play() to actually decode a frame.
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
     await new Promise((r) => requestAnimationFrame(() => r(null)));
     const w = video.videoWidth;
     const h = video.videoHeight;
@@ -55,6 +70,7 @@ export async function captureScreenshot(): Promise<Blob> {
     return blob;
   } finally {
     stream.getTracks().forEach((t) => t.stop());
+    restore();
   }
 }
 
@@ -63,7 +79,7 @@ export interface RecordingHandle {
   cancel(): void;
 }
 
-export async function startRecording(): Promise<RecordingHandle> {
+export async function startRecording(host?: HTMLElement | null): Promise<RecordingHandle> {
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error("Screen capture is not supported in this browser.");
   }
@@ -71,6 +87,10 @@ export async function startRecording(): Promise<RecordingHandle> {
     video: { frameRate: 30 },
     audio: true,
   });
+  const restore = hideHost(host);
+  // Let the visibility:hidden repaint reach the capture stream before we
+  // start collecting chunks, so the opening frames don't show the panel.
+  await new Promise((r) => requestAnimationFrame(() => r(null)));
   // Pick a mime type the browser actually supports (Safari is webm-shy).
   const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
   const mimeType = candidates.find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
@@ -81,13 +101,16 @@ export async function startRecording(): Promise<RecordingHandle> {
   });
   recorder.start(500);
 
-  // Stop early if the user clicks "Stop sharing" in the browser's UI.
+  // Stop early if the user clicks "Stop sharing" in the browser's UI. Also
+  // restore the devtools panel so the user isn't left looking at a hidden UI.
   stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+    restore();
     if (recorder.state !== "inactive") recorder.stop();
   });
 
   function stopTracks() {
     stream.getTracks().forEach((t) => t.stop());
+    restore();
   }
 
   return {
