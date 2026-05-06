@@ -23,11 +23,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Note: SSR URL-overrides (?_se_flag_X=…) are disabled because the
-  // middleware/proxy that surfaced the search string broke opennext-cloudflare
-  // (proxy.ts is Node-runtime-only in Next 16; legacy middleware.ts crashed
-  // the worker at runtime). Re-add x-se-search wiring once opennext supports
-  // Node-runtime proxy.
+  // SSR URL-overrides (?_se_flag_X=…) are temporarily disabled.
+  // proxy.ts (Next 16, Node-runtime-only) breaks opennext-cloudflare at build,
+  // and a legacy edge middleware.ts crashed the worker at runtime — every
+  // page returned HTTP 500. Re-add x-se-search wiring once opennext gains
+  // Node-runtime proxy support.
   const seConfig = await shipeasy({
     apiKey: process.env.SHIPEASY_SERVER_KEY,
     clientKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY,
