@@ -1,4 +1,5 @@
 import { LABEL_MARKER_START } from "@shipeasy/sdk/client";
+import { STYLES } from "../styles";
 
 // Accept both the legacy 2-section marker (`￹key￺value￻`, SDK ≤ 2.1.10) and
 // the 3-section format with vars JSON (`￹key￺varsJson￺value￻`, SDK ≥ 2.1.11).
@@ -319,6 +320,27 @@ function safeParseJSON(s: string): Record<string, unknown> | null {
   }
 }
 
+const POPPER_HOST_ID = "se-popper-host";
+
+function ensurePopperShadow(): ShadowRoot {
+  let host = document.getElementById(POPPER_HOST_ID);
+  if (host?.shadowRoot) return host.shadowRoot;
+  if (!host) {
+    host = document.createElement("div");
+    host.id = POPPER_HOST_ID;
+    document.body.appendChild(host);
+  }
+  const shadow = host.attachShadow({ mode: "open" });
+  // STYLES carries the entire devtools stylesheet — most of it is panel UI
+  // unrelated to the popper, but bundling the whole thing is cheap (already
+  // in the bundle anyway) and keeps :host / .label-popper / .lp-* in lockstep
+  // with the main overlay.
+  const styleEl = document.createElement("style");
+  styleEl.textContent = STYLES;
+  shadow.appendChild(styleEl);
+  return shadow;
+}
+
 function getDictTemplate(key: string): string | null {
   const bs = (
     window as Window & { __SE_BOOTSTRAP?: { i18n?: { strings?: Record<string, string> } } }
@@ -581,7 +603,15 @@ function openLabelPopper(target: HTMLElement, shadow: ShadowRoot): void {
     </div>
     <div class="lp-err"></div>`;
 
-  shadow.appendChild(popper);
+  // Mount into a popper-only shadow host that's independent of the main
+  // overlay. The customer app's React tree may reconcile away unexpected DOM
+  // children during hydration (we've seen #shipeasy-devtools disappear on
+  // shouks.com after a #418 hydration recovery), which would leave the popper
+  // orphaned. The dedicated host is re-created on every open if missing, so
+  // the popper always lands in a live shadow.
+  void shadow;
+  const popperShadow = ensurePopperShadow();
+  popperShadow.appendChild(popper);
 
   const keyEl = popper.querySelector<HTMLElement>(".lp-key")!;
   const bodyEl = popper.querySelector<HTMLElement>(".lp-body")!;
