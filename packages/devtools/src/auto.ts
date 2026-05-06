@@ -17,7 +17,17 @@ if (typeof window !== "undefined") {
   // we default to the origin of the se-devtools.js <script> tag, so the
   // popup opens on the admin app that served the script.
   const cfg = (window as Window & AutoGlobals).__se_devtools_config ?? {};
-  loadOnTrigger(cfg);
+  // Defer mount past React hydration. Mounting the overlay host onto
+  // <html> mid-hydrate makes Next.js's hydration recovery (#418) tear
+  // down the entire client tree including our host, and the reattach
+  // observer can't keep up because it ALSO gets re-created. Waiting
+  // until window.load + a couple of rAFs sidesteps the recovery cycle
+  // entirely so the host lands on a steady-state DOM and stays.
+  const startLoadOnTrigger = () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => loadOnTrigger(cfg)));
+  };
+  if (document.readyState === "complete") startLoadOnTrigger();
+  else window.addEventListener("load", startLoadOnTrigger, { once: true });
   void isDevtoolsRequested;
 
   // When ?se_edit_labels=1 is present, scan the DOM and replace Unicode

@@ -55,8 +55,14 @@ let destroyFn: (() => void) | null = null;
 
 /** Mount the devtools overlay. Safe to call multiple times — idempotent. */
 export function init(opts: DevtoolsOptions = {}): void {
-  if (destroyFn) return; // already mounted
   if (typeof window === "undefined" || typeof document === "undefined") return;
+  // If a prior mount happened but the host got detached (e.g. React #418
+  // tore down the documentElement subtree before the reattach observer
+  // could catch it), reset the destroy handle and re-mount fresh.
+  if (destroyFn) {
+    if (document.getElementById("shipeasy-devtools")) return;
+    destroyFn = null;
+  }
 
   initFromUrl();
 

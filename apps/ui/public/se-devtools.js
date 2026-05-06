@@ -1,90 +1,90 @@
 "use strict";
 (() => {
-  var rn = Object.create;
+  var sn = Object.create;
   var he = Object.defineProperty;
-  var on = Object.getOwnPropertyDescriptor;
-  var sn = Object.getOwnPropertyNames;
-  var an = Object.getPrototypeOf,
-    ln = Object.prototype.hasOwnProperty;
-  var dn = (e, t, n) =>
+  var an = Object.getOwnPropertyDescriptor;
+  var ln = Object.getOwnPropertyNames;
+  var dn = Object.getPrototypeOf,
+    cn = Object.prototype.hasOwnProperty;
+  var un = (e, t, n) =>
     t in e ? he(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
-  var cn = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports);
-  var un = (e, t, n, r) => {
+  var pn = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports);
+  var fn = (e, t, n, r) => {
     if ((t && typeof t == "object") || typeof t == "function")
-      for (let o of sn(t))
-        !ln.call(e, o) &&
+      for (let o of ln(t))
+        !cn.call(e, o) &&
           o !== n &&
-          he(e, o, { get: () => t[o], enumerable: !(r = on(t, o)) || r.enumerable });
+          he(e, o, { get: () => t[o], enumerable: !(r = an(t, o)) || r.enumerable });
     return e;
   };
-  var pn = (e, t, n) => (
-    (n = e != null ? rn(an(e)) : {}),
-    un(t || !e || !e.__esModule ? he(n, "default", { value: e, enumerable: !0 }) : n, e)
+  var gn = (e, t, n) => (
+    (n = e != null ? sn(dn(e)) : {}),
+    fn(t || !e || !e.__esModule ? he(n, "default", { value: e, enumerable: !0 }) : n, e)
   );
-  var P = (e, t, n) => dn(e, typeof t != "symbol" ? t + "" : t, n);
-  var Tt = cn((Qr, _t) => {
+  var A = (e, t, n) => un(e, typeof t != "symbol" ? t + "" : t, n);
+  var Rt = pn((ro, Mt) => {
     "use strict";
     var Be = Object.defineProperty,
-      Sn = Object.getOwnPropertyDescriptor,
-      _n = Object.getOwnPropertyNames,
-      Tn = Object.prototype.hasOwnProperty,
-      Mn = (e, t) => {
+      Tn = Object.getOwnPropertyDescriptor,
+      Mn = Object.getOwnPropertyNames,
+      Rn = Object.prototype.hasOwnProperty,
+      An = (e, t) => {
         for (var n in t) Be(e, n, { get: t[n], enumerable: !0 });
       },
-      Rn = (e, t, n, r) => {
+      $n = (e, t, n, r) => {
         if ((t && typeof t == "object") || typeof t == "function")
-          for (let o of _n(t))
-            !Tn.call(e, o) &&
+          for (let o of Mn(t))
+            !Rn.call(e, o) &&
               o !== n &&
-              Be(e, o, { get: () => t[o], enumerable: !(r = Sn(t, o)) || r.enumerable });
+              Be(e, o, { get: () => t[o], enumerable: !(r = Tn(t, o)) || r.enumerable });
         return e;
       },
-      $n = (e) => Rn(Be({}, "__esModule", { value: !0 }), e),
-      vt = {};
-    Mn(vt, {
-      FlagsClientBrowser: () => ht,
-      LABEL_MARKER_END: () => Lt,
-      LABEL_MARKER_RE: () => Wn,
-      LABEL_MARKER_SEP: () => kt,
-      LABEL_MARKER_START: () => Et,
-      _resetShipeasyForTests: () => Fn,
-      attachDevtools: () => yt,
+      Pn = (e) => $n(Be({}, "__esModule", { value: !0 }), e),
+      bt = {};
+    An(bt, {
+      FlagsClientBrowser: () => yt,
+      LABEL_MARKER_END: () => _t,
+      LABEL_MARKER_RE: () => Gn,
+      LABEL_MARKER_SEP: () => St,
+      LABEL_MARKER_START: () => Lt,
+      _resetShipeasyForTests: () => Wn,
+      attachDevtools: () => wt,
       configureShipeasy: () => De,
-      encodeLabelMarker: () => St,
-      flags: () => wt,
-      getShipeasyClient: () => zn,
-      i18n: () => or,
+      encodeLabelMarker: () => Tt,
+      flags: () => kt,
+      getShipeasyClient: () => Fn,
+      i18n: () => ar,
       isDevtoolsRequested: () => Pe,
-      labelAttrs: () => Gn,
+      labelAttrs: () => Vn,
       loadDevtools: () => Ce,
       readConfigOverride: () => qe,
-      readExpOverride: () => bt,
+      readExpOverride: () => xt,
       readGateOverride: () => Ie,
-      shipeasy: () => xt,
-      version: () => An,
+      shipeasy: () => Et,
+      version: () => Cn,
     });
-    _t.exports = $n(vt);
-    var An = "1.0.0",
-      Pn = 5e3,
-      Cn = 100,
-      pt = "__se_anon_id",
-      ft = "__se_seen",
-      Z = "__se_pending_alias",
-      On = class {
+    Mt.exports = Pn(bt);
+    var Cn = "1.0.0",
+      On = 5e3,
+      Hn = 100,
+      gt = "__se_anon_id",
+      mt = "__se_seen",
+      te = "__se_pending_alias",
+      Bn = class {
         constructor(e, t) {
-          P(this, "collectUrl");
-          P(this, "sdkKey");
-          P(this, "queue", []);
-          P(this, "exposureSeen", new Set());
-          P(this, "timer", null);
+          A(this, "collectUrl");
+          A(this, "sdkKey");
+          A(this, "queue", []);
+          A(this, "exposureSeen", new Set());
+          A(this, "timer", null);
           if (((this.collectUrl = e), (this.sdkKey = t), typeof window < "u")) {
-            ((this.timer = setInterval(() => this.flush(), Pn)),
+            ((this.timer = setInterval(() => this.flush(), On)),
               window.addEventListener("beforeunload", () => this.flush()),
               document.addEventListener("visibilitychange", () => {
                 document.visibilityState === "hidden" && this.flush(!0);
               }));
             try {
-              let n = sessionStorage.getItem(ft);
+              let n = sessionStorage.getItem(mt);
               n && (this.exposureSeen = new Set(JSON.parse(n)));
             } catch {}
           }
@@ -97,7 +97,7 @@
           if (!this.exposureSeen.has(o)) {
             this.exposureSeen.add(o);
             try {
-              sessionStorage.setItem(ft, JSON.stringify([...this.exposureSeen]));
+              sessionStorage.setItem(mt, JSON.stringify([...this.exposureSeen]));
             } catch {}
             this.enqueue({
               type: "exposure",
@@ -122,23 +122,23 @@
         async alias(e, t) {
           let n = { anonymousId: e, userId: t, ts: Date.now() };
           try {
-            localStorage.setItem(Z, JSON.stringify(n));
+            localStorage.setItem(te, JSON.stringify(n));
           } catch {}
           (await this.flushAsync(), await this._sendAlias(e, t));
           try {
-            localStorage.removeItem(Z);
+            localStorage.removeItem(te);
           } catch {}
         }
         async flushPendingAlias() {
           try {
-            let e = localStorage.getItem(Z);
+            let e = localStorage.getItem(te);
             if (!e) return;
             let t = JSON.parse(e);
             if (Date.now() - t.ts > 7 * 864e5) {
-              localStorage.removeItem(Z);
+              localStorage.removeItem(te);
               return;
             }
-            (await this._sendAlias(t.anonymousId, t.userId), localStorage.removeItem(Z));
+            (await this._sendAlias(t.anonymousId, t.userId), localStorage.removeItem(te));
           } catch {}
         }
         async _sendAlias(e, t) {
@@ -146,7 +146,7 @@
             await this.flushAsync());
         }
         enqueue(e) {
-          (this.queue.push(e), this.queue.length >= Cn && this.flush());
+          (this.queue.push(e), this.queue.length >= Hn && this.flush());
         }
         flush(e = !1) {
           if (!this.queue.length) return;
@@ -174,8 +174,8 @@
           }).catch(() => {});
         }
       },
-      ue = 5;
-    function Hn(e, t, n) {
+      fe = 5;
+    function In(e, t, n) {
       if (typeof window > "u" || typeof PerformanceObserver > "u") return;
       let r = null,
         o = null,
@@ -184,42 +184,42 @@
         s = 0,
         d = !1;
       try {
-        new PerformanceObserver((m) => {
-          let p = m.getEntries();
+        new PerformanceObserver((v) => {
+          let p = v.getEntries();
           p.length && (r = p[p.length - 1].startTime);
         }).observe({ type: "largest-contentful-paint", buffered: !0 });
       } catch {}
       try {
-        new PerformanceObserver((m) => {
-          for (let p of m.getEntries()) {
+        new PerformanceObserver((v) => {
+          for (let p of v.getEntries()) {
             let l = p.duration ?? 0;
             (o === null || l > o) && (o = l);
           }
         }).observe({ type: "event", buffered: !0, durationThreshold: 16 });
       } catch {}
       try {
-        new PerformanceObserver((m) => {
-          for (let p of m.getEntries()) p.value > 0.1 && (i = !0);
+        new PerformanceObserver((v) => {
+          for (let p of v.getEntries()) p.value > 0.1 && (i = !0);
         }).observe({ type: "layout-shift", buffered: !0 });
       } catch {}
-      let c = window.onerror;
-      ((window.onerror = (b, m, p, l, y) => (
-        a < ue &&
+      let u = window.onerror;
+      ((window.onerror = (h, v, p, l, y) => (
+        a < fe &&
           ((a += 1),
           e.pushMetric("__auto_js_error", t, n, {
             value: 1,
             kind: "exception",
-            message: typeof b == "string" ? b.slice(0, 200) : String(y ?? "").slice(0, 200),
-            source: typeof m == "string" ? m.slice(0, 200) : "",
+            message: typeof h == "string" ? h.slice(0, 200) : String(y ?? "").slice(0, 200),
+            source: typeof v == "string" ? v.slice(0, 200) : "",
             line: p ?? 0,
           })),
-        typeof c == "function" ? c(b, m, p, l, y) : !1
+        typeof u == "function" ? u(h, v, p, l, y) : !1
       )),
-        window.addEventListener("unhandledrejection", (b) => {
-          if (a < ue) {
+        window.addEventListener("unhandledrejection", (h) => {
+          if (a < fe) {
             a += 1;
-            let m = b.reason,
-              p = m instanceof Error ? m.message : typeof m == "string" ? m : String(m);
+            let v = h.reason,
+              p = v instanceof Error ? v.message : typeof v == "string" ? v : String(v);
             e.pushMetric("__auto_js_error", t, n, {
               value: 1,
               kind: "unhandled_rejection",
@@ -227,16 +227,16 @@
             });
           }
         }));
-      let f = window.fetch;
-      window.fetch = async function (...b) {
-        let m = typeof performance < "u" ? performance.now() : 0,
-          p = typeof b[0] == "string" ? b[0] : b[0].toString(),
+      let g = window.fetch;
+      window.fetch = async function (...h) {
+        let v = typeof performance < "u" ? performance.now() : 0,
+          p = typeof h[0] == "string" ? h[0] : h[0].toString(),
           l;
         try {
-          l = await f.apply(this, b);
+          l = await g.apply(this, h);
         } catch (y) {
           throw (
-            s < ue &&
+            s < fe &&
               ((s += 1),
               e.pushMetric("__auto_network_error", t, n, {
                 value: 1,
@@ -247,9 +247,9 @@
             y
           );
         }
-        if (l.status >= 500 && s < ue) {
+        if (l.status >= 500 && s < fe) {
           s += 1;
-          let y = typeof performance < "u" ? performance.now() - m : 0;
+          let y = typeof performance < "u" ? performance.now() - v : 0;
           e.pushMetric("__auto_network_error", t, n, {
             value: 1,
             kind: "5xx",
@@ -260,20 +260,20 @@
         }
         return l;
       };
-      let h = () => {
+      let b = () => {
         if (!d) {
           d = !0;
           try {
-            let m = performance.getEntriesByType("navigation")[0];
-            if (m) {
-              let l = m.startTime ?? 0;
-              (m.loadEventEnd > 0 &&
-                e.pushMetric("__auto_page_load", t, n, { value: m.loadEventEnd - l }),
-                m.responseStart > 0 &&
-                  e.pushMetric("__auto_ttfb", t, n, { value: m.responseStart - l }),
-                m.domContentLoadedEventEnd > 0 &&
+            let v = performance.getEntriesByType("navigation")[0];
+            if (v) {
+              let l = v.startTime ?? 0;
+              (v.loadEventEnd > 0 &&
+                e.pushMetric("__auto_page_load", t, n, { value: v.loadEventEnd - l }),
+                v.responseStart > 0 &&
+                  e.pushMetric("__auto_ttfb", t, n, { value: v.responseStart - l }),
+                v.domContentLoadedEventEnd > 0 &&
                   e.pushMetric("__auto_dom_ready", t, n, {
-                    value: m.domContentLoadedEventEnd - l,
+                    value: v.domContentLoadedEventEnd - l,
                   }));
             }
             let p = performance.getEntriesByType("paint");
@@ -286,29 +286,29 @@
         }
       };
       document.readyState === "complete"
-        ? setTimeout(h, 0)
+        ? setTimeout(b, 0)
         : window.addEventListener(
             "load",
             () => {
-              setTimeout(h, 0);
+              setTimeout(b, 0);
             },
             { once: !0 },
           );
-      let g = () => {
-        (h(),
+      let m = () => {
+        (b(),
           r !== null && e.pushMetric("__auto_lcp", t, n, { value: r }),
           o !== null && e.pushMetric("__auto_inp", t, n, { value: o }),
           i && e.pushMetric("__auto_cls_binary", t, n, { value: 1 }));
-        let b = r === null ? 1 : 0;
-        (e.pushMetric("__auto_abandoned", t, n, { value: b }), e.flush(!0));
+        let h = r === null ? 1 : 0;
+        (e.pushMetric("__auto_abandoned", t, n, { value: h }), e.flush(!0));
       };
       document.addEventListener("visibilitychange", () => {
-        document.visibilityState === "hidden" && g();
+        document.visibilityState === "hidden" && m();
       });
     }
-    function Bn() {
+    function qn() {
       try {
-        let t = localStorage.getItem(pt);
+        let t = localStorage.getItem(gt);
         if (t) return t;
       } catch {}
       let e =
@@ -316,11 +316,11 @@
           ? crypto.randomUUID()
           : `anon_${Math.random().toString(36).slice(2)}`;
       try {
-        localStorage.setItem(pt, e);
+        localStorage.setItem(gt, e);
       } catch {}
       return e;
     }
-    function In() {
+    function Dn() {
       if (typeof window > "u") return {};
       let e = {};
       try {
@@ -347,7 +347,7 @@
       } catch {}
       return e;
     }
-    function qn() {
+    function Nn() {
       if (typeof window > "u") return {};
       let e = {};
       try {
@@ -360,28 +360,28 @@
       } catch {}
       return e;
     }
-    var ht = class {
+    var yt = class {
         constructor(e) {
-          P(this, "sdkKey");
-          P(this, "baseUrl");
-          P(this, "autoGuardrails");
-          P(this, "env");
-          P(this, "evalResult", null);
-          P(this, "anonId");
-          P(this, "userId", "");
-          P(this, "buffer");
-          P(this, "guardrailsInstalled", !1);
-          P(this, "listeners", new Set());
-          P(this, "overrideListenerInstalled", !1);
-          P(this, "onOverrideChange", () => {
+          A(this, "sdkKey");
+          A(this, "baseUrl");
+          A(this, "autoGuardrails");
+          A(this, "env");
+          A(this, "evalResult", null);
+          A(this, "anonId");
+          A(this, "userId", "");
+          A(this, "buffer");
+          A(this, "guardrailsInstalled", !1);
+          A(this, "listeners", new Set());
+          A(this, "overrideListenerInstalled", !1);
+          A(this, "onOverrideChange", () => {
             (this.installBridge(), this.notify());
           });
           ((this.sdkKey = e.sdkKey),
             (this.baseUrl = (e.baseUrl ?? "https://edge.shipeasy.dev").replace(/\/$/, "")),
             (this.env = e.env ?? "prod"),
             (this.autoGuardrails = e.autoGuardrails !== !1),
-            (this.anonId = Bn()),
-            (this.buffer = new On(`${this.baseUrl}/collect`, this.sdkKey)),
+            (this.anonId = qn()),
+            (this.buffer = new Bn(`${this.baseUrl}/collect`, this.sdkKey)),
             this.buffer.flushPendingAlias());
         }
         async identify(e) {
@@ -391,17 +391,17 @@
               this.userId &&
               this.userId !== t &&
               (await this.buffer.alias(this.anonId, this.userId)));
-          let n = { ...In(), anonymous_id: this.anonId, ...e },
+          let n = { ...Dn(), anonymous_id: this.anonId, ...e },
             r = await fetch(`${this.baseUrl}/sdk/evaluate?env=${this.env}`, {
               method: "POST",
               headers: { "X-SDK-Key": this.sdkKey, "Content-Type": "application/json" },
-              body: JSON.stringify({ user: n, experiment_overrides: qn() }),
+              body: JSON.stringify({ user: n, experiment_overrides: Nn() }),
             });
           if (!r.ok) throw new Error(`/sdk/evaluate returned ${r.status}`);
           ((this.evalResult = await r.json()),
             this.autoGuardrails &&
               !this.guardrailsInstalled &&
-              ((this.guardrailsInstalled = !0), Hn(this.buffer, this.userId, this.anonId)),
+              ((this.guardrailsInstalled = !0), In(this.buffer, this.userId, this.anonId)),
             this.notify());
         }
         get ready() {
@@ -439,7 +439,7 @@
         }
         getExperiment(e, t, n, r) {
           let o = { inExperiment: !1, group: "control", params: t },
-            i = bt(e);
+            i = xt(e);
           if (i !== null) {
             let s = r?.[i],
               d = s ? { ...t, ...s } : t;
@@ -499,12 +499,12 @@
               (this.overrideListenerInstalled = !1)));
         }
       },
-      Dn = /^(true|on|1|yes)$/i,
-      Nn = /^(false|off|0|no)$/i;
-    function Un(e) {
-      return Dn.test(e) ? !0 : Nn.test(e) ? !1 : null;
+      Un = /^(true|on|1|yes)$/i,
+      Kn = /^(false|off|0|no)$/i;
+    function jn(e) {
+      return Un.test(e) ? !0 : Kn.test(e) ? !1 : null;
     }
-    function Kn(e) {
+    function zn(e) {
       if (e.startsWith("b64:"))
         try {
           let t = atob(e.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
@@ -518,7 +518,7 @@
         return e;
       }
     }
-    function Q(e, t) {
+    function ne(e, t) {
       if (typeof window > "u" || !window.location) return null;
       let n = new URLSearchParams(window.location.search),
         r = n.get(e);
@@ -530,15 +530,15 @@
       return null;
     }
     function Ie(e) {
-      let t = Q(`se_ks_${e}`) ?? Q(`se_gate_${e}`) ?? Q(`se-gate-${e}`);
-      return t === null ? null : Un(t);
+      let t = ne(`se_ks_${e}`) ?? ne(`se_gate_${e}`) ?? ne(`se-gate-${e}`);
+      return t === null ? null : jn(t);
     }
     function qe(e) {
-      let t = Q(`se_config_${e}`, `se-config-${e}`);
-      if (t !== null) return Kn(t);
+      let t = ne(`se_config_${e}`, `se-config-${e}`);
+      if (t !== null) return zn(t);
     }
-    function bt(e) {
-      let t = Q(`se_exp_${e}`, `se-exp-${e}`);
+    function xt(e) {
+      let t = ne(`se_exp_${e}`, `se-exp-${e}`);
       return t === null || t === "" || t === "default" || t === "none" ? null : t;
     }
     function Pe() {
@@ -561,7 +561,7 @@
         };
       }
     }
-    function yt(e, t = {}) {
+    function wt(e, t = {}) {
       if (typeof window > "u") return () => {};
       let r = (t.hotkey ?? "Shift+Alt+S").split("+"),
         o = r[r.length - 1],
@@ -570,73 +570,73 @@
         s = r.includes("Ctrl") || r.includes("Control"),
         d = r.includes("Meta") || r.includes("Cmd");
       (e.installBridge(), Pe() && Ce({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl }));
-      let c = Pe();
-      function f(g) {
-        g.key === o &&
-          g.shiftKey === i &&
-          g.altKey === a &&
-          g.ctrlKey === s &&
-          g.metaKey === d &&
-          (c
+      let u = Pe();
+      function g(m) {
+        m.key === o &&
+          m.shiftKey === i &&
+          m.altKey === a &&
+          m.ctrlKey === s &&
+          m.metaKey === d &&
+          (u
             ? window.__shipeasy_devtools?.toggle()
-            : ((c = !0), Ce({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl })));
+            : ((u = !0), Ce({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl })));
       }
-      window.addEventListener("keydown", f);
-      let h = e.subscribe(() => e.installBridge());
+      window.addEventListener("keydown", g);
+      let b = e.subscribe(() => e.installBridge());
       return () => {
-        (window.removeEventListener("keydown", f), h());
+        (window.removeEventListener("keydown", g), b());
       };
     }
-    var O = null;
-    function xt(e) {
+    var C = null;
+    function Et(e) {
       let t = De({ sdkKey: e.apiKey, baseUrl: e.baseUrl ?? "https://cdn.shipeasy.ai" });
-      return (wt.notifyMounted(), yt(t, { adminUrl: e.adminUrl }));
+      return (kt.notifyMounted(), wt(t, { adminUrl: e.adminUrl }));
     }
     function De(e) {
-      return O || ((O = new ht(e)), O);
-    }
-    function zn() {
-      return O;
+      return C || ((C = new yt(e)), C);
     }
     function Fn() {
-      (O?.destroy(), (O = null));
+      return C;
     }
-    function gt() {
+    function Wn() {
+      (C?.destroy(), (C = null));
+    }
+    function vt() {
       return typeof window > "u" ? null : (window.__SE_BOOTSTRAP ?? null);
     }
     var Re = !1,
       Oe = new Set(),
-      mt = !1;
-    function jn() {
-      mt ||
+      ht = !1;
+    function Jn() {
+      ht ||
         typeof window > "u" ||
-        ((mt = !0),
+        ((ht = !0),
         window.addEventListener("se:override:change", () => {
           for (let e of Oe) e();
         }));
     }
-    var wt = {
+    var kt = {
         configure(e) {
           De(e);
         },
         identify(e) {
-          return O
-            ? O.identify(e)
+          return C
+            ? C.identify(e)
             : (console.warn("[shipeasy] flags.identify called before configureShipeasy()"),
               Promise.resolve());
         },
         get(e) {
-          let t = gt();
+          let t = vt();
           return t !== null && e in t.flags
             ? t.flags[e]
             : Re
-              ? O
-                ? O.getFlag(e)
+              ? C
+                ? C.getFlag(e)
                 : (Ie(e) ?? !1)
               : !1;
         },
         getConfig(e, t) {
-          let n = gt();
+          let n = vt();
           if (n !== null && e in n.configs) {
             let o = n.configs[e];
             if (!t) return o;
@@ -647,7 +647,7 @@
             }
           }
           if (!Re) return;
-          if (O) return O.getConfig(e, t);
+          if (C) return C.getConfig(e, t);
           let r = qe(e);
           if (r !== void 0) {
             if (!t) return r;
@@ -659,52 +659,52 @@
           }
         },
         getExperiment(e, t, n, r) {
-          return O?.getExperiment(e, t, n, r) ?? { inExperiment: !1, group: "control", params: t };
+          return C?.getExperiment(e, t, n, r) ?? { inExperiment: !1, group: "control", params: t };
         },
         track(e, t) {
-          O?.track(e, t);
+          C?.track(e, t);
         },
         flush() {
-          return O?.flush() ?? Promise.resolve();
+          return C?.flush() ?? Promise.resolve();
         },
         notifyMounted() {
           ((Re = !0),
             typeof window < "u" && window.dispatchEvent(new CustomEvent("se:override:change")));
         },
         subscribe(e) {
-          return O ? O.subscribe(e) : (Oe.add(e), jn(), () => Oe.delete(e));
+          return C ? C.subscribe(e) : (Oe.add(e), Jn(), () => Oe.delete(e));
         },
         get ready() {
-          return O?.ready ?? !1;
+          return C?.ready ?? !1;
         },
       },
-      Et = "\uFFF9",
-      kt = "\uFFFA",
-      Lt = "\uFFFB",
-      Wn = /￹([^￺￻]+)￺([^￻]*)￻/g;
-    function St(e, t) {
-      return `${Et}${e}${kt}${t}${Lt}`;
+      Lt = "\uFFF9",
+      St = "\uFFFA",
+      _t = "\uFFFB",
+      Gn = /￹([^￺￻]+)￺([^￻]*)￻/g;
+    function Tt(e, t) {
+      return `${Lt}${e}${St}${t}${_t}`;
     }
-    function Gn(e, t, n) {
+    function Vn(e, t, n) {
       let r = { "data-label": e };
       return (t && (r["data-variables"] = JSON.stringify(t)), n && (r["data-label-desc"] = n), r);
     }
-    var Jn = null,
-      Vn = Symbol.for("@shipeasy/sdk:ssr-i18n"),
-      Xn = Symbol.for("@shipeasy/sdk:ssr-edit-mode");
-    function Yn() {
-      return globalThis[Vn]?.() ?? null;
+    var Yn = null,
+      Xn = Symbol.for("@shipeasy/sdk:ssr-i18n"),
+      Zn = Symbol.for("@shipeasy/sdk:ssr-edit-mode");
+    function Qn() {
+      return globalThis[Xn]?.() ?? null;
     }
-    function Zn() {
+    function er() {
       if (typeof window < "u")
         return (
           !!window.__SE_BOOTSTRAP?.editLabels ||
           new URLSearchParams(location.search).has("se_edit_labels")
         );
-      let e = globalThis[Xn];
+      let e = globalThis[Zn];
       return typeof e == "boolean" ? e : typeof e == "function" ? e() : !1;
     }
-    function pe(e, t) {
+    function ge(e, t) {
       return t
         ? e.replace(/\{\{(\w+)\}\}/g, (n, r) => {
             let o = t[r];
@@ -712,8 +712,8 @@
           })
         : e;
     }
-    var Qn = typeof document < "u",
-      er = [
+    var tr = typeof document < "u",
+      nr = [
         "b",
         "i",
         "u",
@@ -735,10 +735,10 @@
         "br",
         "hr",
       ];
-    function tr() {
+    function rr() {
       let e = {};
-      for (let t of er)
-        e[t] = Qn
+      for (let t of nr)
+        e[t] = tr
           ? (n) => {
               let r = document.createElement(t);
               return (t !== "br" && t !== "hr" && (r.textContent = n), r);
@@ -746,56 +746,56 @@
           : (n) => (t === "br" || t === "hr" ? `<${t}>` : `<${t}>${n}</${t}>`);
       return e;
     }
-    var nr = tr(),
+    var or = rr(),
       He = {},
-      $e = /<(\w+)(?:\s*\/>|>([\s\S]*?)<\/\1>)/g;
-    function rr(e, t) {
+      Ae = /<(\w+)(?:\s*\/>|>([\s\S]*?)<\/\1>)/g;
+    function sr(e, t) {
       let n = [],
         r = 0,
         o,
         i = !0;
-      for ($e.lastIndex = 0; (o = $e.exec(e)) !== null; ) {
+      for (Ae.lastIndex = 0; (o = Ae.exec(e)) !== null; ) {
         o.index > r && n.push(e.slice(r, o.index));
         let a = o[1],
           s = o[2] ?? "",
-          d = t[a] ?? He[a] ?? nr[a];
+          d = t[a] ?? He[a] ?? or[a];
         if (d) {
-          let c = d(s);
-          (typeof c != "string" && (i = !1), n.push(c));
+          let u = d(s);
+          (typeof u != "string" && (i = !1), n.push(u));
         } else n.push(s);
-        r = $e.lastIndex;
+        r = Ae.lastIndex;
       }
       return (r < e.length && n.push(e.slice(r)), i ? n.join("") : n);
     }
-    function Ae(e, t) {
+    function $e(e, t) {
       if (typeof window < "u" && window.i18n) {
         let r = window.i18n.t(e, t);
         return r === e ? void 0 : r;
       }
-      let n = Yn();
-      if (n?.strings[e]) return pe(n.strings[e], t);
+      let n = Qn();
+      if (n?.strings[e]) return ge(n.strings[e], t);
     }
-    var or = {
+    var ar = {
       t(e, t, n) {
         let r, o;
         typeof t == "string" ? ((r = t), (o = n)) : (o = t);
-        let i = Ae(e, o);
-        return i !== void 0 ? i : r !== void 0 ? pe(r, o) : e;
+        let i = $e(e, o);
+        return i !== void 0 ? i : r !== void 0 ? ge(r, o) : e;
       },
       rich(e, t, n, r) {
-        let i = Ae(e, r) ?? pe(t, r);
-        return rr(i, n ?? {});
+        let i = $e(e, r) ?? ge(t, r);
+        return sr(i, n ?? {});
       },
       tEl(e, t, n, r) {
-        if (Zn()) {
-          let i = Ae(e, n) ?? pe(t, n);
-          return St(e, i);
+        if (er()) {
+          let i = $e(e, n) ?? ge(t, n);
+          return Tt(e, i);
         }
         return this.t(e, t, n);
       },
       configure(e) {
         (e.components && (He = { ...He, ...e.components }),
-          e.createElement && (Jn = e.createElement));
+          e.createElement && (Yn = e.createElement));
       },
       get locale() {
         return typeof window < "u" && window.i18n ? window.i18n.locale : null;
@@ -828,10 +828,10 @@
     };
     if (typeof window < "u") {
       let e = window.__SE_BOOTSTRAP;
-      e?.apiKey && !O && xt({ apiKey: e.apiKey, baseUrl: e.apiUrl });
+      e?.apiKey && !C && Et({ apiKey: e.apiKey, baseUrl: e.apiUrl });
     }
   });
-  var ae = `
+  var le = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :host {
@@ -1991,24 +1991,24 @@ select.se-input { cursor: pointer; }
  * them. */
 `;
   var be = "se_dt_session";
-  function Je() {
+  function Ye() {
     try {
       let e = sessionStorage.getItem(be);
       if (e) return JSON.parse(e);
     } catch {}
     return null;
   }
-  function fn(e) {
+  function mn(e) {
     try {
       sessionStorage.setItem(be, JSON.stringify(e));
     } catch {}
   }
-  function Ve() {
+  function Xe() {
     try {
       sessionStorage.removeItem(be);
     } catch {}
   }
-  async function Xe(e, t) {
+  async function Ze(e, t) {
     let n = new URL(e.adminUrl).origin,
       r = window.location.origin,
       o = `shipeasy-devtools-auth-${Date.now()}`,
@@ -2024,39 +2024,39 @@ select.se-input { cursor: pointer; }
     return (
       t(),
       new Promise((a, s) => {
-        let c = !1;
-        function f(p, l) {
-          c ||
-            ((c = !0),
-            window.removeEventListener("message", h),
-            clearInterval(b),
-            clearTimeout(m),
+        let u = !1;
+        function g(p, l) {
+          u ||
+            ((u = !0),
+            window.removeEventListener("message", b),
+            clearInterval(h),
+            clearTimeout(v),
             p ? s(p) : a(l));
         }
-        function h(p) {
+        function b(p) {
           if (p.origin !== n) return;
           let l = p.data;
           if (!l || l.type !== "se:devtools-auth" || !l.token || !l.projectId) return;
           let y = { token: l.token, projectId: l.projectId };
-          (fn(y), f(null, y));
+          (mn(y), g(null, y));
         }
-        window.addEventListener("message", h);
-        let g = Date.now(),
-          b = setInterval(() => {
-            Date.now() - g < 1500 ||
-              (i.closed && !c && f(new Error("Sign-in window closed before approval.")));
+        window.addEventListener("message", b);
+        let m = Date.now(),
+          h = setInterval(() => {
+            Date.now() - m < 1500 ||
+              (i.closed && !u && g(new Error("Sign-in window closed before approval.")));
           }, 500),
-          m = setTimeout(() => {
-            f(new Error("Sign-in timed out after 10 minutes."));
+          v = setTimeout(() => {
+            g(new Error("Sign-in timed out after 10 minutes."));
           }, 6e5);
       })
     );
   }
-  var gn = /^(true|on|1|yes)$/i,
-    mn = /^(false|off|0|no)$/i,
-    Ye = /^se(?:_|-|$)/;
-  function ie(e) {
-    return gn.test(e) ? !0 : mn.test(e) ? !1 : null;
+  var vn = /^(true|on|1|yes)$/i,
+    hn = /^(false|off|0|no)$/i,
+    Qe = /^se(?:_|-|$)/;
+  function de(e) {
+    return vn.test(e) ? !0 : hn.test(e) ? !1 : null;
   }
   function ye(e) {
     if (e.startsWith("b64:"))
@@ -2072,19 +2072,19 @@ select.se-input { cursor: pointer; }
       return e;
     }
   }
-  function Ze(e) {
+  function et(e) {
     let t = JSON.stringify(e);
     return t.length <= 60
       ? t
       : `b64:${btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
   }
-  function le() {
+  function ce() {
     return typeof window > "u"
       ? new URLSearchParams()
       : new URLSearchParams(window.location.search);
   }
-  function D(e, t) {
-    let n = le(),
+  function K(e, t) {
+    let n = ce(),
       r = n.get(e);
     if (r !== null) return r;
     if (t) {
@@ -2093,91 +2093,91 @@ select.se-input { cursor: pointer; }
     }
     return null;
   }
-  function K(e) {
+  function F(e) {
     if (typeof window > "u") return;
     let t = new URL(window.location.href);
     t.searchParams.set("se", "1");
     for (let [n, r] of e) r === null ? t.searchParams.delete(n) : t.searchParams.set(n, r);
     window.location.assign(t.toString());
   }
-  function de() {
+  function ue() {
     if (typeof window > "u") return !1;
-    let e = le();
+    let e = ce();
     return e.has("se") || e.has("se_devtools") || e.has("se-devtools") || e.has("se_edit_labels");
   }
-  function z() {
-    return typeof window > "u" ? !1 : le().has("se_edit_labels");
+  function W() {
+    return typeof window > "u" ? !1 : ce().has("se_edit_labels");
   }
   function xe(e) {
     if (!e && typeof document < "u")
       try {
         document.cookie = "se_edit_labels=;path=/;max-age=0;samesite=lax";
       } catch {}
-    K([["se_edit_labels", e ? "1" : null]]);
+    F([["se_edit_labels", e ? "1" : null]]);
   }
   function we(e) {
-    let t = D(`se_ks_${e}`) ?? D(`se_gate_${e}`) ?? D(`se-gate-${e}`);
-    return t === null ? null : ie(t);
+    let t = K(`se_ks_${e}`) ?? K(`se_gate_${e}`) ?? K(`se-gate-${e}`);
+    return t === null ? null : de(t);
   }
-  function Qe(e, t, n = "session") {
-    K([
+  function tt(e, t, n = "session") {
+    F([
       [`se_ks_${e}`, t === null ? null : t ? "true" : "false"],
       [`se_gate_${e}`, null],
       [`se-gate-${e}`, null],
     ]);
   }
   function Ee(e) {
-    let t = D(`se_config_${e}`, `se-config-${e}`);
+    let t = K(`se_config_${e}`, `se-config-${e}`);
     if (t !== null) return ye(t);
   }
   function ke(e, t, n = "session") {
-    K([
-      [`se_config_${e}`, t == null ? null : Ze(t)],
+    F([
+      [`se_config_${e}`, t == null ? null : et(t)],
       [`se-config-${e}`, null],
     ]);
   }
-  function et(e) {
-    let t = D(`se_exp_${e}`, `se-exp-${e}`);
+  function nt(e) {
+    let t = K(`se_exp_${e}`, `se-exp-${e}`);
     return t === null || t === "" || t === "default" || t === "none" ? null : t;
   }
-  function tt(e, t, n = "session") {
-    K([
+  function rt(e, t, n = "session") {
+    F([
       [`se_exp_${e}`, t],
       [`se-exp-${e}`, null],
     ]);
   }
-  function Y() {
-    return D("se_i18n");
+  function ee() {
+    return K("se_i18n");
   }
-  function nt(e, t = "session") {
-    K([["se_i18n", e]]);
+  function ot(e, t = "session") {
+    F([["se_i18n", e]]);
   }
   function Le() {
-    return D("se_i18n_draft");
+    return K("se_i18n_draft");
   }
-  function rt(e, t = "session") {
-    K([["se_i18n_draft", e]]);
+  function st(e, t = "session") {
+    F([["se_i18n_draft", e]]);
   }
-  function F(e) {
-    return D(`se_i18n_label_${e}`);
+  function J(e) {
+    return K(`se_i18n_label_${e}`);
   }
   function Se(e, t, n = "session") {
-    K([[`se_i18n_label_${e}`, t]]);
+    F([[`se_i18n_label_${e}`, t]]);
   }
-  function ot() {
+  function at() {
     if (typeof window > "u") return;
     let e = new URL(window.location.href);
-    for (let t of [...e.searchParams.keys()]) Ye.test(t) && e.searchParams.delete(t);
+    for (let t of [...e.searchParams.keys()]) Qe.test(t) && e.searchParams.delete(t);
     (e.searchParams.set("se", "1"), window.location.assign(e.toString()));
   }
   function _e(e, t) {
     let n = new URL(t ?? (typeof window < "u" ? window.location.href : "https://example.com/"));
-    for (let r of [...n.searchParams.keys()]) Ye.test(r) && n.searchParams.delete(r);
+    for (let r of [...n.searchParams.keys()]) Qe.test(r) && n.searchParams.delete(r);
     e.openDevtools && n.searchParams.set("se", "1");
     for (let [r, o] of Object.entries(e.gates ?? {}))
       n.searchParams.set(`se_ks_${r}`, o ? "true" : "false");
     for (let [r, o] of Object.entries(e.experiments ?? {})) n.searchParams.set(`se_exp_${r}`, o);
-    for (let [r, o] of Object.entries(e.configs ?? {})) n.searchParams.set(`se_config_${r}`, Ze(o));
+    for (let [r, o] of Object.entries(e.configs ?? {})) n.searchParams.set(`se_config_${r}`, et(o));
     (e.i18nProfile && n.searchParams.set("se_i18n", e.i18nProfile),
       e.i18nDraft && n.searchParams.set("se_i18n_draft", e.i18nDraft));
     for (let [r, o] of Object.entries(e.i18nLabels ?? {}))
@@ -2187,16 +2187,16 @@ select.se-input { cursor: pointer; }
   function Te() {
     let e = { gates: {}, experiments: {}, configs: {}, i18nLabels: {} };
     if (typeof window > "u") return e;
-    let t = le();
+    let t = ce();
     for (let [n, r] of t)
       if (n.startsWith("se_ks_")) {
-        let o = ie(r);
+        let o = de(r);
         o !== null && (e.gates[n.slice(6)] = o);
       } else if (n.startsWith("se_gate_")) {
-        let o = ie(r);
+        let o = de(r);
         o !== null && (e.gates[n.slice(8)] = o);
       } else if (n.startsWith("se-gate-")) {
-        let o = ie(r);
+        let o = de(r);
         o !== null && (e.gates[n.slice(8)] = o);
       } else
         n.startsWith("se_exp_") || n.startsWith("se-exp-")
@@ -2210,16 +2210,33 @@ select.se-input { cursor: pointer; }
                 : n.startsWith("se_i18n_label_") && (e.i18nLabels[n.slice(14)] = r);
     return e;
   }
-  function st(e) {
+  function it(e) {
     if (typeof window > "u") return;
     let t = { ...Te(), ...e, openDevtools: !0 },
       n = _e(t);
     window.location.assign(n);
   }
-  var ce = class {
-    constructor(t, n) {
-      P(this, "adminUrl", t);
-      P(this, "token", n);
+  var pe = class {
+    constructor(t, n, r) {
+      A(this, "adminUrl", t);
+      A(this, "token", n);
+      A(this, "projectId", r);
+    }
+    async project() {
+      let t = await this.get(`/api/admin/projects/${encodeURIComponent(this.projectId)}`),
+        n = (r) => r === void 0 || r === !0 || r === 1;
+      return {
+        id: t.id,
+        name: t.name,
+        domain: t.domain,
+        modules: {
+          translations: n(t.moduleTranslations),
+          configs: n(t.moduleConfigs),
+          gates: n(t.moduleGates),
+          experiments: n(t.moduleExperiments),
+          feedback: n(t.moduleFeedback),
+        },
+      };
     }
     async get(t) {
       let n = await fetch(`${this.adminUrl}${t}`, {
@@ -2365,9 +2382,9 @@ select.se-input { cursor: pointer; }
         o = async (s) => {
           let d = await this.get(`/api/admin/i18n/keys${r(s)}`);
           if (Array.isArray(d)) return { keys: d, total: d.length };
-          let c = d.keys ?? [],
-            f = d.total ?? c.length;
-          return { keys: c, total: f };
+          let u = d.keys ?? [],
+            g = d.total ?? u.length;
+          return { keys: u, total: g };
         },
         i = await o(0),
         a = i.keys.slice();
@@ -2379,7 +2396,7 @@ select.se-input { cursor: pointer; }
       return a;
     }
   };
-  function I(e) {
+  function N(e) {
     return `
     <div class="empty-state">
       <div class="empty-icon">${e.icon}</div>
@@ -2394,17 +2411,17 @@ select.se-input { cursor: pointer; }
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function vn() {
+  function bn() {
     return window.__shipeasy ?? null;
   }
-  function hn(e) {
+  function yn(e) {
     let t = we(e.name),
-      n = vn()?.getFlag(e.name);
+      n = bn()?.getFlag(e.name);
     return (t !== null ? t : (n ?? e.enabled))
       ? '<span class="badge badge-on">ON</span>'
       : '<span class="badge badge-off">OFF</span>';
   }
-  function bn(e, t) {
+  function xn(e, t) {
     let n = (r) => (t === (r === "on" ? !0 : r === "off" ? !1 : null) ? " sel" : "");
     return `
     <div class="tog" data-gate="${e}">
@@ -2413,7 +2430,7 @@ select.se-input { cursor: pointer; }
       <button class="tog-btn${n("off")}" data-v="off">OFF</button>
     </div>`;
   }
-  async function at(e, t) {
+  async function lt(e, t) {
     e.innerHTML = '<div class="loading">Loading gates\u2026</div>';
     let n;
     try {
@@ -2423,7 +2440,7 @@ select.se-input { cursor: pointer; }
       return;
     }
     if (n.length === 0) {
-      e.innerHTML = I({
+      e.innerHTML = N({
         icon: "\u26F3",
         title: "No gates yet",
         message: "Feature flags let you gate releases and ramp rollouts safely.",
@@ -2439,8 +2456,8 @@ select.se-input { cursor: pointer; }
         <tr>
           <td class="col-name">${a.name}</td>
           <td class="col-sub">${(a.rolloutPct / 100).toFixed(a.rolloutPct % 100 === 0 ? 0 : 2)}%</td>
-          <td class="col-badge">${hn(a)}</td>
-          <td class="col-control">${bn(a.name, we(a.name))}</td>
+          <td class="col-badge">${yn(a)}</td>
+          <td class="col-control">${xn(a.name, we(a.name))}</td>
         </tr>`,
         )
         .join("");
@@ -2457,7 +2474,7 @@ select.se-input { cursor: pointer; }
           a.addEventListener("click", () => {
             let s = a.closest("[data-gate]").dataset.gate,
               d = a.dataset.v;
-            (Qe(s, d === "default" ? null : d === "on"), r());
+            (tt(s, d === "default" ? null : d === "on"), r());
           });
         }));
     }
@@ -2465,14 +2482,14 @@ select.se-input { cursor: pointer; }
     let o = () => r();
     window.addEventListener("se:state:update", o);
   }
-  function yn(e) {
+  function wn(e) {
     let t = typeof e == "string" ? e : JSON.stringify(e);
     return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
   }
-  function it(e) {
+  function dt(e) {
     return Ee(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
   }
-  async function lt(e, t) {
+  async function ct(e, t) {
     e.innerHTML = '<div class="loading">Loading configs\u2026</div>';
     let n;
     try {
@@ -2482,7 +2499,7 @@ select.se-input { cursor: pointer; }
       return;
     }
     if (n.length === 0) {
-      e.innerHTML = I({
+      e.innerHTML = N({
         icon: "\u2699",
         title: "No configs yet",
         message: "Remote config values you can tweak per-session without redeploying.",
@@ -2496,17 +2513,17 @@ select.se-input { cursor: pointer; }
       let i = n
         .map((s) => {
           let d = Ee(s.name),
-            c = d !== void 0 ? d : s.valueJson;
+            u = d !== void 0 ? d : s.valueJson;
           return r.has(s.name)
             ? `
             <tr data-config="${s.name}">
               <td colspan="4">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                   <span class="col-name" style="flex:1">${s.name}</span>
-                  ${it(s.name)}
+                  ${dt(s.name)}
                   <button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>
                 </div>
-                <textarea class="editor" data-name="${s.name}" rows="3">${JSON.stringify(c, null, 2)}</textarea>
+                <textarea class="editor" data-name="${s.name}" rows="3">${JSON.stringify(u, null, 2)}</textarea>
                 <div class="edit-row" style="display:flex;gap:6px;margin-top:6px">
                   <button class="ibtn pri save-session" data-name="${s.name}">Save (session)</button>
                   <button class="ibtn save-local" data-name="${s.name}">Save (local)</button>
@@ -2517,8 +2534,8 @@ select.se-input { cursor: pointer; }
             : `
           <tr data-config="${s.name}">
             <td class="col-name">${s.name}</td>
-            <td class="col-value">${yn(c)}</td>
-            <td class="col-badge">${it(s.name)}</td>
+            <td class="col-value">${wn(u)}</td>
+            <td class="col-badge">${dt(s.name)}</td>
             <td class="col-control"><button class="ibtn edit-btn" data-name="${s.name}">edit</button></td>
           </tr>`;
         })
@@ -2543,14 +2560,14 @@ select.se-input { cursor: pointer; }
           });
         }));
       function a(s, d) {
-        let c = s.dataset.name,
-          f = e.querySelector(`textarea[data-name="${c}"]`);
-        if (f)
+        let u = s.dataset.name,
+          g = e.querySelector(`textarea[data-name="${u}"]`);
+        if (g)
           try {
-            let h = JSON.parse(f.value);
-            (ke(c, h, d), r.delete(c), o());
+            let b = JSON.parse(g.value);
+            (ke(u, b, d), r.delete(u), o());
           } catch {
-            f.style.borderColor = "#f87171";
+            g.style.borderColor = "#f87171";
           }
       }
       (e.querySelectorAll(".save-session").forEach((s) => {
@@ -2567,14 +2584,14 @@ select.se-input { cursor: pointer; }
     }
     o();
   }
-  function xn() {
+  function En() {
     return window.__shipeasy ?? null;
   }
-  function wn(e) {
+  function kn(e) {
     return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
   }
-  function En(e) {
-    let t = et(e.name),
+  function Ln(e) {
+    let t = nt(e.name),
       n = ["control", ...e.groups.map((o) => o.name)],
       r = [
         `<option value="" ${t === null ? "selected" : ""}>default</option>`,
@@ -2582,25 +2599,25 @@ select.se-input { cursor: pointer; }
       ].join("");
     return `<select class="sel-input exp-sel" data-name="${e.name}">${r}</select>`;
   }
-  function kn(e) {
-    let t = xn()?.getExperiment(e);
+  function Sn(e) {
+    let t = En()?.getExperiment(e);
     return t
       ? t.inExperiment
         ? `<span class="badge badge-run">${t.group}</span>`
         : '<span class="badge badge-draft">not enrolled</span>'
       : "";
   }
-  function Ln(e) {
+  function _n(e) {
     let t = e.status === "running";
     return `
     <tr>
       <td class="col-name">${e.name}</td>
-      <td class="col-badge">${wn(e.status)}</td>
-      <td class="col-badge">${t ? kn(e.name) : ""}</td>
-      <td class="col-control">${t ? En(e) : ""}</td>
+      <td class="col-badge">${kn(e.status)}</td>
+      <td class="col-badge">${t ? Sn(e.name) : ""}</td>
+      <td class="col-control">${t ? Ln(e) : ""}</td>
     </tr>`;
   }
-  function dt(e, t) {
+  function ut(e, t) {
     return e.length === 0
       ? ""
       : `
@@ -2610,14 +2627,14 @@ select.se-input { cursor: pointer; }
         <thead><tr>
           <th>Name</th><th>Status</th><th>Live</th><th style="text-align:right">Override</th>
         </tr></thead>
-        <tbody>${e.map(Ln).join("")}</tbody>
+        <tbody>${e.map(_n).join("")}</tbody>
       </table>
     </div>`;
   }
-  function ct(e, t, n, r) {
+  function pt(e, t, n, r) {
     let o = n.filter((s) => s.universe === t.name);
     if (o.length === 0) {
-      e.innerHTML = I({
+      e.innerHTML = N({
         icon: "\u{1F9EA}",
         title: `No experiments in \u201C${t.name}\u201D yet`,
         message: "Launch an experiment in this universe to start measuring impact.",
@@ -2628,15 +2645,15 @@ select.se-input { cursor: pointer; }
     }
     let i = o.filter((s) => s.status === "running"),
       a = o.filter((s) => s.status !== "running");
-    ((e.innerHTML = dt(i, "Running") + dt(a, "Other")),
+    ((e.innerHTML = ut(i, "Running") + ut(a, "Other")),
       e.querySelectorAll(".exp-sel").forEach((s) => {
         s.addEventListener("change", () => {
           let d = s.dataset.name;
-          tt(d, s.value || null);
+          rt(d, s.value || null);
         });
       }));
   }
-  async function ut(e, t) {
+  async function ft(e, t) {
     e.innerHTML = '<div class="loading">Loading\u2026</div>';
     let n, r;
     try {
@@ -2646,7 +2663,7 @@ select.se-input { cursor: pointer; }
       return;
     }
     if (r.length === 0) {
-      e.innerHTML = I({
+      e.innerHTML = N({
         icon: "\u{1F30C}",
         title: "No universes yet",
         message:
@@ -2660,33 +2677,33 @@ select.se-input { cursor: pointer; }
     function i() {
       let a = r
         .map(
-          (c) => `
-          <button class="tab${c.name === o.activeUniverse ? " active" : ""}"
-                  data-universe="${c.name}">${c.name}</button>`,
+          (u) => `
+          <button class="tab${u.name === o.activeUniverse ? " active" : ""}"
+                  data-universe="${u.name}">${u.name}</button>`,
         )
         .join("");
       ((e.innerHTML = `
       <div class="tabs scroll">${a}</div>
       <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
-        e.querySelectorAll(".tab[data-universe]").forEach((c) => {
-          c.addEventListener("click", () => {
-            ((o.activeUniverse = c.dataset.universe), i());
+        e.querySelectorAll(".tab[data-universe]").forEach((u) => {
+          u.addEventListener("click", () => {
+            ((o.activeUniverse = u.dataset.universe), i());
           });
         }));
       let s = e.querySelector(".tab-body"),
-        d = r.find((c) => c.name === o.activeUniverse);
-      ct(s, d, n, t.adminUrl);
+        d = r.find((u) => u.name === o.activeUniverse);
+      pt(s, d, n, t.adminUrl);
     }
     (i(),
       window.addEventListener("se:state:update", () => {
         let a = e.querySelector(".tab-body"),
           s = r.find((d) => d.name === o.activeUniverse);
-        a && s && ct(a, s, n, t.adminUrl);
+        a && s && pt(a, s, n, t.adminUrl);
       }));
   }
-  var fe = pn(Tt(), 1);
-  var G = /￹([^￺￻]+)￺(?:([^￺￻]*)￺)?([^￻]*)￻/g;
-  function sr(e) {
+  var me = gn(Rt(), 1);
+  var Y = /￹([^￺￻]+)￺(?:([^￺￻]*)￺)?([^￻]*)￻/g;
+  function ir(e) {
     let t = new Map();
     for (let n of e) {
       let r = n.key.split("."),
@@ -2696,62 +2713,62 @@ select.se-input { cursor: pointer; }
       let a = t.get(o);
       for (let s = 0; s < i.length; s++) {
         let d = i[s],
-          c = a.children.find((f) => f.segment === d);
-        (c || ((c = { segment: d, children: [] }), a.children.push(c)), (a = c));
+          u = a.children.find((g) => g.segment === d);
+        (u || ((u = { segment: d, children: [] }), a.children.push(u)), (a = u));
       }
       ((a.value = n.value), (a.fullKey = n.key));
     }
-    for (let n of t.values()) Pt(n);
+    for (let n of t.values()) Ot(n);
     return t;
   }
-  function Pt(e) {
+  function Ot(e) {
     e.children.sort((t, n) => {
       let r = t.value !== void 0,
         o = n.value !== void 0;
       return r !== o ? (r ? 1 : -1) : t.segment.localeCompare(n.segment);
     });
-    for (let t of e.children) Pt(t);
+    for (let t of e.children) Ot(t);
   }
-  function C(e) {
+  function P(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function Ct(e, t) {
+  function Ht(e, t) {
     let n = t * 14 + 6;
     if (e.value !== void 0) {
-      let o = e.fullKey ? F(e.fullKey) : null,
+      let o = e.fullKey ? J(e.fullKey) : null,
         i = o ?? e.value;
       return `
-      <div class="tree-row leaf" style="padding-left:${n}px" data-key="${C(e.fullKey ?? "")}">
-        <span class="tree-seg">${C(e.segment)}</span>
-        <span class="tree-val${o !== null ? " overridden" : ""}" title="${C(i)}">${C(i)}</span>
+      <div class="tree-row leaf" style="padding-left:${n}px" data-key="${P(e.fullKey ?? "")}">
+        <span class="tree-seg">${P(e.segment)}</span>
+        <span class="tree-val${o !== null ? " overridden" : ""}" title="${P(i)}">${P(i)}</span>
       </div>`;
     }
-    let r = e.children.map((o) => Ct(o, t + 1)).join("");
+    let r = e.children.map((o) => Ht(o, t + 1)).join("");
     return `
     <div class="tree-branch">
       <div class="tree-row branch" role="button" tabindex="0" style="padding-left:${n}px" data-branch>
         <span class="tree-caret">\u25BE</span>
-        <span class="tree-seg">${C(e.segment)}</span>
+        <span class="tree-seg">${P(e.segment)}</span>
       </div>
       <div class="tree-children">${r}</div>
     </div>`;
   }
-  var N = "__se_label_target",
+  var j = "__se_label_target",
     Ue = "__se_label_target_style",
-    j = !1,
+    G = !1,
     Ne = null,
-    J = null,
-    Ot = null,
-    Ht = [];
-  function ar() {
+    X = null,
+    Bt = null,
+    It = [];
+  function lr() {
     if (document.getElementById(Ue)) return;
     let e = document.createElement("style");
     ((e.id = Ue),
       (e.textContent = `
-    .${N} {
+    .${j} {
       outline: 2px solid #4ade80 !important;
       outline-offset: 2px !important;
       cursor: pointer !important;
@@ -2764,8 +2781,8 @@ select.se-input { cursor: pointer; }
         outline-color 0.12s !important;
       position: relative;
     }
-    .${N}:hover,
-    .${N}.__se_label_active {
+    .${j}:hover,
+    .${j}.__se_label_active {
       background-color: color-mix(in oklab, #4ade80 28%, transparent) !important;
       box-shadow:
         0 0 0 4px color-mix(in oklab, #4ade80 35%, transparent),
@@ -2776,10 +2793,10 @@ select.se-input { cursor: pointer; }
   `),
       document.head.appendChild(e));
   }
-  function Mt() {
+  function At() {
     document.getElementById(Ue)?.remove();
   }
-  function W(e = document.body) {
+  function V(e = document.body) {
     let t = document.createTreeWalker(e, NodeFilter.SHOW_TEXT),
       n = [],
       r = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]),
@@ -2787,33 +2804,33 @@ select.se-input { cursor: pointer; }
     for (; (o = t.nextNode()); ) {
       let a = o.nodeValue ?? "";
       if (
-        !a.includes(fe.LABEL_MARKER_START) ||
+        !a.includes(me.LABEL_MARKER_START) ||
         r.has(o.parentElement?.tagName ?? "") ||
         o.parentElement?.closest?.("[data-label]")
       )
         continue;
       let s = document.createDocumentFragment(),
         d = 0;
-      G.lastIndex = 0;
-      let c;
-      for (; (c = G.exec(a)) !== null; ) {
-        c.index > d && s.appendChild(document.createTextNode(a.slice(d, c.index)));
-        let f = c[1],
-          h = c[2],
-          g = c[3],
-          b = document.createElement("span");
-        (b.setAttribute("data-label", f), h && b.setAttribute("data-variables", h));
-        let m = F(f),
+      Y.lastIndex = 0;
+      let u;
+      for (; (u = Y.exec(a)) !== null; ) {
+        u.index > d && s.appendChild(document.createTextNode(a.slice(d, u.index)));
+        let g = u[1],
+          b = u[2],
+          m = u[3],
+          h = document.createElement("span");
+        (h.setAttribute("data-label", g), b && h.setAttribute("data-variables", b));
+        let v = J(g),
           p = null;
-        if (h)
+        if (b)
           try {
-            p = JSON.parse(h);
+            p = JSON.parse(b);
           } catch {
             p = null;
           }
-        ((b.textContent = m !== null ? ge(m, p) : g),
-          s.appendChild(b),
-          (d = c.index + c[0].length));
+        ((h.textContent = v !== null ? ve(v, p) : m),
+          s.appendChild(h),
+          (d = u.index + u[0].length));
       }
       (d < a.length && s.appendChild(document.createTextNode(a.slice(d))), n.push([o, s]));
     }
@@ -2822,52 +2839,52 @@ select.se-input { cursor: pointer; }
     for (let a of Array.from(document.querySelectorAll("[data-label]"))) {
       let s = a.textContent ?? "",
         d = a.getAttribute("data-label"),
-        c = F(d);
-      if (s.includes(fe.LABEL_MARKER_START)) {
-        G.lastIndex = 0;
-        let f = G.exec(s);
-        if (f) {
-          f[2] && a.setAttribute("data-variables", f[2]);
-          let h = f[2] ? ir(f[2]) : null;
-          a.textContent = c !== null ? ge(c, h) : f[3];
+        u = J(d);
+      if (s.includes(me.LABEL_MARKER_START)) {
+        Y.lastIndex = 0;
+        let g = Y.exec(s);
+        if (g) {
+          g[2] && a.setAttribute("data-variables", g[2]);
+          let b = g[2] ? dr(g[2]) : null;
+          a.textContent = u !== null ? ve(u, b) : g[3];
         }
       } else if (i)
         try {
-          let f = a.dataset.variables ? JSON.parse(a.dataset.variables) : void 0,
-            h = i(d, f);
-          c !== null ? (a.textContent = ge(c, f ?? null)) : h && h !== d && (a.textContent = h);
+          let g = a.dataset.variables ? JSON.parse(a.dataset.variables) : void 0,
+            b = i(d, g);
+          u !== null ? (a.textContent = ve(u, g ?? null)) : b && b !== d && (a.textContent = b);
         } catch {}
     }
     for (let a of Array.from(document.querySelectorAll("*"))) {
       let s = Ke(a),
         d = new Map();
-      for (let f of s) d.set(f.attr, f);
-      let c = !1;
-      for (let f of Array.from(a.attributes)) {
-        let h = f.value;
-        if (!h.includes(fe.LABEL_MARKER_START)) continue;
-        G.lastIndex = 0;
-        let g = G.exec(h);
-        if (!g) continue;
-        let b = g[1],
-          m = g[3],
-          p = F(b);
-        (a.setAttribute(f.name, p ?? m),
-          d.set(f.name, { attr: f.name, key: b, original: m }),
-          (c = !0));
+      for (let g of s) d.set(g.attr, g);
+      let u = !1;
+      for (let g of Array.from(a.attributes)) {
+        let b = g.value;
+        if (!b.includes(me.LABEL_MARKER_START)) continue;
+        Y.lastIndex = 0;
+        let m = Y.exec(b);
+        if (!m) continue;
+        let h = m[1],
+          v = m[3],
+          p = J(h);
+        (a.setAttribute(g.name, p ?? v),
+          d.set(g.name, { attr: g.name, key: h, original: v }),
+          (u = !0));
       }
-      c && It(a, Array.from(d.values()));
+      u && Dt(a, Array.from(d.values()));
     }
     return n.length;
   }
-  function Rt(e) {
+  function $t(e) {
     let t = [],
       n = /\{\{(\w+)\}\}/g,
       r;
     for (; (r = n.exec(e)) !== null; ) t.push(r[1]);
     return t;
   }
-  function ge(e, t) {
+  function ve(e, t) {
     return t
       ? e.replace(/\{\{(\w+)\}\}/g, (n, r) => {
           let o = t[r];
@@ -2875,23 +2892,23 @@ select.se-input { cursor: pointer; }
         })
       : e;
   }
-  function ir(e) {
+  function dr(e) {
     try {
       return JSON.parse(e);
     } catch {
       return null;
     }
   }
-  var $t = "se-popper-host";
-  function lr() {
-    let e = document.getElementById($t);
+  var Pt = "se-popper-host";
+  function cr() {
+    let e = document.getElementById(Pt);
     if (e?.shadowRoot) return e.shadowRoot;
-    e || ((e = document.createElement("div")), (e.id = $t), document.body.appendChild(e));
+    e || ((e = document.createElement("div")), (e.id = Pt), document.body.appendChild(e));
     let t = e.attachShadow({ mode: "open" }),
       n = document.createElement("style");
-    return ((n.textContent = ae), t.appendChild(n), t);
+    return ((n.textContent = le), t.appendChild(n), t);
   }
-  function Bt(e) {
+  function qt(e) {
     let n = window.__SE_BOOTSTRAP?.i18n?.strings?.[e];
     return typeof n == "string" ? n : null;
   }
@@ -2904,78 +2921,78 @@ select.se-input { cursor: pointer; }
     } catch {}
     return [];
   }
-  function It(e, t) {
+  function Dt(e, t) {
     if (t.length === 0) {
       e.removeAttribute("data-label-attrs");
       return;
     }
     e.setAttribute("data-label-attrs", JSON.stringify(t));
   }
-  var dr = "[data-label], [data-label-attrs]";
-  function ee() {
-    return Array.from(document.querySelectorAll(dr));
+  var ur = "[data-label], [data-label-attrs]";
+  function re() {
+    return Array.from(document.querySelectorAll(ur));
   }
-  function U() {
-    (J?.remove(),
-      (J = null),
-      document.querySelectorAll(`.${N}.__se_label_active`).forEach((e) => {
+  function z() {
+    (X?.remove(),
+      (X = null),
+      document.querySelectorAll(`.${j}.__se_label_active`).forEach((e) => {
         e.classList.remove("__se_label_active");
       }));
   }
-  function qt(e, t) {
+  function Nt(e, t) {
     if (e.kind === "text") e.target.textContent = t;
     else if (e.attr) {
       e.target.setAttribute(e.attr, t);
       let n = Ke(e.target),
         r = n.findIndex((o) => o.attr === e.attr);
-      r >= 0 && ((n[r] = { ...n[r], original: t }), It(e.target, n));
+      r >= 0 && ((n[r] = { ...n[r], original: t }), Dt(e.target, n));
     }
   }
-  async function cr(e, t, n) {
+  async function pr(e, t, n) {
     let r = n.querySelector(".lp-err"),
       o = n.querySelector('[data-action="save"]'),
-      i = F(e.key),
-      a = Bt(e.key),
-      s = Rt(i ?? a ?? ""),
-      d = Rt(t),
-      c = s.filter((l) => !d.includes(l)),
-      f = d.filter((l) => !s.includes(l));
-    if (c.length || f.length) {
+      i = J(e.key),
+      a = qt(e.key),
+      s = $t(i ?? a ?? ""),
+      d = $t(t),
+      u = s.filter((l) => !d.includes(l)),
+      g = d.filter((l) => !s.includes(l));
+    if (u.length || g.length) {
       if (r) {
         let l = [];
-        (c.length && l.push(`missing {{${c.join("}}, {{")}}}`),
-          f.length && l.push(`unknown {{${f.join("}}, {{")}}}`),
+        (u.length && l.push(`missing {{${u.join("}}, {{")}}}`),
+          g.length && l.push(`unknown {{${g.join("}}, {{")}}}`),
           (r.textContent = `Placeholders must match exactly \u2014 ${l.join("; ")}.`));
       }
       return;
     }
-    let h = e.variables ?? {},
-      g = ge(t, h);
-    (qt(e, g),
+    let b = e.variables ?? {},
+      m = ve(t, b);
+    (Nt(e, m),
       Se(e.key, t),
       window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: e.key, value: t } })));
-    let b = Le(),
-      m = Y(),
-      p = Ot;
-    if (!p || (!b && !m)) {
-      U();
+    let h = Le(),
+      v = ee(),
+      p = Bt;
+    if (!p || (!h && !v)) {
+      z();
       return;
     }
     ((o.disabled = !0), (o.textContent = "Saving\u2026"), r && (r.textContent = ""));
     try {
-      if (b) await p.upsertDraftKey(b, e.key, t);
-      else if (m) {
-        let l = Ht.find((y) => y.key === e.key && y.profileId === m);
+      if (h) await p.upsertDraftKey(h, e.key, t);
+      else if (v) {
+        let l = It.find((y) => y.key === e.key && y.profileId === v);
         l && (await p.updateKeyById(l.id, t));
       }
-      U();
+      z();
     } catch (l) {
       ((o.disabled = !1),
         (o.textContent = "Save"),
         r && (r.textContent = l instanceof Error ? l.message : String(l)));
     }
   }
-  function ur(e) {
+  function fr(e) {
     let t = e.dataset.variables;
     if (!t) return null;
     try {
@@ -2984,7 +3001,7 @@ select.se-input { cursor: pointer; }
       return null;
     }
   }
-  function pr(e) {
+  function gr(e) {
     let t = [];
     if (
       (e.hasAttribute("data-label") &&
@@ -2992,7 +3009,7 @@ select.se-input { cursor: pointer; }
           kind: "text",
           key: e.dataset.label ?? "",
           target: e,
-          variables: ur(e),
+          variables: fr(e),
           desc: e.dataset.labelDesc ?? "",
         }),
       e.hasAttribute("data-label-attrs"))
@@ -3000,35 +3017,35 @@ select.se-input { cursor: pointer; }
       for (let n of Ke(e)) t.push({ kind: "attr", key: n.key, target: e, attr: n.attr });
     return t;
   }
-  function At(e) {
+  function Ct(e) {
     return e.kind === "text"
       ? (e.target.textContent ?? "")
       : e.attr
         ? (e.target.getAttribute(e.attr) ?? "")
         : "";
   }
-  function fr(e, t) {
+  function mr(e, t) {
     if (e.kind === "attr") return e.attr ?? "attr";
     let n = e.key.split(".").pop() || e.key;
     return t.filter((o) => o.kind === "text" && (o.key.split(".").pop() || o.key) === n).length > 1
       ? e.key
       : n;
   }
-  function gr(e, t) {
-    (U(), e.classList.add("__se_label_active"));
-    let n = pr(e);
+  function vr(e, t) {
+    (z(), e.classList.add("__se_label_active"));
+    let n = gr(e);
     if (n.length === 0) return;
-    let o = Y() ?? "default",
+    let o = ee() ?? "default",
       i = new Map(),
       a = 0,
       s = document.createElement("div");
     s.className = "label-popper";
     let d = `<div class="lp-tabs">${n
-      .map((k, x) => {
-        let R = fr(k, n),
-          A = x === 0 ? "lp-tab active" : "lp-tab",
-          u = k.kind === "attr" ? `@<span class="lp-tab-attr">${C(k.attr ?? "")}</span>` : C(R);
-        return `<button class="${A}" data-surface-idx="${x}">${u}</button>`;
+      .map((L, M) => {
+        let w = mr(L, n),
+          _ = M === 0 ? "lp-tab active" : "lp-tab",
+          c = L.kind === "attr" ? `@<span class="lp-tab-attr">${P(L.attr ?? "")}</span>` : P(w);
+        return `<button class="${_}" data-surface-idx="${M}">${c}</button>`;
       })
       .join("")}</div>`;
     ((s.innerHTML = `
@@ -3043,114 +3060,114 @@ select.se-input { cursor: pointer; }
       <button class="ibtn pri" data-action="save">Save</button>
     </div>
     <div class="lp-err"></div>`),
-      lr().appendChild(s));
-    let f = s.querySelector(".lp-key"),
-      h = s.querySelector(".lp-body"),
-      g = s.querySelector(".lp-err"),
-      b = s.querySelector('[data-action="save"]'),
-      m = s.querySelector('[data-action="reset"]');
+      cr().appendChild(s));
+    let g = s.querySelector(".lp-key"),
+      b = s.querySelector(".lp-body"),
+      m = s.querySelector(".lp-err"),
+      h = s.querySelector('[data-action="save"]'),
+      v = s.querySelector('[data-action="reset"]');
     function p() {
       return n[a];
     }
     function l() {
-      let k = p();
-      (i.has(a) || i.set(a, At(k)), (f.textContent = k.key));
-      let x = Bt(k.key),
-        A = F(k.key) ?? x ?? At(k),
-        u = k.variables ?? {},
-        v = Object.entries(u),
-        E = v.length
+      let L = p();
+      (i.has(a) || i.set(a, Ct(L)), (g.textContent = L.key));
+      let M = qt(L.key),
+        _ = J(L.key) ?? M ?? Ct(L),
+        c = L.variables ?? {},
+        f = Object.entries(c),
+        x = f.length
           ? `<div class="lp-field">
           <label>Variables (read-only)</label>
-          <div class="lp-vars">${v.map(([X, ve]) => `<div class="lp-var"><span class="lp-var-k mono">${C(`{{${X}}}`)}</span><span class="lp-var-v">${C(String(ve))}</span></div>`).join("")}</div>
+          <div class="lp-vars">${f.map(([I, q]) => `<div class="lp-var"><span class="lp-var-k mono">${P(`{{${I}}}`)}</span><span class="lp-var-v">${P(String(q))}</span></div>`).join("")}</div>
         </div>`
           : "",
-        S = k.desc ?? "",
-        B = k.kind === "attr" ? `attribute \xB7 ${C(k.attr ?? "")}` : "text content";
-      ((h.innerHTML = `
+        k = L.desc ?? "",
+        H = L.kind === "attr" ? `attribute \xB7 ${P(L.attr ?? "")}` : "text content";
+      ((b.innerHTML = `
       <div class="lp-field">
         <label>Value</label>
-        <textarea class="lp-input" spellcheck="false">${C(A)}</textarea>
+        <textarea class="lp-input" spellcheck="false">${P(_)}</textarea>
       </div>
-      ${E}
+      ${x}
       <div class="lp-field">
         <label>Current profile</label>
-        <span>${C(o)}</span>
+        <span>${P(o)}</span>
       </div>
       <div class="lp-field">
         <label>Surface</label>
-        <span class="mono">${B}</span>
+        <span class="mono">${H}</span>
       </div>
       <div class="lp-field">
         <label>Description</label>
-        <span class="${S ? "" : "empty"}">${S ? C(S) : "No description"}</span>
+        <span class="${k ? "" : "empty"}">${k ? P(k) : "No description"}</span>
       </div>`),
-        (g.textContent = ""),
-        (b.disabled = !1),
-        (b.textContent = "Save"));
-      let H = h.querySelector(".lp-input");
-      (H.focus(), H.select());
+        (m.textContent = ""),
+        (h.disabled = !1),
+        (h.textContent = "Save"));
+      let O = b.querySelector(".lp-input");
+      (O.focus(), O.select());
     }
-    (s.querySelectorAll(".lp-tab").forEach((k) => {
-      k.addEventListener("click", () => {
-        let x = Number(k.dataset.surfaceIdx);
-        x !== a &&
-          ((a = x),
-          s.querySelectorAll(".lp-tab").forEach((R, A) => {
-            R.classList.toggle("active", A === a);
+    (s.querySelectorAll(".lp-tab").forEach((L) => {
+      L.addEventListener("click", () => {
+        let M = Number(L.dataset.surfaceIdx);
+        M !== a &&
+          ((a = M),
+          s.querySelectorAll(".lp-tab").forEach((w, _) => {
+            w.classList.toggle("active", _ === a);
           }),
           l());
       });
     }),
       l());
     let y = e.getBoundingClientRect(),
-      L = s.offsetHeight,
-      M = s.offsetWidth,
-      _ = 8,
-      w = y.bottom + _;
-    w + L > window.innerHeight - 8 && (w = Math.max(8, y.top - L - _));
-    let T = y.left;
-    (T + M > window.innerWidth - 8 && (T = Math.max(8, window.innerWidth - M - 8)),
-      (s.style.top = `${w}px`),
-      (s.style.left = `${T}px`),
-      s.querySelector(".lp-close").addEventListener("click", U),
-      b.addEventListener("click", () => {
-        let k = h.querySelector(".lp-input");
-        cr(p(), k.value, s);
+      E = s.offsetHeight,
+      R = s.offsetWidth,
+      T = 8,
+      $ = y.bottom + T;
+    $ + E > window.innerHeight - 8 && ($ = Math.max(8, y.top - E - T));
+    let B = y.left;
+    (B + R > window.innerWidth - 8 && (B = Math.max(8, window.innerWidth - R - 8)),
+      (s.style.top = `${$}px`),
+      (s.style.left = `${B}px`),
+      s.querySelector(".lp-close").addEventListener("click", z),
+      h.addEventListener("click", () => {
+        let L = b.querySelector(".lp-input");
+        pr(p(), L.value, s);
       }),
-      m.addEventListener("click", () => {
-        let k = p(),
-          x = i.get(a) ?? "";
-        (qt(k, x),
-          Se(k.key, null),
+      v.addEventListener("click", () => {
+        let L = p(),
+          M = i.get(a) ?? "";
+        (Nt(L, M),
+          Se(L.key, null),
           window.dispatchEvent(
-            new CustomEvent("se:i18n:edit", { detail: { key: k.key, value: null } }),
+            new CustomEvent("se:i18n:edit", { detail: { key: L.key, value: null } }),
           ),
-          U());
+          z());
       }),
-      s.addEventListener("click", (k) => k.stopPropagation()),
-      s.addEventListener("mousedown", (k) => k.stopPropagation()),
-      (J = s));
+      s.addEventListener("click", (L) => L.stopPropagation()),
+      s.addEventListener("mousedown", (L) => L.stopPropagation()),
+      (X = s));
   }
-  function V(e, t, n) {
-    if (((j = e), Ne?.(), (Ne = null), !e)) {
-      U();
-      for (let g of ee()) g.classList.remove(N);
-      Mt();
+  function Z(e, t, n) {
+    if (((G = e), Ne?.(), (Ne = null), !e)) {
+      z();
+      for (let m of re()) m.classList.remove(j);
+      At();
       return;
     }
-    ar();
-    for (let g of ee()) g.classList.add(N);
-    function r(g) {
-      return J !== null && g.composedPath().includes(J);
+    lr();
+    for (let m of re()) m.classList.add(j);
+    function r(m) {
+      return X !== null && m.composedPath().includes(X);
     }
-    function o(g) {
-      for (let b of g.composedPath())
+    function o(m) {
+      for (let h of m.composedPath())
         if (
-          b instanceof HTMLElement &&
-          (b.hasAttribute("data-label") || b.hasAttribute("data-label-attrs"))
+          h instanceof HTMLElement &&
+          (h.hasAttribute("data-label") || h.hasAttribute("data-label-attrs"))
         )
-          return b;
+          return h;
       return null;
     }
     let i = [
@@ -3169,69 +3186,69 @@ select.se-input { cursor: pointer; }
       "submit",
       "auxclick",
     ];
-    function a(g) {
-      return "altKey" in g && typeof g.altKey == "boolean" && g.altKey;
+    function a(m) {
+      return "altKey" in m && typeof m.altKey == "boolean" && m.altKey;
     }
-    function s(g) {
-      r(g) ||
-        (o(g) && (a(g) || (g.preventDefault(), g.stopPropagation(), g.stopImmediatePropagation())));
+    function s(m) {
+      r(m) ||
+        (o(m) && (a(m) || (m.preventDefault(), m.stopPropagation(), m.stopImmediatePropagation())));
     }
-    function d(g) {
-      if (r(g)) return;
-      let b = o(g);
-      b &&
-        (a(g) || (g.preventDefault(), g.stopPropagation(), g.stopImmediatePropagation(), gr(b, t)));
+    function d(m) {
+      if (r(m)) return;
+      let h = o(m);
+      h &&
+        (a(m) || (m.preventDefault(), m.stopPropagation(), m.stopImmediatePropagation(), vr(h, t)));
     }
-    function c(g) {
-      J && (r(g) || o(g) || U());
+    function u(m) {
+      X && (r(m) || o(m) || z());
     }
-    function f(g) {
-      g.key === "Escape" && U();
+    function g(m) {
+      m.key === "Escape" && z();
     }
-    let h = new MutationObserver(() => {
-      if (j) {
-        for (let g of ee()) g.classList.add(N);
+    let b = new MutationObserver(() => {
+      if (G) {
+        for (let m of re()) m.classList.add(j);
         n();
       }
     });
-    h.observe(document.body, {
+    b.observe(document.body, {
       childList: !0,
       subtree: !0,
       attributeFilter: ["data-label", "data-label-attrs"],
     });
-    for (let g of i) document.addEventListener(g, s, !0);
+    for (let m of i) document.addEventListener(m, s, !0);
     (document.addEventListener("click", d, !0),
-      document.addEventListener("mousedown", c, !0),
-      document.addEventListener("keydown", f),
+      document.addEventListener("mousedown", u, !0),
+      document.addEventListener("keydown", g),
       (Ne = () => {
-        for (let g of i) document.removeEventListener(g, s, !0);
+        for (let m of i) document.removeEventListener(m, s, !0);
         (document.removeEventListener("click", d, !0),
-          document.removeEventListener("mousedown", c, !0),
-          document.removeEventListener("keydown", f),
-          h.disconnect());
-        for (let g of ee()) g.classList.remove(N);
-        Mt();
+          document.removeEventListener("mousedown", u, !0),
+          document.removeEventListener("keydown", g),
+          b.disconnect());
+        for (let m of re()) m.classList.remove(j);
+        At();
       }));
   }
-  async function Dt(e, t, n, r) {
+  async function Ut(e, t, n, r) {
     ((e.innerHTML = '<div class="loading">Loading i18n data\u2026</div>'),
       (n.innerHTML = ""),
-      (Ot = t));
+      (Bt = t));
     let o, i, a;
     try {
-      let b = Y() ?? void 0;
-      [o, i, a] = await Promise.all([t.profiles(), t.drafts(), t.keys(b)]);
-    } catch (b) {
-      e.innerHTML = `<div class="err">Failed to load i18n data: ${String(b)}</div>`;
+      let h = ee() ?? void 0;
+      [o, i, a] = await Promise.all([t.profiles(), t.drafts(), t.keys(h)]);
+    } catch (h) {
+      e.innerHTML = `<div class="err">Failed to load i18n data: ${String(h)}</div>`;
       return;
     }
-    Ht = a;
-    let s = sr(a),
+    It = a;
+    let s = ir(a),
       d = Array.from(s.keys()),
-      c = { activeChunk: d[0] ?? null };
-    function f() {
+      u = { activeChunk: d[0] ?? null };
+    function g() {
       if (d.length === 0) {
-        e.innerHTML = I({
+        e.innerHTML = N({
           icon: "\u{1F310}",
           title: "No translation keys yet",
           message: "Add keys in the admin and group them by namespace (e.g. checkout.title).",
@@ -3240,92 +3257,92 @@ select.se-input { cursor: pointer; }
         });
         return;
       }
-      let b = d
+      let h = d
           .map(
             (l) =>
-              `<button class="tab${l === c.activeChunk ? " active" : ""}" data-chunk="${C(l)}">${C(l)}</button>`,
+              `<button class="tab${l === u.activeChunk ? " active" : ""}" data-chunk="${P(l)}">${P(l)}</button>`,
           )
           .join(""),
-        m = c.activeChunk ? s.get(c.activeChunk) : null,
-        p = m ? m.children.map((l) => Ct(l, 0)).join("") : "";
+        v = u.activeChunk ? s.get(u.activeChunk) : null,
+        p = v ? v.children.map((l) => Ht(l, 0)).join("") : "";
       ((e.innerHTML = `
-      <div class="tabs scroll" id="chunk-tabs">${b}</div>
+      <div class="tabs scroll" id="chunk-tabs">${h}</div>
       <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${p}</div>`),
         e.querySelectorAll(".tab[data-chunk]").forEach((l) => {
           l.addEventListener("click", () => {
-            ((c.activeChunk = l.dataset.chunk), f());
+            ((u.activeChunk = l.dataset.chunk), g());
           });
         }),
         e.querySelectorAll(".tree-row.branch[data-branch]").forEach((l) => {
           let y = () => {
-            let L = l.parentElement;
-            if (!L) return;
-            let M = L.classList.toggle("collapsed"),
-              _ = l.querySelector(".tree-caret");
-            _ && (_.textContent = M ? "\u25B8" : "\u25BE");
+            let E = l.parentElement;
+            if (!E) return;
+            let R = E.classList.toggle("collapsed"),
+              T = l.querySelector(".tree-caret");
+            T && (T.textContent = R ? "\u25B8" : "\u25BE");
           };
           (l.addEventListener("click", y),
-            l.addEventListener("keydown", (L) => {
-              (L.key === "Enter" || L.key === " ") && (L.preventDefault(), y());
+            l.addEventListener("keydown", (E) => {
+              (E.key === "Enter" || E.key === " ") && (E.preventDefault(), y());
             }));
         }));
     }
-    function h() {
-      let b = Y() ?? "",
-        m = Le() ?? "";
-      W();
-      let p = ee().length,
-        l = j
+    function b() {
+      let h = ee() ?? "",
+        v = Le() ?? "";
+      V();
+      let p = re().length,
+        l = G
           ? `Editing ${p} label${p === 1 ? "" : "s"}`
           : p > 0
             ? `Edit labels (${p})`
             : "Edit labels",
-        y = j
+        y = G
           ? "Disable in-page label editing"
           : p === 0
             ? "Enable in-page label editing \u2014 reloads page with ?se_edit_labels=1 to scan all translation strings"
             : "Toggle in-page label editing (reloads page)",
-        L = [
+        E = [
           '<option value="">Default</option>',
           ...o.map(
-            (_) =>
-              `<option value="${C(_.id)}" ${b === _.id ? "selected" : ""}>${C(_.name)}</option>`,
+            (T) =>
+              `<option value="${P(T.id)}" ${h === T.id ? "selected" : ""}>${P(T.name)}</option>`,
           ),
         ].join(""),
-        M = [
+        R = [
           '<option value="">No draft</option>',
           ...i.map(
-            (_) =>
-              `<option value="${C(_.id)}" ${m === _.id ? "selected" : ""}>${C(_.name)}</option>`,
+            (T) =>
+              `<option value="${P(T.id)}" ${v === T.id ? "selected" : ""}>${P(T.name)}</option>`,
           ),
         ].join("");
       ((n.innerHTML = `
-      <button class="subfoot-btn${j ? " on" : ""}" id="se-edit-toggle" title="${C(y)}">
+      <button class="subfoot-btn${G ? " on" : ""}" id="se-edit-toggle" title="${P(y)}">
         <span class="dot"></span>
-        ${C(l)}
+        ${P(l)}
       </button>
-      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${L}</select>
-      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${M}</select>`),
+      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${E}</select>
+      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${R}</select>`),
         n.querySelector("#se-edit-toggle").addEventListener("click", () => {
-          z() ? xe(!1) : j ? (V(!1, r, () => h()), h()) : xe(!0);
+          W() ? xe(!1) : G ? (Z(!1, r, () => b()), b()) : xe(!0);
         }),
-        n.querySelector("#se-profile-sel").addEventListener("change", (_) => {
-          let w = _.target.value || null;
-          nt(w);
+        n.querySelector("#se-profile-sel").addEventListener("change", (T) => {
+          let $ = T.target.value || null;
+          ot($);
         }),
-        n.querySelector("#se-draft-sel").addEventListener("change", (_) => {
-          let w = _.target.value || null;
-          rt(w);
+        n.querySelector("#se-draft-sel").addEventListener("change", (T) => {
+          let $ = T.target.value || null;
+          st($);
         }));
     }
-    (z() && (W(), j || V(!0, r, () => h())),
-      f(),
-      h(),
+    (W() && (V(), G || Z(!0, r, () => b())),
+      g(),
+      b(),
       window.i18n?.on?.("update", () => {
-        (W(), h());
+        (V(), b());
       }));
   }
-  function te(e, t) {
+  function oe(e, t) {
     let n = document.createElement("div");
     n.className = "se-modal-overlay";
     let r = document.createElement("div");
@@ -3346,26 +3363,26 @@ select.se-input { cursor: pointer; }
     let s = document.createElement("div");
     ((s.className = "se-modal-body"), r.appendChild(s));
     function d() {
-      (n.removeEventListener("click", c),
-        document.removeEventListener("keydown", f),
+      (n.removeEventListener("click", u),
+        document.removeEventListener("keydown", g),
         n.remove(),
         t.onClose?.());
     }
-    function c(h) {
-      h.target === n && d();
+    function u(b) {
+      b.target === n && d();
     }
-    function f(h) {
-      h.key === "Escape" && d();
+    function g(b) {
+      b.key === "Escape" && d();
     }
     return (
-      n.addEventListener("click", c),
-      document.addEventListener("keydown", f),
+      n.addEventListener("click", u),
+      document.addEventListener("keydown", g),
       a.addEventListener("click", d),
       e.appendChild(n),
       { body: s, root: r, close: d }
     );
   }
-  function Nt(e) {
+  function Kt(e) {
     if (!e) return () => {};
     let t = e.style.visibility;
     return (
@@ -3375,28 +3392,28 @@ select.se-input { cursor: pointer; }
       }
     );
   }
-  async function Ut(e) {
+  async function jt(e) {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let t = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !1 }),
-      n = Nt(e);
+      n = Kt(e);
     try {
       let r = document.createElement("video");
       ((r.srcObject = t),
         (r.muted = !0),
         (r.playsInline = !0),
-        await new Promise((c, f) => {
-          let h = setTimeout(() => f(new Error("Capture stream timed out")), 5e3);
+        await new Promise((u, g) => {
+          let b = setTimeout(() => g(new Error("Capture stream timed out")), 5e3);
           ((r.onloadedmetadata = () => {
-            (clearTimeout(h), c());
+            (clearTimeout(b), u());
           }),
             (r.onerror = () => {
-              (clearTimeout(h), f(new Error("Capture stream errored")));
+              (clearTimeout(b), g(new Error("Capture stream errored")));
             }));
         }),
         await r.play(),
-        await new Promise((c) => requestAnimationFrame(() => c(null))),
-        await new Promise((c) => requestAnimationFrame(() => c(null))));
+        await new Promise((u) => requestAnimationFrame(() => u(null))),
+        await new Promise((u) => requestAnimationFrame(() => u(null))));
       let o = r.videoWidth,
         i = r.videoHeight;
       if (!o || !i) throw new Error("Capture stream returned no frames.");
@@ -3406,19 +3423,19 @@ select.se-input { cursor: pointer; }
       if (!s) throw new Error("Canvas 2d context unavailable");
       return (
         s.drawImage(r, 0, 0, o, i),
-        await new Promise((c, f) => {
-          a.toBlob((h) => (h ? c(h) : f(new Error("toBlob failed"))), "image/png");
+        await new Promise((u, g) => {
+          a.toBlob((b) => (b ? u(b) : g(new Error("toBlob failed"))), "image/png");
         })
       );
     } finally {
       (t.getTracks().forEach((r) => r.stop()), n());
     }
   }
-  async function Kt(e) {
+  async function zt(e) {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let t = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !0 }),
-      n = Nt(e);
+      n = Kt(e);
     await new Promise((d) => requestAnimationFrame(() => d(null)));
     let o =
         ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((d) =>
@@ -3438,10 +3455,10 @@ select.se-input { cursor: pointer; }
     }
     return {
       stop() {
-        return new Promise((d, c) => {
+        return new Promise((d, u) => {
           if (i.state === "inactive") {
             if ((s(), a.length === 0)) {
-              c(new Error("No recording data."));
+              u(new Error("No recording data."));
               return;
             }
             d(new Blob(a, { type: o || "video/webm" }));
@@ -3454,7 +3471,7 @@ select.se-input { cursor: pointer; }
             },
             { once: !0 },
           ),
-            i.addEventListener("error", (f) => c(f), { once: !0 }),
+            i.addEventListener("error", (g) => u(g), { once: !0 }),
             i.stop());
         });
       },
@@ -3463,292 +3480,292 @@ select.se-input { cursor: pointer; }
       },
     };
   }
-  var zt = ["#f87171", "#fbbf24", "#4ade80", "#60a5fa"];
-  async function Ft(e) {
+  var Ft = ["#f87171", "#fbbf24", "#4ade80", "#60a5fa"];
+  async function Wt(e) {
     let t = URL.createObjectURL(e),
-      n = await new Promise((u, v) => {
-        let E = new Image();
-        ((E.onload = () => u(E)),
-          (E.onerror = () => v(new Error("Failed to load screenshot for annotation."))),
-          (E.src = t));
+      n = await new Promise((c, f) => {
+        let x = new Image();
+        ((x.onload = () => c(x)),
+          (x.onerror = () => f(new Error("Failed to load screenshot for annotation."))),
+          (x.src = t));
       }),
       r = document.createElement("div");
     r.className = "se-annot";
     let o = document.createElement("div");
     ((o.className = "se-annot-toolbar"), r.appendChild(o));
     let i = "pen",
-      a = zt[0],
+      a = Ft[0],
       s = [];
-    function d(u) {
-      ((i = u),
+    function d(c) {
+      ((i = c),
         o
           .querySelectorAll("[data-tool]")
-          .forEach((v) => v.classList.toggle("on", v.dataset.tool === u)));
+          .forEach((f) => f.classList.toggle("on", f.dataset.tool === c)));
     }
-    function c(u, v, E) {
-      let S = document.createElement("button");
+    function u(c, f, x) {
+      let k = document.createElement("button");
       return (
-        (S.type = "button"),
-        (S.className = "se-annot-btn"),
-        (S.dataset.tool = u),
-        (S.textContent = v),
-        (S.title = E),
-        S.addEventListener("click", () => d(u)),
-        S
+        (k.type = "button"),
+        (k.className = "se-annot-btn"),
+        (k.dataset.tool = c),
+        (k.textContent = f),
+        (k.title = x),
+        k.addEventListener("click", () => d(c)),
+        k
       );
     }
-    (o.appendChild(c("pen", "\u270E draw", "Freehand draw (P)")),
-      o.appendChild(c("arrow", "\u2197 arrow", "Arrow (A)")),
-      o.appendChild(c("rect", "\u25AD rect", "Rectangle (R)")),
-      o.appendChild(c("text", "T text", "Text (T)")),
+    (o.appendChild(u("pen", "\u270E draw", "Freehand draw (P)")),
+      o.appendChild(u("arrow", "\u2197 arrow", "Arrow (A)")),
+      o.appendChild(u("rect", "\u25AD rect", "Rectangle (R)")),
+      o.appendChild(u("text", "T text", "Text (T)")),
       d("pen"));
-    let f = document.createElement("span");
-    ((f.className = "se-annot-sep"), o.appendChild(f));
-    for (let u of zt) {
-      let v = document.createElement("button");
-      ((v.type = "button"),
-        (v.className = "se-annot-swatch"),
-        (v.dataset.color = u),
-        (v.style.background = u),
-        u === a && v.classList.add("on"),
-        v.addEventListener("click", () => {
-          ((a = u),
+    let g = document.createElement("span");
+    ((g.className = "se-annot-sep"), o.appendChild(g));
+    for (let c of Ft) {
+      let f = document.createElement("button");
+      ((f.type = "button"),
+        (f.className = "se-annot-swatch"),
+        (f.dataset.color = c),
+        (f.style.background = c),
+        c === a && f.classList.add("on"),
+        f.addEventListener("click", () => {
+          ((a = c),
             o
               .querySelectorAll("[data-color]")
-              .forEach((E) => E.classList.toggle("on", E.dataset.color === u)));
+              .forEach((x) => x.classList.toggle("on", x.dataset.color === c)));
         }),
-        o.appendChild(v));
+        o.appendChild(f));
     }
-    let h = document.createElement("button");
-    ((h.type = "button"),
-      (h.className = "se-annot-btn"),
-      (h.textContent = "\u21B6 undo"),
-      (h.title = "Undo (Ctrl/Cmd+Z)"),
-      h.addEventListener("click", () => {
-        (s.pop(), w());
+    let b = document.createElement("button");
+    ((b.type = "button"),
+      (b.className = "se-annot-btn"),
+      (b.textContent = "\u21B6 undo"),
+      (b.title = "Undo (Ctrl/Cmd+Z)"),
+      b.addEventListener("click", () => {
+        (s.pop(), $());
       }),
-      o.appendChild(h));
-    let g = document.createElement("button");
-    ((g.type = "button"),
-      (g.className = "se-annot-btn"),
-      (g.textContent = "clear"),
-      g.addEventListener("click", () => {
-        ((s.length = 0), w());
+      o.appendChild(b));
+    let m = document.createElement("button");
+    ((m.type = "button"),
+      (m.className = "se-annot-btn"),
+      (m.textContent = "clear"),
+      m.addEventListener("click", () => {
+        ((s.length = 0), $());
       }),
-      o.appendChild(g));
-    let b = document.createElement("div");
-    ((b.className = "se-annot-stage"), r.appendChild(b));
-    let m = document.createElement("canvas");
-    ((m.width = n.naturalWidth),
-      (m.height = n.naturalHeight),
-      (m.className = "se-annot-canvas"),
-      (m.style.cursor = "crosshair"),
-      (m.style.touchAction = "none"),
-      b.appendChild(m));
-    let p = m.getContext("2d"),
+      o.appendChild(m));
+    let h = document.createElement("div");
+    ((h.className = "se-annot-stage"), r.appendChild(h));
+    let v = document.createElement("canvas");
+    ((v.width = n.naturalWidth),
+      (v.height = n.naturalHeight),
+      (v.className = "se-annot-canvas"),
+      (v.style.cursor = "crosshair"),
+      (v.style.touchAction = "none"),
+      h.appendChild(v));
+    let p = v.getContext("2d"),
       l = null;
-    function y(u) {
-      let v = m.getBoundingClientRect(),
-        E = m.width / v.width,
-        S = m.height / v.height;
-      return { x: (u.clientX - v.left) * E, y: (u.clientY - v.top) * S };
+    function y(c) {
+      let f = v.getBoundingClientRect(),
+        x = v.width / f.width,
+        k = v.height / f.height;
+      return { x: (c.clientX - f.left) * x, y: (c.clientY - f.top) * k };
     }
-    function L() {
+    function E() {
       return Math.max(2, Math.round(n.naturalWidth / 400));
     }
-    function M() {
+    function R() {
       return Math.max(14, Math.round(n.naturalWidth / 60));
     }
-    function _(u) {
+    function T(c) {
       if (
         (p.save(),
-        (p.strokeStyle = u.color),
-        (p.fillStyle = u.color),
-        (p.lineWidth = L()),
+        (p.strokeStyle = c.color),
+        (p.fillStyle = c.color),
+        (p.lineWidth = E()),
         (p.lineCap = "round"),
         (p.lineJoin = "round"),
-        u.tool === "rect")
+        c.tool === "rect")
       ) {
-        let v = Math.min(u.x1, u.x2),
-          E = Math.min(u.y1, u.y2),
-          S = Math.abs(u.x2 - u.x1),
-          B = Math.abs(u.y2 - u.y1);
-        p.strokeRect(v, E, S, B);
-      } else if (u.tool === "arrow") {
-        (p.beginPath(), p.moveTo(u.x1, u.y1), p.lineTo(u.x2, u.y2), p.stroke());
-        let v = Math.atan2(u.y2 - u.y1, u.x2 - u.x1),
-          E = L() * 5;
+        let f = Math.min(c.x1, c.x2),
+          x = Math.min(c.y1, c.y2),
+          k = Math.abs(c.x2 - c.x1),
+          H = Math.abs(c.y2 - c.y1);
+        p.strokeRect(f, x, k, H);
+      } else if (c.tool === "arrow") {
+        (p.beginPath(), p.moveTo(c.x1, c.y1), p.lineTo(c.x2, c.y2), p.stroke());
+        let f = Math.atan2(c.y2 - c.y1, c.x2 - c.x1),
+          x = E() * 5;
         (p.beginPath(),
-          p.moveTo(u.x2, u.y2),
-          p.lineTo(u.x2 - E * Math.cos(v - Math.PI / 6), u.y2 - E * Math.sin(v - Math.PI / 6)),
-          p.lineTo(u.x2 - E * Math.cos(v + Math.PI / 6), u.y2 - E * Math.sin(v + Math.PI / 6)),
+          p.moveTo(c.x2, c.y2),
+          p.lineTo(c.x2 - x * Math.cos(f - Math.PI / 6), c.y2 - x * Math.sin(f - Math.PI / 6)),
+          p.lineTo(c.x2 - x * Math.cos(f + Math.PI / 6), c.y2 - x * Math.sin(f + Math.PI / 6)),
           p.closePath(),
           p.fill());
-      } else if (u.tool === "pen")
-        if (u.points.length < 2) {
-          if (u.points.length === 1) {
-            let v = u.points[0];
-            (p.beginPath(), p.arc(v.x, v.y, L() / 2, 0, Math.PI * 2), p.fill());
+      } else if (c.tool === "pen")
+        if (c.points.length < 2) {
+          if (c.points.length === 1) {
+            let f = c.points[0];
+            (p.beginPath(), p.arc(f.x, f.y, E() / 2, 0, Math.PI * 2), p.fill());
           }
         } else {
-          (p.beginPath(), p.moveTo(u.points[0].x, u.points[0].y));
-          for (let v = 1; v < u.points.length; v++) p.lineTo(u.points[v].x, u.points[v].y);
+          (p.beginPath(), p.moveTo(c.points[0].x, c.points[0].y));
+          for (let f = 1; f < c.points.length; f++) p.lineTo(c.points[f].x, c.points[f].y);
           p.stroke();
         }
-      else if (u.tool === "text" && u.text) {
-        let v = M();
-        ((p.font = `600 ${v}px ui-sans-serif, system-ui, sans-serif`), (p.textBaseline = "top"));
-        let E = v * 0.3,
-          B = p.measureText(u.text).width + E * 2,
-          H = v + E * 2;
+      else if (c.tool === "text" && c.text) {
+        let f = R();
+        ((p.font = `600 ${f}px ui-sans-serif, system-ui, sans-serif`), (p.textBaseline = "top"));
+        let x = f * 0.3,
+          H = p.measureText(c.text).width + x * 2,
+          O = f + x * 2;
         ((p.fillStyle = "rgba(0,0,0,0.55)"),
-          p.fillRect(u.x1, u.y1, B, H),
-          (p.fillStyle = u.color),
-          p.fillText(u.text, u.x1 + E, u.y1 + E));
+          p.fillRect(c.x1, c.y1, H, O),
+          (p.fillStyle = c.color),
+          p.fillText(c.text, c.x1 + x, c.y1 + x));
       }
       p.restore();
     }
-    function w(u) {
-      (p.clearRect(0, 0, m.width, m.height), p.drawImage(n, 0, 0));
-      for (let v of s) _(v);
-      u && _(u);
+    function $(c) {
+      (p.clearRect(0, 0, v.width, v.height), p.drawImage(n, 0, 0));
+      for (let f of s) T(f);
+      c && T(c);
     }
-    w();
-    let T = null;
-    function k(u, v) {
-      T && T.blur();
-      let E = m.getBoundingClientRect(),
-        S = b.getBoundingClientRect(),
-        B = E.width / m.width,
-        H = E.height / m.height,
-        X = M() * B,
-        ve = X * 0.3,
-        $ = document.createElement("input");
-      (($.type = "text"),
-        ($.className = "se-annot-text-input"),
-        ($.style.position = "absolute"),
-        ($.style.left = `${E.left - S.left + u * B}px`),
-        ($.style.top = `${E.top - S.top + v * H}px`),
-        ($.style.color = a),
-        ($.style.background = "rgba(0,0,0,0.55)"),
-        ($.style.border = `1px dashed ${a}`),
-        ($.style.outline = "none"),
-        ($.style.padding = `${ve}px`),
-        ($.style.font = `600 ${X}px ui-sans-serif, system-ui, sans-serif`),
-        ($.style.minWidth = `${X * 4}px`),
-        ($.style.lineHeight = "1"),
-        ($.placeholder = "type\u2026"));
-      let se = !1;
-      function Ge() {
-        if (se) return;
-        se = !0;
-        let q = $.value.trim();
-        ($.remove(),
-          (T = null),
-          q && (s.push({ tool: "text", color: a, x1: u, y1: v, text: q }), w()));
+    $();
+    let B = null;
+    function L(c, f) {
+      B && B.blur();
+      let x = v.getBoundingClientRect(),
+        k = h.getBoundingClientRect(),
+        H = x.width / v.width,
+        O = x.height / v.height,
+        I = R() * H,
+        q = I * 0.3,
+        S = document.createElement("input");
+      ((S.type = "text"),
+        (S.className = "se-annot-text-input"),
+        (S.style.position = "absolute"),
+        (S.style.left = `${x.left - k.left + c * H}px`),
+        (S.style.top = `${x.top - k.top + f * O}px`),
+        (S.style.color = a),
+        (S.style.background = "rgba(0,0,0,0.55)"),
+        (S.style.border = `1px dashed ${a}`),
+        (S.style.outline = "none"),
+        (S.style.padding = `${q}px`),
+        (S.style.font = `600 ${I}px ui-sans-serif, system-ui, sans-serif`),
+        (S.style.minWidth = `${I * 4}px`),
+        (S.style.lineHeight = "1"),
+        (S.placeholder = "type\u2026"));
+      let D = !1;
+      function Ve() {
+        if (D) return;
+        D = !0;
+        let U = S.value.trim();
+        (S.remove(),
+          (B = null),
+          U && (s.push({ tool: "text", color: a, x1: c, y1: f, text: U }), $()));
       }
-      function nn() {
-        se || ((se = !0), $.remove(), (T = null));
+      function on() {
+        D || ((D = !0), S.remove(), (B = null));
       }
-      ($.addEventListener("keydown", (q) => {
-        (q.key === "Enter"
-          ? (q.preventDefault(), Ge())
-          : q.key === "Escape" && (q.preventDefault(), nn()),
-          q.stopPropagation());
+      (S.addEventListener("keydown", (U) => {
+        (U.key === "Enter"
+          ? (U.preventDefault(), Ve())
+          : U.key === "Escape" && (U.preventDefault(), on()),
+          U.stopPropagation());
       }),
-        $.addEventListener("blur", Ge),
-        b.appendChild($),
-        (T = $),
-        setTimeout(() => $.focus(), 0));
+        S.addEventListener("blur", Ve),
+        h.appendChild(S),
+        (B = S),
+        setTimeout(() => S.focus(), 0));
     }
-    let x = null;
-    (m.addEventListener("pointermove", (u) => {
-      ((l = y(u)),
-        x &&
-          (x.kind === "pen"
-            ? (x.shape.points.push(l), w())
-            : w({
+    let M = null;
+    (v.addEventListener("pointermove", (c) => {
+      ((l = y(c)),
+        M &&
+          (M.kind === "pen"
+            ? (M.shape.points.push(l), $())
+            : $({
                 tool: i === "text" ? "rect" : i,
                 color: a,
-                x1: x.x1,
-                y1: x.y1,
+                x1: M.x1,
+                y1: M.y1,
                 x2: l.x,
                 y2: l.y,
               })));
     }),
-      m.addEventListener("pointerdown", (u) => {
-        u.preventDefault();
-        let v = y(u);
-        if (((l = v), i === "text")) {
-          k(v.x, v.y);
+      v.addEventListener("pointerdown", (c) => {
+        c.preventDefault();
+        let f = y(c);
+        if (((l = f), i === "text")) {
+          L(f.x, f.y);
           return;
         }
         if (i === "pen") {
-          let E = { tool: "pen", color: a, points: [v] };
-          (s.push(E), (x = { kind: "pen", shape: E }), m.setPointerCapture(u.pointerId), w());
+          let x = { tool: "pen", color: a, points: [f] };
+          (s.push(x), (M = { kind: "pen", shape: x }), v.setPointerCapture(c.pointerId), $());
           return;
         }
-        ((x = { kind: "shape", x1: v.x, y1: v.y }), m.setPointerCapture(u.pointerId));
+        ((M = { kind: "shape", x1: f.x, y1: f.y }), v.setPointerCapture(c.pointerId));
       }),
-      m.addEventListener("pointerup", (u) => {
-        if (!x) return;
-        let v = y(u);
-        if (x.kind === "shape") {
-          let E = Math.abs(v.x - x.x1),
-            S = Math.abs(v.y - x.y1);
-          (E > 4 || S > 4) &&
+      v.addEventListener("pointerup", (c) => {
+        if (!M) return;
+        let f = y(c);
+        if (M.kind === "shape") {
+          let x = Math.abs(f.x - M.x1),
+            k = Math.abs(f.y - M.y1);
+          (x > 4 || k > 4) &&
             (i === "arrow" || i === "rect") &&
-            s.push({ tool: i, color: a, x1: x.x1, y1: x.y1, x2: v.x, y2: v.y });
+            s.push({ tool: i, color: a, x1: M.x1, y1: M.y1, x2: f.x, y2: f.y });
         }
-        ((x = null), w());
+        ((M = null), $());
       }));
-    function R(u) {
-      if (!(u instanceof HTMLElement)) return !1;
-      let v = u.tagName;
-      return v === "INPUT" || v === "TEXTAREA" || u.isContentEditable;
+    function w(c) {
+      if (!(c instanceof HTMLElement)) return !1;
+      let f = c.tagName;
+      return f === "INPUT" || f === "TEXTAREA" || c.isContentEditable;
     }
-    function A(u) {
+    function _(c) {
       if (!r.isConnected) {
-        document.removeEventListener("keydown", A, !0);
+        document.removeEventListener("keydown", _, !0);
         return;
       }
-      if (R(u.target)) return;
-      let v = u.key.toLowerCase();
-      if ((u.ctrlKey || u.metaKey) && v === "z") {
-        (u.preventDefault(), s.pop(), w());
+      if (w(c.target)) return;
+      let f = c.key.toLowerCase();
+      if ((c.ctrlKey || c.metaKey) && f === "z") {
+        (c.preventDefault(), s.pop(), $());
         return;
       }
-      if (!(u.ctrlKey || u.metaKey || u.altKey))
-        if (v === "t") {
-          (u.preventDefault(), d("text"));
-          let E = l ?? { x: m.width / 2, y: m.height / 2 };
-          k(E.x, E.y);
-        } else v === "p" ? d("pen") : v === "a" ? d("arrow") : v === "r" && d("rect");
+      if (!(c.ctrlKey || c.metaKey || c.altKey))
+        if (f === "t") {
+          (c.preventDefault(), d("text"));
+          let x = l ?? { x: v.width / 2, y: v.height / 2 };
+          L(x.x, x.y);
+        } else f === "p" ? d("pen") : f === "a" ? d("arrow") : f === "r" && d("rect");
     }
     return (
-      document.addEventListener("keydown", A, !0),
+      document.addEventListener("keydown", _, !0),
       {
         root: r,
         async export() {
-          (T && T.blur(), await new Promise((v) => requestAnimationFrame(() => v(null))));
-          let u = await new Promise((v, E) => {
-            m.toBlob((S) => (S ? v(S) : E(new Error("toBlob failed"))), "image/png");
+          (B && B.blur(), await new Promise((f) => requestAnimationFrame(() => f(null))));
+          let c = await new Promise((f, x) => {
+            v.toBlob((k) => (k ? f(k) : x(new Error("toBlob failed"))), "image/png");
           });
-          return (URL.revokeObjectURL(t), document.removeEventListener("keydown", A, !0), u);
+          return (URL.revokeObjectURL(t), document.removeEventListener("keydown", _, !0), c);
         },
       }
     );
   }
-  function ne(e) {
+  function se(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function mr(e) {
+  function hr(e) {
     return `<span class="badge ${e === "open" ? "badge-run" : e === "resolved" ? "badge-on" : e === "wont_fix" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
   }
-  function vr(e) {
+  function br(e) {
     let t = Date.now() - Date.parse(e),
       n = Math.floor(t / 6e4);
     if (n < 1) return "just now";
@@ -3756,14 +3773,14 @@ select.se-input { cursor: pointer; }
     let r = Math.floor(n / 60);
     return r < 24 ? `${r}h ago` : `${Math.floor(r / 24)}d ago`;
   }
-  async function jt(e, t, n) {
+  async function Jt(e, t, n) {
     async function r() {
       e.innerHTML = '<div class="loading">Loading bugs\u2026</div>';
       let i;
       try {
         i = await t.bugs();
       } catch (s) {
-        ((e.innerHTML = `<div class="err">Failed to load bugs: ${ne(String(s))}</div>`), o());
+        ((e.innerHTML = `<div class="err">Failed to load bugs: ${se(String(s))}</div>`), o());
         return;
       }
       e.innerHTML = `
@@ -3783,22 +3800,22 @@ select.se-input { cursor: pointer; }
             <a class="row se-feedback-row" target="_blank" rel="noopener"
                href="${t.adminUrl}/dashboard/bugs/${s.id}">
               <div style="flex:1;min-width:0">
-                <div class="row-name">${ne(s.title)}</div>
-                <div class="row-sub">${vr(s.createdAt)}${s.reporterEmail ? ` \xB7 ${ne(s.reporterEmail)}` : ""}</div>
+                <div class="row-name">${se(s.title)}</div>
+                <div class="row-sub">${br(s.createdAt)}${s.reporterEmail ? ` \xB7 ${se(s.reporterEmail)}` : ""}</div>
               </div>
-              ${mr(s.status)}
+              ${hr(s.status)}
             </a>`,
             )
             .join("")),
         o());
     }
     function o() {
-      e.querySelector("#se-file-bug")?.addEventListener("click", () => hr(t, n, r));
+      e.querySelector("#se-file-bug")?.addEventListener("click", () => yr(t, n, r));
     }
     await r();
   }
-  function hr(e, t, n) {
-    let r = te(t, { title: "File a bug", size: "lg" }),
+  function yr(e, t, n) {
+    let r = oe(t, { title: "File a bug", size: "lg" }),
       o = [],
       i = null;
     r.body.innerHTML = `
@@ -3841,79 +3858,79 @@ select.se-input { cursor: pointer; }
     let a = r.body.querySelector("#se-b-title"),
       s = r.body.querySelector("#se-b-steps"),
       d = r.body.querySelector("#se-b-actual"),
-      c = r.body.querySelector("#se-b-expected"),
-      f = r.body.querySelector("#se-b-attach"),
-      h = r.body.querySelector("#se-b-status"),
-      g = r.body.querySelector("#se-b-file"),
-      b = r.body.querySelector("#se-b-record");
-    function m() {
+      u = r.body.querySelector("#se-b-expected"),
+      g = r.body.querySelector("#se-b-attach"),
+      b = r.body.querySelector("#se-b-status"),
+      m = r.body.querySelector("#se-b-file"),
+      h = r.body.querySelector("#se-b-record");
+    function v() {
       if (o.length === 0) {
-        f.innerHTML = "";
+        g.innerHTML = "";
         return;
       }
-      ((f.innerHTML = o
+      ((g.innerHTML = o
         .map(
           (l, y) => `
           <div class="se-attach-item">
-            <span>${ne(l.filename)} <span class="dim">(${(l.blob.size / 1024).toFixed(0)} KB)</span></span>
+            <span>${se(l.filename)} <span class="dim">(${(l.blob.size / 1024).toFixed(0)} KB)</span></span>
             <button type="button" class="ibtn danger" data-idx="${y}">remove</button>
           </div>`,
         )
         .join("")),
-        f.querySelectorAll("button[data-idx]").forEach((l) => {
+        g.querySelectorAll("button[data-idx]").forEach((l) => {
           l.addEventListener("click", () => {
-            (o.splice(Number(l.dataset.idx), 1), m());
+            (o.splice(Number(l.dataset.idx), 1), v());
           });
         }));
     }
     function p(l, y = !1) {
-      ((h.textContent = l), (h.style.color = y ? "var(--se-danger)" : "var(--se-fg-3)"));
+      ((b.textContent = l), (b.style.color = y ? "var(--se-danger)" : "var(--se-fg-3)"));
     }
     (r.body.querySelector("#se-b-screenshot").addEventListener("click", async () => {
       p("Pick a screen/tab to capture\u2026");
       try {
-        let l = await Ut(t.host);
+        let l = await jt(t.host);
         (p(""),
-          br(t, l, (y) => {
+          xr(t, l, (y) => {
             (o.push({ kind: "screenshot", filename: `screenshot-${Date.now()}.png`, blob: y }),
-              m());
+              v());
           }));
       } catch (l) {
         p(String(l instanceof Error ? l.message : l), !0);
       }
     }),
-      b.addEventListener("click", async () => {
+      h.addEventListener("click", async () => {
         if (i) {
           try {
-            ((b.disabled = !0), p("Finalizing recording\u2026"));
+            ((h.disabled = !0), p("Finalizing recording\u2026"));
             let l = await i.stop();
             ((i = null),
-              (b.textContent = "\u23FA Record screen"),
-              b.classList.remove("danger"),
+              (h.textContent = "\u23FA Record screen"),
+              h.classList.remove("danger"),
               o.push({ kind: "recording", filename: `recording-${Date.now()}.webm`, blob: l }),
-              m(),
+              v(),
               p(""));
           } catch (l) {
             p(String(l instanceof Error ? l.message : l), !0);
           } finally {
-            b.disabled = !1;
+            h.disabled = !1;
           }
           return;
         }
         p("Pick a screen/tab to record\u2026");
         try {
-          ((i = await Kt(t.host)),
-            (b.textContent = "\u25A0 Stop recording"),
-            b.classList.add("danger"),
+          ((i = await zt(t.host)),
+            (h.textContent = "\u25A0 Stop recording"),
+            h.classList.add("danger"),
             p("Recording\u2026 click stop when done."));
         } catch (l) {
           (p(String(l instanceof Error ? l.message : l), !0), (i = null));
         }
       }),
-      r.body.querySelector("#se-b-upload").addEventListener("click", () => g.click()),
-      g.addEventListener("change", () => {
-        let l = g.files?.[0];
-        l && (o.push({ kind: "file", filename: l.name, blob: l }), (g.value = ""), m());
+      r.body.querySelector("#se-b-upload").addEventListener("click", () => m.click()),
+      m.addEventListener("change", () => {
+        let l = m.files?.[0];
+        l && (o.push({ kind: "file", filename: l.name, blob: l }), (m.value = ""), v());
       }),
       r.body.querySelector("#se-b-cancel").addEventListener("click", () => {
         (i && i.cancel(), r.close());
@@ -3927,34 +3944,34 @@ select.se-input { cursor: pointer; }
         }
         ((l.disabled = !0), p("Submitting\u2026"));
         try {
-          let L = await e.createBug({
+          let E = await e.createBug({
             title: y,
             stepsToReproduce: s.value,
             actualResult: d.value,
-            expectedResult: c.value,
+            expectedResult: u.value,
             pageUrl: window.location.href,
             userAgent: navigator.userAgent,
             viewport: `${window.innerWidth}x${window.innerHeight}`,
           });
-          for (let M = 0; M < o.length; M++) {
-            let _ = o[M];
-            (p(`Uploading attachment ${M + 1}/${o.length}\u2026`),
+          for (let R = 0; R < o.length; R++) {
+            let T = o[R];
+            (p(`Uploading attachment ${R + 1}/${o.length}\u2026`),
               await e.uploadAttachment({
                 reportKind: "bug",
-                reportId: L.id,
-                kind: _.kind,
-                filename: _.filename,
-                blob: _.blob,
+                reportId: E.id,
+                kind: T.kind,
+                filename: T.filename,
+                blob: T.blob,
               }));
           }
           (r.close(), n());
-        } catch (L) {
-          (p(String(L instanceof Error ? L.message : L), !0), (l.disabled = !1));
+        } catch (E) {
+          (p(String(E instanceof Error ? E.message : E), !0), (l.disabled = !1));
         }
       }));
   }
-  function br(e, t, n) {
-    let r = te(e, { title: "Annotate screenshot", size: "lg" });
+  function xr(e, t, n) {
+    let r = oe(e, { title: "Annotate screenshot", size: "lg" });
     r.body.innerHTML = `<div class="se-annot-host" id="se-annot-host"></div>
     <div class="se-modal-footer">
       <button type="button" class="ibtn" id="se-a-cancel">Cancel</button>
@@ -3962,7 +3979,7 @@ select.se-input { cursor: pointer; }
     </div>`;
     let o = r.body.querySelector("#se-annot-host");
     ((o.innerHTML = '<div class="loading">Preparing annotator\u2026</div>'),
-      Ft(t)
+      Wt(t)
         .then((i) => {
           ((o.innerHTML = ""),
             o.appendChild(i.root),
@@ -3973,23 +3990,23 @@ select.se-input { cursor: pointer; }
             }));
         })
         .catch((i) => {
-          o.innerHTML = `<div class="err">${ne(String(i))}</div>`;
+          o.innerHTML = `<div class="err">${se(String(i))}</div>`;
         }));
   }
-  function ze(e) {
+  function je(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function yr(e) {
+  function wr(e) {
     return `<span class="badge ${e === "open" ? "badge-run" : e === "shipped" ? "badge-on" : e === "declined" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
   }
-  function xr(e) {
+  function Er(e) {
     let t = e.replace("_", " ");
     return `<span class="badge ${e === "critical" ? "badge-off" : e === "important" ? "badge-run" : "badge-draft"}">${t}</span>`;
   }
-  function wr(e) {
+  function kr(e) {
     let t = Date.now() - Date.parse(e),
       n = Math.floor(t / 6e4);
     if (n < 1) return "just now";
@@ -3997,14 +4014,14 @@ select.se-input { cursor: pointer; }
     let r = Math.floor(n / 60);
     return r < 24 ? `${r}h ago` : `${Math.floor(r / 24)}d ago`;
   }
-  async function Wt(e, t, n) {
+  async function Gt(e, t, n) {
     async function r() {
       e.innerHTML = '<div class="loading">Loading feature requests\u2026</div>';
       let o;
       try {
         o = await t.featureRequests();
       } catch (a) {
-        e.innerHTML = `<div class="err">Failed to load feature requests: ${ze(String(a))}</div>`;
+        e.innerHTML = `<div class="err">Failed to load feature requests: ${je(String(a))}</div>`;
         return;
       }
       e.innerHTML = `
@@ -4023,20 +4040,20 @@ select.se-input { cursor: pointer; }
             <a class="row se-feedback-row" target="_blank" rel="noopener"
                href="${t.adminUrl}/dashboard/feature-requests/${a.id}">
               <div style="flex:1;min-width:0">
-                <div class="row-name">${ze(a.title)}</div>
-                <div class="row-sub">${wr(a.createdAt)}${a.reporterEmail ? ` \xB7 ${ze(a.reporterEmail)}` : ""}</div>
+                <div class="row-name">${je(a.title)}</div>
+                <div class="row-sub">${kr(a.createdAt)}${a.reporterEmail ? ` \xB7 ${je(a.reporterEmail)}` : ""}</div>
               </div>
-              ${xr(a.importance)}
-              ${yr(a.status)}
+              ${Er(a.importance)}
+              ${wr(a.status)}
             </a>`,
             )
             .join("")),
-        e.querySelector("#se-file-fr").addEventListener("click", () => Er(t, n, r)));
+        e.querySelector("#se-file-fr").addEventListener("click", () => Lr(t, n, r)));
     }
     await r();
   }
-  function Er(e, t, n) {
-    let r = te(t, { title: "Request a feature", size: "lg" });
+  function Lr(e, t, n) {
+    let r = oe(t, { title: "Request a feature", size: "lg" });
     r.body.innerHTML = `
     <div class="se-form">
       <label class="se-field">
@@ -4073,18 +4090,18 @@ select.se-input { cursor: pointer; }
       d = r.body.querySelector("#se-f-status");
     (r.body.querySelector("#se-f-cancel").addEventListener("click", () => r.close()),
       r.body.querySelector("#se-f-submit").addEventListener("click", async () => {
-        let c = o.value.trim();
-        if (!c) {
+        let u = o.value.trim();
+        if (!u) {
           ((d.textContent = "Title is required"), (d.style.color = "var(--se-danger)"), o.focus());
           return;
         }
-        let f = r.body.querySelector("#se-f-submit");
-        ((f.disabled = !0),
+        let g = r.body.querySelector("#se-f-submit");
+        ((g.disabled = !0),
           (d.textContent = "Submitting\u2026"),
           (d.style.color = "var(--se-fg-3)"));
         try {
           (await e.createFeatureRequest({
-            title: c,
+            title: u,
             description: i.value,
             useCase: a.value,
             importance: s.value,
@@ -4093,69 +4110,90 @@ select.se-input { cursor: pointer; }
           }),
             r.close(),
             n());
-        } catch (h) {
-          ((d.textContent = String(h instanceof Error ? h.message : h)),
+        } catch (b) {
+          ((d.textContent = String(b instanceof Error ? b.message : b)),
             (d.style.color = "var(--se-danger)"),
-            (f.disabled = !1));
+            (g.disabled = !1));
         }
       }));
   }
-  var kr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
-    Lr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
-    Sr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
-    _r =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
-    Tr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
-    Mr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
-    Rr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
-    $r =
-      '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
-    me = {
-      gates: { icon: kr, label: "Gates" },
-      configs: { icon: Lr, label: "Configs" },
-      experiments: { icon: Sr, label: "Experiments" },
-      i18n: { icon: _r, label: "Translations" },
-      bugs: { icon: Tr, label: "Bugs" },
-      features: { icon: Mr, label: "Feature requests" },
+  var Sr = {
+      gates: "gates",
+      configs: "configs",
+      experiments: "experiments",
+      i18n: "translations",
+      bugs: "feedback",
+      features: "feedback",
     },
-    Zt = "se_l_overlay",
-    Fe = "se_l_active_panel";
-  function Ar() {
+    Fe = "se_dt_project";
+  function _r() {
     try {
       let e = sessionStorage.getItem(Fe);
-      if (e && e in me) return e;
+      if (e) return JSON.parse(e);
     } catch {}
     return null;
   }
-  function Gt(e) {
+  function ze(e) {
     try {
-      e === null ? sessionStorage.removeItem(Fe) : sessionStorage.setItem(Fe, e);
+      e === null ? sessionStorage.removeItem(Fe) : sessionStorage.setItem(Fe, JSON.stringify(e));
     } catch {}
   }
-  var je = 240,
-    Jt = 580,
-    We = 180,
-    Vt = 700,
-    Xt = { edge: "right", offsetPct: 50, panelWidth: 440, panelHeight: 460 };
-  function Pr() {
+  var Tr =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
+    Mr =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
+    Rr =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
+    Ar =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
+    $r =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
+    Pr =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
+    Cr =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+    Or =
+      '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
+    ie = {
+      gates: { icon: Tr, label: "Gates" },
+      configs: { icon: Mr, label: "Configs" },
+      experiments: { icon: Rr, label: "Experiments" },
+      i18n: { icon: Ar, label: "Translations" },
+      bugs: { icon: $r, label: "Bugs" },
+      features: { icon: Pr, label: "Feature requests" },
+    },
+    en = "se_l_overlay",
+    We = "se_l_active_panel";
+  function Hr() {
     try {
-      let e = localStorage.getItem(Zt);
-      if (e) return { ...Xt, ...JSON.parse(e) };
+      let e = sessionStorage.getItem(We);
+      if (e && e in ie) return e;
     } catch {}
-    return { ...Xt };
+    return null;
   }
-  function Yt(e) {
+  function Vt(e) {
     try {
-      localStorage.setItem(Zt, JSON.stringify(e));
+      e === null ? sessionStorage.removeItem(We) : sessionStorage.setItem(We, e);
     } catch {}
   }
-  function Cr(e, t) {
+  var Je = 240,
+    Yt = 580,
+    Ge = 180,
+    Xt = 700,
+    Zt = { edge: "right", offsetPct: 50, panelWidth: 440, panelHeight: 460 };
+  function Br() {
+    try {
+      let e = localStorage.getItem(en);
+      if (e) return { ...Zt, ...JSON.parse(e) };
+    } catch {}
+    return { ...Zt };
+  }
+  function Qt(e) {
+    try {
+      localStorage.setItem(en, JSON.stringify(e));
+    } catch {}
+  }
+  function Ir(e, t) {
     let n = window.innerWidth,
       r = window.innerHeight,
       o = [
@@ -4164,26 +4202,26 @@ select.se-input { cursor: pointer; }
         [t, "top"],
         [r - t, "bottom"],
       ];
-    o.sort((d, c) => d[0] - c[0]);
+    o.sort((d, u) => d[0] - u[0]);
     let i = o[0][1],
       s = Math.max(5, Math.min(95, i === "left" || i === "right" ? (t / r) * 100 : (e / n) * 100));
     return { edge: i, offsetPct: s };
   }
-  function re(e, t, n, r) {
+  function ae(e, t, n, r) {
     let { edge: o, offsetPct: i, panelWidth: a, panelHeight: s } = r,
       d = window.innerWidth,
-      c = window.innerHeight,
-      f = o === "left" || o === "right",
-      h = Math.max(je, Math.min(a, d - 80)),
-      g = Math.max(We, Math.min(s, c - 40)),
-      b = (i / 100) * (f ? c : d),
-      m = e.getBoundingClientRect(),
-      p = f ? m.width || 52 : m.height || 52,
+      u = window.innerHeight,
+      g = o === "left" || o === "right",
+      b = Math.max(Je, Math.min(a, d - 80)),
+      m = Math.max(Ge, Math.min(s, u - 40)),
+      h = (i / 100) * (g ? u : d),
+      v = e.getBoundingClientRect(),
+      p = g ? v.width || 52 : v.height || 52,
       l = e.style;
     ((l.top = l.bottom = l.left = l.right = l.transform = ""),
       (l.borderTop = l.borderBottom = l.borderLeft = l.borderRight = ""),
-      (l.flexDirection = f ? "column" : "row"),
-      (l.padding = f ? "8px 6px" : "6px 8px"),
+      (l.flexDirection = g ? "column" : "row"),
+      (l.padding = g ? "8px 6px" : "6px 8px"),
       o === "right"
         ? ((l.right = "0"),
           (l.top = `${i}%`),
@@ -4215,59 +4253,59 @@ select.se-input { cursor: pointer; }
     if (
       ((y.top = y.bottom = y.left = y.right = y.transform = ""),
       (y.borderTop = y.borderBottom = y.borderLeft = y.borderRight = ""),
-      (y.width = h + "px"),
-      (y.height = g + "px"),
+      (y.width = b + "px"),
+      (y.height = m + "px"),
       (t.dataset.edge = o),
       o === "right")
     ) {
-      let M = Math.max(10, Math.min(c - g - 10, b - g / 2));
+      let R = Math.max(10, Math.min(u - m - 10, h - m / 2));
       ((y.right = p + "px"),
-        (y.top = M + "px"),
+        (y.top = R + "px"),
         (y.borderRadius = "10px 0 0 10px"),
         (y.borderRight = "none"),
         (y.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
     } else if (o === "left") {
-      let M = Math.max(10, Math.min(c - g - 10, b - g / 2));
+      let R = Math.max(10, Math.min(u - m - 10, h - m / 2));
       ((y.left = p + "px"),
-        (y.top = M + "px"),
+        (y.top = R + "px"),
         (y.borderRadius = "0 10px 10px 0"),
         (y.borderLeft = "none"),
         (y.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
     } else if (o === "top") {
-      let M = Math.max(10, Math.min(d - h - 10, b - h / 2));
+      let R = Math.max(10, Math.min(d - b - 10, h - b / 2));
       ((y.top = p + "px"),
-        (y.left = M + "px"),
+        (y.left = R + "px"),
         (y.borderRadius = "0 0 10px 10px"),
         (y.borderTop = "none"),
         (y.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
     } else {
-      let M = Math.max(10, Math.min(d - h - 10, b - h / 2));
+      let R = Math.max(10, Math.min(d - b - 10, h - b / 2));
       ((y.bottom = p + "px"),
-        (y.left = M + "px"),
+        (y.left = R + "px"),
         (y.borderRadius = "10px 10px 0 0"),
         (y.borderBottom = "none"),
         (y.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
     }
-    let L = n.style;
-    ((L.top = L.bottom = L.left = L.right = L.width = L.height = ""),
-      (n.dataset.dir = f ? "ew" : "ns"),
-      f
-        ? ((L.width = "10px"),
-          (L.top = "0"),
-          (L.bottom = "0"),
+    let E = n.style;
+    ((E.top = E.bottom = E.left = E.right = E.width = E.height = ""),
+      (n.dataset.dir = g ? "ew" : "ns"),
+      g
+        ? ((E.width = "10px"),
+          (E.top = "0"),
+          (E.bottom = "0"),
           (n.style.cursor = "ew-resize"),
-          o === "right" ? (L.left = "0") : (L.right = "0"))
-        : ((L.height = "10px"),
-          (L.left = "0"),
-          (L.right = "0"),
+          o === "right" ? (E.left = "0") : (E.right = "0"))
+        : ((E.height = "10px"),
+          (E.left = "0"),
+          (E.right = "0"),
           (n.style.cursor = "ns-resize"),
-          o === "top" ? (L.bottom = "0") : (L.top = "0")));
+          o === "top" ? (E.bottom = "0") : (E.top = "0")));
   }
-  function Qt(e) {
+  function tn(e) {
     let t = document.createElement("div");
     t.setAttribute("id", "shipeasy-devtools");
     let n = t.attachShadow({ mode: "open" });
-    n.innerHTML = `<style>${ae}</style><div id="toolbar"></div><div id="panel"></div>`;
+    n.innerHTML = `<style>${le}</style><div id="toolbar"></div><div id="panel"></div>`;
     let r = n.getElementById("toolbar"),
       o = n.getElementById("panel");
     ((r.className = "toolbar"), (o.className = "panel"));
@@ -4275,109 +4313,144 @@ select.se-input { cursor: pointer; }
     ((i.className = "resize-handle"), o.appendChild(i));
     let a = document.createElement("div");
     ((a.className = "panel-inner"), o.appendChild(a));
-    let s = Pr(),
+    let s = Br(),
       d = null,
-      c = Je(),
-      f = Ar();
-    requestAnimationFrame(() => re(r, o, i, s));
-    let h = document.createElement("div");
-    ((h.className = "drag-handle"),
-      (h.title = "ShipEasy DevTools \u2014 drag to reposition"),
-      (h.innerHTML = $r),
-      r.appendChild(h),
-      h.addEventListener("mousedown", (w) => {
-        (w.preventDefault(), h.classList.add("dragging"));
-        let T = (x) => {
-            let { edge: R, offsetPct: A } = Cr(x.clientX, x.clientY);
-            ((s = { ...s, edge: R, offsetPct: A }), re(r, o, i, s));
+      u = Ye(),
+      g = _r();
+    g && u && g.id !== u.projectId && ((g = null), ze(null));
+    let b = Hr();
+    requestAnimationFrame(() => ae(r, o, i, s));
+    let m = document.createElement("div");
+    ((m.className = "drag-handle"),
+      (m.title = "ShipEasy DevTools \u2014 drag to reposition"),
+      (m.innerHTML = Or),
+      r.appendChild(m),
+      m.addEventListener("mousedown", (w) => {
+        (w.preventDefault(), m.classList.add("dragging"));
+        let _ = (f) => {
+            let { edge: x, offsetPct: k } = Ir(f.clientX, f.clientY);
+            ((s = { ...s, edge: x, offsetPct: k }), ae(r, o, i, s));
           },
-          k = () => {
-            (h.classList.remove("dragging"),
-              document.removeEventListener("mousemove", T),
-              document.removeEventListener("mouseup", k),
-              Yt(s));
+          c = () => {
+            (m.classList.remove("dragging"),
+              document.removeEventListener("mousemove", _),
+              document.removeEventListener("mouseup", c),
+              Qt(s));
           };
-        (document.addEventListener("mousemove", T), document.addEventListener("mouseup", k));
+        (document.addEventListener("mousemove", _), document.addEventListener("mouseup", c));
       }));
-    let g = new Map();
-    for (let [w, { icon: T, label: k }] of Object.entries(me)) {
-      let x = document.createElement("button");
-      ((x.className = "btn"),
-        (x.title = k),
-        (x.innerHTML = T),
-        x.addEventListener("click", () => l(w)),
-        r.appendChild(x),
-        g.set(w, x));
-    }
-    i.addEventListener("mousedown", (w) => {
-      (w.preventDefault(), w.stopPropagation(), i.classList.add("dragging"));
-      let T = w.clientX,
-        k = w.clientY,
-        x = s.panelWidth,
-        R = s.panelHeight,
-        { edge: A } = s,
-        u = (E) => {
-          let S = E.clientX - T,
-            B = E.clientY - k,
-            H = { ...s };
-          (A === "right" && (H.panelWidth = Math.max(je, Math.min(Jt, x - S))),
-            A === "left" && (H.panelWidth = Math.max(je, Math.min(Jt, x + S))),
-            A === "top" && (H.panelHeight = Math.max(We, Math.min(Vt, R + B))),
-            A === "bottom" && (H.panelHeight = Math.max(We, Math.min(Vt, R - B))),
-            (s = H),
-            re(r, o, i, s));
-        },
-        v = () => {
-          (i.classList.remove("dragging"),
-            document.removeEventListener("mousemove", u),
-            document.removeEventListener("mouseup", v),
-            Yt(s));
-        };
-      (document.addEventListener("mousemove", u), document.addEventListener("mouseup", v));
-    });
-    let b = () => re(r, o, i, s);
-    window.addEventListener("resize", b);
-    function m(w) {
-      ((d = w),
-        Gt(w),
-        g.forEach((T, k) => T.classList.toggle("active", k === w)),
-        o.classList.add("open"),
-        re(r, o, i, s),
-        L(w));
+    let h = new Map();
+    function v(w) {
+      return g ? g.modules[Sr[w]] : !0;
     }
     function p() {
+      for (let w of h.values()) w.remove();
+      h.clear();
+      for (let [w, { icon: _, label: c }] of Object.entries(ie)) {
+        if (!v(w)) continue;
+        let f = document.createElement("button");
+        ((f.className = "btn"),
+          (f.title = c),
+          (f.innerHTML = _),
+          f.addEventListener("click", () => R(w)),
+          r.appendChild(f),
+          h.set(w, f));
+      }
+      d && !v(d) && E();
+    }
+    (p(),
+      i.addEventListener("mousedown", (w) => {
+        (w.preventDefault(), w.stopPropagation(), i.classList.add("dragging"));
+        let _ = w.clientX,
+          c = w.clientY,
+          f = s.panelWidth,
+          x = s.panelHeight,
+          { edge: k } = s,
+          H = (I) => {
+            let q = I.clientX - _,
+              S = I.clientY - c,
+              D = { ...s };
+            (k === "right" && (D.panelWidth = Math.max(Je, Math.min(Yt, f - q))),
+              k === "left" && (D.panelWidth = Math.max(Je, Math.min(Yt, f + q))),
+              k === "top" && (D.panelHeight = Math.max(Ge, Math.min(Xt, x + S))),
+              k === "bottom" && (D.panelHeight = Math.max(Ge, Math.min(Xt, x - S))),
+              (s = D),
+              ae(r, o, i, s));
+          },
+          O = () => {
+            (i.classList.remove("dragging"),
+              document.removeEventListener("mousemove", H),
+              document.removeEventListener("mouseup", O),
+              Qt(s));
+          };
+        (document.addEventListener("mousemove", H), document.addEventListener("mouseup", O));
+      }));
+    let l = () => ae(r, o, i, s);
+    window.addEventListener("resize", l);
+    function y(w) {
+      ((d = w),
+        Vt(w),
+        h.forEach((_, c) => _.classList.toggle("active", c === w)),
+        o.classList.add("open"),
+        ae(r, o, i, s),
+        B(w));
+    }
+    function E() {
       (o.classList.remove("open"),
-        g.forEach((w) => w.classList.remove("active")),
+        h.forEach((w) => w.classList.remove("active")),
         (d = null),
-        Gt(null));
+        Vt(null));
     }
-    function l(w) {
-      d === w ? p() : m(w);
+    function R(w) {
+      v(w) && (d === w ? E() : y(w));
     }
-    function y(w, T) {
-      let k = typeof window < "u" && window.location ? window.location.host : "",
-        x = k ? `<span class="sub">${k}</span>` : "";
+    async function T(w) {
+      if (!(g && g.id === w.projectId))
+        try {
+          let _ = await w.project();
+          ((g = _), ze(_), p());
+        } catch {}
+    }
+    function $(w, _) {
+      let c = typeof window < "u" && window.location ? window.location.host : "",
+        f = g?.name ?? "",
+        x = f ? `${f}` : c,
+        k = x ? `<span class="sub">${x}</span>` : "";
       return `
       <div class="panel-head">
         <span class="mk"></span>
         <span class="panel-title">
           <span class="panel-title-icon">${w}</span>
-          <span class="panel-title-label">${T}</span>
-          ${x}
+          <span class="panel-title-label">${_}</span>
+          ${k}
         </span>
         <span class="live"><span class="dot"></span>LIVE</span>
-        <button class="close" id="se-close" aria-label="Close">${Rr}</button>
+        <button class="close" id="se-close" aria-label="Close">${Cr}</button>
       </div>`;
     }
-    function L(w) {
-      let { icon: T, label: k } = me[w];
-      if (!c) {
-        M(w);
+    function B(w) {
+      let { icon: _, label: c } = ie[w];
+      if (!u) {
+        L(w);
         return;
       }
-      let x = new ce(e.adminUrl, c.token);
-      ((a.innerHTML = `
-      ${y(T, k)}
+      let f = new pe(e.adminUrl, u.token, u.projectId);
+      (T(f).then(() => {
+        if (d && !v(d)) {
+          E();
+          return;
+        }
+        let O = a.querySelector(".panel-head");
+        if (O && d) {
+          let { icon: I, label: q } = ie[d],
+            S = document.createElement("div");
+          ((S.innerHTML = $(I, q)),
+            O.replaceWith(S.firstElementChild),
+            a.querySelector("#se-close")?.addEventListener("click", E));
+        }
+      }),
+        (a.innerHTML = `
+      ${$(_, c)}
       <div class="panel-body" id="se-body"></div>
       <div class="panel-subfoot" id="se-subfoot"></div>
       <div class="panel-footer">
@@ -4387,46 +4460,46 @@ select.se-input { cursor: pointer; }
         <button class="ibtn danger" id="se-signout">Sign out</button>
         <button class="ibtn danger" id="se-clearall">Clear overrides</button>
       </div>`),
-        a.querySelector("#se-close").addEventListener("click", p),
+        a.querySelector("#se-close").addEventListener("click", E),
         a.querySelector("#se-signout").addEventListener("click", () => {
-          (Ve(), (c = null), M(w));
+          (Xe(), ze(null), (u = null), (g = null), p(), L(w));
         }),
         a.querySelector("#se-clearall").addEventListener("click", () => {
-          (ot(), L(w));
+          (at(), B(w));
         }),
         a.querySelector("#se-apply-url").addEventListener("click", () => {
-          st();
+          it();
         }),
         a.querySelector("#se-share").addEventListener("click", async () => {
-          let v = _e({ ...Te(), openDevtools: !0 });
+          let O = _e({ ...Te(), openDevtools: !0 });
           try {
-            await navigator.clipboard.writeText(v);
-            let E = a.querySelector("#se-share"),
-              S = E.textContent;
-            ((E.textContent = "Copied \u2713"), setTimeout(() => (E.textContent = S), 1500));
+            await navigator.clipboard.writeText(O);
+            let I = a.querySelector("#se-share"),
+              q = I.textContent;
+            ((I.textContent = "Copied \u2713"), setTimeout(() => (I.textContent = q), 1500));
           } catch {
-            prompt("Copy this URL:", v);
+            prompt("Copy this URL:", O);
           }
         }));
-      let R = a.querySelector("#se-body"),
-        A = a.querySelector("#se-subfoot");
+      let x = a.querySelector("#se-body"),
+        k = a.querySelector("#se-subfoot");
       ({
-        gates: () => at(R, x),
-        configs: () => lt(R, x),
-        experiments: () => ut(R, x),
-        i18n: () => Dt(R, x, A, n),
-        bugs: () => jt(R, x, n),
-        features: () => Wt(R, x, n),
+        gates: () => lt(x, f),
+        configs: () => ct(x, f),
+        experiments: () => ft(x, f),
+        i18n: () => Ut(x, f, k, n),
+        bugs: () => Jt(x, f, n),
+        features: () => Gt(x, f, n),
       })
         [w]()
-        .catch((v) => {
-          R.innerHTML = `<div class="err">${String(v)}</div>`;
+        .catch((O) => {
+          x.innerHTML = `<div class="err">${String(O)}</div>`;
         });
     }
-    function M(w) {
-      let { icon: T, label: k } = me[w];
+    function L(w) {
+      let { icon: _, label: c } = ie[w];
       ((a.innerHTML = `
-      ${y(T, k)}
+      ${$(_, c)}
       <div class="panel-body auth-mode">
         <div class="auth-box">
           <div class="auth-icon">\u{1F510}</div>
@@ -4437,45 +4510,45 @@ select.se-input { cursor: pointer; }
           <div class="auth-err" id="se-auth-err"></div>
         </div>
       </div>`),
-        a.querySelector("#se-close").addEventListener("click", p),
+        a.querySelector("#se-close").addEventListener("click", E),
         a.querySelector("#se-connect").addEventListener("click", async () => {
-          let x = a.querySelector("#se-connect"),
-            R = a.querySelector("#se-auth-status"),
-            A = a.querySelector("#se-auth-err");
-          ((x.disabled = !0),
-            (x.textContent = "Opening\u2026"),
-            (R.textContent = ""),
-            (A.textContent = ""));
+          let f = a.querySelector("#se-connect"),
+            x = a.querySelector("#se-auth-status"),
+            k = a.querySelector("#se-auth-err");
+          ((f.disabled = !0),
+            (f.textContent = "Opening\u2026"),
+            (x.textContent = ""),
+            (k.textContent = ""));
           try {
-            ((c = await Xe(e, () => {
-              ((R.textContent = "Waiting for approval in the opened tab\u2026"),
-                (x.textContent = "Waiting\u2026"));
+            ((u = await Ze(e, () => {
+              ((x.textContent = "Waiting for approval in the opened tab\u2026"),
+                (f.textContent = "Waiting\u2026"));
             })),
-              L(w));
-          } catch (u) {
-            ((A.textContent = u instanceof Error ? u.message : String(u)),
-              (R.textContent = ""),
-              (x.disabled = !1),
-              (x.textContent = "Retry"));
+              B(w));
+          } catch (H) {
+            ((k.textContent = H instanceof Error ? H.message : String(H)),
+              (x.textContent = ""),
+              (f.disabled = !1),
+              (f.textContent = "Retry"));
           }
         }));
     }
     document.documentElement.appendChild(t);
-    let _ = () => {
+    let M = () => {
       document.getElementById("shipeasy-devtools") || document.documentElement.appendChild(t);
     };
     return (
-      new MutationObserver(_).observe(document.documentElement, { childList: !0 }),
-      z() && (W(), V(!0, n, () => {})),
-      f && requestAnimationFrame(() => m(f)),
+      new MutationObserver(M).observe(document.documentElement, { childList: !0 }),
+      W() && (V(), Z(!0, n, () => {})),
+      b && requestAnimationFrame(() => y(b)),
       {
         destroy() {
-          (window.removeEventListener("resize", b), t.remove());
+          (window.removeEventListener("resize", l), t.remove());
         },
       }
     );
   }
-  function Or() {
+  function qr() {
     if (typeof document < "u") {
       let e = document.currentScript;
       if (e?.src)
@@ -4491,19 +4564,23 @@ select.se-input { cursor: pointer; }
     }
     return typeof window < "u" ? window.location.origin : "";
   }
-  var oe = null;
-  function en(e = {}) {
-    if (oe || typeof window > "u" || typeof document > "u") return;
-    let t = { adminUrl: e.adminUrl ?? Or() },
-      { destroy: n } = Qt(t);
-    oe = n;
+  var Q = null;
+  function nn(e = {}) {
+    if (typeof window > "u" || typeof document > "u") return;
+    if (Q) {
+      if (document.getElementById("shipeasy-devtools")) return;
+      Q = null;
+    }
+    let t = { adminUrl: e.adminUrl ?? qr() },
+      { destroy: n } = tn(t);
+    Q = n;
   }
-  function Hr() {
-    (oe?.(), (oe = null));
+  function Dr() {
+    (Q?.(), (Q = null));
   }
-  function tn(e = {}, t = "Shift+Alt+S") {
+  function rn(e = {}, t = "Shift+Alt+S") {
     if (typeof window > "u") return () => {};
-    de() && en(e);
+    ue() && nn(e);
     let n = t.split("+"),
       r = n[n.length - 1],
       o = n.includes("Shift"),
@@ -4511,46 +4588,52 @@ select.se-input { cursor: pointer; }
       a = n.includes("Ctrl") || n.includes("Control"),
       s = n.includes("Meta") || n.includes("Cmd"),
       d = /^[a-zA-Z]$/.test(r) ? `Key${r.toUpperCase()}` : null;
-    function c(f) {
-      (d ? f.code === d : f.key.toLowerCase() === r.toLowerCase()) &&
-        f.shiftKey === o &&
-        f.altKey === i &&
-        f.ctrlKey === a &&
-        f.metaKey === s &&
-        (oe ? Hr() : en(e));
+    function u(g) {
+      (d ? g.code === d : g.key.toLowerCase() === r.toLowerCase()) &&
+        g.shiftKey === o &&
+        g.altKey === i &&
+        g.ctrlKey === a &&
+        g.metaKey === s &&
+        (Q ? Dr() : nn(e));
     }
-    return (window.addEventListener("keydown", c), () => window.removeEventListener("keydown", c));
+    return (window.addEventListener("keydown", u), () => window.removeEventListener("keydown", u));
   }
   if (typeof window < "u") {
-    let e = window.__se_devtools_config ?? {};
-    if ((tn(e), z())) {
-      let t = !1,
-        n = new MutationObserver(() => r()),
-        r = () => {
-          t ||
-            ((t = !0),
+    let e = window.__se_devtools_config ?? {},
+      t = () => {
+        requestAnimationFrame(() => requestAnimationFrame(() => rn(e)));
+      };
+    if (
+      (document.readyState === "complete" ? t() : window.addEventListener("load", t, { once: !0 }),
+      W())
+    ) {
+      let n = !1,
+        r = new MutationObserver(() => o()),
+        o = () => {
+          n ||
+            ((n = !0),
             requestAnimationFrame(() => {
-              ((t = !1),
-                n.disconnect(),
-                W(),
-                n.observe(document.body, { childList: !0, subtree: !0, attributes: !0 }));
+              ((n = !1),
+                r.disconnect(),
+                V(),
+                r.observe(document.body, { childList: !0, subtree: !0, attributes: !0 }));
             }));
         },
-        o = () => {
-          requestAnimationFrame(() => requestAnimationFrame(() => r()));
+        i = () => {
+          requestAnimationFrame(() => requestAnimationFrame(() => o()));
         };
-      document.readyState === "complete" ? o() : window.addEventListener("load", o, { once: !0 });
-      let i = () => {
-        let s = document.getElementById("shipeasy-devtools");
-        if (!s?.shadowRoot) {
-          setTimeout(i, 100);
+      document.readyState === "complete" ? i() : window.addEventListener("load", i, { once: !0 });
+      let a = () => {
+        let d = document.getElementById("shipeasy-devtools");
+        if (!d?.shadowRoot) {
+          setTimeout(a, 100);
           return;
         }
-        V(!0, s.shadowRoot, () => r());
+        Z(!0, d.shadowRoot, () => o());
       };
-      (i(), window.addEventListener("se:i18n:ready", () => r(), { once: !0 }));
-      let a = window;
-      a.i18n?.on && a.i18n.on("update", () => r());
+      (a(), window.addEventListener("se:i18n:ready", () => o(), { once: !0 }));
+      let s = window;
+      s.i18n?.on && s.i18n.on("update", () => o());
     }
     window.__se_devtools_ready = !0;
   }
