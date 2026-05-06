@@ -30,13 +30,11 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install (ts-sdk only)
-        working-directory: packages/ts-sdk
-        run: pnpm install --frozen-lockfile=false
+      - name: Install
+        run: pnpm install --frozen-lockfile
 
       - name: Build ts-sdk
-        working-directory: packages/ts-sdk
-        run: pnpm run build
+        run: pnpm --filter @shipeasy/sdk build
 
       - name: Publish loader to R2
         working-directory: packages/ts-sdk
