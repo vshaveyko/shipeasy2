@@ -77,11 +77,13 @@ function renderTreeNode(node: TreeNode, depth: number): string {
   }
   const kids = node.children.map((c) => renderTreeNode(c, depth + 1)).join("");
   return `
-    <div class="tree-row branch" style="padding-left:${pad}px">
-      <span class="tree-caret">▾</span>
-      <span class="tree-seg">${escapeHtml(node.segment)}</span>
-    </div>
-    ${kids}`;
+    <div class="tree-branch">
+      <div class="tree-row branch" role="button" tabindex="0" style="padding-left:${pad}px" data-branch>
+        <span class="tree-caret">▾</span>
+        <span class="tree-seg">${escapeHtml(node.segment)}</span>
+      </div>
+      <div class="tree-children">${kids}</div>
+    </div>`;
 }
 
 // ── Edit-labels mode ──────────────────────────────────────────────────────────
@@ -260,7 +262,65 @@ export function scanAndReplaceMarkers(root: Node = document.body): number {
     if (changed) writeLabelAttrs(el, Array.from(byAttr.values()));
   }
 
+  // Server Components render i18n.t() output as plain text (no markers, no
+  // [data-label] span) — RSCs don't re-execute on the client, so the patched
+  // window.i18n.t never wraps these strings. Reverse-lookup unique values in
+  // the bootstrap strings dictionary and wrap matching leaf text nodes so they
+  // become editable too.
+  reverseWrapPlainText();
+
   return replacements.length;
+}
+
+function reverseWrapPlainText(): void {
+  const bootstrap = (
+    window as Window & { __SE_BOOTSTRAP?: { i18n?: { strings?: Record<string, string> } } }
+  ).__SE_BOOTSTRAP;
+  const strings = bootstrap?.i18n?.strings;
+  if (!strings) return;
+
+  // Build value→key map; only keys with a unique value are reverse-lookupable.
+  // Keys with duplicate values are dropped to avoid mis-attributing text to
+  // the wrong key (e.g. "Dashboard" mapped to several distinct keys).
+  const uniqueByValue = new Map<string, string | null>();
+  for (const [k, v] of Object.entries(strings)) {
+    if (typeof v !== "string" || v.length === 0) continue;
+    if (uniqueByValue.has(v)) uniqueByValue.set(v, null);
+    else uniqueByValue.set(v, k);
+  }
+
+  const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "TEXTAREA", "INPUT"]);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const wraps: Array<{ node: Text; key: string }> = [];
+
+  let node: Text | null;
+  while ((node = walker.nextNode() as Text | null)) {
+    const parent = node.parentElement;
+    if (!parent) continue;
+    if (SKIP_TAGS.has(parent.tagName)) continue;
+    if (parent.closest("[data-label], #shipeasy-devtools, #se-edit-labels-exit")) continue;
+    const trimmed = (node.nodeValue ?? "").trim();
+    if (!trimmed) continue;
+    const key = uniqueByValue.get(trimmed);
+    if (!key) continue;
+    // Only wrap when the parent's full text content equals this single value
+    // — otherwise we'd be lifting a fragment out of a sentence.
+    if ((parent.textContent ?? "").trim() !== trimmed) continue;
+    // Skip if parent itself already qualifies as a label host.
+    if (parent.hasAttribute("data-label")) continue;
+    wraps.push({ node, key });
+  }
+
+  for (const { node, key } of wraps) {
+    const parent = node.parentNode;
+    if (!parent) continue;
+    const span = document.createElement("span");
+    span.setAttribute("data-label", key);
+    span.textContent = node.nodeValue ?? "";
+    const override = getI18nLabelOverride(key);
+    if (override !== null) span.textContent = override;
+    parent.replaceChild(span, node);
+  }
 }
 
 interface LabelAttrEntry {
@@ -783,6 +843,23 @@ export async function renderI18nPanel(
       btn.addEventListener("click", () => {
         state.activeChunk = btn.dataset.chunk!;
         renderBody();
+      });
+    });
+
+    container.querySelectorAll<HTMLElement>(".tree-row.branch[data-branch]").forEach((row) => {
+      const toggle = () => {
+        const branch = row.parentElement;
+        if (!branch) return;
+        const collapsed = branch.classList.toggle("collapsed");
+        const caret = row.querySelector<HTMLElement>(".tree-caret");
+        if (caret) caret.textContent = collapsed ? "▸" : "▾";
+      };
+      row.addEventListener("click", toggle);
+      row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
       });
     });
   }

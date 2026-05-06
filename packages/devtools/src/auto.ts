@@ -1,9 +1,55 @@
 // Self-executing entry for <script src="…/se-devtools.js"> usage.
 // loadOnTrigger() sets up the Shift+Alt+S hotkey and ?se-devtools URL param detection.
 import { loadOnTrigger, isDevtoolsRequested } from "./index";
-import { isEditLabelsModeActive } from "./overrides";
+import { isEditLabelsModeActive, setEditLabelsMode } from "./overrides";
 import { scanAndReplaceMarkers, toggleEditLabels } from "./panels/i18n";
 import type { DevtoolsOptions } from "./types";
+
+// Floating "Stop editing labels" exit button.
+//
+// When ?se_edit_labels=1 is active the devtools sidebar is often invisible —
+// the user navigated, the overlay was dismissed, or the panel hadn't mounted
+// yet. Without an exit affordance the user is stuck in edit mode (every t()
+// call still emits markers) and has to know to strip the URL param by hand.
+// The button lives directly on document.body (not inside the shadow root) so
+// it's guaranteed to render even when the overlay isn't mounted.
+function mountEditLabelsExitButton(): void {
+  if (document.getElementById("se-edit-labels-exit")) return;
+  const btn = document.createElement("button");
+  btn.id = "se-edit-labels-exit";
+  btn.type = "button";
+  btn.textContent = "✕ Stop editing labels";
+  btn.title = "Exit in-page label editing";
+  Object.assign(btn.style, {
+    position: "fixed",
+    right: "16px",
+    bottom: "16px",
+    zIndex: "2147483646",
+    padding: "8px 12px",
+    background: "#0f172a",
+    color: "#f8fafc",
+    border: "1px solid rgba(248, 250, 252, 0.18)",
+    borderRadius: "999px",
+    font: "600 12px ui-sans-serif, system-ui, -apple-system, sans-serif",
+    cursor: "pointer",
+    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.35)",
+  } satisfies Partial<CSSStyleDeclaration>);
+  btn.addEventListener("mouseenter", () => {
+    btn.style.background = "#1e293b";
+  });
+  btn.addEventListener("mouseleave", () => {
+    btn.style.background = "#0f172a";
+  });
+  btn.addEventListener("click", () => setEditLabelsMode(false));
+  const attach = () => {
+    if (document.body) document.body.appendChild(btn);
+    else
+      document.addEventListener("DOMContentLoaded", () => document.body.appendChild(btn), {
+        once: true,
+      });
+  };
+  attach();
+}
 
 interface AutoGlobals {
   __se_devtools_config?: DevtoolsOptions;
@@ -32,6 +78,7 @@ if (typeof window !== "undefined") {
   // We also fire once immediately on a rAF as a fallback for cases where
   // window.i18n is already available before this script runs.
   if (isEditLabelsModeActive()) {
+    mountEditLabelsExitButton();
     // Run one scan pass.  After the scan, install a childList-only observer so
     // newly-mounted components that render [data-label] spans also get cleaned.
     // We intentionally avoid characterData observation — it fires on every React

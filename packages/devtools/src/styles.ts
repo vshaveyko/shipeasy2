@@ -786,7 +786,17 @@ textarea.editor:focus { border-color: var(--se-accent); outline: none; }
   width: 10px;
   color: var(--se-fg-3);
   font-size: 9px;
+  transition: transform 0.12s;
 }
+.tree-row.branch[data-branch] {
+  cursor: pointer;
+  user-select: none;
+}
+.tree-row.branch[data-branch]:focus-visible {
+  outline: 2px solid var(--se-accent);
+  outline-offset: -2px;
+}
+.tree-branch.collapsed > .tree-children { display: none; }
 
 /* Label popper — floats next to a page [data-label] element */
 .label-popper {

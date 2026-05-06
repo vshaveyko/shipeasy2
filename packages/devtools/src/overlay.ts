@@ -5,12 +5,13 @@ import {
   applyOverridesToUrlAndReload,
   buildOverrideUrl,
   snapshotOverridesFromStorage,
+  isEditLabelsModeActive,
 } from "./overrides";
 import { DevtoolsApi } from "./api";
 import { renderGatesPanel } from "./panels/gates";
 import { renderConfigsPanel } from "./panels/configs";
 import { renderExperimentsPanel } from "./panels/experiments";
-import { renderI18nPanel } from "./panels/i18n";
+import { renderI18nPanel, toggleEditLabels, scanAndReplaceMarkers } from "./panels/i18n";
 import { renderBugsPanel } from "./panels/bugs";
 import { renderFeatureRequestsPanel } from "./panels/feature-requests";
 import type { DevtoolsOptions, DevtoolsSession } from "./types";
@@ -505,6 +506,19 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       document.body.appendChild(host);
     }
   }, 100);
+
+  // Re-arm edit-labels handlers against THIS shadow root. auto.ts arms them
+  // once at script-load against whichever host existed then, but the user can
+  // toggle the overlay off/on (Shift+Alt+S) — destroying the host and leaving
+  // the click handler holding a stale shadow ref, so the popper would mount
+  // into a detached tree (invisible). Re-arming here points the popper at the
+  // live shadow on every mount.
+  if (isEditLabelsModeActive()) {
+    scanAndReplaceMarkers();
+    toggleEditLabels(true, shadow, () => {
+      /* re-render hook; the i18n panel installs its own when active */
+    });
+  }
 
   // Auto-reopen the panel that was active before a value-change reload.
   // applyAndReload (overrides.ts) reloads the page on every override edit,
