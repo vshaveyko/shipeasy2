@@ -297,14 +297,23 @@ function reverseWrapPlainText(): void {
       // `{{var}}` with `.+?` (non-empty, non-greedy) so any interpolated
       // value matches but empty placeholders don't.
       let pattern = "";
+      let literalChars = 0;
       let last = 0;
       PLACEHOLDER_RE.lastIndex = 0;
       let m: RegExpExecArray | null;
       while ((m = PLACEHOLDER_RE.exec(v)) !== null) {
-        pattern += escapeRegex(v.slice(last, m.index)) + ".+?";
+        const lit = v.slice(last, m.index);
+        pattern += escapeRegex(lit) + ".+?";
+        literalChars += lit.length;
         last = m.index + m[0].length;
       }
-      pattern += escapeRegex(v.slice(last));
+      const tailLit = v.slice(last);
+      pattern += escapeRegex(tailLit);
+      literalChars += tailLit.length;
+      // Reject templates with too little literal anchoring (e.g. "{{var0}}"
+      // alone) — their regex degenerates to `^.+?$` and matches any non-empty
+      // text on the page, which would produce massive false-positive wrapping.
+      if (literalChars < 2) continue;
       templated.push({ key: k, regex: new RegExp(`^${pattern}$`) });
       continue;
     }
