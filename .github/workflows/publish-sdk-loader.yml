@@ -1,0 +1,48 @@
+name: Publish SDK loader to R2
+
+# When the ts-sdk submodule pointer moves on main, build the loader and upload
+# to R2. The npm publish itself runs in the public shipeasy-ai/sdk repo on
+# release tag (handles the registry); this workflow handles the CDN artifact
+# so the CF API token never has to live in the public repo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/ts-sdk"
+  workflow_dispatch:
+
+concurrency:
+  group: publish-sdk-loader
+  cancel-in-progress: false
+
+jobs:
+  publish-loader:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (ts-sdk only)
+        working-directory: packages/ts-sdk
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build ts-sdk
+        working-directory: packages/ts-sdk
+        run: pnpm run build
+
+      - name: Publish loader to R2
+        working-directory: packages/ts-sdk
+        run: pnpm run publish-loader
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
