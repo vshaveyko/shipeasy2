@@ -45,8 +45,8 @@
       FlagsClientBrowser: () => gt,
       LABEL_MARKER_END: () => wt,
       LABEL_MARKER_RE: () => Kn,
-      LABEL_MARKER_SEP: () => yt,
-      LABEL_MARKER_START: () => xt,
+      LABEL_MARKER_SEP: () => xt,
+      LABEL_MARKER_START: () => yt,
       _resetShipeasyForTests: () => Un,
       attachDevtools: () => vt,
       configureShipeasy: () => He,
@@ -294,7 +294,7 @@
             },
             { once: !0 },
           );
-      let x = () => {
+      let y = () => {
         (u(),
           r !== null && e.pushMetric("__auto_lcp", t, n, { value: r }),
           o !== null && e.pushMetric("__auto_inp", t, n, { value: o }),
@@ -303,7 +303,7 @@
         (e.pushMetric("__auto_abandoned", t, n, { value: b }), e.flush(!0));
       };
       document.addEventListener("visibilitychange", () => {
-        document.visibilityState === "hidden" && x();
+        document.visibilityState === "hidden" && y();
       });
     }
     function Cn() {
@@ -571,12 +571,12 @@
         l = r.includes("Meta") || r.includes("Cmd");
       (e.installBridge(), Me() && Re({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl }));
       let c = Me();
-      function f(x) {
-        x.key === o &&
-          x.shiftKey === i &&
-          x.altKey === a &&
-          x.ctrlKey === s &&
-          x.metaKey === l &&
+      function f(y) {
+        y.key === o &&
+          y.shiftKey === i &&
+          y.altKey === a &&
+          y.ctrlKey === s &&
+          y.metaKey === l &&
           (c
             ? window.__shipeasy_devtools?.toggle()
             : ((c = !0), Re({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl })));
@@ -678,12 +678,12 @@
           return C?.ready ?? !1;
         },
       },
-      xt = "\uFFF9",
-      yt = "\uFFFA",
+      yt = "\uFFF9",
+      xt = "\uFFFA",
       wt = "\uFFFB",
       Kn = /￹([^￺￻]+)￺([^￻]*)￻/g;
     function Et(e, t) {
-      return `${xt}${e}${yt}${t}${wt}`;
+      return `${yt}${e}${xt}${t}${wt}`;
     }
     function Fn(e, t, n) {
       let r = { "data-label": e };
@@ -2041,9 +2041,9 @@ select.se-input { cursor: pointer; }
           (cn(h), f(null, h));
         }
         window.addEventListener("message", u);
-        let x = Date.now(),
+        let y = Date.now(),
           b = setInterval(() => {
-            Date.now() - x < 1500 ||
+            Date.now() - y < 1500 ||
               (i.closed && !c && f(new Error("Sign-in window closed before approval.")));
           }, 500),
           m = setTimeout(() => {
@@ -2126,7 +2126,7 @@ select.se-input { cursor: pointer; }
     let t = q(`se_config_${e}`, `se-config-${e}`);
     if (t !== null) return ve(t);
   }
-  function xe(e, t, n = "session") {
+  function ye(e, t, n = "session") {
     z([
       [`se_config_${e}`, t == null ? null : Ve(t)],
       [`se-config-${e}`, null],
@@ -2148,7 +2148,7 @@ select.se-input { cursor: pointer; }
   function Qe(e, t = "session") {
     z([["se_i18n", e]]);
   }
-  function ye() {
+  function xe() {
     return q("se_i18n_draft");
   }
   function et(e, t = "session") {
@@ -2544,7 +2544,7 @@ select.se-input { cursor: pointer; }
         if (f)
           try {
             let u = JSON.parse(f.value);
-            (xe(c, u, l), r.delete(c), o());
+            (ye(c, u, l), r.delete(c), o());
           } catch {
             f.style.borderColor = "#f87171";
           }
@@ -2557,7 +2557,7 @@ select.se-input { cursor: pointer; }
         }),
         e.querySelectorAll(".clear-ov").forEach((s) => {
           s.addEventListener("click", () => {
-            (xe(s.dataset.name, null), r.delete(s.dataset.name), o());
+            (ye(s.dataset.name, null), r.delete(s.dataset.name), o());
           });
         }));
     }
@@ -2569,7 +2569,7 @@ select.se-input { cursor: pointer; }
   function bn(e) {
     return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
   }
-  function xn(e) {
+  function yn(e) {
     let t = Ye(e.name),
       n = ["control", ...e.groups.map((o) => o.name)],
       r = [
@@ -2578,7 +2578,7 @@ select.se-input { cursor: pointer; }
       ].join("");
     return `<select class="sel-input exp-sel" data-name="${e.name}">${r}</select>`;
   }
-  function yn(e) {
+  function xn(e) {
     let t = hn()?.getExperiment(e);
     return t
       ? t.inExperiment
@@ -2592,8 +2592,8 @@ select.se-input { cursor: pointer; }
     <tr>
       <td class="col-name">${e.name}</td>
       <td class="col-badge">${bn(e.status)}</td>
-      <td class="col-badge">${t ? yn(e.name) : ""}</td>
-      <td class="col-control">${t ? xn(e) : ""}</td>
+      <td class="col-badge">${t ? xn(e.name) : ""}</td>
+      <td class="col-control">${t ? yn(e) : ""}</td>
     </tr>`;
   }
   function at(e, t) {
@@ -2826,10 +2826,10 @@ select.se-input { cursor: pointer; }
         let u = f.value;
         if (!u.includes(B.LABEL_MARKER_START)) continue;
         B.LABEL_MARKER_RE.lastIndex = 0;
-        let x = B.LABEL_MARKER_RE.exec(u);
-        if (!x) continue;
-        let b = x[1],
-          m = x[2],
+        let y = B.LABEL_MARKER_RE.exec(u);
+        if (!y) continue;
+        let b = y[1],
+          m = y[2],
           g = W(b);
         (a.setAttribute(f.name, g ?? m),
           l.set(f.name, { attr: f.name, key: b, original: m }),
@@ -2849,12 +2849,12 @@ select.se-input { cursor: pointer; }
       if (!(typeof f != "string" || f.length === 0)) {
         if (f.includes("{{")) {
           let u = "",
-            x = 0;
+            y = 0;
           o.lastIndex = 0;
           let b;
           for (; (b = o.exec(f)) !== null; )
-            ((u += _t(f.slice(x, b.index)) + ".+?"), (x = b.index + b[0].length));
-          ((u += _t(f.slice(x))), r.push({ key: c, regex: new RegExp(`^${u}$`) }));
+            ((u += _t(f.slice(y, b.index)) + ".+?"), (y = b.index + b[0].length));
+          ((u += _t(f.slice(y))), r.push({ key: c, regex: new RegExp(`^${u}$`) }));
           continue;
         }
         n.has(f) ? n.set(f, null) : n.set(f, c);
@@ -2876,18 +2876,18 @@ select.se-input { cursor: pointer; }
       let u = n.get(f);
       if (u !== null) {
         if (!u) {
-          let x = null,
+          let y = null,
             b = !1;
           for (let { key: m, regex: g } of r)
             if (g.test(f)) {
-              if (x) {
+              if (y) {
                 b = !0;
                 break;
               }
-              x = m;
+              y = m;
             }
-          if (b || !x) continue;
-          u = x;
+          if (b || !y) continue;
+          u = y;
         }
         s.push({ node: l, key: u });
       }
@@ -2895,10 +2895,10 @@ select.se-input { cursor: pointer; }
     for (let { node: c, key: f } of s) {
       let u = c.parentNode;
       if (!u) continue;
-      let x = document.createElement("span");
-      x.setAttribute("data-label", f);
+      let y = document.createElement("span");
+      y.setAttribute("data-label", f);
       let b = W(f);
-      ((x.textContent = b ?? c.nodeValue ?? ""), u.replaceChild(x, c));
+      ((y.textContent = b ?? c.nodeValue ?? ""), u.replaceChild(y, c));
     }
   }
   function _t(e) {
@@ -2944,7 +2944,7 @@ select.se-input { cursor: pointer; }
     (Ot(e, t),
       we(e.key, t),
       window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: e.key, value: t } })));
-    let r = ye(),
+    let r = xe(),
       o = X(),
       i = $t;
     if (!i || (!r && !o)) {
@@ -3053,7 +3053,7 @@ select.se-input { cursor: pointer; }
     let c = s.querySelector(".lp-key"),
       f = s.querySelector(".lp-body"),
       u = s.querySelector(".lp-err"),
-      x = s.querySelector('[data-action="save"]'),
+      y = s.querySelector('[data-action="save"]'),
       b = s.querySelector('[data-action="reset"]');
     function m() {
       return n[a];
@@ -3089,8 +3089,8 @@ select.se-input { cursor: pointer; }
         <textarea class="lp-input" spellcheck="false">${P(Mt(w))}</textarea>
       </div>`),
         (u.textContent = ""),
-        (x.disabled = !1),
-        (x.textContent = "Save"));
+        (y.disabled = !1),
+        (y.textContent = "Save"));
       let p = f.querySelector(".lp-input");
       (p.focus(), p.select());
     }
@@ -3110,14 +3110,14 @@ select.se-input { cursor: pointer; }
       h = s.offsetHeight,
       k = s.offsetWidth,
       T = 8,
-      y = d.bottom + T;
-    y + h > window.innerHeight - 8 && (y = Math.max(8, d.top - h - T));
+      x = d.bottom + T;
+    x + h > window.innerHeight - 8 && (x = Math.max(8, d.top - h - T));
     let _ = d.left;
     (_ + k > window.innerWidth - 8 && (_ = Math.max(8, window.innerWidth - k - 8)),
-      (s.style.top = `${y}px`),
+      (s.style.top = `${x}px`),
       (s.style.left = `${_}px`),
       s.querySelector(".lp-close").addEventListener("click", U),
-      x.addEventListener("click", () => {
+      y.addEventListener("click", () => {
         let w = f.querySelector(".lp-input");
         ar(m(), w.value, s);
       }),
@@ -3148,12 +3148,12 @@ select.se-input { cursor: pointer; }
       return G !== null && u.composedPath().includes(G);
     }
     function o(u) {
-      for (let x of u.composedPath())
+      for (let y of u.composedPath())
         if (
-          x instanceof HTMLElement &&
-          (x.hasAttribute("data-label") || x.hasAttribute("data-label-attrs"))
+          y instanceof HTMLElement &&
+          (y.hasAttribute("data-label") || y.hasAttribute("data-label-attrs"))
         )
-          return x;
+          return y;
       return null;
     }
     let i = [
@@ -3173,8 +3173,8 @@ select.se-input { cursor: pointer; }
     }
     function s(u) {
       if (r(u)) return;
-      let x = o(u);
-      x && (u.preventDefault(), u.stopPropagation(), u.stopImmediatePropagation(), dr(x, t));
+      let y = o(u);
+      y && (u.preventDefault(), u.stopPropagation(), u.stopImmediatePropagation(), dr(y, t));
     }
     function l(u) {
       G && (r(u) || o(u) || U());
@@ -3255,8 +3255,8 @@ select.se-input { cursor: pointer; }
             let k = d.parentElement;
             if (!k) return;
             let T = k.classList.toggle("collapsed"),
-              y = d.querySelector(".tree-caret");
-            y && (y.textContent = T ? "\u25B8" : "\u25BE");
+              x = d.querySelector(".tree-caret");
+            x && (x.textContent = T ? "\u25B8" : "\u25BE");
           };
           (d.addEventListener("click", h),
             d.addEventListener("keydown", (k) => {
@@ -3266,7 +3266,7 @@ select.se-input { cursor: pointer; }
     }
     function u() {
       let b = X() ?? "",
-        m = ye() ?? "";
+        m = xe() ?? "";
       j();
       let g = Q().length,
         d = F
@@ -3282,15 +3282,15 @@ select.se-input { cursor: pointer; }
         k = [
           '<option value="">Default</option>',
           ...o.map(
-            (y) =>
-              `<option value="${P(y.id)}" ${b === y.id ? "selected" : ""}>${P(y.name)}</option>`,
+            (x) =>
+              `<option value="${P(x.id)}" ${b === x.id ? "selected" : ""}>${P(x.name)}</option>`,
           ),
         ].join(""),
         T = [
           '<option value="">No draft</option>',
           ...i.map(
-            (y) =>
-              `<option value="${P(y.id)}" ${m === y.id ? "selected" : ""}>${P(y.name)}</option>`,
+            (x) =>
+              `<option value="${P(x.id)}" ${m === x.id ? "selected" : ""}>${P(x.name)}</option>`,
           ),
         ].join("");
       ((n.innerHTML = `
@@ -3303,12 +3303,12 @@ select.se-input { cursor: pointer; }
         n.querySelector("#se-edit-toggle").addEventListener("click", () => {
           K() ? V(!1) : F ? (J(!1, r, () => u()), u()) : V(!0);
         }),
-        n.querySelector("#se-profile-sel").addEventListener("change", (y) => {
-          let _ = y.target.value || null;
+        n.querySelector("#se-profile-sel").addEventListener("change", (x) => {
+          let _ = x.target.value || null;
           Qe(_);
         }),
-        n.querySelector("#se-draft-sel").addEventListener("change", (y) => {
-          let _ = y.target.value || null;
+        n.querySelector("#se-draft-sel").addEventListener("change", (x) => {
+          let _ = x.target.value || null;
           et(_);
         }));
     }
@@ -3522,14 +3522,14 @@ select.se-input { cursor: pointer; }
         (s.pop(), _());
       }),
       o.appendChild(u));
-    let x = document.createElement("button");
-    ((x.type = "button"),
-      (x.className = "se-annot-btn"),
-      (x.textContent = "clear"),
-      x.addEventListener("click", () => {
+    let y = document.createElement("button");
+    ((y.type = "button"),
+      (y.className = "se-annot-btn"),
+      (y.textContent = "clear"),
+      y.addEventListener("click", () => {
         ((s.length = 0), _());
       }),
-      o.appendChild(x));
+      o.appendChild(y));
     let b = document.createElement("div");
     ((b.className = "se-annot-stage"), r.appendChild(b));
     let m = document.createElement("canvas");
@@ -3553,7 +3553,7 @@ select.se-input { cursor: pointer; }
     function T() {
       return Math.max(14, Math.round(n.naturalWidth / 60));
     }
-    function y(p) {
+    function x(p) {
       if (
         (g.save(),
         (g.strokeStyle = p.color),
@@ -3604,8 +3604,8 @@ select.se-input { cursor: pointer; }
     }
     function _(p) {
       (g.clearRect(0, 0, m.width, m.height), g.drawImage(n, 0, 0));
-      for (let v of s) y(v);
-      p && y(p);
+      for (let v of s) x(v);
+      p && x(p);
     }
     _();
     let w = null;
@@ -3838,7 +3838,7 @@ select.se-input { cursor: pointer; }
       c = r.body.querySelector("#se-b-expected"),
       f = r.body.querySelector("#se-b-attach"),
       u = r.body.querySelector("#se-b-status"),
-      x = r.body.querySelector("#se-b-file"),
+      y = r.body.querySelector("#se-b-file"),
       b = r.body.querySelector("#se-b-record");
     function m() {
       if (o.length === 0) {
@@ -3904,10 +3904,10 @@ select.se-input { cursor: pointer; }
           (g(String(d instanceof Error ? d.message : d), !0), (i = null));
         }
       }),
-      r.body.querySelector("#se-b-upload").addEventListener("click", () => x.click()),
-      x.addEventListener("change", () => {
-        let d = x.files?.[0];
-        d && (o.push({ kind: "file", filename: d.name, blob: d }), (x.value = ""), m());
+      r.body.querySelector("#se-b-upload").addEventListener("click", () => y.click()),
+      y.addEventListener("change", () => {
+        let d = y.files?.[0];
+        d && (o.push({ kind: "file", filename: d.name, blob: d }), (y.value = ""), m());
       }),
       r.body.querySelector("#se-b-cancel").addEventListener("click", () => {
         (i && i.cancel(), r.close());
@@ -3931,14 +3931,14 @@ select.se-input { cursor: pointer; }
             viewport: `${window.innerWidth}x${window.innerHeight}`,
           });
           for (let T = 0; T < o.length; T++) {
-            let y = o[T];
+            let x = o[T];
             (g(`Uploading attachment ${T + 1}/${o.length}\u2026`),
               await e.uploadAttachment({
                 reportKind: "bug",
                 reportId: k.id,
-                kind: y.kind,
-                filename: y.filename,
-                blob: y.blob,
+                kind: x.kind,
+                filename: x.filename,
+                blob: x.blob,
               }));
           }
           (r.close(), n());
@@ -4096,9 +4096,9 @@ select.se-input { cursor: pointer; }
   }
   var br =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
-    xr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
     yr =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
+    xr =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
     wr =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
@@ -4112,8 +4112,8 @@ select.se-input { cursor: pointer; }
       '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
     ue = {
       gates: { icon: br, label: "Gates" },
-      configs: { icon: xr, label: "Configs" },
-      experiments: { icon: yr, label: "Experiments" },
+      configs: { icon: yr, label: "Configs" },
+      experiments: { icon: xr, label: "Experiments" },
       i18n: { icon: wr, label: "Translations" },
       bugs: { icon: Er, label: "Bugs" },
       features: { icon: kr, label: "Feature requests" },
@@ -4169,7 +4169,7 @@ select.se-input { cursor: pointer; }
       c = window.innerHeight,
       f = o === "left" || o === "right",
       u = Math.max(Ue, Math.min(a, l - 80)),
-      x = Math.max(ze, Math.min(s, c - 40)),
+      y = Math.max(ze, Math.min(s, c - 40)),
       b = (i / 100) * (f ? c : l),
       m = e.getBoundingClientRect(),
       g = f ? m.width || 52 : m.height || 52,
@@ -4210,18 +4210,18 @@ select.se-input { cursor: pointer; }
       ((h.top = h.bottom = h.left = h.right = h.transform = ""),
       (h.borderTop = h.borderBottom = h.borderLeft = h.borderRight = ""),
       (h.width = u + "px"),
-      (h.height = x + "px"),
+      (h.height = y + "px"),
       (t.dataset.edge = o),
       o === "right")
     ) {
-      let T = Math.max(10, Math.min(c - x - 10, b - x / 2));
+      let T = Math.max(10, Math.min(c - y - 10, b - y / 2));
       ((h.right = g + "px"),
         (h.top = T + "px"),
         (h.borderRadius = "10px 0 0 10px"),
         (h.borderRight = "none"),
         (h.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
     } else if (o === "left") {
-      let T = Math.max(10, Math.min(c - x - 10, b - x / 2));
+      let T = Math.max(10, Math.min(c - y - 10, b - y / 2));
       ((h.left = g + "px"),
         (h.top = T + "px"),
         (h.borderRadius = "0 10px 10px 0"),
@@ -4279,8 +4279,8 @@ select.se-input { cursor: pointer; }
       (u.title = "ShipEasy DevTools \u2014 drag to reposition"),
       (u.innerHTML = Sr),
       r.appendChild(u),
-      u.addEventListener("mousedown", (y) => {
-        (y.preventDefault(), u.classList.add("dragging"));
+      u.addEventListener("mousedown", (x) => {
+        (x.preventDefault(), u.classList.add("dragging"));
         let _ = (L) => {
             let { edge: S, offsetPct: A } = Mr(L.clientX, L.clientY);
             ((s = { ...s, edge: S, offsetPct: A }), ne(r, o, i, s));
@@ -4293,20 +4293,20 @@ select.se-input { cursor: pointer; }
           };
         (document.addEventListener("mousemove", _), document.addEventListener("mouseup", w));
       }));
-    let x = new Map();
-    for (let [y, { icon: _, label: w }] of Object.entries(ue)) {
+    let y = new Map();
+    for (let [x, { icon: _, label: w }] of Object.entries(ue)) {
       let L = document.createElement("button");
       ((L.className = "btn"),
         (L.title = w),
         (L.innerHTML = _),
-        L.addEventListener("click", () => d(y)),
+        L.addEventListener("click", () => d(x)),
         r.appendChild(L),
-        x.set(y, L));
+        y.set(x, L));
     }
-    i.addEventListener("mousedown", (y) => {
-      (y.preventDefault(), y.stopPropagation(), i.classList.add("dragging"));
-      let _ = y.clientX,
-        w = y.clientY,
+    i.addEventListener("mousedown", (x) => {
+      (x.preventDefault(), x.stopPropagation(), i.classList.add("dragging"));
+      let _ = x.clientX,
+        w = x.clientY,
         L = s.panelWidth,
         S = s.panelHeight,
         { edge: A } = s,
@@ -4331,31 +4331,31 @@ select.se-input { cursor: pointer; }
     });
     let b = () => ne(r, o, i, s);
     window.addEventListener("resize", b);
-    function m(y) {
-      ((l = y),
-        Kt(y),
-        x.forEach((_, w) => _.classList.toggle("active", w === y)),
+    function m(x) {
+      ((l = x),
+        Kt(x),
+        y.forEach((_, w) => _.classList.toggle("active", w === x)),
         o.classList.add("open"),
         ne(r, o, i, s),
-        k(y));
+        k(x));
     }
     function g() {
       (o.classList.remove("open"),
-        x.forEach((y) => y.classList.remove("active")),
+        y.forEach((x) => x.classList.remove("active")),
         (l = null),
         Kt(null));
     }
-    function d(y) {
-      l === y ? g() : m(y);
+    function d(x) {
+      l === x ? g() : m(x);
     }
-    function h(y, _) {
+    function h(x, _) {
       let w = typeof window < "u" && window.location ? window.location.host : "",
         L = w ? `<span class="sub">${w}</span>` : "";
       return `
       <div class="panel-head">
         <span class="mk"></span>
         <span class="panel-title">
-          <span class="panel-title-icon">${y}</span>
+          <span class="panel-title-icon">${x}</span>
           <span class="panel-title-label">${_}</span>
           ${L}
         </span>
@@ -4363,10 +4363,10 @@ select.se-input { cursor: pointer; }
         <button class="close" id="se-close" aria-label="Close">${Lr}</button>
       </div>`;
     }
-    function k(y) {
-      let { icon: _, label: w } = ue[y];
+    function k(x) {
+      let { icon: _, label: w } = ue[x];
       if (!c) {
-        T(y);
+        T(x);
         return;
       }
       let L = new le(e.adminUrl, c.token);
@@ -4383,10 +4383,10 @@ select.se-input { cursor: pointer; }
       </div>`),
         a.querySelector("#se-close").addEventListener("click", g),
         a.querySelector("#se-signout").addEventListener("click", () => {
-          (We(), (c = null), T(y));
+          (We(), (c = null), T(x));
         }),
         a.querySelector("#se-clearall").addEventListener("click", () => {
-          (tt(), k(y));
+          (tt(), k(x));
         }),
         a.querySelector("#se-apply-url").addEventListener("click", () => {
           nt();
@@ -4412,13 +4412,13 @@ select.se-input { cursor: pointer; }
         bugs: () => Ut(S, L, n),
         features: () => zt(S, L, n),
       })
-        [y]()
+        [x]()
         .catch((p) => {
           S.innerHTML = `<div class="err">${String(p)}</div>`;
         });
     }
-    function T(y) {
-      let { icon: _, label: w } = ue[y];
+    function T(x) {
+      let { icon: _, label: w } = ue[x];
       ((a.innerHTML = `
       ${h(_, w)}
       <div class="panel-body auth-mode">
@@ -4445,7 +4445,7 @@ select.se-input { cursor: pointer; }
               ((S.textContent = "Waiting for approval in the opened tab\u2026"),
                 (L.textContent = "Waiting\u2026"));
             })),
-              k(y));
+              k(x));
           } catch (O) {
             ((A.textContent = O instanceof Error ? O.message : String(O)),
               (S.textContent = ""),
@@ -4459,7 +4459,7 @@ select.se-input { cursor: pointer; }
       setTimeout(() => {
         document.getElementById("shipeasy-devtools") || document.body.appendChild(t);
       }, 100),
-      K() && (j(), J(!0, n, () => {})),
+      K() && ((r.style.display = "none"), (o.style.display = "none"), j(), J(!0, n, () => {})),
       f && requestAnimationFrame(() => m(f)),
       {
         destroy() {

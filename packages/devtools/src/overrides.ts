@@ -104,7 +104,10 @@ export function initFromUrl(): void {
 export function isDevtoolsRequested(): boolean {
   if (typeof window === "undefined") return false;
   const p = currentParams();
-  return p.has("se") || p.has("se_devtools") || p.has("se-devtools");
+  // Edit-labels mode needs the overlay's shadow root to host the click-to-edit
+  // popper — without it, clicking a [data-label] span has nowhere to attach the
+  // edit modal. Treat ?se_edit_labels=1 as implicitly requesting the overlay.
+  return p.has("se") || p.has("se_devtools") || p.has("se-devtools") || p.has("se_edit_labels");
 }
 
 /** True when ?se_edit_labels=1 is present — t() emits markers, devtools scans DOM. */

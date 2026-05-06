@@ -514,6 +514,12 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   // into a detached tree (invisible). Re-arming here points the popper at the
   // live shadow on every mount.
   if (isEditLabelsModeActive()) {
+    // Hide the sidebar chrome but keep the host mounted — the popper needs a
+    // live shadow root to attach to, but the visible toolbar/panel would just
+    // get in the way of the page being annotated. The floating exit button
+    // (mounted in auto.ts on document.body) stays visible.
+    toolbar.style.display = "none";
+    panel.style.display = "none";
     scanAndReplaceMarkers();
     toggleEditLabels(true, shadow, () => {
       /* re-render hook; the i18n panel installs its own when active */
