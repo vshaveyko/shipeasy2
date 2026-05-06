@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
-import { headers } from "next/headers";
 import { shipeasy } from "@shipeasy/sdk/server";
 import "./globals.css";
 
@@ -24,12 +23,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const h = await headers();
-  const seSearch = h.get("x-se-search") ?? undefined;
+  // Note: SSR URL-overrides (?_se_flag_X=…) are disabled because the
+  // middleware/proxy that surfaced the search string broke opennext-cloudflare
+  // (proxy.ts is Node-runtime-only in Next 16; legacy middleware.ts crashed
+  // the worker at runtime). Re-add x-se-search wiring once opennext supports
+  // Node-runtime proxy.
   const seConfig = await shipeasy({
     apiKey: process.env.SHIPEASY_SERVER_KEY,
     clientKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY,
-    urlOverrides: seSearch,
   });
 
   return (
