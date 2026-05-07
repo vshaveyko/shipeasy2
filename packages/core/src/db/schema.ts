@@ -29,46 +29,58 @@ export type EventProperty = {
   description: string;
 };
 
-export const projects = sqliteTable("projects", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  domain: text("domain"),
-  ownerEmail: text("owner_email").notNull(),
-  plan: text("plan", { enum: ["free", "paid"] })
-    .notNull()
-    .default("free"),
-  status: text("status", { enum: ["active", "inactive"] })
-    .notNull()
-    .default("active"),
-  // Stripe billing
-  stripeCustomerId: text("stripe_customer_id").unique(),
-  stripeSubscriptionId: text("stripe_subscription_id").unique(),
-  stripeItemIdBase: text("stripe_item_id_base"),
-  stripeItemIdExperiments: text("stripe_item_id_experiments"),
-  stripeItemIdGates: text("stripe_item_id_gates"),
-  stripeItemIdConfigs: text("stripe_item_id_configs"),
-  subscriptionStatus: text("subscription_status", {
-    enum: ["none", "trialing", "active", "past_due", "canceled", "incomplete"],
-  })
-    .notNull()
-    .default("none"),
-  currentPeriodEnd: text("current_period_end"),
-  trialEndsAt: text("trial_ends_at"),
-  cancelAtPeriodEnd: integer("cancel_at_period_end").notNull().default(0),
-  billingInterval: text("billing_interval", { enum: ["monthly", "annual"] })
-    .notNull()
-    .default("monthly"),
-  // Per-project module toggles. Control which surfaces (admin tabs, devtools
-  // panels) are exposed for this project. All default to enabled so existing
-  // projects keep their full feature set after the migration.
-  moduleTranslations: integer("module_translations", { mode: "boolean" }).notNull().default(true),
-  moduleConfigs: integer("module_configs", { mode: "boolean" }).notNull().default(true),
-  moduleGates: integer("module_gates", { mode: "boolean" }).notNull().default(true),
-  moduleExperiments: integer("module_experiments", { mode: "boolean" }).notNull().default(true),
-  moduleFeedback: integer("module_feedback", { mode: "boolean" }).notNull().default(true),
-  createdAt: text("created_at").notNull(),
-  updatedAt: text("updated_at").notNull(),
-});
+export const projects = sqliteTable(
+  "projects",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    domain: text("domain"),
+    ownerEmail: text("owner_email").notNull(),
+    plan: text("plan", { enum: ["free", "paid"] })
+      .notNull()
+      .default("free"),
+    status: text("status", { enum: ["active", "inactive"] })
+      .notNull()
+      .default("active"),
+    // Stripe billing
+    stripeCustomerId: text("stripe_customer_id").unique(),
+    stripeSubscriptionId: text("stripe_subscription_id").unique(),
+    stripeItemIdBase: text("stripe_item_id_base"),
+    stripeItemIdExperiments: text("stripe_item_id_experiments"),
+    stripeItemIdGates: text("stripe_item_id_gates"),
+    stripeItemIdConfigs: text("stripe_item_id_configs"),
+    subscriptionStatus: text("subscription_status", {
+      enum: ["none", "trialing", "active", "past_due", "canceled", "incomplete"],
+    })
+      .notNull()
+      .default("none"),
+    currentPeriodEnd: text("current_period_end"),
+    trialEndsAt: text("trial_ends_at"),
+    cancelAtPeriodEnd: integer("cancel_at_period_end").notNull().default(0),
+    billingInterval: text("billing_interval", { enum: ["monthly", "annual"] })
+      .notNull()
+      .default("monthly"),
+    // Per-project module toggles. Control which surfaces (admin tabs, devtools
+    // panels) are exposed for this project. All default to enabled so existing
+    // projects keep their full feature set after the migration.
+    moduleTranslations: integer("module_translations", { mode: "boolean" }).notNull().default(true),
+    moduleConfigs: integer("module_configs", { mode: "boolean" }).notNull().default(true),
+    moduleGates: integer("module_gates", { mode: "boolean" }).notNull().default(true),
+    moduleExperiments: integer("module_experiments", { mode: "boolean" }).notNull().default(true),
+    moduleFeedback: integer("module_feedback", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    // One project per (owner, domain): a single account can't accidentally
+    // create two projects pointing at the same site. Multiple projects per
+    // owner are still allowed across different domains, and `domain` may be
+    // NULL for projects without a configured site (SQLite treats each NULL
+    // as distinct under UNIQUE, so multiple no-domain projects per owner are
+    // permitted).
+    ownerDomainUniq: uniqueIndex("projects_owner_domain_uniq").on(t.ownerEmail, t.domain),
+  }),
+);
 
 export const PROJECT_MODULE_KEYS = [
   "translations",
