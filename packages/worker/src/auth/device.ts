@@ -107,12 +107,14 @@ export async function deviceComplete(c: DeviceContext) {
     createdAt: now.toISOString(),
     revokedAt: null,
     expiresAt,
+    createdByEmail: body.user_email,
   });
 
   await writeSdkKeyEntry(c.env, tokenHash, {
     project_id: body.project_id,
     type: "admin",
     expires_at: expiresAt,
+    created_by_email: body.user_email,
   });
 
   await db

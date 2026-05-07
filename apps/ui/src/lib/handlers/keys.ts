@@ -46,6 +46,7 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
   const expiresAt =
     parsed.type === "admin" ? new Date(Date.now() + 90 * 86_400_000).toISOString() : null;
 
+  const creatorEmail = identity.source === "jwt" ? identity.actorEmail : null;
   const s = await scopedDbSA(identity.projectId);
   await s.insert(sdkKeys).values({
     id,
@@ -53,6 +54,7 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
     type: parsed.type,
     createdAt: now,
     expiresAt,
+    createdByEmail: creatorEmail,
   });
 
   await writeSdkKeyEntry(env, hash, {
@@ -60,6 +62,7 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
     type: parsed.type,
     expires_at: expiresAt,
     allowed_origin: project.domain ?? null,
+    created_by_email: creatorEmail,
   });
   await writeAudit(identity, "key.create", "sdk_key", id, { type: parsed.type });
   return { id, type: parsed.type, key: raw, expires_at: expiresAt };

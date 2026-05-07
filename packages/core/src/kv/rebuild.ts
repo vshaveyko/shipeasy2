@@ -210,6 +210,7 @@ export async function writeSdkKeyEntry(
     type: "server" | "client" | "admin";
     expires_at?: string | null;
     allowed_origin?: string | null;
+    created_by_email?: string | null;
   },
 ): Promise<void> {
   if (!env.FLAGS_KV) return;

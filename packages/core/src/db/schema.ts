@@ -123,6 +123,11 @@ export const sdkKeys = sqliteTable(
     createdAt: text("created_at").notNull(),
     revokedAt: text("revoked_at"),
     expiresAt: text("expires_at"),
+    // Email of the human who minted this key (admin keys via dashboard or
+    // CLI device-flow). Used to authorize cross-project --project overrides
+    // by joining against project_members. Null for older keys + for
+    // service-to-service keys without a human owner.
+    createdByEmail: text("created_by_email"),
   },
   (t) => ({ hashIdx: index("sdk_keys_hash").on(t.keyHash) }),
 );

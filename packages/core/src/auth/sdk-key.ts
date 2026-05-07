@@ -10,6 +10,8 @@ export interface SdkKeyMeta {
   expires_at?: string | null;
   /** Stored domain pattern for this project (used to validate Origin on client keys). */
   allowed_origin?: string | null;
+  /** Email of the human who minted this key (admin-via-dashboard / CLI device-flow). */
+  created_by_email?: string | null;
 }
 
 const keyCache = new Map<string, { meta: SdkKeyMeta; expiry: number }>();
