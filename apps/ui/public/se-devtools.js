@@ -21,27 +21,27 @@
     (n = e != null ? ln(un(e)) : {}),
     mn(t || !e || !e.__esModule ? be(n, "default", { value: e, enumerable: !0 }) : n, e)
   );
-  var $ = (e, t, n) => fn(e, typeof t != "symbol" ? t + "" : t, n);
-  var At = gn((so, Rt) => {
+  var P = (e, t, n) => fn(e, typeof t != "symbol" ? t + "" : t, n);
+  var At = gn((ao, Mt) => {
     "use strict";
     var qe = Object.defineProperty,
-      Rn = Object.getOwnPropertyDescriptor,
+      Mn = Object.getOwnPropertyDescriptor,
       An = Object.getOwnPropertyNames,
-      $n = Object.prototype.hasOwnProperty,
-      Pn = (e, t) => {
+      Pn = Object.prototype.hasOwnProperty,
+      $n = (e, t) => {
         for (var n in t) qe(e, n, { get: t[n], enumerable: !0 });
       },
       Cn = (e, t, n, r) => {
         if ((t && typeof t == "object") || typeof t == "function")
           for (let o of An(t))
-            !$n.call(e, o) &&
+            !Pn.call(e, o) &&
               o !== n &&
-              qe(e, o, { get: () => t[o], enumerable: !(r = Rn(t, o)) || r.enumerable });
+              qe(e, o, { get: () => t[o], enumerable: !(r = Mn(t, o)) || r.enumerable });
         return e;
       },
       On = (e) => Cn(qe({}, "__esModule", { value: !0 }), e),
       yt = {};
-    Pn(yt, {
+    $n(yt, {
       FlagsClientBrowser: () => xt,
       LABEL_MARKER_END: () => Tt,
       LABEL_MARKER_RE: () => Yn,
@@ -50,7 +50,7 @@
       _resetShipeasyForTests: () => Gn,
       attachDevtools: () => Et,
       configureShipeasy: () => Ne,
-      encodeLabelMarker: () => Mt,
+      encodeLabelMarker: () => Rt,
       flags: () => St,
       getShipeasyClient: () => Jn,
       i18n: () => lr,
@@ -63,20 +63,20 @@
       shipeasy: () => kt,
       version: () => Hn,
     });
-    Rt.exports = On(yt);
+    Mt.exports = On(yt);
     var Hn = "1.0.0",
       Bn = 5e3,
       In = 100,
       mt = "__se_anon_id",
       vt = "__se_seen",
-      te = "__se_pending_alias",
+      ne = "__se_pending_alias",
       qn = class {
         constructor(e, t) {
-          $(this, "collectUrl");
-          $(this, "sdkKey");
-          $(this, "queue", []);
-          $(this, "exposureSeen", new Set());
-          $(this, "timer", null);
+          P(this, "collectUrl");
+          P(this, "sdkKey");
+          P(this, "queue", []);
+          P(this, "exposureSeen", new Set());
+          P(this, "timer", null);
           if (((this.collectUrl = e), (this.sdkKey = t), typeof window < "u")) {
             ((this.timer = setInterval(() => this.flush(), Bn)),
               window.addEventListener("beforeunload", () => this.flush()),
@@ -122,23 +122,23 @@
         async alias(e, t) {
           let n = { anonymousId: e, userId: t, ts: Date.now() };
           try {
-            localStorage.setItem(te, JSON.stringify(n));
+            localStorage.setItem(ne, JSON.stringify(n));
           } catch {}
           (await this.flushAsync(), await this._sendAlias(e, t));
           try {
-            localStorage.removeItem(te);
+            localStorage.removeItem(ne);
           } catch {}
         }
         async flushPendingAlias() {
           try {
-            let e = localStorage.getItem(te);
+            let e = localStorage.getItem(ne);
             if (!e) return;
             let t = JSON.parse(e);
             if (Date.now() - t.ts > 7 * 864e5) {
-              localStorage.removeItem(te);
+              localStorage.removeItem(ne);
               return;
             }
-            (await this._sendAlias(t.anonymousId, t.userId), localStorage.removeItem(te));
+            (await this._sendAlias(t.anonymousId, t.userId), localStorage.removeItem(ne));
           } catch {}
         }
         async _sendAlias(e, t) {
@@ -362,18 +362,18 @@
     }
     var xt = class {
         constructor(e) {
-          $(this, "sdkKey");
-          $(this, "baseUrl");
-          $(this, "autoGuardrails");
-          $(this, "env");
-          $(this, "evalResult", null);
-          $(this, "anonId");
-          $(this, "userId", "");
-          $(this, "buffer");
-          $(this, "guardrailsInstalled", !1);
-          $(this, "listeners", new Set());
-          $(this, "overrideListenerInstalled", !1);
-          $(this, "onOverrideChange", () => {
+          P(this, "sdkKey");
+          P(this, "baseUrl");
+          P(this, "autoGuardrails");
+          P(this, "env");
+          P(this, "evalResult", null);
+          P(this, "anonId");
+          P(this, "userId", "");
+          P(this, "buffer");
+          P(this, "guardrailsInstalled", !1);
+          P(this, "listeners", new Set());
+          P(this, "overrideListenerInstalled", !1);
+          P(this, "onOverrideChange", () => {
             (this.installBridge(), this.notify());
           });
           ((this.sdkKey = e.sdkKey),
@@ -518,7 +518,7 @@
         return e;
       }
     }
-    function ne(e, t) {
+    function re(e, t) {
       if (typeof window > "u" || !window.location) return null;
       let n = new URLSearchParams(window.location.search),
         r = n.get(e);
@@ -530,15 +530,15 @@
       return null;
     }
     function De(e) {
-      let t = ne(`se_ks_${e}`) ?? ne(`se_gate_${e}`) ?? ne(`se-gate-${e}`);
+      let t = re(`se_ks_${e}`) ?? re(`se_gate_${e}`) ?? re(`se-gate-${e}`);
       return t === null ? null : Fn(t);
     }
     function Ue(e) {
-      let t = ne(`se_config_${e}`, `se-config-${e}`);
+      let t = re(`se_config_${e}`, `se-config-${e}`);
       if (t !== null) return Wn(t);
     }
     function wt(e) {
-      let t = ne(`se_exp_${e}`, `se-exp-${e}`);
+      let t = re(`se_exp_${e}`, `se-exp-${e}`);
       return t === null || t === "" || t === "default" || t === "none" ? null : t;
     }
     function Oe() {
@@ -604,7 +604,7 @@
     function ht() {
       return typeof window > "u" ? null : (window.__SE_BOOTSTRAP ?? null);
     }
-    var $e = !1,
+    var Pe = !1,
       Be = new Set(),
       bt = !1;
     function Vn() {
@@ -629,7 +629,7 @@
           let t = ht();
           return t !== null && e in t.flags
             ? t.flags[e]
-            : $e
+            : Pe
               ? O
                 ? O.getFlag(e)
                 : (De(e) ?? !1)
@@ -646,7 +646,7 @@
               return;
             }
           }
-          if (!$e) return;
+          if (!Pe) return;
           if (O) return O.getConfig(e, t);
           let r = Ue(e);
           if (r !== void 0) {
@@ -668,7 +668,7 @@
           return O?.flush() ?? Promise.resolve();
         },
         notifyMounted() {
-          (($e = !0),
+          ((Pe = !0),
             typeof window < "u" && window.dispatchEvent(new CustomEvent("se:override:change")));
         },
         subscribe(e) {
@@ -682,7 +682,7 @@
       _t = "\uFFFA",
       Tt = "\uFFFB",
       Yn = /￹([^￺￻]+)￺([^￻]*)￻/g;
-    function Mt(e, t) {
+    function Rt(e, t) {
       return `${Lt}${e}${_t}${t}${Tt}`;
     }
     function Xn(e, t, n) {
@@ -748,13 +748,13 @@
     }
     var ar = sr(),
       Ie = {},
-      Pe = /<(\w+)(?:\s*\/>|>([\s\S]*?)<\/\1>)/g;
+      $e = /<(\w+)(?:\s*\/>|>([\s\S]*?)<\/\1>)/g;
     function ir(e, t) {
       let n = [],
         r = 0,
         o,
         i = !0;
-      for (Pe.lastIndex = 0; (o = Pe.exec(e)) !== null; ) {
+      for ($e.lastIndex = 0; (o = $e.exec(e)) !== null; ) {
         o.index > r && n.push(e.slice(r, o.index));
         let a = o[1],
           s = o[2] ?? "",
@@ -763,7 +763,7 @@
           let u = d(s);
           (typeof u != "string" && (i = !1), n.push(u));
         } else n.push(s);
-        r = Pe.lastIndex;
+        r = $e.lastIndex;
       }
       return (r < e.length && n.push(e.slice(r)), i ? n.join("") : n);
     }
@@ -789,7 +789,7 @@
       tEl(e, t, n, r) {
         if (nr()) {
           let i = Ce(e, n) ?? ge(t, n);
-          return Mt(e, i);
+          return Rt(e, i);
         }
         return this.t(e, t, n);
       },
@@ -831,7 +831,7 @@
       e?.apiKey && !O && kt({ apiKey: e.apiKey, baseUrl: e.apiUrl });
     }
   });
-  var le = `
+  var de = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :host {
@@ -2055,7 +2055,7 @@ select.se-input { cursor: pointer; }
   var bn = /^(true|on|1|yes)$/i,
     yn = /^(false|off|0|no)$/i,
     et = /^se(?:_|-|$)/;
-  function de(e) {
+  function ce(e) {
     return bn.test(e) ? !0 : yn.test(e) ? !1 : null;
   }
   function we(e) {
@@ -2078,13 +2078,13 @@ select.se-input { cursor: pointer; }
       ? t
       : `b64:${btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
   }
-  function ce() {
+  function ue() {
     return typeof window > "u"
       ? new URLSearchParams()
       : new URLSearchParams(window.location.search);
   }
   function j(e, t) {
-    let n = ce(),
+    let n = ue(),
       r = n.get(e);
     if (r !== null) return r;
     if (t) {
@@ -2100,13 +2100,13 @@ select.se-input { cursor: pointer; }
     for (let [n, r] of e) r === null ? t.searchParams.delete(n) : t.searchParams.set(n, r);
     window.location.assign(t.toString());
   }
-  function ue() {
+  function pe() {
     if (typeof window > "u") return !1;
-    let e = ce();
+    let e = ue();
     return e.has("se") || e.has("se_devtools") || e.has("se-devtools") || e.has("se_edit_labels");
   }
   function W() {
-    return typeof window > "u" ? !1 : ce().has("se_edit_labels");
+    return typeof window > "u" ? !1 : ue().has("se_edit_labels");
   }
   function Ee(e) {
     if (!e && typeof document < "u")
@@ -2117,7 +2117,7 @@ select.se-input { cursor: pointer; }
   }
   function ke(e) {
     let t = j(`se_ks_${e}`) ?? j(`se_gate_${e}`) ?? j(`se-gate-${e}`);
-    return t === null ? null : de(t);
+    return t === null ? null : ce(t);
   }
   function nt(e, t, n = "session") {
     F([
@@ -2170,7 +2170,7 @@ select.se-input { cursor: pointer; }
     for (let t of [...e.searchParams.keys()]) et.test(t) && e.searchParams.delete(t);
     (e.searchParams.set("se", "1"), window.location.assign(e.toString()));
   }
-  function Me(e, t) {
+  function Re(e, t) {
     let n = new URL(t ?? (typeof window < "u" ? window.location.href : "https://example.com/"));
     for (let r of [...n.searchParams.keys()]) et.test(r) && n.searchParams.delete(r);
     e.openDevtools && n.searchParams.set("se", "1");
@@ -2184,19 +2184,19 @@ select.se-input { cursor: pointer; }
       n.searchParams.set(`se_i18n_label_${r}`, o);
     return n.toString();
   }
-  function Re() {
+  function Me() {
     let e = { gates: {}, experiments: {}, configs: {}, i18nLabels: {} };
     if (typeof window > "u") return e;
-    let t = ce();
+    let t = ue();
     for (let [n, r] of t)
       if (n.startsWith("se_ks_")) {
-        let o = de(r);
+        let o = ce(r);
         o !== null && (e.gates[n.slice(6)] = o);
       } else if (n.startsWith("se_gate_")) {
-        let o = de(r);
+        let o = ce(r);
         o !== null && (e.gates[n.slice(8)] = o);
       } else if (n.startsWith("se-gate-")) {
-        let o = de(r);
+        let o = ce(r);
         o !== null && (e.gates[n.slice(8)] = o);
       } else
         n.startsWith("se_exp_") || n.startsWith("se-exp-")
@@ -2212,15 +2212,15 @@ select.se-input { cursor: pointer; }
   }
   function lt(e) {
     if (typeof window > "u") return;
-    let t = { ...Re(), ...e, openDevtools: !0 },
-      n = Me(t);
+    let t = { ...Me(), ...e, openDevtools: !0 },
+      n = Re(t);
     window.location.assign(n);
   }
-  var pe = class {
+  var te = class {
     constructor(t, n, r) {
-      $(this, "adminUrl", t);
-      $(this, "token", n);
-      $(this, "projectId", r);
+      P(this, "adminUrl", t);
+      P(this, "token", n);
+      P(this, "projectId", r);
     }
     async project() {
       let t = await this.get(`/api/admin/projects/${encodeURIComponent(this.projectId)}`),
@@ -2607,7 +2607,7 @@ select.se-input { cursor: pointer; }
         : '<span class="badge badge-draft">not enrolled</span>'
       : "";
   }
-  function Mn(e) {
+  function Rn(e) {
     let t = e.status === "running";
     return `
     <tr>
@@ -2627,7 +2627,7 @@ select.se-input { cursor: pointer; }
         <thead><tr>
           <th>Name</th><th>Status</th><th>Live</th><th style="text-align:right">Override</th>
         </tr></thead>
-        <tbody>${e.map(Mn).join("")}</tbody>
+        <tbody>${e.map(Rn).join("")}</tbody>
       </table>
     </div>`;
   }
@@ -2736,7 +2736,7 @@ select.se-input { cursor: pointer; }
     });
     for (let t of e.children) Ht(t);
   }
-  function P(e) {
+  function $(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
@@ -2748,9 +2748,9 @@ select.se-input { cursor: pointer; }
       let o = e.fullKey ? J(e.fullKey) : null,
         i = o ?? e.value;
       return `
-      <div class="tree-row leaf" style="padding-left:${n}px" data-key="${P(e.fullKey ?? "")}">
-        <span class="tree-seg">${P(e.segment)}</span>
-        <span class="tree-val${o !== null ? " overridden" : ""}" title="${P(i)}">${P(i)}</span>
+      <div class="tree-row leaf" style="padding-left:${n}px" data-key="${$(e.fullKey ?? "")}">
+        <span class="tree-seg">${$(e.segment)}</span>
+        <span class="tree-val${o !== null ? " overridden" : ""}" title="${$(i)}">${$(i)}</span>
       </div>`;
     }
     let r = e.children.map((o) => Bt(o, t + 1)).join("");
@@ -2758,7 +2758,7 @@ select.se-input { cursor: pointer; }
     <div class="tree-branch">
       <div class="tree-row branch" role="button" tabindex="0" style="padding-left:${n}px" data-branch>
         <span class="tree-caret">\u25BE</span>
-        <span class="tree-seg">${P(e.segment)}</span>
+        <span class="tree-seg">${$(e.segment)}</span>
       </div>
       <div class="tree-children">${r}</div>
     </div>`;
@@ -2800,7 +2800,7 @@ select.se-input { cursor: pointer; }
   `),
       document.head.appendChild(e));
   }
-  function $t() {
+  function Pt() {
     document.getElementById(ze)?.remove();
   }
   function V(e = document.body) {
@@ -2884,7 +2884,7 @@ select.se-input { cursor: pointer; }
     }
     return n.length;
   }
-  function Pt(e) {
+  function $t(e) {
     let t = [],
       n = /\{\{(\w+)\}\}/g,
       r;
@@ -2913,7 +2913,7 @@ select.se-input { cursor: pointer; }
     e || ((e = document.createElement("div")), (e.id = Ct), document.body.appendChild(e));
     let t = e.attachShadow({ mode: "open" }),
       n = document.createElement("style");
-    return ((n.textContent = le), t.appendChild(n), t);
+    return ((n.textContent = de), t.appendChild(n), t);
   }
   function Dt(e) {
     let n = window.__SE_BOOTSTRAP?.i18n?.strings?.[e];
@@ -2936,7 +2936,7 @@ select.se-input { cursor: pointer; }
     e.setAttribute("data-label-attrs", JSON.stringify(t));
   }
   var fr = "[data-label], [data-label-attrs]";
-  function re() {
+  function oe() {
     return Array.from(document.querySelectorAll(fr));
   }
   function z() {
@@ -2960,8 +2960,8 @@ select.se-input { cursor: pointer; }
       o = n.querySelector('[data-action="save"]'),
       i = J(e.key),
       a = Dt(e.key),
-      s = Pt(i ?? a ?? ""),
-      d = Pt(t),
+      s = $t(i ?? a ?? ""),
+      d = $t(t),
       u = s.filter((l) => !d.includes(l)),
       g = d.filter((l) => !s.includes(l));
     if (u.length || g.length) {
@@ -3048,11 +3048,11 @@ select.se-input { cursor: pointer; }
       s = document.createElement("div");
     s.className = "label-popper";
     let d = `<div class="lp-tabs">${n
-      .map((S, M) => {
+      .map((S, R) => {
         let E = hr(S, n),
-          _ = M === 0 ? "lp-tab active" : "lp-tab",
-          c = S.kind === "attr" ? `@<span class="lp-tab-attr">${P(S.attr ?? "")}</span>` : P(E);
-        return `<button class="${_}" data-surface-idx="${M}">${c}</button>`;
+          _ = R === 0 ? "lp-tab active" : "lp-tab",
+          c = S.kind === "attr" ? `@<span class="lp-tab-attr">${$(S.attr ?? "")}</span>` : $(E);
+        return `<button class="${_}" data-surface-idx="${R}">${c}</button>`;
       })
       .join("")}</div>`;
     ((s.innerHTML = `
@@ -3079,27 +3079,27 @@ select.se-input { cursor: pointer; }
     function l() {
       let S = p();
       (i.has(a) || i.set(a, Ot(S)), (g.textContent = S.key));
-      let M = Dt(S.key),
-        _ = J(S.key) ?? M ?? Ot(S),
+      let R = Dt(S.key),
+        _ = J(S.key) ?? R ?? Ot(S),
         c = S.variables ?? {},
         f = Object.entries(c),
         x = f.length
           ? `<div class="lp-field">
           <label>Variables (read-only)</label>
-          <div class="lp-vars">${f.map(([I, q]) => `<div class="lp-var"><span class="lp-var-k mono">${P(`{{${I}}}`)}</span><span class="lp-var-v">${P(String(q))}</span></div>`).join("")}</div>
+          <div class="lp-vars">${f.map(([I, q]) => `<div class="lp-var"><span class="lp-var-k mono">${$(`{{${I}}}`)}</span><span class="lp-var-v">${$(String(q))}</span></div>`).join("")}</div>
         </div>`
           : "",
         k = S.desc ?? "",
-        B = S.kind === "attr" ? `attribute \xB7 ${P(S.attr ?? "")}` : "text content";
+        B = S.kind === "attr" ? `attribute \xB7 ${$(S.attr ?? "")}` : "text content";
       ((h.innerHTML = `
       <div class="lp-field">
         <label>Value</label>
-        <textarea class="lp-input" spellcheck="false">${P(_)}</textarea>
+        <textarea class="lp-input" spellcheck="false">${$(_)}</textarea>
       </div>
       ${x}
       <div class="lp-field">
         <label>Current profile</label>
-        <span>${P(o)}</span>
+        <span>${$(o)}</span>
       </div>
       <div class="lp-field">
         <label>Surface</label>
@@ -3107,7 +3107,7 @@ select.se-input { cursor: pointer; }
       </div>
       <div class="lp-field">
         <label>Description</label>
-        <span class="${k ? "" : "empty"}">${k ? P(k) : "No description"}</span>
+        <span class="${k ? "" : "empty"}">${k ? $(k) : "No description"}</span>
       </div>`),
         (m.textContent = ""),
         (b.disabled = !1),
@@ -3117,9 +3117,9 @@ select.se-input { cursor: pointer; }
     }
     (s.querySelectorAll(".lp-tab").forEach((S) => {
       S.addEventListener("click", () => {
-        let M = Number(S.dataset.surfaceIdx);
-        M !== a &&
-          ((a = M),
+        let R = Number(S.dataset.surfaceIdx);
+        R !== a &&
+          ((a = R),
           s.querySelectorAll(".lp-tab").forEach((E, _) => {
             E.classList.toggle("active", _ === a);
           }),
@@ -3129,12 +3129,12 @@ select.se-input { cursor: pointer; }
       l());
     let y = e.getBoundingClientRect(),
       w = s.offsetHeight,
-      R = s.offsetWidth,
+      M = s.offsetWidth,
       C = 8,
       L = y.bottom + C;
     L + w > window.innerHeight - 8 && (L = Math.max(8, y.top - w - C));
     let A = y.left;
-    (A + R > window.innerWidth - 8 && (A = Math.max(8, window.innerWidth - R - 8)),
+    (A + M > window.innerWidth - 8 && (A = Math.max(8, window.innerWidth - M - 8)),
       (s.style.top = `${L}px`),
       (s.style.left = `${A}px`),
       s.querySelector(".lp-close").addEventListener("click", z),
@@ -3144,8 +3144,8 @@ select.se-input { cursor: pointer; }
       }),
       v.addEventListener("click", () => {
         let S = p(),
-          M = i.get(a) ?? "";
-        (Nt(S, M),
+          R = i.get(a) ?? "";
+        (Nt(S, R),
           Te(S.key, null),
           window.dispatchEvent(
             new CustomEvent("se:i18n:edit", { detail: { key: S.key, value: null } }),
@@ -3159,12 +3159,12 @@ select.se-input { cursor: pointer; }
   function Q(e, t, n) {
     if (((G = e), Ke?.(), (Ke = null), !e)) {
       z();
-      for (let m of re()) m.classList.remove(K);
-      $t();
+      for (let m of oe()) m.classList.remove(K);
+      Pt();
       return;
     }
     cr();
-    for (let m of re()) m.classList.add(K);
+    for (let m of oe()) m.classList.add(K);
     function r(m) {
       return Z !== null && m.composedPath().includes(Z);
     }
@@ -3214,7 +3214,7 @@ select.se-input { cursor: pointer; }
     }
     let h = new MutationObserver(() => {
       if (G) {
-        for (let m of re()) m.classList.add(K);
+        for (let m of oe()) m.classList.add(K);
         n();
       }
     });
@@ -3233,8 +3233,8 @@ select.se-input { cursor: pointer; }
           document.removeEventListener("mousedown", u, !0),
           document.removeEventListener("keydown", g),
           h.disconnect());
-        for (let m of re()) m.classList.remove(K);
-        $t();
+        for (let m of oe()) m.classList.remove(K);
+        Pt();
       }));
   }
   async function jt(e, t, n, r) {
@@ -3259,7 +3259,7 @@ select.se-input { cursor: pointer; }
       return o.find((l) => l.id === p)?.name ?? "(none)";
     }
     function h() {
-      let v = `<div class="i18n-profile-header" style="padding:6px 8px;border-bottom:1px solid var(--border,#222);font:500 12px system-ui;color:var(--muted,#9aa)">Profile: <span style="color:var(--fg,#ddd);font-weight:600">${P(g())}</span></div>`;
+      let v = `<div class="i18n-profile-header" style="padding:6px 8px;border-bottom:1px solid var(--border,#222);font:500 12px system-ui;color:var(--muted,#9aa)">Profile: <span style="color:var(--fg,#ddd);font-weight:600">${$(g())}</span></div>`;
       if (d.length === 0) {
         e.innerHTML =
           v +
@@ -3275,7 +3275,7 @@ select.se-input { cursor: pointer; }
       let p = d
           .map(
             (w) =>
-              `<button class="tab${w === u.activeChunk ? " active" : ""}" data-chunk="${P(w)}">${P(w)}</button>`,
+              `<button class="tab${w === u.activeChunk ? " active" : ""}" data-chunk="${$(w)}">${$(w)}</button>`,
           )
           .join(""),
         l = u.activeChunk ? s.get(u.activeChunk) : null,
@@ -3290,16 +3290,16 @@ select.se-input { cursor: pointer; }
           });
         }),
         e.querySelectorAll(".tree-row.branch[data-branch]").forEach((w) => {
-          let R = () => {
+          let M = () => {
             let C = w.parentElement;
             if (!C) return;
             let L = C.classList.toggle("collapsed"),
               A = w.querySelector(".tree-caret");
             A && (A.textContent = L ? "\u25B8" : "\u25BE");
           };
-          (w.addEventListener("click", R),
+          (w.addEventListener("click", M),
             w.addEventListener("keydown", (C) => {
-              (C.key === "Enter" || C.key === " ") && (C.preventDefault(), R());
+              (C.key === "Enter" || C.key === " ") && (C.preventDefault(), M());
             }));
         }));
     }
@@ -3307,7 +3307,7 @@ select.se-input { cursor: pointer; }
       let v = Y() ?? je(o) ?? "",
         p = _e() ?? "";
       V();
-      let l = re().length,
+      let l = oe().length,
         y = G
           ? `Editing ${l} label${l === 1 ? "" : "s"}`
           : l > 0
@@ -3318,25 +3318,25 @@ select.se-input { cursor: pointer; }
           : l === 0
             ? "Enable in-page label editing \u2014 reloads page with ?se_edit_labels=1 to scan all translation strings"
             : "Toggle in-page label editing (reloads page)",
-        R = o
+        M = o
           .map(
             (L) =>
-              `<option value="${P(L.id)}" ${v === L.id ? "selected" : ""}>${P(L.name)}</option>`,
+              `<option value="${$(L.id)}" ${v === L.id ? "selected" : ""}>${$(L.name)}</option>`,
           )
           .join(""),
         C = [
           '<option value="">No draft</option>',
           ...i.map(
             (L) =>
-              `<option value="${P(L.id)}" ${p === L.id ? "selected" : ""}>${P(L.name)}</option>`,
+              `<option value="${$(L.id)}" ${p === L.id ? "selected" : ""}>${$(L.name)}</option>`,
           ),
         ].join("");
       ((n.innerHTML = `
-      <button class="subfoot-btn${G ? " on" : ""}" id="se-edit-toggle" title="${P(w)}">
+      <button class="subfoot-btn${G ? " on" : ""}" id="se-edit-toggle" title="${$(w)}">
         <span class="dot"></span>
-        ${P(y)}
+        ${$(y)}
       </button>
-      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${R}</select>
+      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${M}</select>
       <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${C}</select>`),
         n.querySelector("#se-edit-toggle").addEventListener("click", () => {
           W() ? Ee(!1) : G ? (Q(!1, r, () => m()), m()) : Ee(!0);
@@ -3357,7 +3357,7 @@ select.se-input { cursor: pointer; }
         (V(), m());
       }));
   }
-  function oe(e, t) {
+  function se(e, t) {
     let n = document.createElement("div");
     n.className = "se-modal-overlay";
     let r = document.createElement("div");
@@ -3588,7 +3588,7 @@ select.se-input { cursor: pointer; }
     function w() {
       return Math.max(2, Math.round(n.naturalWidth / 400));
     }
-    function R() {
+    function M() {
       return Math.max(14, Math.round(n.naturalWidth / 60));
     }
     function C(c) {
@@ -3628,7 +3628,7 @@ select.se-input { cursor: pointer; }
           p.stroke();
         }
       else if (c.tool === "text" && c.text) {
-        let f = R();
+        let f = M();
         ((p.font = `600 ${f}px ui-sans-serif, system-ui, sans-serif`), (p.textBaseline = "top"));
         let x = f * 0.3,
           B = p.measureText(c.text).width + x * 2,
@@ -3653,7 +3653,7 @@ select.se-input { cursor: pointer; }
         k = b.getBoundingClientRect(),
         B = x.width / v.width,
         H = x.height / v.height,
-        I = R() * B,
+        I = M() * B,
         q = I * 0.3,
         T = document.createElement("input");
       ((T.type = "text"),
@@ -3693,17 +3693,17 @@ select.se-input { cursor: pointer; }
         (A = T),
         setTimeout(() => T.focus(), 0));
     }
-    let M = null;
+    let R = null;
     (v.addEventListener("pointermove", (c) => {
       ((l = y(c)),
-        M &&
-          (M.kind === "pen"
-            ? (M.shape.points.push(l), L())
+        R &&
+          (R.kind === "pen"
+            ? (R.shape.points.push(l), L())
             : L({
                 tool: i === "text" ? "rect" : i,
                 color: a,
-                x1: M.x1,
-                y1: M.y1,
+                x1: R.x1,
+                y1: R.y1,
                 x2: l.x,
                 y2: l.y,
               })));
@@ -3717,22 +3717,22 @@ select.se-input { cursor: pointer; }
         }
         if (i === "pen") {
           let x = { tool: "pen", color: a, points: [f] };
-          (s.push(x), (M = { kind: "pen", shape: x }), v.setPointerCapture(c.pointerId), L());
+          (s.push(x), (R = { kind: "pen", shape: x }), v.setPointerCapture(c.pointerId), L());
           return;
         }
-        ((M = { kind: "shape", x1: f.x, y1: f.y }), v.setPointerCapture(c.pointerId));
+        ((R = { kind: "shape", x1: f.x, y1: f.y }), v.setPointerCapture(c.pointerId));
       }),
       v.addEventListener("pointerup", (c) => {
-        if (!M) return;
+        if (!R) return;
         let f = y(c);
-        if (M.kind === "shape") {
-          let x = Math.abs(f.x - M.x1),
-            k = Math.abs(f.y - M.y1);
+        if (R.kind === "shape") {
+          let x = Math.abs(f.x - R.x1),
+            k = Math.abs(f.y - R.y1);
           (x > 4 || k > 4) &&
             (i === "arrow" || i === "rect") &&
-            s.push({ tool: i, color: a, x1: M.x1, y1: M.y1, x2: f.x, y2: f.y });
+            s.push({ tool: i, color: a, x1: R.x1, y1: R.y1, x2: f.x, y2: f.y });
         }
-        ((M = null), L());
+        ((R = null), L());
       }));
     function E(c) {
       if (!(c instanceof HTMLElement)) return !1;
@@ -3771,7 +3771,7 @@ select.se-input { cursor: pointer; }
       }
     );
   }
-  function se(e) {
+  function ae(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
@@ -3795,7 +3795,7 @@ select.se-input { cursor: pointer; }
       try {
         i = await t.bugs();
       } catch (s) {
-        ((e.innerHTML = `<div class="err">Failed to load bugs: ${se(String(s))}</div>`), o());
+        ((e.innerHTML = `<div class="err">Failed to load bugs: ${ae(String(s))}</div>`), o());
         return;
       }
       e.innerHTML = `
@@ -3815,8 +3815,8 @@ select.se-input { cursor: pointer; }
             <a class="row se-feedback-row" target="_blank" rel="noopener"
                href="${t.adminUrl}/dashboard/bugs/${s.id}">
               <div style="flex:1;min-width:0">
-                <div class="row-name">${se(s.title)}</div>
-                <div class="row-sub">${xr(s.createdAt)}${s.reporterEmail ? ` \xB7 ${se(s.reporterEmail)}` : ""}</div>
+                <div class="row-name">${ae(s.title)}</div>
+                <div class="row-sub">${xr(s.createdAt)}${s.reporterEmail ? ` \xB7 ${ae(s.reporterEmail)}` : ""}</div>
               </div>
               ${yr(s.status)}
             </a>`,
@@ -3830,7 +3830,7 @@ select.se-input { cursor: pointer; }
     await r();
   }
   function wr(e, t, n) {
-    let r = oe(t, { title: "File a bug", size: "lg" }),
+    let r = se(t, { title: "File a bug", size: "lg" }),
       o = [],
       i = null;
     r.body.innerHTML = `
@@ -3887,7 +3887,7 @@ select.se-input { cursor: pointer; }
         .map(
           (l, y) => `
           <div class="se-attach-item">
-            <span>${se(l.filename)} <span class="dim">(${(l.blob.size / 1024).toFixed(0)} KB)</span></span>
+            <span>${ae(l.filename)} <span class="dim">(${(l.blob.size / 1024).toFixed(0)} KB)</span></span>
             <button type="button" class="ibtn danger" data-idx="${y}">remove</button>
           </div>`,
         )
@@ -3968,9 +3968,9 @@ select.se-input { cursor: pointer; }
             userAgent: navigator.userAgent,
             viewport: `${window.innerWidth}x${window.innerHeight}`,
           });
-          for (let R = 0; R < o.length; R++) {
-            let C = o[R];
-            (p(`Uploading attachment ${R + 1}/${o.length}\u2026`),
+          for (let M = 0; M < o.length; M++) {
+            let C = o[M];
+            (p(`Uploading attachment ${M + 1}/${o.length}\u2026`),
               await e.uploadAttachment({
                 reportKind: "bug",
                 reportId: w.id,
@@ -3986,7 +3986,7 @@ select.se-input { cursor: pointer; }
       }));
   }
   function Er(e, t, n) {
-    let r = oe(e, { title: "Annotate screenshot", size: "lg" });
+    let r = se(e, { title: "Annotate screenshot", size: "lg" });
     r.body.innerHTML = `<div class="se-annot-host" id="se-annot-host"></div>
     <div class="se-modal-footer">
       <button type="button" class="ibtn" id="se-a-cancel">Cancel</button>
@@ -4005,7 +4005,7 @@ select.se-input { cursor: pointer; }
             }));
         })
         .catch((i) => {
-          o.innerHTML = `<div class="err">${se(String(i))}</div>`;
+          o.innerHTML = `<div class="err">${ae(String(i))}</div>`;
         }));
   }
   function We(e) {
@@ -4068,7 +4068,7 @@ select.se-input { cursor: pointer; }
     await r();
   }
   function _r(e, t, n) {
-    let r = oe(t, { title: "Request a feature", size: "lg" });
+    let r = se(t, { title: "Request a feature", size: "lg" });
     r.body.innerHTML = `
     <div class="se-form">
       <label class="se-field">
@@ -4144,7 +4144,7 @@ select.se-input { cursor: pointer; }
       features: "feedback",
     },
     Je = "se_dt_project";
-  function Mr() {
+  function Rr() {
     try {
       let e = sessionStorage.getItem(Je);
       if (e) return JSON.parse(e);
@@ -4156,36 +4156,45 @@ select.se-input { cursor: pointer; }
       e === null ? sessionStorage.removeItem(Je) : sessionStorage.setItem(Je, JSON.stringify(e));
     } catch {}
   }
-  var Rr =
+  function Mr(e, t) {
+    return (
+      e.translations === t.translations &&
+      e.configs === t.configs &&
+      e.gates === t.gates &&
+      e.experiments === t.experiments &&
+      e.feedback === t.feedback
+    );
+  }
+  var Ar =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
-    Ar =
+    Pr =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
     $r =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
-    Pr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
     Cr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
     Or =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
     Hr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
     Br =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+    Ir =
       '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
-    ie = {
-      gates: { icon: Rr, label: "Gates" },
-      configs: { icon: Ar, label: "Configs" },
+    le = {
+      gates: { icon: Ar, label: "Gates" },
+      configs: { icon: Pr, label: "Configs" },
       experiments: { icon: $r, label: "Experiments" },
-      i18n: { icon: Pr, label: "Translations" },
-      bugs: { icon: Cr, label: "Bugs" },
-      features: { icon: Or, label: "Feature requests" },
+      i18n: { icon: Cr, label: "Translations" },
+      bugs: { icon: Or, label: "Bugs" },
+      features: { icon: Hr, label: "Feature requests" },
     },
     nn = "se_l_overlay",
     Ge = "se_l_active_panel";
-  function Ir() {
+  function qr() {
     try {
       let e = sessionStorage.getItem(Ge);
-      if (e && e in ie) return e;
+      if (e && e in le) return e;
     } catch {}
     return null;
   }
@@ -4199,7 +4208,7 @@ select.se-input { cursor: pointer; }
     Ye = 180,
     Qt = 700,
     en = { edge: "right", offsetPct: 50, panelWidth: 440, panelHeight: 460 };
-  function qr() {
+  function Dr() {
     try {
       let e = localStorage.getItem(nn);
       if (e) return { ...en, ...JSON.parse(e) };
@@ -4211,7 +4220,7 @@ select.se-input { cursor: pointer; }
       localStorage.setItem(nn, JSON.stringify(e));
     } catch {}
   }
-  function Dr(e, t) {
+  function Ur(e, t) {
     let n = window.innerWidth,
       r = window.innerHeight,
       o = [
@@ -4225,7 +4234,7 @@ select.se-input { cursor: pointer; }
       s = Math.max(5, Math.min(95, i === "left" || i === "right" ? (t / r) * 100 : (e / n) * 100));
     return { edge: i, offsetPct: s };
   }
-  function ae(e, t, n, r) {
+  function ie(e, t, n, r) {
     let { edge: o, offsetPct: i, panelWidth: a, panelHeight: s } = r,
       d = window.innerWidth,
       u = window.innerHeight,
@@ -4276,30 +4285,30 @@ select.se-input { cursor: pointer; }
       (t.dataset.edge = o),
       o === "right")
     ) {
-      let R = Math.max(10, Math.min(u - m - 10, b - m / 2));
+      let M = Math.max(10, Math.min(u - m - 10, b - m / 2));
       ((y.right = p + "px"),
-        (y.top = R + "px"),
+        (y.top = M + "px"),
         (y.borderRadius = "10px 0 0 10px"),
         (y.borderRight = "none"),
         (y.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
     } else if (o === "left") {
-      let R = Math.max(10, Math.min(u - m - 10, b - m / 2));
+      let M = Math.max(10, Math.min(u - m - 10, b - m / 2));
       ((y.left = p + "px"),
-        (y.top = R + "px"),
+        (y.top = M + "px"),
         (y.borderRadius = "0 10px 10px 0"),
         (y.borderLeft = "none"),
         (y.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
     } else if (o === "top") {
-      let R = Math.max(10, Math.min(d - h - 10, b - h / 2));
+      let M = Math.max(10, Math.min(d - h - 10, b - h / 2));
       ((y.top = p + "px"),
-        (y.left = R + "px"),
+        (y.left = M + "px"),
         (y.borderRadius = "0 0 10px 10px"),
         (y.borderTop = "none"),
         (y.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
     } else {
-      let R = Math.max(10, Math.min(d - h - 10, b - h / 2));
+      let M = Math.max(10, Math.min(d - h - 10, b - h / 2));
       ((y.bottom = p + "px"),
-        (y.left = R + "px"),
+        (y.left = M + "px"),
         (y.borderRadius = "10px 10px 0 0"),
         (y.borderBottom = "none"),
         (y.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
@@ -4323,7 +4332,7 @@ select.se-input { cursor: pointer; }
     let t = document.createElement("div");
     t.setAttribute("id", "shipeasy-devtools");
     let n = t.attachShadow({ mode: "open" });
-    n.innerHTML = `<style>${le}</style><div id="toolbar"></div><div id="panel"></div>`;
+    n.innerHTML = `<style>${de}</style><div id="toolbar"></div><div id="panel"></div>`;
     let r = n.getElementById("toolbar"),
       o = n.getElementById("panel");
     ((r.className = "toolbar"), (o.className = "panel"));
@@ -4331,23 +4340,23 @@ select.se-input { cursor: pointer; }
     ((i.className = "resize-handle"), o.appendChild(i));
     let a = document.createElement("div");
     ((a.className = "panel-inner"), o.appendChild(a));
-    let s = qr(),
+    let s = Dr(),
       d = null,
       u = Ze(),
-      g = Mr();
+      g = Rr();
     g && u && g.id !== u.projectId && ((g = null), he(null));
-    let h = Ir();
-    requestAnimationFrame(() => ae(r, o, i, s));
+    let h = qr();
+    requestAnimationFrame(() => ie(r, o, i, s));
     let m = document.createElement("div");
     ((m.className = "drag-handle"),
       (m.title = "ShipEasy DevTools \u2014 drag to reposition"),
-      (m.innerHTML = Br),
+      (m.innerHTML = Ir),
       r.appendChild(m),
       m.addEventListener("mousedown", (E) => {
         (E.preventDefault(), m.classList.add("dragging"));
         let _ = (f) => {
-            let { edge: x, offsetPct: k } = Dr(f.clientX, f.clientY);
-            ((s = { ...s, edge: x, offsetPct: k }), ae(r, o, i, s));
+            let { edge: x, offsetPct: k } = Ur(f.clientX, f.clientY);
+            ((s = { ...s, edge: x, offsetPct: k }), ie(r, o, i, s));
           },
           c = () => {
             (m.classList.remove("dragging"),
@@ -4359,18 +4368,18 @@ select.se-input { cursor: pointer; }
       }));
     let b = new Map();
     function v(E) {
-      return g ? g.modules[Tr[E]] : !0;
+      return g ? g.modules[Tr[E]] : !u;
     }
     function p() {
       for (let E of b.values()) E.remove();
       b.clear();
-      for (let [E, { icon: _, label: c }] of Object.entries(ie)) {
+      for (let [E, { icon: _, label: c }] of Object.entries(le)) {
         if (!v(E)) continue;
         let f = document.createElement("button");
         ((f.className = "btn"),
           (f.title = c),
           (f.innerHTML = _),
-          f.addEventListener("click", () => R(E)),
+          f.addEventListener("click", () => M(E)),
           r.appendChild(f),
           b.set(E, f));
       }
@@ -4393,7 +4402,7 @@ select.se-input { cursor: pointer; }
               k === "top" && (D.panelHeight = Math.max(Ye, Math.min(Qt, x + T))),
               k === "bottom" && (D.panelHeight = Math.max(Ye, Math.min(Qt, x - T))),
               (s = D),
-              ae(r, o, i, s));
+              ie(r, o, i, s));
           },
           H = () => {
             (i.classList.remove("dragging"),
@@ -4403,14 +4412,14 @@ select.se-input { cursor: pointer; }
           };
         (document.addEventListener("mousemove", B), document.addEventListener("mouseup", H));
       }));
-    let l = () => ae(r, o, i, s);
+    let l = () => ie(r, o, i, s);
     window.addEventListener("resize", l);
     function y(E) {
       ((d = E),
         Xt(E),
         b.forEach((_, c) => _.classList.toggle("active", c === E)),
         o.classList.add("open"),
-        ae(r, o, i, s),
+        ie(r, o, i, s),
         A(E));
     }
     function w() {
@@ -4419,20 +4428,20 @@ select.se-input { cursor: pointer; }
         (d = null),
         Xt(null));
     }
-    function R(E) {
+    function M(E) {
       v(E) && (d === E ? w() : y(E));
     }
     async function C(E) {
-      if (!(g && g.id === E.projectId))
-        try {
-          let _ = await E.project(),
-            c = window.location.host;
-          if (_.domain && !Yt(c, _.domain)) {
-            (xe(), he(null), (u = null), (g = null), p(), d && S(d));
-            return;
-          }
-          ((g = _), he(_), p());
-        } catch {}
+      try {
+        let _ = await E.project(),
+          c = window.location.host;
+        if (_.domain && !Yt(c, _.domain)) {
+          (xe(), he(null), (u = null), (g = null), p(), d && S(d));
+          return;
+        }
+        let f = g;
+        ((g = _), he(_), (!f || !Mr(f.modules, _.modules)) && p(), d && !v(d) && w());
+      } catch {}
     }
     function L(E, _) {
       let c = typeof window < "u" && window.location ? window.location.host : "",
@@ -4448,16 +4457,16 @@ select.se-input { cursor: pointer; }
           ${k}
         </span>
         <span class="live"><span class="dot"></span>LIVE</span>
-        <button class="close" id="se-close" aria-label="Close">${Hr}</button>
+        <button class="close" id="se-close" aria-label="Close">${Br}</button>
       </div>`;
     }
     function A(E) {
-      let { icon: _, label: c } = ie[E];
+      let { icon: _, label: c } = le[E];
       if (!u) {
         S(E);
         return;
       }
-      let f = new pe(e.adminUrl, u.token, u.projectId);
+      let f = new te(e.adminUrl, u.token, u.projectId);
       (C(f).then(() => {
         if (d && !v(d)) {
           w();
@@ -4465,7 +4474,7 @@ select.se-input { cursor: pointer; }
         }
         let H = a.querySelector(".panel-head");
         if (H && d) {
-          let { icon: I, label: q } = ie[d],
+          let { icon: I, label: q } = le[d],
             T = document.createElement("div");
           ((T.innerHTML = L(I, q)),
             H.replaceWith(T.firstElementChild),
@@ -4494,7 +4503,7 @@ select.se-input { cursor: pointer; }
           lt();
         }),
         a.querySelector("#se-share").addEventListener("click", async () => {
-          let H = Me({ ...Re(), openDevtools: !0 });
+          let H = Re({ ...Me(), openDevtools: !0 });
           try {
             await navigator.clipboard.writeText(H);
             let I = a.querySelector("#se-share"),
@@ -4520,7 +4529,7 @@ select.se-input { cursor: pointer; }
         });
     }
     function S(E) {
-      let { icon: _, label: c } = ie[E];
+      let { icon: _, label: c } = le[E];
       ((a.innerHTML = `
       ${L(_, c)}
       <div class="panel-body auth-mode">
@@ -4557,12 +4566,18 @@ select.se-input { cursor: pointer; }
         }));
     }
     document.documentElement.appendChild(t);
-    let M = () => {
+    let R = () => {
       document.getElementById("shipeasy-devtools") || document.documentElement.appendChild(t);
     };
-    return (
-      new MutationObserver(M).observe(document.documentElement, { childList: !0 }),
+    if (
+      (new MutationObserver(R).observe(document.documentElement, { childList: !0 }),
       W() && (V(), Q(!0, n, () => {})),
+      u)
+    ) {
+      let E = new te(e.adminUrl, u.token, u.projectId);
+      C(E);
+    }
+    return (
       h && requestAnimationFrame(() => y(h)),
       {
         destroy() {
@@ -4571,7 +4586,7 @@ select.se-input { cursor: pointer; }
       }
     );
   }
-  function Ur() {
+  function Nr() {
     if (typeof document < "u") {
       let e = document.currentScript;
       if (e?.src)
@@ -4594,16 +4609,16 @@ select.se-input { cursor: pointer; }
       if (document.getElementById("shipeasy-devtools")) return;
       ee = null;
     }
-    let t = { adminUrl: e.adminUrl ?? Ur() },
+    let t = { adminUrl: e.adminUrl ?? Nr() },
       { destroy: n } = rn(t);
     ee = n;
   }
-  function Nr() {
+  function jr() {
     (ee?.(), (ee = null));
   }
   function sn(e = {}, t = "Shift+Alt+S") {
     if (typeof window > "u") return () => {};
-    ue() && on(e);
+    pe() && on(e);
     let n = t.split("+"),
       r = n[n.length - 1],
       o = n.includes("Shift"),
@@ -4617,7 +4632,7 @@ select.se-input { cursor: pointer; }
         g.altKey === i &&
         g.ctrlKey === a &&
         g.metaKey === s &&
-        (ee ? Nr() : on(e));
+        (ee ? jr() : on(e));
     }
     return (window.addEventListener("keydown", u), () => window.removeEventListener("keydown", u));
   }

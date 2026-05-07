@@ -51,6 +51,16 @@ function saveCachedProject(p: ProjectRecord | null): void {
     /* ignore */
   }
 }
+
+function sameModules(a: ProjectRecord["modules"], b: ProjectRecord["modules"]): boolean {
+  return (
+    a.translations === b.translations &&
+    a.configs === b.configs &&
+    a.gates === b.gates &&
+    a.experiments === b.experiments &&
+    a.feedback === b.feedback
+  );
+}
 type Edge = "top" | "right" | "bottom" | "left";
 
 interface OverlayState {
@@ -350,7 +360,11 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   const buttons = new Map<PanelKey, HTMLButtonElement>();
 
   function isPanelEnabled(key: PanelKey): boolean {
-    if (!project) return true; // pre-auth or first-load: show everything; we'll filter once project loads
+    // Authed but project not yet loaded: hide everything to avoid flashing
+    // panels that the customer disabled. The mount-time fetch will populate
+    // `project` and re-render. Unauthed (no session, no cache): show
+    // everything so the user has somewhere to click to start the auth flow.
+    if (!project) return !session;
     return project.modules[PANEL_MODULE[key]];
   }
 
@@ -440,8 +454,11 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     else openPanel(key);
   }
 
+  // Always refetches. The cached project (sessionStorage) is only an instant-
+  // paint hint for the very first toolbar render; once the overlay is up we
+  // re-pull every time so module-flag toggles in the dashboard show up
+  // without forcing the user to clear storage or reopen a tab.
   async function ensureProjectLoaded(api: DevtoolsApi): Promise<void> {
-    if (project && project.id === api.projectId) return;
     try {
       const p = await api.project();
       // Origin lock: if the loaded project's domain doesn't cover this host,
@@ -458,9 +475,14 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         if (activeKey) renderAuthPrompt(activeKey);
         return;
       }
+      const prev = project;
       project = p;
       saveCachedProject(p);
-      renderToolbarButtons();
+      // Only re-render the toolbar when the enabled-module set actually
+      // changed; otherwise we'd churn the DOM on every panel open.
+      if (!prev || !sameModules(prev.modules, p.modules)) renderToolbarButtons();
+      // If the just-active panel was disabled by the refresh, close it.
+      if (activeKey && !isPanelEnabled(activeKey)) closePanel();
     } catch {
       // Fall through — leave panels visible if we can't load project meta.
     }
@@ -635,6 +657,16 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     toggleEditLabels(true, shadow, () => {
       /* re-render hook; the i18n panel installs its own when active */
     });
+  }
+
+  // Refresh project meta on mount so the toolbar reflects the current set
+  // of enabled modules. Without this we'd render from sessionStorage cache
+  // forever — disabling a module in the dashboard would only take effect
+  // after the user opened a panel (or cleared storage). The cache stays as
+  // an instant-paint hint; the fetched value overwrites it when it lands.
+  if (session) {
+    const api = new DevtoolsApi(opts.adminUrl, session.token, session.projectId);
+    void ensureProjectLoaded(api);
   }
 
   // Auto-reopen the panel that was active before a value-change reload.
