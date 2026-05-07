@@ -21,6 +21,7 @@ import { handleExperiments } from "./sdk/experiments";
 import { handleFlags } from "./sdk/flags";
 import { handleWebhook } from "./billing/webhook";
 import { handleI18nLoader, handleI18nStrings } from "./sdk/i18n";
+import { handleCliError } from "./cli/errors";
 import type { AnalysisMessage, WorkerEnv } from "./env";
 
 type HonoEnv = { Bindings: WorkerEnv; Variables: { key: import("@shipeasy/core").SdkKeyMeta } };
@@ -45,6 +46,15 @@ app.use(
     allowHeaders: ["X-SDK-Key", "Authorization", "Content-Type"],
     allowMethods: ["POST", "OPTIONS"],
     maxAge: 86400,
+  }),
+);
+app.use(
+  "/cli/*",
+  cors({
+    origin: "*",
+    allowHeaders: ["X-SDK-Key", "Authorization", "Content-Type"],
+    allowMethods: ["POST", "OPTIONS"],
+    maxAge: 3600,
   }),
 );
 app.use(
@@ -76,6 +86,9 @@ app.get("/sdk/experiments", requireKey("server"), (c) => handleExperiments(c as 
 app.post("/sdk/evaluate", requireKey("client"), (c) => handleEvaluate(c as AuthedContext));
 app.get("/sdk/bootstrap", requireKey("server"), (c) => handleBootstrap(c as AuthedContext));
 app.post("/collect", requireKey("client"), (c) => handleCollect(c as AuthedContext));
+
+// ── CLI telemetry (best-effort, no auth required) ────────────────────────────
+app.post("/cli/errors", (c) => handleCliError(c));
 
 // ── CLI device auth ──────────────────────────────────────────────────────────
 app.post("/auth/device/start", (c) => deviceStart(c));

@@ -16,6 +16,7 @@ export interface WorkerEnv extends CoreEnv {
   EXPOSURES?: AnalyticsEngineDataset;
   METRIC_EVENTS?: AnalyticsEngineDataset;
   I18N_REQUESTS?: AnalyticsEngineDataset;
+  CLI_ERRORS?: AnalyticsEngineDataset;
 
   ANALYSIS_QUEUE?: Queue<AnalysisMessage>;
   I18N_USAGE_QUEUE?: Queue<{ project_id: string; trigger: "daily" | "manual" }>;

@@ -48,6 +48,10 @@ dataset = "shipeasy_metric_events"
 binding = "I18N_REQUESTS"
 dataset = "shipeasy_i18n_requests"
 
+[[analytics_engine_datasets]]
+binding = "CLI_ERRORS"
+dataset = "shipeasy_cli_errors"
+
 [[queues.producers]]
 binding = "ANALYSIS_QUEUE"
 queue = "experiment-analysis"
