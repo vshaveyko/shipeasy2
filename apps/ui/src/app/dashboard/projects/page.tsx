@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { ArrowRight, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { auth } from "@/auth";
 import { listProjectsByEmail, findProjectById, getEffectivePlan } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
@@ -7,6 +7,7 @@ import { listGates } from "@/lib/handlers/gates";
 import { listExperiments } from "@/lib/handlers/experiments";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LinkButton } from "@/components/ui/link-button";
+import { selectAndOpenProjectAction } from "./[id]/actions";
 
 const COLORS = ["#22a06b", "#3b82f6", "#a78bfa", "#f5a623", "#ec4899", "#06b6d4"];
 
@@ -132,51 +133,57 @@ export default async function ProjectsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {items.map((p) => (
-          <article
-            key={p.id}
-            className="relative flex flex-col gap-3.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-5 transition-colors hover:border-[var(--se-line-3)]"
-          >
-            <span
-              aria-hidden
-              className="absolute inset-y-0 left-0 w-[3px] opacity-70"
-              style={{ background: p.color }}
-            />
-            <header className="flex items-center gap-2.5">
-              <div
-                className="grid size-8 place-items-center rounded-[8px] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] font-mono text-[13px] font-semibold"
-                style={{ color: p.color }}
-              >
-                {p.mark}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="m-0 truncate text-[15px] font-medium tracking-[-0.01em]">
-                  {p.domain ?? p.name}
-                </h3>
-                <div className="mt-0.5 t-mono-xs dim-2">
-                  {p.planLabel} · updated {timeAgo(p.updatedAt)}
+          // The whole card is a single form-submit button — clicking anywhere
+          // sets the active-project cookie and navigates to the project's
+          // module-toggle page in one round trip.
+          <form key={p.id} action={selectAndOpenProjectAction} className="contents">
+            <input type="hidden" name="projectId" value={p.id} />
+            <button
+              type="submit"
+              className="group relative flex w-full flex-col gap-3.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-5 text-left transition-colors hover:border-[var(--se-line-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 w-[3px] opacity-70"
+                style={{ background: p.color }}
+              />
+              <header className="flex items-center gap-2.5">
+                <div
+                  className="grid size-8 place-items-center rounded-[8px] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] font-mono text-[13px] font-semibold"
+                  style={{ color: p.color }}
+                >
+                  {p.mark}
                 </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="m-0 truncate text-[15px] font-medium tracking-[-0.01em]">
+                    {p.domain ?? p.name}
+                  </h3>
+                  <div className="mt-0.5 t-mono-xs dim-2">
+                    {p.planLabel} · updated {timeAgo(p.updatedAt)}
+                  </div>
+                </div>
+                {p.isActive ? (
+                  <span className="se-badge se-badge-live">
+                    <span className="dot" />
+                    ACTIVE
+                  </span>
+                ) : null}
+              </header>
+
+              <div className="grid w-full grid-cols-3 gap-2.5 border-t border-[var(--se-line)] pt-3.5">
+                <Stat v={String(p.expRunning)} k="Running exps" accent />
+                <Stat v={String(p.gateCount)} k="Gates" />
+                <Stat v={p.plan.toUpperCase()} k="Plan" />
               </div>
-              {p.isActive ? (
-                <span className="se-badge se-badge-live">
-                  <span className="dot" />
-                  ACTIVE
+
+              <footer className="flex w-full items-center gap-2 text-[12px] text-[var(--se-fg-3)]">
+                <span className="t-mono-xs dim-2">id · {p.id.slice(0, 10)}…</span>
+                <span className="ml-auto text-[12px] text-[var(--se-fg-3)] transition-colors group-hover:text-foreground">
+                  Configure modules →
                 </span>
-              ) : null}
-            </header>
-
-            <div className="grid grid-cols-3 gap-2.5 border-t border-[var(--se-line)] pt-3.5">
-              <Stat v={String(p.expRunning)} k="Running exps" accent />
-              <Stat v={String(p.gateCount)} k="Gates" />
-              <Stat v={p.plan.toUpperCase()} k="Plan" />
-            </div>
-
-            <footer className="flex items-center gap-2 text-[12px] text-[var(--se-fg-3)]">
-              <span className="t-mono-xs dim-2">id · {p.id.slice(0, 10)}…</span>
-              <LinkButton size="sm" variant="ghost" href="/dashboard" className="ml-auto">
-                Open <ArrowRight className="size-3" />
-              </LinkButton>
-            </footer>
-          </article>
+              </footer>
+            </button>
+          </form>
         ))}
 
         <a
