@@ -1,4 +1,5 @@
-import { ArrowRight } from "lucide-react";
+import type { Metadata } from "next";
+import { ArrowRight, Gauge } from "lucide-react";
 
 import { auth } from "@/auth";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -10,6 +11,18 @@ import { listExperiments } from "@/lib/handlers/experiments";
 import { listProfiles } from "@/lib/handlers/i18n";
 import { getProject } from "@/lib/handlers/projects";
 import { getEffectivePlan } from "@shipeasy/core";
+
+export const metadata: Metadata = { title: "Overview" };
+
+const EXTRA_PRODUCTS = [
+  {
+    id: "metrics",
+    name: "Metrics",
+    tagline: "Web vitals, errors & custom events",
+    icon: Gauge,
+    rootHref: "/dashboard/metrics",
+  },
+];
 
 export default async function OverviewPage() {
   const session = await auth();
@@ -23,6 +36,7 @@ export default async function OverviewPage() {
   let runningCount = 0;
   let localesCount = 0;
   let planName = "Free";
+  let projectName: string | null = null;
 
   if (projectId) {
     try {
@@ -39,6 +53,7 @@ export default async function OverviewPage() {
       localesCount = profiles.length;
       if (project) {
         planName = getEffectivePlan(project).display_name ?? "Free";
+        projectName = project.name ?? null;
       }
     } catch {
       // DB not available in dev without wrangler
@@ -48,22 +63,35 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Workspace overview"
+        kicker={projectName ? `Workspace overview · ${projectName}` : "Workspace overview"}
         title={firstName ? `Welcome back, ${firstName}` : "Overview"}
         description="Pick a product to work in, or keep tabs on everything at a glance."
       />
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Gates + configs" value={String(gatesCount + configsCount)} hint="across environments" />
-        <StatCard label="Running experiments" value={String(runningCount)} hint="live with traffic" accent />
-        <StatCard label="Published locales" value={String(localesCount)} hint="string profiles live" />
+        <StatCard
+          label="Gates + configs"
+          value={String(gatesCount + configsCount)}
+          hint="across environments"
+        />
+        <StatCard
+          label="Running experiments"
+          value={String(runningCount)}
+          hint="live with traffic"
+          accent
+        />
+        <StatCard
+          label="Published locales"
+          value={String(localesCount)}
+          hint="string profiles live"
+        />
         <a href="/dashboard/billing" className="block">
           <StatCard label="Plan" value={planName} hint="upgrade for more limits" />
         </a>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        {PRODUCTS.map((p) => (
+        {[...PRODUCTS, ...EXTRA_PRODUCTS].map((p) => (
           <a
             key={p.id}
             href={p.rootHref}

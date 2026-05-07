@@ -27,13 +27,13 @@ export async function updateFeatureRequestAction(formData: FormData) {
   const identity = await identityOrThrow();
   await updateFeatureRequest(identity, id, { status, importance });
   revalidatePath(`/dashboard/feature-requests/${id}`);
-  revalidatePath(`/dashboard/feature-requests`);
+  revalidatePath(`/dashboard/feedback`);
 }
 
 export async function deleteFeatureRequestAction(formData: FormData) {
   const id = String(formData.get("id"));
   const identity = await identityOrThrow();
   await deleteFeatureRequest(identity, id);
-  revalidatePath(`/dashboard/feature-requests`);
-  redirect("/dashboard/feature-requests");
+  revalidatePath(`/dashboard/feedback`);
+  redirect("/dashboard/feedback?tab=requests");
 }

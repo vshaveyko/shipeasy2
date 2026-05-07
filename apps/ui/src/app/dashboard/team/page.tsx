@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { Clock, Search, Shield } from "lucide-react";
 import { auth } from "@/auth";
+
+export const metadata: Metadata = { title: "Team" };
 import { listMembers } from "@/lib/handlers/members";
 import { loadProject } from "@/lib/project";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
@@ -125,13 +128,14 @@ export default async function TeamPage() {
     });
   }
 
+  const isActiveRow = (r: RowMember) => r.status === "active" || r.status === "owner";
   const counts = {
-    admin: rows.filter((r) => r.role === "admin" && r.status !== "removed").length,
-    editor: rows.filter((r) => r.role === "editor" && r.status !== "removed").length,
-    viewer: rows.filter((r) => r.role === "viewer" && r.status !== "removed").length,
+    admin: rows.filter((r) => r.role === "admin" && isActiveRow(r)).length,
+    editor: rows.filter((r) => r.role === "editor" && isActiveRow(r)).length,
+    viewer: rows.filter((r) => r.role === "viewer" && isActiveRow(r)).length,
   };
   const pendingCount = rows.filter((r) => r.status === "pending").length;
-  const activeCount = rows.filter((r) => r.status === "active" || r.status === "owner").length;
+  const activeCount = rows.filter(isActiveRow).length;
 
   // First-run hero: just the owner, no members or pending invites yet.
   if (rows.length === 1 && rows[0]!.status === "owner") {
@@ -162,7 +166,7 @@ export default async function TeamPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker={`${activeCount} member${activeCount === 1 ? "" : "s"} · ${pendingCount} pending invite${pendingCount === 1 ? "" : "s"}`}
+        kicker={`${activeCount} active member${activeCount === 1 ? "" : "s"}${pendingCount > 0 ? ` · ${pendingCount} pending invite${pendingCount === 1 ? "" : "s"}` : ""}`}
         title="Team"
         description="Workspace members can access every project. Use roles to control who can publish to production. Per-project roles are coming soon."
         actions={

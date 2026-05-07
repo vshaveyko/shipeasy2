@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ArrowRight, FileText, FolderTree, Languages, PencilLine } from "lucide-react";
 
@@ -6,6 +7,8 @@ import { getI18nStats } from "@/lib/handlers/i18n";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { LinkButton } from "@/components/ui/link-button";
+
+export const metadata: Metadata = { title: "String Manager" };
 
 export default async function I18nOverviewPage() {
   const session = await auth();
@@ -109,7 +112,7 @@ export default async function I18nOverviewPage() {
             {
               n: "02",
               t: "Scan your codebase",
-              d: "`shipeasy i18n push` or the MCP scan tool discovers your strings.",
+              d: "`shipeasy i18n scan` or the MCP scan tool discovers your strings.",
               href: "/dashboard/i18n/keys",
               cta: "Browse keys",
             },

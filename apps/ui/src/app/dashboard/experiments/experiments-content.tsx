@@ -53,6 +53,7 @@ export function ExperimentsContent() {
   const running = experiments.filter((e) => e.status === "running").length;
   const drafts = experiments.filter((e) => e.status === "draft").length;
   const stopped = experiments.filter((e) => e.status === "stopped").length;
+  const archived = experiments.filter((e) => e.status === "archived").length;
 
   if (experiments.length === 0) {
     return (
@@ -74,7 +75,7 @@ export function ExperimentsContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker={`${experiments.length} experiment${experiments.length === 1 ? "" : "s"} · ${running} running · ${drafts} draft`}
+        kicker={`${experiments.length} experiment${experiments.length === 1 ? "" : "s"} · ${running} running · ${drafts} draft · ${archived} archived`}
         title="Experiments"
         description="Run A/B tests on metrics with guardrails. Results compute daily once an experiment starts."
         actions={
@@ -84,11 +85,12 @@ export function ExperimentsContent() {
         }
       />
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-4">
         {[
           { k: "RUNNING", v: running, color: "var(--se-accent)" },
           { k: "DRAFT", v: drafts, color: "var(--se-fg-2)" },
           { k: "STOPPED", v: stopped, color: "var(--se-warn)" },
+          { k: "ARCHIVED", v: archived, color: "var(--se-fg-3)" },
         ].map((s) => (
           <div
             key={s.k}

@@ -30,9 +30,9 @@ const CONFIGS: Record<string, EmptyConfig> = {
   metrics: {
     eyebrow: "METRICS",
     eyebrowAside: "not collecting yet",
-    title: "Track anything you ship.",
-    titleAccent: "in 60 seconds",
-    sub: "Auto-collect web vitals, errors, and page loads — then layer your own events with a one-line log() call. No schema migrations. No redeploys.",
+    title: "Track anything you ship,",
+    titleAccent: "in 60 seconds.",
+    sub: "Auto-collect web vitals, errors, and page loads — then layer your own events with a one-line track() call. No schema migrations. No redeploys.",
     file: "~/your-app · setup.ts",
     code: [
       { type: "cmt", text: "// install" },
@@ -46,23 +46,26 @@ const CONFIGS: Record<string, EmptyConfig> = {
         type: "line",
         tokens: [
           { kind: "kw", text: "import" },
-          " { init, log } ",
+          " { shipeasy } ",
           { kind: "kw", text: "from" },
           " ",
-          { kind: "str", text: "'@shipeasy/sdk'" },
+          { kind: "str", text: "'@shipeasy/sdk/client'" },
           ";",
         ],
       },
       {
         type: "line",
-        tokens: [{ kind: "fn", text: "init" }, "({ apiKey: process.env.SHIPEASY_KEY });"],
+        tokens: [
+          { kind: "fn", text: "shipeasy" },
+          "({ apiKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY });",
+        ],
       },
       { type: "blank" },
       { type: "cmt", text: "// track anything" },
       {
         type: "line",
         tokens: [
-          { kind: "fn", text: "log" },
+          { kind: "fn", text: "track" },
           "(",
           { kind: "str", text: "'user_checkout'" },
           ", { amount: ",
@@ -226,7 +229,7 @@ const CONFIGS: Record<string, EmptyConfig> = {
     ],
     stats: [
       { v: "∞", l: "env overrides", d: "dev · staging · prod · per-region" },
-      { v: "0ms", l: "restart to apply", d: "changes stream in over web-socket" },
+      { v: "0", l: "restarts to apply", d: "polled at your plan interval" },
       { v: "TS", l: "type-checked schemas", d: "caught at build time, not 3am" },
     ],
     cta: "Define your first config",

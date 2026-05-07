@@ -21,13 +21,13 @@ export async function updateBugStatusAction(formData: FormData) {
   const identity = await identityOrThrow();
   await updateBug(identity, id, { status });
   revalidatePath(`/dashboard/bugs/${id}`);
-  revalidatePath(`/dashboard/bugs`);
+  revalidatePath(`/dashboard/feedback`);
 }
 
 export async function deleteBugAction(formData: FormData) {
   const id = String(formData.get("id"));
   const identity = await identityOrThrow();
   await deleteBug(identity, id);
-  revalidatePath(`/dashboard/bugs`);
-  redirect("/dashboard/bugs");
+  revalidatePath(`/dashboard/feedback`);
+  redirect("/dashboard/feedback?tab=bugs");
 }

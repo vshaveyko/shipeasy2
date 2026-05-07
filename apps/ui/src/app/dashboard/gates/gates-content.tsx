@@ -62,7 +62,7 @@ export function GatesContent() {
       <div className="space-y-6">
         <PageHeader
           title="Gates"
-          description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 10ms."
+          description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
           actions={
             <LinkButton size="sm" href="/dashboard/gates/new">
               New gate
@@ -79,7 +79,7 @@ export function GatesContent() {
       <PageHeader
         kicker={`${total} gate${total === 1 ? "" : "s"} · ${enabled} enabled · ${paused} paused`}
         title="Gates"
-        description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 10ms."
+        description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
         actions={
           <LinkButton size="sm" href="/dashboard/gates/new">
             New gate

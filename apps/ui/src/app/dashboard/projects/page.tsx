@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { Plus, Search } from "lucide-react";
 import { auth } from "@/auth";
+
+export const metadata: Metadata = { title: "Projects" };
 import { listProjectsByEmail, findProjectById, getEffectivePlan } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
 import { listGates } from "@/lib/handlers/gates";
@@ -177,7 +180,9 @@ export default async function ProjectsPage() {
               </div>
 
               <footer className="flex w-full items-center gap-2 text-[12px] text-[var(--se-fg-3)]">
-                <span className="t-mono-xs dim-2">id · {p.id.slice(0, 10)}…</span>
+                <span className="t-mono-xs dim-2" title={p.id}>
+                  ID: {p.id.slice(0, 8)}
+                </span>
                 <span className="ml-auto text-[12px] text-[var(--se-fg-3)] transition-colors group-hover:text-foreground">
                   Configure modules →
                 </span>

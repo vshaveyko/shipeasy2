@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
+
 import { auth } from "@/auth";
 import { getProject } from "@/lib/handlers/projects";
 import { getEffectivePlan } from "@shipeasy/core";
+
+export const metadata: Metadata = { title: "Billing" };
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,13 +26,14 @@ function TrialBadge({ trialEndsAt }: { trialEndsAt: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, isPaid }: { status: string; isPaid: boolean }) {
   if (status === "active") return <Badge className="bg-green-500/15 text-green-700">Active</Badge>;
   if (status === "trialing") return <Badge variant="secondary">Trial</Badge>;
   if (status === "past_due") return <Badge variant="destructive">Payment overdue</Badge>;
   if (status === "canceled") return <Badge variant="outline">Canceled</Badge>;
   if (status === "incomplete") return <Badge variant="destructive">Incomplete</Badge>;
-  // "none" or any unrecognised value (e.g. stale DB default) → Free
+  // "none" with a paid effective plan → manually granted (no Stripe sub)
+  if (isPaid) return <Badge className="bg-green-500/15 text-green-700">Active</Badge>;
   return <Badge variant="outline">Free</Badge>;
 }
 
@@ -72,7 +77,7 @@ export default async function BillingPage() {
               {project?.trialEndsAt && subscriptionStatus === "trialing" && (
                 <TrialBadge trialEndsAt={project.trialEndsAt} />
               )}
-              <StatusBadge status={subscriptionStatus} />
+              <StatusBadge status={subscriptionStatus} isPaid={isPaid} />
             </div>
           </div>
         </CardHeader>
@@ -81,7 +86,10 @@ export default async function BillingPage() {
             <Stat label="Plan" value={effectivePlan?.display_name ?? "—"} />
             <Stat label="Gates" value={fmtLimit(effectivePlan?.max_flags ?? 0)} />
             <Stat label="Configs" value={fmtLimit(effectivePlan?.max_configs ?? 0)} />
-            <Stat label="Running experiments" value={fmtLimit(effectivePlan?.max_experiments_running ?? 0)} />
+            <Stat
+              label="Running experiments"
+              value={fmtLimit(effectivePlan?.max_experiments_running ?? 0)}
+            />
           </div>
 
           {project?.currentPeriodEnd && isPaid && (
@@ -99,6 +107,11 @@ export default async function BillingPage() {
                   Manage billing
                 </Button>
               </form>
+            ) : isPaid ? (
+              <p className="text-xs text-muted-foreground">
+                You’re on the {effectivePlan?.display_name} plan. Contact support to change billing
+                details.
+              </p>
             ) : (
               <>
                 <form action={startCheckoutAction}>
@@ -124,19 +137,29 @@ export default async function BillingPage() {
         <Card>
           <CardHeader className="border-b pb-4">
             <CardTitle>Plan limits</CardTitle>
-            <CardDescription>Hard limits for the {effectivePlan.display_name} plan.</CardDescription>
+            <CardDescription>
+              Hard limits for the {effectivePlan.display_name} plan.
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
               <Stat label="Gates" value={fmtLimit(effectivePlan.max_flags)} />
               <Stat label="Configs" value={fmtLimit(effectivePlan.max_configs)} />
-              <Stat label="Running experiments" value={fmtLimit(effectivePlan.max_experiments_running)} />
+              <Stat
+                label="Running experiments"
+                value={fmtLimit(effectivePlan.max_experiments_running)}
+              />
               <Stat label="Gatekeepers" value={fmtLimit(effectivePlan.max_universes)} />
               <Stat label="i18n keys" value={fmtLimit(effectivePlan.max_i18n_keys)} />
               <Stat label="i18n profiles" value={fmtLimit(effectivePlan.max_i18n_profiles)} />
               <Stat label="SDK keys" value={fmtLimit(effectivePlan.max_sdk_keys)} />
               <Stat label="Team members" value={fmtLimit(effectivePlan.max_team_members)} />
-              <Stat label="Poll interval" value={`${effectivePlan.poll_interval_seconds}s`} />
+            </div>
+            <div className="mt-4 border-t pt-4">
+              <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+                Refresh cadence
+              </div>
+              <Stat label="SDK poll interval" value={`${effectivePlan.poll_interval_seconds}s`} />
             </div>
           </CardContent>
         </Card>

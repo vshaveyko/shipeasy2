@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
+
 import { auth, signOut } from "@/auth";
 import { getProject } from "@/lib/handlers/projects";
 import { getEffectivePlan } from "@shipeasy/core";
+
+export const metadata: Metadata = { title: "Settings" };
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -52,13 +56,16 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">
-              {plan
-                ? `${plan.max_flags === -1 ? "∞" : plan.max_flags} gates · ${plan.max_configs === -1 ? "∞" : plan.max_configs} configs · ${plan.max_experiments_running === -1 ? "∞" : plan.max_experiments_running} running experiments · ${plan.max_sdk_keys === -1 ? "∞" : plan.max_sdk_keys} keys`
-                : "—"}
-            </div>
+            <div className="text-sm font-medium">{plan?.display_name ?? "—"}</div>
             <Badge variant="secondary">Current</Badge>
           </div>
+          <p className="text-xs text-muted-foreground">
+            See{" "}
+            <a href="/dashboard/billing" className="underline">
+              Billing
+            </a>{" "}
+            for the full list of limits.
+          </p>
           {plan && (
             <div className="grid gap-2 text-sm">
               <div className="text-xs text-muted-foreground">

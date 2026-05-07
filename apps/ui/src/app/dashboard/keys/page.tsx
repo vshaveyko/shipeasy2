@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { KeyRound, Zap } from "lucide-react";
 import { auth } from "@/auth";
 import { listKeys } from "@/lib/handlers/keys";
+
+export const metadata: Metadata = { title: "SDK Keys" };
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -36,11 +39,12 @@ const KEY_TYPES = [
 export default async function KeysPage({
   searchParams,
 }: {
-  searchParams: Promise<{ new_key?: string }>;
+  searchParams: Promise<{ new_key?: string; show?: string }>;
 }) {
   const session = await auth();
   const projectId = session?.user?.project_id;
-  const { new_key } = await searchParams;
+  const { new_key, show } = await searchParams;
+  const showRevoked = show === "revoked";
 
   let keys: Awaited<ReturnType<typeof listKeys>> = [];
   if (projectId) {
@@ -54,6 +58,15 @@ export default async function KeysPage({
       // DB not available in dev without wrangler
     }
   }
+
+  const activeKeys = keys.filter((k) => !k.revoked_at);
+  const revokedKeys = keys.filter((k) => k.revoked_at);
+  const visibleKeys = (showRevoked ? [...activeKeys, ...revokedKeys] : activeKeys).sort((a, b) => {
+    const aRevoked = a.revoked_at ? 1 : 0;
+    const bRevoked = b.revoked_at ? 1 : 0;
+    if (aRevoked !== bRevoked) return aRevoked - bRevoked;
+    return Date.parse(b.created_at ?? "") - Date.parse(a.created_at ?? "");
+  });
 
   if (keys.length === 0 && !new_key) {
     return (
@@ -135,24 +148,69 @@ export default async function KeysPage({
         />
       ) : (
         <div className="rounded-lg border">
-          {keys.map((key) => (
-            <div
-              key={key.id}
-              className="flex items-center justify-between border-b px-4 py-3 last:border-0"
-            >
-              <div className="flex items-center gap-3">
-                <Badge variant="secondary">{key.type}</Badge>
-                <span className="font-mono text-xs text-muted-foreground">{key.id}</span>
-                {key.revoked_at && <Badge variant="destructive">revoked</Badge>}
-                {key.expires_at && !key.revoked_at && (
-                  <span className="text-xs text-muted-foreground">
-                    Expires {new Date(key.expires_at).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-              {!key.revoked_at && <RevokeKeyButton id={key.id} />}
+          <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+            <div>
+              {activeKeys.length} active
+              {revokedKeys.length > 0 ? ` · ${revokedKeys.length} revoked` : ""}
             </div>
-          ))}
+            {revokedKeys.length > 0 && (
+              <a
+                href={showRevoked ? "/dashboard/keys" : "/dashboard/keys?show=revoked"}
+                className="font-medium hover:text-foreground hover:underline"
+              >
+                {showRevoked ? "Hide revoked" : "Show revoked"}
+              </a>
+            )}
+          </div>
+          <div
+            className="grid gap-3 border-b bg-muted/20 px-4 py-2 text-[10px] uppercase tracking-wide text-muted-foreground"
+            style={{ gridTemplateColumns: "70px minmax(0,1fr) 130px 130px 80px" }}
+          >
+            <span>Type</span>
+            <span>Key ID</span>
+            <span>Created</span>
+            <span>Expires</span>
+            <span />
+          </div>
+          {visibleKeys.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+              No active keys. Use “Create key” above or{" "}
+              <a className="underline" href="/dashboard/keys?show=revoked">
+                show revoked
+              </a>
+              .
+            </div>
+          ) : (
+            visibleKeys.map((key) => (
+              <div
+                key={key.id}
+                className={`grid items-center gap-3 border-b px-4 py-3 last:border-0 ${
+                  key.revoked_at ? "opacity-60" : ""
+                }`}
+                style={{ gridTemplateColumns: "70px minmax(0,1fr) 130px 130px 80px" }}
+              >
+                <Badge variant="secondary" className="w-fit">
+                  {key.type}
+                </Badge>
+                <span className="truncate font-mono text-xs text-muted-foreground">{key.id}</span>
+                <span className="text-xs text-muted-foreground">
+                  {key.created_at ? new Date(key.created_at).toLocaleDateString() : "—"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {key.revoked_at ? (
+                    <Badge variant="destructive">revoked</Badge>
+                  ) : key.expires_at ? (
+                    new Date(key.expires_at).toLocaleDateString()
+                  ) : (
+                    "Never"
+                  )}
+                </span>
+                <span className="flex justify-end">
+                  {!key.revoked_at && <RevokeKeyButton id={key.id} />}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       )}
 

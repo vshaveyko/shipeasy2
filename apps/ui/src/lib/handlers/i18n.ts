@@ -130,9 +130,15 @@ export async function listKeys(
 
   const projectFilter = eq(labelKeys.projectId, identity.projectId);
   const profileFilter = profileId ? eq(labelKeys.profileId, profileId) : undefined;
-  const prefixFilter = prefix
-    ? or(eq(labelKeys.key, prefix), like(labelKeys.key, `${prefix}.%`))
-    : undefined;
+  // The sections query buckets keys whose first dot is at position 1 (i.e. the
+  // key starts with ".") under prefix === "". Mirror that here so clicking the
+  // empty-prefix section actually loads its keys.
+  const prefixFilter =
+    prefix === undefined
+      ? undefined
+      : prefix === ""
+        ? like(labelKeys.key, ".%")
+        : or(eq(labelKeys.key, prefix), like(labelKeys.key, `${prefix}.%`));
   const searchFilter = search
     ? or(like(labelKeys.key, `%${search}%`), like(labelKeys.value, `%${search}%`))
     : undefined;

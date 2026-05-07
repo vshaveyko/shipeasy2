@@ -14,7 +14,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "ShipEasy",
+  title: { default: "ShipEasy", template: "%s · ShipEasy" },
   description: "Ship faster with the tools you need",
 };
 

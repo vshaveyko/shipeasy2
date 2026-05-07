@@ -6,7 +6,11 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const profileId = url.searchParams.get("profile_id") ?? undefined;
-  const prefix = url.searchParams.get("prefix") ?? undefined;
+  // Distinguish "?prefix=" (empty bucket — keys whose first segment is "")
+  // from "no prefix param at all" (return everything).
+  const prefix = url.searchParams.has("prefix")
+    ? (url.searchParams.get("prefix") ?? "")
+    : undefined;
   const search = url.searchParams.get("q") ?? undefined;
   const limit = Number(url.searchParams.get("limit") ?? 200);
   const offset = Number(url.searchParams.get("offset") ?? 0);

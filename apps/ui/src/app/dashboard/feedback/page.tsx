@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Bug, Lightbulb } from "lucide-react";
 
@@ -6,6 +7,8 @@ import { listBugs } from "@/lib/handlers/bugs";
 import { listFeatureRequests } from "@/lib/handlers/feature-requests";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { cn } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Feedback" };
 
 function timeAgo(iso: string): string {
   const t = Date.parse(iso);

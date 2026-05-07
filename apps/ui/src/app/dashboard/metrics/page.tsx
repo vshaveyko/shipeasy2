@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
+
 import { MetricsPageRoot } from "./metrics-page";
+
+export const metadata: Metadata = { title: "Metrics" };
 
 type SearchParams = Promise<{ demo?: string; setup?: string }>;
 

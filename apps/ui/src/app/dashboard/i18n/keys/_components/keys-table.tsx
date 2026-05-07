@@ -767,17 +767,30 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
     let raf = 0;
     const update = () => {
       const scrollTop = el.scrollTop;
+      // At the very top, every section header is in view — don't double-render
+      // one of them as a sticky pin.
+      if (scrollTop <= 0 || sectionFolderIndices.length === 0) {
+        setPinnedIdx(null);
+        return;
+      }
+      // measurementsCache is the public accessor (getMeasurements is private
+      // and TS refuses an `as unknown` cast because the class shape leaks
+      // into the type system). It's the same array of VirtualItem records.
+      const measurements = rowVirtualizer.measurementsCache;
+      const startFor = (idx: number): number => measurements?.[idx]?.start ?? idx * 36;
       let found: number | null = null;
-      for (const idx of sectionFolderIndices) {
-        // getOffsetForIndex returns [offset, align]; fall back to estimate.
-        const offset =
-          (
-            rowVirtualizer as unknown as {
-              getOffsetForIndex?: (i: number) => [number, string];
-            }
-          ).getOffsetForIndex?.(idx)?.[0] ?? idx * 36;
-        if (offset <= scrollTop + 0.5) found = idx;
-        else break;
+      for (let i = 0; i < sectionFolderIndices.length; i++) {
+        const idx = sectionFolderIndices[i];
+        const start = startFor(idx);
+        const next = sectionFolderIndices[i + 1];
+        const nextStart = next !== undefined ? startFor(next) : Infinity;
+        // Pin a section once its own header has scrolled above the viewport
+        // top *and* its content still extends past it. Otherwise the next
+        // section's header will take over.
+        if (start < scrollTop && nextStart > scrollTop) {
+          found = idx;
+          break;
+        }
       }
       setPinnedIdx(found);
     };
@@ -879,7 +892,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           style={{ paddingLeft: Math.max(0, depth - 1) * 16 }}
         >
           {isSection ? (
-            <span className="t-caps dim-3 mr-1.5 shrink-0 tracking-[0.08em]">{segment}</span>
+            <span className="t-caps dim-3 mr-1.5 shrink-0 tracking-[0.08em]">
+              {segment || "(no namespace)"}
+            </span>
           ) : (
             <span className="t-mono shrink-0 truncate text-[12px] text-foreground">{segment}</span>
           )}
@@ -1280,7 +1295,17 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         </div>
       ) : sections.length === 0 ? (
         <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] py-12 text-center text-sm text-[var(--se-fg-3)]">
-          No keys for this profile.
+          <div>No keys are published to this profile yet.</div>
+          <div className="mx-auto mt-1.5 max-w-[44ch] text-xs text-[var(--se-fg-4)]">
+            Declared keys live on the project. Open a draft to translate them and merge into the
+            live manifest.
+          </div>
+          <a
+            href="/dashboard/i18n/drafts/new"
+            className="mt-3 inline-block text-xs text-[var(--se-accent)] hover:underline"
+          >
+            New draft →
+          </a>
         </div>
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] text-sm">

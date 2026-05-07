@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
+
 import { auth } from "@/auth";
 import { listConfigs } from "@/lib/handlers/configs";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = { title: "Configs" };
 
 export default async function ConfigValuesEmptyPage() {
   const session = await auth();
