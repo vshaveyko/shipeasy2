@@ -34,33 +34,42 @@ export interface DevtoolsAuthResult {
 }
 
 /**
- * Hash an SDK key and look up which project it belongs to. Returns null when
- * the key isn't recognized. Used as proof that the requesting page is a real
- * ShipEasy customer page (not just a random origin claiming to be one).
+ * Resolve a customer SDK client key (e.g. `sdk_client_…`) to the project it
+ * belongs to. Returns the project only if the signed-in user owns it —
+ * otherwise we'd let an unrelated user mint an admin token for a project
+ * just because they happened to load a page that exposes that project's
+ * client key.
  */
-async function projectIdForSdkKey(sdkKey: string): Promise<string | null> {
+async function resolveProjectFromSdkKey(
+  sdkKey: string,
+  ownerEmail: string,
+): Promise<ProjectOption | null> {
   const env = await getEnvAsync();
   const hash = await sha256(sdkKey);
   const k = await findSdkKeyByHash(env.DB, hash);
-  return k?.projectId ?? null;
+  if (!k) return null;
+  const db = getDb(env.DB);
+  const [project] = await db
+    .select()
+    .from(projects)
+    .where(and(eq(projects.id, k.projectId), eq(projects.ownerEmail, ownerEmail)))
+    .limit(1);
+  if (!project) return null;
+  return { id: project.id, name: project.name, plan: project.plan, domain: project.domain ?? null };
 }
 
 /**
  * List projects the signed-in user can authorize DevTools for.
  *
- * Two modes:
+ * When the page passes its SDK client key (read from `__SE_BOOTSTRAP.apiKey`),
+ * we return *only* the project that key belongs to — the SDK key is the
+ * project identity, so devtools can only authorize against the project the
+ * page is actually wired to. Lets a dev on localhost authorize their real
+ * production project without first allow-listing localhost in dashboard
+ * settings.
  *
- *   1. SDK-key mode (page passes `__SE_BOOTSTRAP.apiKey`). The key must
- *      resolve to *some* real project (proof the page is a genuine ShipEasy
- *      customer page). When it does, we return *every* project the user owns
- *      — not just the one the key resolves to — so a developer with multiple
- *      projects can pick which one to authorize devtools for from localhost.
- *      The project the key resolves to is hoisted to the top so the
- *      single-list fast path preselects it.
- *
- *   2. Origin-only mode (no key). Falls back to the legacy domain-allowlist
- *      filter — only projects whose configured `domain` matches the request
- *      origin are listable. Used when the page hasn't installed the SDK yet.
+ * Without a key, we fall back to the legacy domain-match flow (allowlist the
+ * origin under dashboard settings).
  */
 export async function listDevtoolsProjectsAction(
   origin: string,
@@ -77,35 +86,15 @@ export async function listDevtoolsProjectsAction(
     throw new Error("Invalid origin");
   }
 
-  const env = await getEnvAsync();
-  const db = getDb(env.DB);
-  const owned = await db.select().from(projects).where(eq(projects.ownerEmail, email));
-
   if (sdkKey) {
-    // Validate the key resolves to *some* project so we know the page isn't
-    // just claiming to be a ShipEasy customer page. The key doesn't have to
-    // belong to one of the user's own projects — that's fine, the user might
-    // be evaluating a project they don't yet own. The list still only
-    // contains projects the user actually owns (filtered upstream).
-    const matchedProjectId = await projectIdForSdkKey(sdkKey);
-    if (!matchedProjectId) return [];
-
-    const list = owned.map((r) => ({
-      id: r.id,
-      name: r.name,
-      plan: r.plan,
-      domain: r.domain ?? null,
-    }));
-    // Preselect the SDK-key-matched project by hoisting it to the top.
-    list.sort((a, b) => {
-      if (a.id === matchedProjectId) return -1;
-      if (b.id === matchedProjectId) return 1;
-      return a.name.localeCompare(b.name);
-    });
-    return list;
+    const p = await resolveProjectFromSdkKey(sdkKey, email);
+    return p ? [p] : [];
   }
 
-  return owned
+  const env = await getEnvAsync();
+  const db = getDb(env.DB);
+  const rows = await db.select().from(projects).where(eq(projects.ownerEmail, email));
+  return rows
     .filter((r) => originMatchesDomain(host, r.domain ?? null))
     .map((r) => ({ id: r.id, name: r.name, plan: r.plan, domain: r.domain ?? null }));
 }
@@ -142,16 +131,17 @@ export async function approveDevtoolsAuthAction(
   if (!project) throw new Error("Project not found or you do not have access to it");
 
   if (sdkKey) {
-    // SDK-key flow: we only require that the key resolves to *some* real
-    // project — that's our proof the requesting page is a genuine ShipEasy
-    // customer page (not just any origin claiming to be one). The chosen
-    // project just needs to be owned by the user (already enforced above);
-    // it doesn't have to be the same project the key resolves to. This lets
-    // a dev with multiple projects authorize whichever one they want, even
-    // when the page only embeds one project's SDK key.
+    // Defense in depth: the SDK key the popup received must hash to a key
+    // row that belongs to the chosen project. The key *is* the project
+    // identity in this flow — devtools can only authorize against the
+    // project the page is actually wired to.
     const hash = await sha256(sdkKey);
     const k = await findSdkKeyByHash(env.DB, hash);
-    if (!k) throw new Error("Invalid SDK key");
+    if (!k || k.projectId !== project.id) {
+      throw new Error("SDK key does not match the selected project");
+    }
+    // SDK-key flow trusts the key as proof-of-project — skip the
+    // domain-allowlist check that the origin-only flow uses.
   } else if (!originMatchesDomain(host, project.domain ?? null)) {
     throw new Error(
       `Project "${project.name}" is not configured for ${host}. Add this domain in dashboard settings.`,
