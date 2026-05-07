@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Languages,
   Layers,
-  Lightbulb,
   Bug,
   Radio,
   Settings,
@@ -181,18 +180,23 @@ export const PRODUCTS: Product[] = [
     name: "Feedback",
     tagline: "Bug reports & feature requests from the in-page nub",
     icon: Bug,
-    basePath: "/dashboard/bugs",
-    extraPaths: ["/dashboard/feature-requests"],
-    rootHref: "/dashboard/bugs",
+    basePath: "/dashboard/feedback",
+    extraPaths: ["/dashboard/bugs", "/dashboard/feature-requests"],
+    rootHref: "/dashboard/feedback",
     nav: [
       {
         title: "Inbox",
         items: [
-          { href: "/dashboard/bugs", label: "Bugs", icon: Bug },
           {
-            href: "/dashboard/feature-requests",
-            label: "Feature requests",
-            icon: Lightbulb,
+            href: "/dashboard/feedback",
+            label: "Bugs & requests",
+            icon: Bug,
+            exact: true,
+          },
+          {
+            href: "/dashboard/feedback/connectors",
+            label: "Connectors",
+            icon: Radio,
           },
         ],
       },

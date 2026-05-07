@@ -33,8 +33,10 @@ test.describe("Bugs dashboard", () => {
     });
     bugId = created.id;
 
+    // Old route still works — it redirects into the combined feedback page.
     await page.goto("/dashboard/bugs");
-    await expect(page.getByRole("heading", { name: /^bug reports$/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/feedback/);
+    await expect(page.getByRole("heading", { name: /^feedback$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   });
 
@@ -73,8 +75,8 @@ test.describe("Feature requests dashboard", () => {
     });
     id = created.id;
 
-    await page.goto("/dashboard/feature-requests");
-    await expect(page.getByRole("heading", { name: /^feature requests$/i })).toBeVisible();
+    await page.goto("/dashboard/feedback?tab=requests");
+    await expect(page.getByRole("heading", { name: /^feedback$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   });
 

@@ -44,7 +44,7 @@ const MAIN_SECTIONS: NavSection[] = [
       { href: "/dashboard/experiments", label: "Experiments", icon: FlaskConical },
       { href: "/dashboard/metrics", label: "Metrics", icon: Activity },
       { href: "/dashboard/i18n", label: "String Manager", icon: Languages },
-      { href: "/dashboard/bugs", label: "Feedback", icon: Bug },
+      { href: "/dashboard/feedback", label: "Feedback", icon: Bug },
     ],
   },
   {

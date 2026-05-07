@@ -714,6 +714,38 @@ export const reportAttachments = sqliteTable(
   }),
 );
 
+// ── Connectors (generic lifecycle hooks: e.g., bug.created -> Google Sheets) ─
+
+export const CONNECTOR_PROVIDERS = ["google_sheets"] as const;
+export type ConnectorProvider = (typeof CONNECTOR_PROVIDERS)[number];
+
+export const CONNECTOR_EVENTS = ["bug.created", "feature_request.created"] as const;
+export type ConnectorEvent = (typeof CONNECTOR_EVENTS)[number];
+
+export const connectors = sqliteTable(
+  "connectors",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: CONNECTOR_PROVIDERS }).notNull(),
+    name: text("name").notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    events: text("events", { mode: "json" }).$type<string[]>().notNull(),
+    config: text("config", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    // AES-GCM encrypted JSON: { refresh_token, access_token, expires_at, scope }
+    credentialsCipher: text("credentials_cipher"),
+    // Display label (e.g., the OAuth account email)
+    accountLabel: text("account_label"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    projectIdx: index("connectors_project").on(t.projectId, t.provider),
+  }),
+);
+
 export const i18nUsageDaily = sqliteTable(
   "i18n_usage_daily",
   {

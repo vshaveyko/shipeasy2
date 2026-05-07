@@ -17,6 +17,14 @@ declare global {
     STRIPE_PRICE_PER_EXPERIMENT?: string;
     STRIPE_PRICE_PER_GATE?: string;
     STRIPE_PRICE_PER_CONFIG?: string;
+    // Connector OAuth (Google) — set via `wrangler secret put` in prod.
+    GOOGLE_CONNECTOR_CLIENT_ID?: string;
+    GOOGLE_CONNECTOR_CLIENT_SECRET?: string;
+    // Symmetric key used to encrypt connector credentials at rest. Required
+    // to enable connector OAuth flows; treat as a long random string.
+    CONNECTOR_ENCRYPTION_KEY?: string;
+    // Public origin used to build OAuth redirect URIs (e.g., https://app.shipeasy.ai).
+    APP_URL?: string;
   }
 }
 

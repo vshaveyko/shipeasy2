@@ -32,6 +32,7 @@ import {
   bugReports,
   featureRequests,
   reportAttachments,
+  connectors,
 } from "./schema";
 
 export type ScopedTable =
@@ -59,7 +60,8 @@ export type ScopedTable =
   | typeof projectMembers
   | typeof bugReports
   | typeof featureRequests
-  | typeof reportAttachments;
+  | typeof reportAttachments
+  | typeof connectors;
 
 export type ScopedDb = ReturnType<typeof scopedDb>;
 

@@ -1,9 +1,12 @@
+import { after } from "next/server";
 import { eq, desc, and } from "drizzle-orm";
 import { ApiError } from "@shipeasy/core";
 import { bugReports, reportAttachments } from "@shipeasy/core/db/schema";
 import { bugCreateSchema, bugUpdateSchema } from "@shipeasy/core/schemas/feedback";
 import { scopedDb, scopedDbSA } from "../db";
 import { writeAudit } from "../audit";
+import { dispatchProjectEvent } from "../connector-dispatch";
+import { processBugReport } from "../ai/process-report";
 import type { AdminIdentity } from "../admin-auth";
 
 export async function listBugs(identity: AdminIdentity) {
@@ -36,25 +39,58 @@ export async function getBug(identity: AdminIdentity, id: string) {
 
 export async function createBug(identity: AdminIdentity, input: unknown) {
   const parsed = bugCreateSchema.parse(input);
+  // Run inputs through the AI processor before persisting so we store the
+  // improved report and can attach dedupe metadata in `context`.
+  const processed = await processBugReport(parsed, { projectId: identity.projectId });
+  const improved = processed.improved;
+
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const s = await scopedDbSA(identity.projectId);
+  const aiContext = {
+    ...(improved.context ?? {}),
+    ai: {
+      duplicateOf: processed.duplicateOf,
+      similar: processed.similar,
+      notes: processed.notes,
+    },
+  };
   await s.insert(bugReports).values({
     id,
-    title: parsed.title,
-    stepsToReproduce: parsed.stepsToReproduce ?? "",
-    actualResult: parsed.actualResult ?? "",
-    expectedResult: parsed.expectedResult ?? "",
+    title: improved.title,
+    stepsToReproduce: improved.stepsToReproduce ?? "",
+    actualResult: improved.actualResult ?? "",
+    expectedResult: improved.expectedResult ?? "",
     status: "open",
-    reporterEmail: parsed.reporterEmail ?? identity.actorEmail ?? null,
-    pageUrl: parsed.pageUrl ?? null,
-    userAgent: parsed.userAgent ?? null,
-    viewport: parsed.viewport ?? null,
-    context: parsed.context ?? null,
+    reporterEmail: improved.reporterEmail ?? identity.actorEmail ?? null,
+    pageUrl: improved.pageUrl ?? null,
+    userAgent: improved.userAgent ?? null,
+    viewport: improved.viewport ?? null,
+    context: aiContext,
     createdAt: now,
     updatedAt: now,
   });
-  await writeAudit(identity, "bug.create", "bug_report", id, { title: parsed.title });
+  await writeAudit(identity, "bug.create", "bug_report", id, { title: improved.title });
+
+  // Fire connectors after the response is sent.
+  after(() =>
+    dispatchProjectEvent(identity.projectId, "bug.created", {
+      type: "bug.created",
+      id,
+      projectId: identity.projectId,
+      title: improved.title,
+      stepsToReproduce: improved.stepsToReproduce ?? "",
+      actualResult: improved.actualResult ?? "",
+      expectedResult: improved.expectedResult ?? "",
+      status: "open",
+      reporterEmail: improved.reporterEmail ?? identity.actorEmail ?? null,
+      pageUrl: improved.pageUrl ?? null,
+      userAgent: improved.userAgent ?? null,
+      viewport: improved.viewport ?? null,
+      context: aiContext,
+      createdAt: now,
+    }),
+  );
   return { id };
 }
 
