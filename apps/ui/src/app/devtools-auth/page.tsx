@@ -7,7 +7,7 @@ import { BrandMark } from "@/components/dashboard/brand-mark";
 import { ApproveButton, SwitchAccountLink } from "./approve-client";
 
 interface Props {
-  searchParams: Promise<{ origin?: string }>;
+  searchParams: Promise<{ origin?: string; sdkKey?: string }>;
 }
 
 /**
@@ -23,7 +23,7 @@ interface Props {
  * No worker dependency — entirely self-contained in the admin app.
  */
 export default async function DevtoolsAuthPage({ searchParams }: Props) {
-  const { origin } = await searchParams;
+  const { origin, sdkKey } = await searchParams;
 
   if (!origin) {
     return (
@@ -51,7 +51,9 @@ export default async function DevtoolsAuthPage({ searchParams }: Props) {
   const session = await auth();
   const user = session?.user as { email?: string; project_id?: string } | undefined;
   if (!user?.email || !user?.project_id) {
-    const callbackUrl = `/devtools-auth?origin=${encodeURIComponent(origin)}`;
+    const callbackParams = new URLSearchParams({ origin });
+    if (sdkKey) callbackParams.set("sdkKey", sdkKey);
+    const callbackUrl = `/devtools-auth?${callbackParams.toString()}`;
     redirect(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
@@ -83,7 +85,7 @@ export default async function DevtoolsAuthPage({ searchParams }: Props) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 px-4 pb-4 sm:space-y-3 sm:px-6 sm:pb-6">
-          <ApproveButton origin={origin} email={user.email} />
+          <ApproveButton origin={origin} email={user.email} sdkKey={sdkKey} />
           <p className="text-muted-foreground text-center text-[11px] sm:text-xs">
             Not you? <SwitchAccountLink origin={origin} label="Sign in with a different account" />
           </p>

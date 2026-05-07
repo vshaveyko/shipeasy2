@@ -13,6 +13,10 @@ interface Props {
   /** Origin of the opener window; restricts postMessage target. */
   origin: string;
   email: string;
+  /** Customer SDK client key from window.__SE_BOOTSTRAP.apiKey, if any.
+   *  When present, the project is resolved directly from the key — bypassing
+   *  the domain-allowlist requirement so localhost dev can authorize prod. */
+  sdkKey?: string;
 }
 
 /**
@@ -38,14 +42,14 @@ export function SwitchAccountLink({ origin, label }: { origin: string; label: st
 
 type Phase = "loading" | "ready" | "pending" | "success" | "error";
 
-export function ApproveButton({ origin, email }: Props) {
+export function ApproveButton({ origin, email, sdkKey }: Props) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
   const [projectList, setProjectList] = useState<ProjectOption[]>([]);
   const [selected, setSelected] = useState<string>("");
 
   useEffect(() => {
-    listDevtoolsProjectsAction(origin)
+    listDevtoolsProjectsAction(origin, sdkKey)
       .then((list) => {
         setProjectList(list);
         if (list.length === 1) setSelected(list[0].id);
@@ -55,14 +59,14 @@ export function ApproveButton({ origin, email }: Props) {
         setPhase("error");
         setError(e instanceof Error ? e.message : String(e));
       });
-  }, [origin]);
+  }, [origin, sdkKey]);
 
   async function onApprove() {
     if (!selected) return;
     setPhase("pending");
     setError(null);
     try {
-      const result = await approveDevtoolsAuthAction(selected, origin);
+      const result = await approveDevtoolsAuthAction(selected, origin, sdkKey);
       if (window.opener) {
         window.opener.postMessage(
           {
@@ -101,6 +105,17 @@ export function ApproveButton({ origin, email }: Props) {
       host = new URL(origin).host;
     } catch {
       /* keep raw origin */
+    }
+    if (sdkKey) {
+      // The page exposed an SDK key but it doesn't resolve to a project this
+      // user owns. Most often: signed in with a different account.
+      return (
+        <p className="text-muted-foreground text-center text-sm">
+          The SDK key on <code className="font-mono text-xs">{host}</code> belongs to a project that{" "}
+          <strong>{email}</strong> doesn&apos;t own.{" "}
+          <SwitchAccountLink origin={origin} label="Sign in with the project owner" /> to continue.
+        </p>
+      );
     }
     return (
       <p className="text-muted-foreground text-center text-sm">
