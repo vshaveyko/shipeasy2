@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { auth } from "@/auth";
 import { validateSdkKey, ApiError, getDb } from "@shipeasy/core";
-import { projectMembers } from "@shipeasy/core/db/schema";
+import { projectMembers, projects } from "@shipeasy/core/db/schema";
 import { getEnvAsync } from "./env";
 
 export interface AdminIdentity {
@@ -35,6 +35,16 @@ async function resolveProjectOverride(
   }
   const env = await getEnvAsync();
   const db = getDb(env.DB);
+  // Project owners are implicitly admins — they don't need a project_members
+  // row. Without this, a user who upserts a new project (which doesn't
+  // auto-create a members row for the owner) gets locked out of acting on it
+  // via --project until they manually invite themselves.
+  const [ownedProject] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(eq(projects.id, target), eq(projects.ownerEmail, actorEmail)))
+    .limit(1);
+  if (ownedProject) return target;
   const [member] = await db
     .select()
     .from(projectMembers)
