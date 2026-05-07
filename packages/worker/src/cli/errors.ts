@@ -63,9 +63,12 @@ export async function handleCliError(c: CliErrorContext) {
 
   const argv = Array.isArray(body.argv) ? body.argv.join(" ") : "";
 
+  // AE accepts a single sampling index — pack everything else into blobs.
+  // Order matters: querying refers to columns positionally as blob1, blob2…
   c.env.CLI_ERRORS?.writeDataPoint({
-    indexes: [projectId, clamp(body.kind, MAX_INDEX)],
+    indexes: [projectId],
     blobs: [
+      clamp(body.kind, MAX_INDEX),
       clamp(body.command, MAX_INDEX),
       clamp(body.message, MAX_FIELD),
       clamp(argv, MAX_ARGV),
