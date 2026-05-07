@@ -29,11 +29,23 @@ interface TreeNode {
   children: TreeNode[];
 }
 
+// Resolution order: explicit override is honored upstream; otherwise pick a
+// profile named "en:prod" (the conventional production English profile), then
+// fall back to the first profile.
+function resolveDefaultProfileId(profiles: ProfileRecord[]): string | null {
+  if (profiles.length === 0) return null;
+  const enProd = profiles.find((p) => p.name === "en:prod");
+  if (enProd) return enProd.id;
+  return profiles[0]!.id;
+}
+
 function buildChunks(keys: KeyRecord[]): Map<string, TreeNode> {
   const chunks = new Map<string, TreeNode>();
   for (const k of keys) {
+    if (!k.key || !k.key.trim()) continue;
     const parts = k.key.split(".");
-    const head = parts.length > 1 ? parts[0] : "(root)";
+    const headRaw = parts.length > 1 ? parts[0] : "(root)";
+    const head = headRaw === "" ? "(root)" : headRaw;
     const rest = parts.length > 1 ? parts.slice(1) : parts;
     if (!chunks.has(head)) chunks.set(head, { segment: head, children: [] });
     let node = chunks.get(head)!;
@@ -880,12 +892,10 @@ export async function renderI18nPanel(
   let drafts: DraftRecord[];
   let keys: KeyRecord[];
   try {
-    const activeProfileId = getI18nProfileOverride() ?? undefined;
-    [profiles, drafts, keys] = await Promise.all([
-      api.profiles(),
-      api.drafts(),
-      api.keys(activeProfileId),
-    ]);
+    [profiles, drafts] = await Promise.all([api.profiles(), api.drafts()]);
+    const override = getI18nProfileOverride();
+    const resolved = override ?? resolveDefaultProfileId(profiles);
+    keys = await api.keys(resolved ?? undefined);
   } catch (err) {
     container.innerHTML = `<div class="err">Failed to load i18n data: ${String(err)}</div>`;
     return;
@@ -896,15 +906,24 @@ export async function renderI18nPanel(
   const chunkNames = Array.from(chunks.keys());
   const state = { activeChunk: chunkNames[0] ?? null };
 
+  function activeProfileName(): string {
+    const override = getI18nProfileOverride();
+    const id = override ?? resolveDefaultProfileId(profiles);
+    return profiles.find((p) => p.id === id)?.name ?? "(none)";
+  }
+
   function renderBody() {
+    const profileHeader = `<div class="i18n-profile-header" style="padding:6px 8px;border-bottom:1px solid var(--border,#222);font:500 12px system-ui;color:var(--muted,#9aa)">Profile: <span style="color:var(--fg,#ddd);font-weight:600">${escapeHtml(activeProfileName())}</span></div>`;
     if (chunkNames.length === 0) {
-      container.innerHTML = emptyState({
-        icon: "🌐",
-        title: "No translation keys yet",
-        message: "Add keys in the admin and group them by namespace (e.g. checkout.title).",
-        ctaLabel: "Create new key",
-        ctaHref: `${api.adminUrl}/dashboard/i18n/keys`,
-      });
+      container.innerHTML =
+        profileHeader +
+        emptyState({
+          icon: "🌐",
+          title: "No translation keys yet",
+          message: "Add keys in the admin and group them by namespace (e.g. checkout.title).",
+          ctaLabel: "Create new key",
+          ctaHref: `${api.adminUrl}/dashboard/i18n/keys`,
+        });
       return;
     }
     const tabs = chunkNames
@@ -917,6 +936,7 @@ export async function renderI18nPanel(
     const tree = active ? active.children.map((c) => renderTreeNode(c, 0)).join("") : "";
 
     container.innerHTML = `
+      ${profileHeader}
       <div class="tabs scroll" id="chunk-tabs">${tabs}</div>
       <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${tree}</div>`;
 
@@ -946,7 +966,7 @@ export async function renderI18nPanel(
   }
 
   function renderSubfoot() {
-    const activeProfile = getI18nProfileOverride() ?? "";
+    const activeProfile = getI18nProfileOverride() ?? resolveDefaultProfileId(profiles) ?? "";
     const activeDraft = getI18nDraftOverride() ?? "";
     // Scan first so t()/ShipEasyI18nString spans that are already in the DOM are counted.
     scanAndReplaceMarkers();
@@ -961,13 +981,12 @@ export async function renderI18nPanel(
       : labelCount === 0
         ? "Enable in-page label editing — reloads page with ?se_edit_labels=1 to scan all translation strings"
         : "Toggle in-page label editing (reloads page)";
-    const profileOpts = [
-      `<option value="">Default</option>`,
-      ...profiles.map(
+    const profileOpts = profiles
+      .map(
         (p) =>
           `<option value="${escapeHtml(p.id)}" ${activeProfile === p.id ? "selected" : ""}>${escapeHtml(p.name)}</option>`,
-      ),
-    ].join("");
+      )
+      .join("");
     const draftOpts = [
       `<option value="">No draft</option>`,
       ...drafts.map(
