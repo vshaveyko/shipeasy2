@@ -20,19 +20,24 @@ export async function createProjectAction(formData: FormData) {
   const env = await getEnvAsync();
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  await insertProject(env.DB, {
-    id,
-    name,
-    domain,
-    ownerEmail: email,
-    plan: "free",
-    status: "active",
-    subscriptionStatus: "none",
-    cancelAtPeriodEnd: 0,
-    billingInterval: "monthly",
-    createdAt: now,
-    updatedAt: now,
-  });
+  try {
+    await insertProject(env.DB, {
+      id,
+      name,
+      domain,
+      ownerEmail: email,
+      plan: "free",
+      status: "active",
+      subscriptionStatus: "none",
+      cancelAtPeriodEnd: 0,
+      billingInterval: "monthly",
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return fail(`Could not create project: ${msg}`);
+  }
 
   const cookieStore = await cookies();
   cookieStore.set("active_project_id", id, {

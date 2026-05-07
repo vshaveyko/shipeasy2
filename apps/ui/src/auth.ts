@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
-import { findProjectByEmail, insertProject } from "@shipeasy/core";
+import { findProjectByEmail, findProjectById, insertProject } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
 
 declare module "next-auth" {
@@ -74,9 +74,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token;
     },
-    session({ session, token }) {
+    async session({ session, token }) {
       if (token.id) session.user.id = token.id as string;
-      if (token.project_id) session.user.project_id = token.project_id;
+      // Honour the `active_project_id` cookie set by the dashboard's project
+      // switcher. Without this every page that reads session.user.project_id
+      // (40+ files) would stay pinned to the JWT's original project even after
+      // the user switched. Cookie is httpOnly + only set by server actions
+      // that already validate ownership, but we still revalidate against D1
+      // here in case the project was deleted or ownership changed.
+      let projectId = token.project_id;
+      try {
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        const cookieProjectId = cookieStore.get("active_project_id")?.value;
+        const email = session.user.email ?? null;
+        if (cookieProjectId && cookieProjectId !== projectId && email) {
+          const env = await getEnvAsync();
+          const proj = await findProjectById(env.DB, cookieProjectId);
+          if (proj && proj.ownerEmail === email) projectId = cookieProjectId;
+        }
+      } catch {
+        // Not in a request scope (e.g., during build) — fall back to JWT.
+      }
+      if (projectId) session.user.project_id = projectId;
       return session;
     },
   },
