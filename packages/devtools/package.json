@@ -27,6 +27,7 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@cfworker/json-schema": "^4.1.1",
     "@shipeasy/sdk": "^2.1.8"
   }
 }

@@ -1,5 +1,12 @@
 import type { DevtoolsApi } from "../api";
-import type { BugRecord, FeatureRequestRecord, FeatureRequestImportance } from "../types";
+import type {
+  AttachmentRecord,
+  BugDetail,
+  BugRecord,
+  FeatureRequestDetail,
+  FeatureRequestImportance,
+  FeatureRequestRecord,
+} from "../types";
 import { I } from "../icons";
 import { captureScreenshot, startRecording, type RecordingHandle } from "./capture";
 import { createAnnotator } from "./annotator";
@@ -65,6 +72,41 @@ export async function renderFeedbackPanel(
   // feature" we replace the list with the form inline (no modal).  `null`
   // = list view.  The Back / Cancel button on the form flips this back.
   let formMode: "bug" | "feature" | null = null;
+
+  // Caches for the expanded-row attachment preview. paint() rebuilds the DOM
+  // on every expand/collapse, so we keep state at panel scope so that:
+  //  - the bug/feature detail (incl. attachment list) is fetched once per id
+  //  - the attachment Blob is fetched once per attachment id, with the
+  //    resulting object URL reused for thumbnails AND lightbox preview.
+  // Object URLs intentionally aren't revoked here — they're cheap and the
+  // panel is short-lived; revoking on row collapse would re-download on
+  // re-expand which feels worse than a small leak.
+  const detailCache = new Map<string, Promise<BugDetail | FeatureRequestDetail>>();
+  const attachmentUrlCache = new Map<string, Promise<string>>();
+  function ensureBugDetail(id: string): Promise<BugDetail> {
+    let p = detailCache.get(id) as Promise<BugDetail> | undefined;
+    if (!p) {
+      p = api.bug(id);
+      detailCache.set(id, p);
+    }
+    return p;
+  }
+  function ensureFeatureDetail(id: string): Promise<FeatureRequestDetail> {
+    let p = detailCache.get(id) as Promise<FeatureRequestDetail> | undefined;
+    if (!p) {
+      p = api.featureRequest(id);
+      detailCache.set(id, p);
+    }
+    return p;
+  }
+  function ensureAttachmentUrl(attachmentId: string): Promise<string> {
+    let p = attachmentUrlCache.get(attachmentId);
+    if (!p) {
+      p = api.attachmentBlob(attachmentId).then((blob) => URL.createObjectURL(blob));
+      attachmentUrlCache.set(attachmentId, p);
+    }
+    return p;
+  }
 
   // Honour a one-shot pending form request from the rail hovercard. Clear it
   // so re-renders (e.g. after submit) drop back to the list view. The caller
@@ -207,6 +249,7 @@ export async function renderFeedbackPanel(
                 <span class="k">page</span><span>${escapeHtml(b.pageUrl ?? "—")}</span>
                 <span class="k">filed</span><span>${escapeHtml(timeAgo(b.createdAt))}${b.reporterEmail ? " · " + escapeHtml(b.reporterEmail) : ""}</span>
               </div>
+              <div class="se-attach-slot" data-attach-slot="${escapeHtml(b.id)}"></div>
               <div class="se-fb-actions">
                 ${
                   api.hideAdminLinks
@@ -226,6 +269,12 @@ export async function renderFeedbackPanel(
           paint();
         });
       });
+      // Lazy-load attachments for any rows that are currently expanded.
+      for (const id of expanded) {
+        const slot = listEl.querySelector<HTMLElement>(`[data-attach-slot="${id}"]`);
+        if (!slot) continue;
+        hydrateAttachmentSlot(slot, ensureBugDetail(id));
+      }
     };
     paint();
   }
@@ -278,6 +327,7 @@ export async function renderFeedbackPanel(
                 <span class="k">importance</span><span>${escapeHtml(f.importance.replace(/_/g, " "))}</span>
                 <span class="k">filed</span><span>${escapeHtml(timeAgo(f.createdAt))}${f.reporterEmail ? " · " + escapeHtml(f.reporterEmail) : ""}</span>
               </div>
+              <div class="se-attach-slot" data-attach-slot="${escapeHtml(f.id)}"></div>
               <div class="se-fb-actions">
                 ${
                   api.hideAdminLinks
@@ -297,8 +347,75 @@ export async function renderFeedbackPanel(
           paint();
         });
       });
+      for (const id of expanded) {
+        const slot = listEl.querySelector<HTMLElement>(`[data-attach-slot="${id}"]`);
+        if (!slot) continue;
+        hydrateAttachmentSlot(slot, ensureFeatureDetail(id));
+      }
     };
     paint();
+  }
+
+  // Renders the attachments grid into a row's expanded detail. The detail
+  // promise is shared (panel-scoped cache); on resolve we paint thumbnails
+  // and lazy-fetch each blob on demand so list view doesn't pay the cost
+  // until a row is opened.
+  function hydrateAttachmentSlot(
+    slot: HTMLElement,
+    detailPromise: Promise<{ attachments: AttachmentRecord[] }>,
+  ): void {
+    if (slot.dataset.hydrated === "1") return;
+    slot.dataset.hydrated = "1";
+    slot.innerHTML = `<div class="se-attach-slot-loading">Loading attachments…</div>`;
+    detailPromise
+      .then((d) => {
+        if (!slot.isConnected) return;
+        if (d.attachments.length === 0) {
+          slot.innerHTML = "";
+          return;
+        }
+        slot.innerHTML = `<div class="se-attach-grid">${d.attachments
+          .map(serverAttachmentCardHtml)
+          .join("")}</div>`;
+        // Kick off thumbnail fetches for screenshots — recordings just show
+        // a play icon, no auto-fetch (would download every video on open).
+        slot.querySelectorAll<HTMLElement>("[data-thumb-fetch]").forEach((el) => {
+          const aid = el.dataset.thumbFetch!;
+          ensureAttachmentUrl(aid)
+            .then((url) => {
+              if (!el.isConnected) return;
+              el.style.backgroundImage = `url('${url}')`;
+              el.classList.add("has-image");
+            })
+            .catch(() => {
+              /* keep placeholder */
+            });
+        });
+        // Wire click → fetch blob (cached) → openLightbox
+        slot.querySelectorAll<HTMLElement>("[data-preview-id]").forEach((el) => {
+          el.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const aid = el.dataset.previewId!;
+            const att = d.attachments.find((x) => x.id === aid);
+            if (!att) return;
+            try {
+              const url = await ensureAttachmentUrl(aid);
+              openLightbox(modalRoot, {
+                kind: att.kind,
+                filename: att.filename,
+                url,
+                sizeBytes: att.sizeBytes,
+              });
+            } catch (err) {
+              console.error(err);
+            }
+          });
+        });
+      })
+      .catch((err) => {
+        if (!slot.isConnected) return;
+        slot.innerHTML = `<div class="se-attach-slot-loading err">Failed: ${escapeHtml(String(err))}</div>`;
+      });
   }
 
   await render();
@@ -438,6 +555,37 @@ function openFormModal(
   return { wrap, modal, close: doClose };
 }
 
+// Read-only attachment card for an already-uploaded attachment shown in an
+// expanded bug/feature row. Mirrors the layout of attachmentCardHtml minus
+// the remove button and upload progress bar; the thumbnail's background
+// image is filled in async after the blob fetches (see hydrateAttachmentSlot).
+function serverAttachmentCardHtml(a: AttachmentRecord): string {
+  const idAttr = escapeHtml(a.id);
+  const previewable = a.kind === "screenshot" || a.kind === "recording";
+  const previewHtml =
+    a.kind === "screenshot"
+      ? `<div class="preview screenshot" data-preview-id="${idAttr}" data-thumb-fetch="${idAttr}">
+           <span class="scrim">click to preview</span>
+         </div>`
+      : a.kind === "recording"
+        ? `<div class="preview recording" data-preview-id="${idAttr}">
+             <div class="play">${I.playFilled}</div>
+             <span class="scrim">click to play</span>
+           </div>`
+        : `<div class="preview file">${I.file}<span class="ext">.${escapeHtml(fileExt(a.filename))}</span></div>`;
+  void previewable;
+  const ic = a.kind === "screenshot" ? I.camera : a.kind === "recording" ? I.record : I.file;
+  return `
+    <div class="se-attach-card readonly">
+      ${previewHtml}
+      <div class="meta">
+        <span class="ic">${ic}</span>
+        <span class="name" title="${escapeHtml(a.filename)}">${escapeHtml(a.filename)}</span>
+        <span class="size">${escapeHtml(fmtBytes(a.sizeBytes))}</span>
+      </div>
+    </div>`;
+}
+
 function attachmentCardHtml(a: PendingAttachment): string {
   const bg = a.previewUrl ? ` style="background-image:url('${a.previewUrl}')"` : "";
   const hasImg = a.previewUrl && (a.kind === "screenshot" || a.kind === "recording");
@@ -474,9 +622,14 @@ function attachmentCardHtml(a: PendingAttachment): string {
 
 function openLightbox(
   modalRoot: ParentNode & { appendChild: (n: Node) => Node },
-  a: PendingAttachment,
+  a: {
+    kind: "screenshot" | "recording" | "file";
+    filename: string;
+    url: string;
+    sizeBytes: number;
+  },
 ): void {
-  if (!a.previewUrl) return;
+  if (!a.url) return;
   const wrap = document.createElement("div");
   wrap.className = "dtf-lightbox";
   const isVideo = a.kind === "recording";
@@ -485,13 +638,13 @@ function openLightbox(
       <button class="x" data-action="close" title="Close (Esc)">${I.x}</button>
       ${
         isVideo
-          ? `<video src="${a.previewUrl}" controls autoplay playsinline></video>`
-          : `<img src="${a.previewUrl}" alt="${escapeHtml(a.filename)}" />`
+          ? `<video src="${a.url}" controls autoplay playsinline></video>`
+          : `<img src="${a.url}" alt="${escapeHtml(a.filename)}" />`
       }
       <div class="cap">
         <span>${escapeHtml(a.filename)}</span>
         <span style="color:var(--fg-4)">·</span>
-        <span style="color:var(--fg-4)">${escapeHtml(fmtBytes(a.blob.size))}</span>
+        <span style="color:var(--fg-4)">${escapeHtml(fmtBytes(a.sizeBytes))}</span>
       </div>
     </div>`;
   modalRoot.appendChild(wrap);
@@ -542,12 +695,12 @@ function mountBugForm(
 
   const bodyHtml = `
     <div class="se-form">
-      <label class="se-field">
-        <span class="se-label">Title</span>
+      <label class="se-field" data-field-wrap="title">
+        <span class="se-label">Title <span class="se-req">*</span></span>
         <input class="se-input" data-field="title" placeholder="Short summary of the bug" />
       </label>
-      <label class="se-field">
-        <span class="se-label">Steps to reproduce</span>
+      <label class="se-field" data-field-wrap="steps">
+        <span class="se-label">Steps to reproduce <span class="se-req">*</span></span>
         <textarea class="se-input se-textarea" data-field="steps" rows="4"
           placeholder="1. Go to…&#10;2. Click…"></textarea>
       </label>
@@ -561,6 +714,16 @@ function mountBugForm(
           <textarea class="se-input se-textarea" data-field="expected" rows="3"></textarea>
         </label>
       </div>
+      <label class="se-field">
+        <span class="se-label">Priority</span>
+        <select class="se-input" data-field="priority">
+          <option value="">— optional —</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </label>
       <div class="se-field">
         <span class="se-label">Attachments</span>
         <div class="se-actions">
@@ -574,7 +737,13 @@ function mountBugForm(
       </div>
     </div>`;
 
-  const formState = { title: "", steps: "", actual: "", expected: "" };
+  const formState: {
+    title: string;
+    steps: string;
+    actual: string;
+    expected: string;
+    priority: "" | "low" | "medium" | "high" | "critical";
+  } = { title: "", steps: "", actual: "", expected: "", priority: "" };
 
   const handle = mountInlineForm(container, {
     title: "File a bug",
@@ -618,7 +787,14 @@ function mountBugForm(
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         const a = attachments.find((x) => x.id === el.dataset.preview);
-        if (a) openLightbox(modalRoot, a);
+        if (a && a.previewUrl) {
+          openLightbox(modalRoot, {
+            kind: a.kind,
+            filename: a.filename,
+            url: a.previewUrl,
+            sizeBytes: a.blob.size,
+          });
+        }
       });
     });
   };
@@ -630,11 +806,21 @@ function mountBugForm(
     repaintGrid();
   };
 
-  modal.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-field]").forEach((el) => {
-    el.addEventListener("input", () => {
-      (formState as Record<string, string>)[el.dataset.field!] = el.value;
+  modal
+    .querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("[data-field]")
+    .forEach((el) => {
+      const update = () => {
+        (formState as Record<string, string>)[el.dataset.field!] = el.value;
+        // Clear field-level invalid state as soon as the user types — they've
+        // acknowledged the error, no point keeping it red while they fix it.
+        const wrap = el.closest<HTMLElement>("[data-field-wrap]");
+        if (wrap?.classList.contains("invalid") && el.value.trim()) {
+          wrap.classList.remove("invalid");
+        }
+      };
+      el.addEventListener("input", update);
+      el.addEventListener("change", update);
     });
-  });
   modal.querySelector('[data-action="screenshot"]')!.addEventListener("click", async () => {
     setStatus("Pick a screen/tab to capture…");
     try {
@@ -653,32 +839,44 @@ function mountBugForm(
     }
   });
   const recordBtn = modal.querySelector<HTMLButtonElement>('[data-action="record"]')!;
+  // Shared finalizer used by both the in-panel Stop button and the browser's
+  // "Stop sharing" UI (which fires through startRecording's onEnded callback).
+  // Guarded so concurrent triggers don't double-finalize.
+  let finalizing = false;
+  async function finalizeRecording() {
+    if (!recording || finalizing) return;
+    finalizing = true;
+    try {
+      recordBtn.disabled = true;
+      setStatus("Finalizing recording…");
+      const blob = await recording.stop();
+      recording = null;
+      recordBtn.classList.remove("recording");
+      recordBtn.innerHTML = `${I.record} Record screen`;
+      addAttachment({
+        id: "at_" + Math.random().toString(36).slice(2, 7),
+        kind: "recording",
+        filename: `recording-${Date.now()}.webm`,
+        blob,
+      });
+      setStatus("");
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : String(err), true);
+    } finally {
+      recordBtn.disabled = false;
+      finalizing = false;
+    }
+  }
   recordBtn.addEventListener("click", async () => {
     if (recording) {
-      try {
-        recordBtn.disabled = true;
-        setStatus("Finalizing recording…");
-        const blob = await recording.stop();
-        recording = null;
-        recordBtn.classList.remove("recording");
-        recordBtn.innerHTML = `${I.record} Record screen`;
-        addAttachment({
-          id: "at_" + Math.random().toString(36).slice(2, 7),
-          kind: "recording",
-          filename: `recording-${Date.now()}.webm`,
-          blob,
-        });
-        setStatus("");
-      } catch (err) {
-        setStatus(err instanceof Error ? err.message : String(err), true);
-      } finally {
-        recordBtn.disabled = false;
-      }
+      await finalizeRecording();
       return;
     }
     setStatus("Pick a screen/tab to record…");
     try {
-      recording = await startRecording(shadow.host as HTMLElement);
+      recording = await startRecording(shadow.host as HTMLElement, () => {
+        void finalizeRecording();
+      });
       recordBtn.classList.add("recording");
       recordBtn.innerHTML = `${I.record} Stop recording`;
       setStatus("Recording…");
@@ -704,8 +902,24 @@ function mountBugForm(
   });
 
   async function submit(): Promise<void> {
-    if (!formState.title.trim()) {
-      setStatus("Title is required", true);
+    // Highlight every empty required field at once, then focus + scroll the
+    // first one into view so the user immediately sees what's missing even
+    // if the form has been scrolled past it.
+    const requiredFields: Array<"title" | "steps"> = ["title", "steps"];
+    let firstInvalid: HTMLElement | null = null;
+    for (const f of requiredFields) {
+      const wrap = modal.querySelector<HTMLElement>(`[data-field-wrap="${f}"]`);
+      const input = modal.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[data-field="${f}"]`,
+      );
+      const empty = !formState[f].trim();
+      wrap?.classList.toggle("invalid", empty);
+      if (empty && !firstInvalid) firstInvalid = input;
+    }
+    if (firstInvalid) {
+      setStatus("");
+      firstInvalid.scrollIntoView({ block: "center", behavior: "smooth" });
+      firstInvalid.focus({ preventScroll: true });
       return;
     }
     setStatus("Submitting…");
@@ -715,6 +929,7 @@ function mountBugForm(
         stepsToReproduce: formState.steps,
         actualResult: formState.actual,
         expectedResult: formState.expected,
+        priority: formState.priority || undefined,
         pageUrl: window.location.href,
         userAgent: navigator.userAgent,
         viewport: `${window.innerWidth}x${window.innerHeight}`,
@@ -744,7 +959,6 @@ function openAnnotateModal(
   source: Blob,
   onSave: (blob: Blob) => void,
 ): void {
-  void shadow;
   const wrap = document.createElement("div");
   wrap.className = "dtf-modal-bg annotate";
   wrap.innerHTML = `
@@ -760,8 +974,20 @@ function openAnnotateModal(
         <button class="primary" data-action="save">Use screenshot</button>
       </div>
     </div>`;
+  // Inset the scrim so the docked devtools panel stays fully visible — the
+  // panel's z-index is higher than the modal's, so without this it covers the
+  // modal's right edge (incl. the Save button).
+  reserveSpaceForPanel(wrap, shadow);
   modalRoot.appendChild(wrap);
-  const close = () => wrap.remove();
+  const onResize = () => {
+    reserveSpaceForPanel(wrap, shadow);
+    fitAnnotatorCanvas(wrap);
+  };
+  window.addEventListener("resize", onResize);
+  const close = () => {
+    window.removeEventListener("resize", onResize);
+    wrap.remove();
+  };
   wrap.querySelectorAll('[data-action="close"]').forEach((b) => b.addEventListener("click", close));
   wrap.addEventListener("click", (e) => {
     if (e.target === wrap) close();
@@ -772,6 +998,9 @@ function openAnnotateModal(
     .then((ann) => {
       host.innerHTML = "";
       host.appendChild(ann.root);
+      // Size canvas to fit the available area so the modal shrinks to the
+      // screenshot's aspect ratio instead of stretching the scrim.
+      fitAnnotatorCanvas(wrap);
       wrap.querySelector('[data-action="save"]')!.addEventListener("click", async () => {
         const blob = await ann.export();
         close();
@@ -781,6 +1010,50 @@ function openAnnotateModal(
     .catch((err) => {
       host.innerHTML = `<div class="err">${escapeHtml(String(err))}</div>`;
     });
+}
+
+function reserveSpaceForPanel(wrap: HTMLElement, shadow: ShadowRoot): void {
+  const panel = shadow.querySelector<HTMLElement>(".dtf-panel");
+  wrap.style.left = wrap.style.right = wrap.style.top = wrap.style.bottom = "";
+  if (!panel) return;
+  const r = panel.getBoundingClientRect();
+  if (r.width === 0 || r.height === 0) return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const fromRight = vw - r.right;
+  const fromLeft = r.left;
+  const fromTop = r.top;
+  const fromBottom = vh - r.bottom;
+  const min = Math.min(fromRight, fromLeft, fromTop, fromBottom);
+  const gap = 12;
+  if (min === fromRight) wrap.style.right = `${Math.max(0, vw - r.left + gap)}px`;
+  else if (min === fromLeft) wrap.style.left = `${r.right + gap}px`;
+  else if (min === fromTop) wrap.style.top = `${r.bottom + gap}px`;
+  else wrap.style.bottom = `${Math.max(0, vh - r.top + gap)}px`;
+}
+
+function fitAnnotatorCanvas(wrap: HTMLElement): void {
+  const canvas = wrap.querySelector<HTMLCanvasElement>(".se-annot-canvas");
+  if (!canvas || !canvas.width || !canvas.height) return;
+  const wrapRect = wrap.getBoundingClientRect();
+  const cs = getComputedStyle(wrap);
+  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  // Reserve room for header (~38px), footer (~50px), modal border (4px),
+  // stage padding (24px), and stage canvas border (2px).
+  const chromeH = 38 + 50 + 4 + 24 + 2;
+  const chromeW = 4 + 24 + 2;
+  const availW = Math.max(120, wrapRect.width - padX - chromeW);
+  const availH = Math.max(120, wrapRect.height - padY - chromeH);
+  const ratio = canvas.width / canvas.height;
+  let cw = availW;
+  let ch = cw / ratio;
+  if (ch > availH) {
+    ch = availH;
+    cw = ch * ratio;
+  }
+  canvas.style.width = `${Math.floor(cw)}px`;
+  canvas.style.height = `${Math.floor(ch)}px`;
 }
 
 // ── Feature request form (inline) ───────────────────────────────────────────

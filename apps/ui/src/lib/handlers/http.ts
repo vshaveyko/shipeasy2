@@ -21,7 +21,7 @@ async function warmCloudflareContext(): Promise<void> {
  * the Node and Edge server runtimes — that doubled the bundle by ~140 KiB
  * gzipped, more than the entire CORS layer is worth.
  */
-function applyCors(req: Request, res: Response): Response {
+export function applyCors(req: Request, res: Response): Response {
   const origin = req.headers.get("origin") ?? "*";
   res.headers.set("Access-Control-Allow-Origin", origin);
   res.headers.set("Vary", "Origin");

@@ -6,9 +6,21 @@
 // support. For screenshots we grab a single video frame and stop the track;
 // for recordings we hand the stream to MediaRecorder.
 
+// `preferCurrentTab`, `selfBrowserSurface`, `surfaceSwitching`, `systemAudio`,
+// and `monitorTypeSurfaces` are Chrome-only extensions to MediaStreamConstraints
+// (Chrome Capture Handle / Region Capture extensions). They're ignored by
+// browsers that don't recognize them, so they're safe to pass unconditionally.
+interface ChromeDisplayMediaConstraints extends MediaStreamConstraints {
+  preferCurrentTab?: boolean;
+  selfBrowserSurface?: "include" | "exclude";
+  surfaceSwitching?: "include" | "exclude";
+  systemAudio?: "include" | "exclude";
+  monitorTypeSurfaces?: "include" | "exclude";
+}
+
 declare global {
   interface MediaDevices {
-    getDisplayMedia(constraints?: MediaStreamConstraints): Promise<MediaStream>;
+    getDisplayMedia(constraints?: ChromeDisplayMediaConstraints): Promise<MediaStream>;
   }
 }
 
@@ -27,9 +39,18 @@ export async function captureScreenshot(host?: HTMLElement | null): Promise<Blob
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error("Screen capture is not supported in this browser.");
   }
+  // preferCurrentTab collapses the picker to a one-click confirm for the
+  // current tab — by far the right UX for "screenshot this page". Chromium
+  // ignores the rest of the surface options when this is set; we keep them
+  // for browsers that ignore preferCurrentTab but honor the others.
   const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: { frameRate: 30 },
+    video: { frameRate: 30, displaySurface: "browser" },
     audio: false,
+    preferCurrentTab: true,
+    selfBrowserSurface: "include",
+    surfaceSwitching: "exclude",
+    systemAudio: "exclude",
+    monitorTypeSurfaces: "exclude",
   });
   const restore = hideHost(host);
   try {
@@ -79,13 +100,24 @@ export interface RecordingHandle {
   cancel(): void;
 }
 
-export async function startRecording(host?: HTMLElement | null): Promise<RecordingHandle> {
+export async function startRecording(
+  host?: HTMLElement | null,
+  onEnded?: () => void,
+): Promise<RecordingHandle> {
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error("Screen capture is not supported in this browser.");
   }
+  // Same one-click confirm UX as the screenshot path — preferCurrentTab
+  // collapses the picker to a single "Share this tab?" prompt for the
+  // current tab. With audio:true Chromium offers the share-tab-audio toggle
+  // inline in that prompt.
   const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: { frameRate: 30 },
+    video: { frameRate: 30, displaySurface: "browser" },
     audio: true,
+    preferCurrentTab: true,
+    selfBrowserSurface: "include",
+    surfaceSwitching: "exclude",
+    monitorTypeSurfaces: "exclude",
   });
   const restore = hideHost(host);
   // Let the visibility:hidden repaint reach the capture stream before we
@@ -102,10 +134,13 @@ export async function startRecording(host?: HTMLElement | null): Promise<Recordi
   recorder.start(500);
 
   // Stop early if the user clicks "Stop sharing" in the browser's UI. Also
-  // restore the devtools panel so the user isn't left looking at a hidden UI.
+  // restore the devtools panel so the user isn't left looking at a hidden UI,
+  // and notify the caller so it can finalize the attachment without making
+  // the user click "Stop recording" a second time in our own UI.
   stream.getVideoTracks()[0]?.addEventListener("ended", () => {
     restore();
     if (recorder.state !== "inactive") recorder.stop();
+    onEnded?.();
   });
 
   function stopTracks() {
