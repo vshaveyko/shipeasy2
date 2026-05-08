@@ -416,6 +416,10 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     };
     btn.addEventListener("mouseenter", show);
     btn.addEventListener("mouseleave", () => hide());
+    // The card lives on the shadow root, not inside the panel, so it survives
+    // the render() that the rail-icon click handler triggers — without this
+    // the card is left orphaned with no listeners to dismiss it.
+    btn.addEventListener("click", () => hide(true));
   }
 
   function renderCollapsed(panel: HTMLElement): void {
@@ -472,19 +476,43 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       dragged = false;
       const startX = e.clientX;
       const startY = e.clientY;
+      // Record the offset between the cursor and the panel's centerline so the
+      // panel doesn't pop to put its center under the cursor on first move.
+      // applyPanelStyle anchors via translate(-50%) along the parallel axis,
+      // so we adjust the synthetic cursor position by these deltas.
+      const r0 = panel.getBoundingClientRect();
+      const grabDx = e.clientX - (r0.left + r0.width / 2);
+      const grabDy = e.clientY - (r0.top + r0.height / 2);
       mk.classList.add("dragging");
+      let lastEdge: Edge = state.edge;
       const move = (ev: MouseEvent) => {
         if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 4) dragged = true;
-        const { edge, offsetPct } = nearestEdge(ev.clientX, ev.clientY);
+        // Subtract grab deltas: edge picks from the cursor (so it still snaps
+        // to the closest edge to the pointer), but the parallel-axis position
+        // tracks where the panel center *would* be if we kept it pinned to
+        // the original grab point on the mark.
+        const { edge } = nearestEdge(ev.clientX, ev.clientY);
+        const isVert = edge === "left" || edge === "right";
+        const cx = ev.clientX - grabDx;
+        const cy = ev.clientY - grabDy;
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        const offsetPct = Math.max(5, Math.min(95, isVert ? (cy / H) * 100 : (cx / W) * 100));
         state = { ...state, edge, offsetPct };
         applyPanelStyle(panel);
         panel.setAttribute("data-edge", edge);
+        lastEdge = edge;
       };
       const up = () => {
         mk.classList.remove("dragging");
         document.removeEventListener("mousemove", move);
         document.removeEventListener("mouseup", up);
         saveOverlayState(state);
+        // The rail-resize handle's width/height are inline styles set at
+        // render time per edge. Re-render after a drag so the handle reorients
+        // to match the new edge (flex-direction itself is CSS-driven).
+        if (dragged) render();
+        void lastEdge;
       };
       document.addEventListener("mousemove", move);
       document.addEventListener("mouseup", up);

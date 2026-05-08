@@ -35,6 +35,33 @@ interface EvaluateResponse {
   flags?: Record<string, boolean>;
 }
 
+// `evalGate` returns false for any user without `user_id`/`anonymous_id`
+// (packages/core/src/eval/gate.ts), so a 100%-rolled-out kill-switch still
+// evaluates to false if we send `{ user: {} }`. Mint a stable anon id for the
+// controls call and persist it under a devtools-only key so we don't collide
+// with the customer's own SDK anon id.
+const CONTROLS_ANON_KEY = "__se_devtools_controls_anon";
+
+function getControlsAnonId(): string {
+  if (typeof window === "undefined") return "anon_devtools";
+  try {
+    const cached = localStorage.getItem(CONTROLS_ANON_KEY);
+    if (cached) return cached;
+  } catch {
+    /* storage blocked — fall through and mint a per-load id */
+  }
+  const fresh =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `anon_${Math.random().toString(36).slice(2)}`;
+  try {
+    localStorage.setItem(CONTROLS_ANON_KEY, fresh);
+  } catch {
+    /* ignore */
+  }
+  return fresh;
+}
+
 interface ControlsState {
   hideAdminLinks: boolean;
 }
@@ -72,7 +99,7 @@ export function refreshControls(): Promise<void> {
           "X-SDK-Key": SHIPEASY_CONTROLS_CLIENT_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ user: {} }),
+        body: JSON.stringify({ user: { anonymous_id: getControlsAnonId() } }),
       });
       if (!res.ok) return;
       const body = (await res.json()) as EvaluateResponse;

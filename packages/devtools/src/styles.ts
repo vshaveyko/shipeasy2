@@ -61,8 +61,15 @@ button { font-family: inherit; }
 /* collapsed = floating rail anchored to one edge */
 .dtf-panel.collapsed { background:rgba(8,8,10,0.72);
   backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-  border:1px solid var(--line); box-shadow:0 6px 20px -8px rgba(0,0,0,0.55);
-  border-radius:8px; overflow:visible; width:auto; height:auto; max-height:none; padding:0;
+  border:1px solid color-mix(in oklab, var(--line) 100%, white 14%);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 14px 28px -10px rgba(0,0,0,0.85),
+    0 4px 10px -2px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(0,0,0,0.4);
+  border-radius:8px; overflow:visible;
+  width:auto; height:auto; min-width:0; min-height:0; max-height:none; padding:0;
   animation:dtf-fade-in .14s ease-out; }
 @keyframes dtf-fade-in { from { opacity:0; } to { opacity:1; } }
 .dtf-panel.collapsed .dtf-panel-rail { display:flex; align-items:center; gap:4px; padding:6px; }
