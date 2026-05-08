@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 import { Plug, Plus, ChevronLeft } from "lucide-react";
 
 import {
@@ -49,6 +51,8 @@ type Props = {
 export function ConnectorsModal({ connectors, triggerLabel = "Connectors" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
   const openParam = searchParams.get("connectors");
   const connectorParam = searchParams.get("connector");
   const connectedParam = searchParams.get("connected");
@@ -84,7 +88,7 @@ export function ConnectorsModal({ connectors, triggerLabel = "Connectors" }: Pro
     if (!next) {
       // Clear URL params on close so the modal doesn't reopen on refresh.
       if (openParam || connectorParam || connectedParam || errorParam) {
-        router.replace("/dashboard/feedback", { scroll: false });
+        router.replace(`/dashboard/${projectId}/feedback`, { scroll: false });
       }
       setBanner(null);
       setView({ kind: "list" });

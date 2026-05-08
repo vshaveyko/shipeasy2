@@ -7,11 +7,10 @@ import { getFeatureRequest } from "@/lib/handlers/feature-requests";
 export default async function FeedbackDetailRedirect({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ projectId: string; id: string }>;
 }) {
-  const { id } = await params;
+  const { projectId, id } = await params;
   const session = await auth();
-  const projectId = session?.user?.project_id;
   if (!projectId) notFound();
   const identity = {
     projectId,
@@ -32,7 +31,7 @@ export default async function FeedbackDetailRedirect({
     }
   }
 
-  if (kind === "bug") redirect(`/dashboard/bugs/${id}`);
-  if (kind === "request") redirect(`/dashboard/feature-requests/${id}`);
+  if (kind === "bug") redirect(`/dashboard/${projectId}/bugs/${id}`);
+  if (kind === "request") redirect(`/dashboard/${projectId}/feature-requests/${id}`);
   notFound();
 }

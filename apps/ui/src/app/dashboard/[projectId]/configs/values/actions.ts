@@ -15,7 +15,7 @@ export async function createConfigAction(input: {
   const created = await createConfig(identity, input);
   revalidatePath("/dashboard/[projectId]/configs/values", "page");
   revalidatePath("/dashboard");
-  redirect(`/dashboard/configs/values/${created.id}`);
+  redirect(`/dashboard/${identity.projectId}/configs/values/${created.id}`);
 }
 
 export async function deleteConfigAction(formData: FormData) {

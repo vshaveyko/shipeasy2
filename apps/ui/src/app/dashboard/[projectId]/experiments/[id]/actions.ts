@@ -40,5 +40,5 @@ export async function addExperimentMetricAction(formData: FormData) {
 
   await updateExperimentMetrics(identity, experimentId, { metrics: updated });
   revalidatePath(`/dashboard/[projectId]/experiments/${experimentId}`, "page");
-  redirect(`/dashboard/experiments/${experimentId}`);
+  redirect(`/dashboard/${identity.projectId}/experiments/${experimentId}`);
 }

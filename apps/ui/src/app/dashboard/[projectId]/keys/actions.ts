@@ -11,7 +11,7 @@ export async function createKeyAction(formData: FormData) {
   const type = formData.get("type") as string;
   const result = await createKey(identity, { type });
   revalidatePath("/dashboard/[projectId]/keys", "page");
-  redirect(`/dashboard/keys?new_key=${encodeURIComponent(result.key)}`);
+  redirect(`/dashboard/${identity.projectId}/keys?new_key=${encodeURIComponent(result.key)}`);
 }
 
 export async function revokeKeyAction(formData: FormData) {

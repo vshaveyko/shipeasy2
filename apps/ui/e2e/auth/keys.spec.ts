@@ -5,19 +5,23 @@ test("sdk keys page shows heading, key-type reference and create button", async 
 
   await expect(page.getByRole("heading", { name: /^sdk keys$/i, level: 1 })).toBeVisible();
 
-  // Empty-state reference: abbreviated descriptions next to each example env
-  // var. Full descriptions only appear once at least one key has been issued.
+  // The full reference section only renders once at least one key exists.
+  // In an empty project the page shows a hero with a "Create your first key"
+  // CTA — click it (creates a server key) so the populated form + reference
+  // descriptions are guaranteed to be visible regardless of run order.
+  const firstKeyCta = page.getByRole("button", { name: /create your first key/i });
+  if (await firstKeyCta.count()) {
+    await firstKeyCta.click();
+    await page.waitForSelector("#key-type");
+  }
+
   for (const desc of [
     /full read of flags/i,
-    /browser-safe, evaluate-only/i,
-    /admin REST.*shown once/i,
+    /evaluate-only\. safe to include/i,
+    /scoped to admin rest/i,
   ]) {
     await expect(page.getByText(desc)).toBeVisible();
   }
 
-  // Empty-state CTA is "Create your first key"; the bare "Create key" button
-  // appears in the header only after at least one key exists.
-  await expect(
-    page.getByRole("button", { name: /create (your first )?key/i }),
-  ).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^create key$/i })).toBeEnabled();
 });
