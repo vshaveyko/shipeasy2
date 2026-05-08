@@ -1,8 +1,8 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import useSWR from "swr";
-import { Search, Shield, MoreHorizontal } from "lucide-react";
+import { Search, Shield, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
@@ -10,6 +10,20 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { ActionForm } from "@/components/ui/action-form";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { deleteGateAction, enableGateAction } from "./actions";
 
 interface GateRow {
@@ -191,28 +205,72 @@ export function GatesContent() {
                   }}
                 />
               </div>
-              <ActionForm
-                action={deleteGateAction}
-                loading="Deleting gate…"
-                success="Gate deleted"
-                onSuccess={() => mutate()}
-                className="flex justify-end"
-              >
-                <input type="hidden" name="id" value={gate.id} />
-                <Button
-                  type="submit"
-                  size="sm"
-                  variant="ghost"
-                  className="size-7 p-0 text-[var(--se-fg-3)] hover:bg-[var(--se-danger-soft)] hover:text-[var(--se-danger)]"
-                  aria-label="Delete gate"
-                >
-                  <MoreHorizontal className="size-3" />
-                </Button>
-              </ActionForm>
+              <GateRowMenu gate={gate} onDeleted={() => mutate()} />
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function GateRowMenu({ gate, onDeleted }: { gate: GateRow; onDeleted: () => void }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  return (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          aria-label={`Actions for ${gate.name}`}
+          className="inline-flex size-7 items-center justify-center rounded-md text-[var(--se-fg-3)] hover:bg-[var(--se-bg-3)] hover:text-[var(--se-fg-1)]"
+        >
+          <MoreHorizontal className="size-3" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem
+            onClick={() => setConfirmOpen(true)}
+            className="text-[var(--se-danger)] focus:bg-[var(--se-danger-soft)] focus:text-[var(--se-danger)]"
+          >
+            <Trash2 className="size-3.5" />
+            Delete gate
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete gate?</DialogTitle>
+            <DialogDescription>
+              <span className="font-mono text-[12px] text-[var(--se-fg-2)]">{gate.name}</span> will
+              be permanently removed. SDKs that read this gate will fall back to <code>false</code>.
+              This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <ActionForm
+              action={deleteGateAction}
+              loading="Deleting gate…"
+              success="Gate deleted"
+              onSuccess={() => {
+                setConfirmOpen(false);
+                onDeleted();
+              }}
+            >
+              <input type="hidden" name="id" value={gate.id} />
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-[var(--se-danger)] text-white hover:bg-[var(--se-danger)]/90"
+              >
+                Delete gate
+              </Button>
+            </ActionForm>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
