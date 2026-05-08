@@ -70,37 +70,15 @@ test.describe("i18n / String Manager overview", () => {
 // ── Sidebar navigation ─────────────────────────────────────────────────────────
 
 test.describe("i18n sidebar navigation", () => {
-  const NAV_CASES = [
-    {
-      label: /^overview$/i,
-      url: /\/dashboard\/e2e-project-id\/i18n$/,
-      heading: /^string manager$/i,
-    },
-    {
-      label: /^profiles$/i,
-      url: /\/dashboard\/e2e-project-id\/i18n\/profiles$/,
-      heading: /^profiles$/i,
-    },
-    {
-      label: /^keys$/i,
-      url: /\/dashboard\/e2e-project-id\/i18n\/keys$/,
-      heading: /^label keys$/i,
-    },
-    {
-      label: /^drafts$/i,
-      url: /\/dashboard\/e2e-project-id\/i18n\/drafts$/,
-      heading: /^drafts$/i,
-    },
-  ] as const;
-
-  test("all four nav items are present and navigate correctly", async ({ page }) => {
-    const sidebar = page.locator("aside");
-    for (const c of NAV_CASES) {
-      await page.goto("/dashboard/e2e-project-id/i18n");
-      await sidebar.getByRole("link", { name: c.label }).first().click();
-      await expect(page).toHaveURL(c.url);
-      await expect(page.getByRole("heading", { name: c.heading, level: 1 })).toBeVisible();
-    }
+  // The redesigned sidebar surfaces only top-level project tabs; i18n
+  // sub-pages (Profiles / Keys / Drafts) are reached from the String Manager
+  // overview, not the global sidebar. So we just verify the top-level entry.
+  test("String Manager sidebar entry navigates to the i18n overview", async ({ page }) => {
+    const sidebar = page.locator("aside").first();
+    await page.goto("/dashboard/e2e-project-id");
+    await sidebar.getByRole("link", { name: /string manager/i }).first().click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n$/);
+    await expect(page.getByRole("heading", { name: /^string manager$/i, level: 1 })).toBeVisible();
   });
 });
 
@@ -185,7 +163,7 @@ test.describe("i18n / Keys", () => {
 
   test("profile tab for seeded profile is visible", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await expect(page.getByRole("button", { name: "en:test", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "en:test", exact: true })).toBeVisible();
   });
 
   test("shows key count for seeded profile", async ({ page }) => {
@@ -321,6 +299,6 @@ test.describe("i18n cross-workflow navigation", () => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
     // Profile selection is client-side — URL stays the same
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/keys$/);
-    await expect(page.getByRole("button", { name: "en:test", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "en:test", exact: true })).toBeVisible();
   });
 });

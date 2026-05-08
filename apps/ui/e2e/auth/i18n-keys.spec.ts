@@ -28,7 +28,7 @@ test.describe("i18n Keys table — smoke", () => {
   });
 
   test("profile tab for seeded profile is present", async ({ page }) => {
-    await expect(page.getByRole("button", { name: "en:test", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "en:test", exact: true })).toBeVisible();
   });
 
   test("shows 5 keys for seeded profile", async ({ page }) => {
