@@ -200,6 +200,7 @@ test.describe("Metrics CRUD", () => {
       .getByText(mName, { exact: true })
       .locator("..")
       .locator("..")
+      .locator("..")
       .getByRole("button", { name: /^delete$/i })
       .click();
 
@@ -215,7 +216,7 @@ test.describe("Feature Gates CRUD", () => {
 
   const gKey = `e2egate${RUN}`;
   // Helper: finds the row div containing gKey (span → inner div → outer justify-between div)
-  const gRow = (page: Page) => page.getByText(gKey, { exact: true }).locator("..").locator("..");
+  const gRow = (page: Page) => page.getByText(gKey, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create gate → appears in list with enabled badge", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates/new");
@@ -294,7 +295,7 @@ test.describe("Events CRUD", () => {
 
   const evName = `e2eev${RUN}`;
   // Events: span → inner flex div → outer justify-between div (2 levels up)
-  const evRow = (page: Page) => page.getByText(evName, { exact: true }).locator("..").locator("..");
+  const evRow = (page: Page) => page.getByText(evName, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create event via form → appears in list as approved", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/events");
@@ -325,7 +326,7 @@ test.describe("Attributes CRUD", () => {
 
   const aName = `e2eattr${RUN}`;
   // Attributes: span → inner flex div → outer justify-between div (2 levels up)
-  const aRow = (page: Page) => page.getByText(aName, { exact: true }).locator("..").locator("..");
+  const aRow = (page: Page) => page.getByText(aName, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create attribute → appears in list with string type", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/attributes");
@@ -354,7 +355,7 @@ test.describe("Universes CRUD", () => {
 
   const uName = `e2euni${RUN}`;
   // Universes: span → inner div → outer justify-between div (2 levels up)
-  const uRow = (page: Page) => page.getByText(uName, { exact: true }).locator("..").locator("..");
+  const uRow = (page: Page) => page.getByText(uName, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create universe → appears in list", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/universes");
@@ -384,7 +385,7 @@ test.describe("Experiments CRUD", () => {
   const expKey = `e2eexp${RUN}`;
   // Experiments: span → inner flex div → outer justify-between div (2 levels up)
   const expRow = (page: Page) =>
-    page.getByText(expKey, { exact: true }).locator("..").locator("..");
+    page.getByText(expKey, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create experiment draft → appears in list with draft badge", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/new");
