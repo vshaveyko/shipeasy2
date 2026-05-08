@@ -5,7 +5,11 @@ const RUN = Date.now();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function attrRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..");
+  // The row layout was redesigned to wrap (checkbox + label-block) inside an
+  // inner flex, with the Delete button as the row's sibling. Walk up three
+  // levels (label → label-block → label-side → row container) so the
+  // returned locator includes the Delete button.
+  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
 }
 
 // ── Form UI ───────────────────────────────────────────────────────────────────

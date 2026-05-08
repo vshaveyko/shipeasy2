@@ -5,7 +5,7 @@ const RUN = Date.now();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function uniRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..");
+  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
 }
 
 // ── Default universe invariants ───────────────────────────────────────────────
