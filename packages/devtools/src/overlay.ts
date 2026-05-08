@@ -706,8 +706,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       })
       .join("");
 
-    const showSearch = ["gates", "experiments", "configs", "labels"].includes(tab);
-    const view = tabView[tab];
+    const showSearch = tabHasSearch(tab);
 
     const overbar =
       totalOverrides() > 0
@@ -718,20 +717,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
           `</div>`
         : "";
 
-    const searchBar = showSearch
-      ? `<div class="dtf-search">
-          <div class="input">
-            ${I.search}
-            <input placeholder="Filter ${tab}…" value="${escapeAttr(view.search)}" />
-            ${view.search ? `<span class="kbd" data-action="clear-search">esc</span>` : `<span class="kbd">⌘K</span>`}
-          </div>
-          <div class="seg">
-            <button class="${view.view === "page" ? "active" : ""}" data-view="page">page</button>
-            <button class="${view.view === "all" ? "active" : ""}" data-view="all">all</button>
-          </div>
-          ${tab === "labels" ? `<select class="dtf-locale-sel" data-locale></select>` : ""}
-        </div>`
-      : "";
+    const searchBar = showSearch ? searchBarHtml(tab) : "";
 
     panel.innerHTML = `
       <div class="dtf-head">
@@ -808,31 +794,13 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     // Tab rail
     panel.querySelectorAll<HTMLButtonElement>(".dtf-rail .t").forEach((btn) => {
       btn.addEventListener("click", () => {
-        activeKey = btn.dataset.tab as PanelKey;
-        saveActivePanel(activeKey);
-        render();
+        switchTab(btn.dataset.tab as PanelKey);
       });
       if (btn.dataset.tab === "feedback") attachFeedbackQuickActions(btn);
     });
 
     // Search + view
-    if (showSearch) {
-      const input = panel.querySelector<HTMLInputElement>(".dtf-search input")!;
-      input.addEventListener("input", () => {
-        tabView[tab].search = input.value;
-        renderTabBody();
-      });
-      panel.querySelectorAll<HTMLButtonElement>(".dtf-search .seg button").forEach((b) => {
-        b.addEventListener("click", () => {
-          tabView[tab].view = b.dataset.view as "page" | "all";
-          render();
-        });
-      });
-      panel.querySelector('[data-action="clear-search"]')?.addEventListener("click", () => {
-        tabView[tab].search = "";
-        render();
-      });
-    }
+    if (showSearch) wireSearch(panel, tab);
 
     // Footer actions
     panel.querySelector('[data-action="clear-overrides"]')?.addEventListener("click", () => {
@@ -862,6 +830,93 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     });
 
     renderTabBody();
+  }
+
+  // Tab swap without tearing down the whole panel. Mutates only the surfaces
+  // that change between tabs — rail .active state, header title, the optional
+  // .dtf-search bar, and the body — so nothing else flickers. Falls back to a
+  // full render() in the unauthed/collapsed cases that need the shell to
+  // recompose.
+  function switchTab(next: PanelKey): void {
+    if (!session || state.collapsed) {
+      activeKey = next;
+      saveActivePanel(next);
+      render();
+      return;
+    }
+    if (next === activeKey) return;
+    const panel = root.querySelector<HTMLElement>(".dtf-panel");
+    if (!panel) {
+      activeKey = next;
+      saveActivePanel(next);
+      render();
+      return;
+    }
+    activeKey = next;
+    saveActivePanel(next);
+
+    // Rail active class — flip in place.
+    panel.querySelectorAll<HTMLButtonElement>(".dtf-rail .t").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.tab === next);
+    });
+
+    // Header title.
+    const tabDef = TABS.find((t) => t.k === next);
+    const titleEl = panel.querySelector<HTMLElement>(".dtf-head .ti .title");
+    if (tabDef && titleEl) titleEl.textContent = tabDef.label;
+
+    // Search bar — drop the existing one (if any) and insert one for the new
+    // tab if the new tab uses search. Cheaper to rebuild than to reconcile
+    // placeholder/value/locale-select across tab kinds.
+    const pane = panel.querySelector<HTMLElement>(".dtf-pane");
+    pane?.querySelector(".dtf-search")?.remove();
+    if (pane && tabHasSearch(next)) {
+      const body = pane.querySelector<HTMLElement>("#dtf-body");
+      body?.insertAdjacentHTML("beforebegin", searchBarHtml(next));
+      wireSearch(panel, next);
+    }
+
+    // Body content.
+    renderTabBody();
+  }
+
+  function tabHasSearch(tab: PanelKey): boolean {
+    return tab === "gates" || tab === "experiments" || tab === "configs" || tab === "labels";
+  }
+
+  function searchBarHtml(tab: PanelKey): string {
+    const view = tabView[tab];
+    return `<div class="dtf-search">
+        <div class="input">
+          ${I.search}
+          <input placeholder="Filter ${tab}…" value="${escapeAttr(view.search)}" />
+          ${view.search ? `<span class="kbd" data-action="clear-search">esc</span>` : `<span class="kbd">⌘K</span>`}
+        </div>
+        <div class="seg">
+          <button class="${view.view === "page" ? "active" : ""}" data-view="page">page</button>
+          <button class="${view.view === "all" ? "active" : ""}" data-view="all">all</button>
+        </div>
+        ${tab === "labels" ? `<select class="dtf-locale-sel" data-locale></select>` : ""}
+      </div>`;
+  }
+
+  function wireSearch(panel: HTMLElement, tab: PanelKey): void {
+    const input = panel.querySelector<HTMLInputElement>(".dtf-search input");
+    if (!input) return;
+    input.addEventListener("input", () => {
+      tabView[tab].search = input.value;
+      renderTabBody();
+    });
+    panel.querySelectorAll<HTMLButtonElement>(".dtf-search .seg button").forEach((b) => {
+      b.addEventListener("click", () => {
+        tabView[tab].view = b.dataset.view as "page" | "all";
+        render();
+      });
+    });
+    panel.querySelector('[data-action="clear-search"]')?.addEventListener("click", () => {
+      tabView[tab].search = "";
+      render();
+    });
   }
 
   function renderTabBody(): void {
