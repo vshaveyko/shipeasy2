@@ -5,17 +5,24 @@ import path from "node:path";
 import { test as setup } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 
-function cleanE2eTestData() {
+import { seedI18nFixture } from "./seed-fixtures";
+
+/** Locate the miniflare D1 sqlite file used by both the UI and worker dev servers. */
+function locateD1(): string | null {
   const dir = path.join(__dirname, "../.wrangler/state/v3/d1/miniflare-D1DatabaseObject");
   let files: string[];
   try {
     files = readdirSync(dir).filter((f) => f.endsWith(".sqlite") && !f.includes("metadata"));
   } catch {
-    return; // wrangler state not initialised yet — first run, nothing to clean
+    return null;
   }
-  if (files.length === 0) return;
+  if (files.length === 0) return null;
+  return path.join(dir, files[0]);
+}
 
-  const db = path.join(dir, files[0]);
+function cleanE2eTestData() {
+  const db = locateD1();
+  if (!db) return;
   const pid = "e2e-project-id";
   // experiment_metrics has no project_id column — must use subquery; delete before experiments
   try {

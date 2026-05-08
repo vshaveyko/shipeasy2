@@ -1,7 +1,15 @@
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 
+import { seedI18nFixture } from "../seed-fixtures";
+
 const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
+
+// Sibling tests in this run delete the seeded en:test profile/keys; re-seed
+// before each test so this spec is independent of run order.
+test.beforeEach(() => {
+  seedI18nFixture();
+});
 
 // Unique per-run prefix so parallel/repeated runs don't collide.
 const RUN = Date.now();

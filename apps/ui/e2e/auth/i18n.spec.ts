@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+import { seedI18nFixture } from "../seed-fixtures";
+
+// Sibling specs (i18n-keys-bulk, etc.) can delete or churn the seeded en:test
+// profile and keys; re-seed before each test so order doesn't matter.
+test.beforeEach(() => {
+  seedI18nFixture();
+});
+
 // ── Overview ──────────────────────────────────────────────────────────────────
 
 test.describe("i18n / String Manager overview", () => {
