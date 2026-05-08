@@ -114,15 +114,29 @@ test.describe("i18n Drafts CRUD", () => {
 test.describe("SDK Keys CRUD", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("create server key → Revoke button count increases by one", async ({ page }) => {
+  test("create server key → server type badge visible", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/keys");
-    const before = await page.getByRole("button", { name: /^revoke$/i }).count();
-
-    await page.locator("#key-type").selectOption("server");
-    await page.getByRole("button", { name: /^create key$/i }).click();
+    // The page renders an empty-state hero (no #key-type selector) when no
+    // keys exist. The hero CTA always creates a server key — use it.
+    const cta = page.getByRole("button", { name: /create your first key/i });
+    if (await cta.count()) {
+      await cta.click();
+      await page.waitForSelector("#key-type");
+    } else {
+      await page.locator("#key-type").selectOption("server");
+      await page.getByRole("button", { name: /^create key$/i }).click();
+    }
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
-    await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(before + 1);
+    // Server keys auto-revoke prior keys of the same type, so we assert on
+    // the badge rather than a strict +1 count delta.
+    await expect(
+      page
+        .locator("span")
+        .filter({ hasText: /^server$/i })
+        .first(),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(1);
   });
 
   test("new key entry shows server type badge", async ({ page }) => {
