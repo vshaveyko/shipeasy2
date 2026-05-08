@@ -4,7 +4,7 @@ test.describe("Metrics dashboard (top-level)", () => {
   test("empty state renders the hero copy and CTAs", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/metrics");
 
-    await expect(page.getByText(/track anything you ship\./i)).toBeVisible();
+    await expect(page.getByText(/track anything you ship/i)).toBeVisible();
     await expect(page.getByRole("button", { name: /start setup/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /skip to demo data/i })).toBeVisible();
   });

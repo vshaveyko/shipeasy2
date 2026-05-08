@@ -5,14 +5,19 @@ test("sdk keys page shows heading, key-type reference and create button", async 
 
   await expect(page.getByRole("heading", { name: /^sdk keys$/i, level: 1 })).toBeVisible();
 
-  // Key types reference section — check visible description text (not hidden <option> text)
+  // Empty-state reference: abbreviated descriptions next to each example env
+  // var. Full descriptions only appear once at least one key has been issued.
   for (const desc of [
     /full read of flags/i,
-    /evaluate-only\. safe to include/i,
-    /scoped to admin rest/i,
+    /browser-safe, evaluate-only/i,
+    /admin REST.*shown once/i,
   ]) {
     await expect(page.getByText(desc)).toBeVisible();
   }
 
-  await expect(page.getByRole("button", { name: /^create key$/i })).toBeEnabled();
+  // Empty-state CTA is "Create your first key"; the bare "Create key" button
+  // appears in the header only after at least one key exists.
+  await expect(
+    page.getByRole("button", { name: /create (your first )?key/i }),
+  ).toBeEnabled();
 });

@@ -3,8 +3,12 @@ import { expect, test } from "@playwright/test";
 const RUN = Date.now();
 
 // ── Key-type reference section ────────────────────────────────────────────────
+// In the empty-state hero (rendered when no keys exist — the e2e baseline),
+// the page shows abbreviated descriptions next to each SHIPEASY_*_KEY example,
+// not the full reference paragraphs that only appear once at least one key has
+// been issued. Match the empty-state copy.
 
-test.describe("SDK Keys — reference section", () => {
+test.describe("SDK Keys — reference section (empty state)", () => {
   test("server key description is visible", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/keys");
     await expect(page.getByText(/full read of flags/i)).toBeVisible();
@@ -12,12 +16,12 @@ test.describe("SDK Keys — reference section", () => {
 
   test("client key description is visible", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/keys");
-    await expect(page.getByText(/evaluate-only\. safe to include/i)).toBeVisible();
+    await expect(page.getByText(/browser-safe, evaluate-only/i)).toBeVisible();
   });
 
   test("admin key description is visible", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/keys");
-    await expect(page.getByText(/scoped to admin rest/i)).toBeVisible();
+    await expect(page.getByText(/admin REST.*shown once/i)).toBeVisible();
   });
 });
 
