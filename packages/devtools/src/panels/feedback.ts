@@ -8,6 +8,11 @@ import { escapeHtml, fmtBytes, timeAgo, emptyState, loadingState } from "./commo
 interface FeedbackHook {
   sub: "bugs" | "features";
   setSub: (s: "bugs" | "features") => void;
+  /** Optional one-shot signal from the rail's quick-actions hovercard. When
+   * set, the panel opens directly into the matching form instead of the list.
+   * Cleared via `consumePendingForm` so re-renders don't re-trigger. */
+  pendingForm?: "bug" | "feature" | null;
+  consumePendingForm?: () => void;
 }
 
 interface PendingAttachment {
@@ -60,6 +65,14 @@ export async function renderFeedbackPanel(
   // feature" we replace the list with the form inline (no modal).  `null`
   // = list view.  The Back / Cancel button on the form flips this back.
   let formMode: "bug" | "feature" | null = null;
+
+  // Honour a one-shot pending form request from the rail hovercard. Clear it
+  // so re-renders (e.g. after submit) drop back to the list view. The caller
+  // is responsible for syncing `sub` to the matching form before render.
+  if (hook.pendingForm) {
+    formMode = hook.pendingForm;
+    hook.consumePendingForm?.();
+  }
 
   async function render(): Promise<void> {
     if (formMode === "bug") {
@@ -733,9 +746,9 @@ function openAnnotateModal(
 ): void {
   void shadow;
   const wrap = document.createElement("div");
-  wrap.className = "dtf-modal-bg";
+  wrap.className = "dtf-modal-bg annotate";
   wrap.innerHTML = `
-    <div class="dtf-modal lg">
+    <div class="dtf-modal lg annot-modal">
       <div class="hd">
         <span class="k">Annotate screenshot</span>
         <button class="x" data-action="close">${I.x}</button>

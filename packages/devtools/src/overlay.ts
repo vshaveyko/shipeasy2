@@ -203,6 +203,9 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   let labelLocale = "en-US";
   // Feedback subtab
   let feedbackSub: "bugs" | "features" = "bugs";
+  // One-shot signal from the rail hovercard's quick-actions ("File a bug" /
+  // "Request a feature"). Read once by renderFeedbackPanel, then cleared.
+  let feedbackPendingForm: "bug" | "feature" | null = null;
   // User-tab editable state lives across re-renders
   const userState: UserPanelState = { props: {}, dirty: {} };
 
@@ -314,6 +317,107 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     }
   }
 
+  // Mounts a quick-actions hovercard on the feedback rail icon. Shown on
+  // hover, click jumps the panel directly into the corresponding inline form
+  // ("File a bug" / "Request a feature") via feedbackPendingForm. Card is
+  // appended to the shadow root with position:fixed and removed on hide so
+  // re-renders don't leak DOM.
+  function attachFeedbackQuickActions(btn: HTMLElement): void {
+    let card: HTMLElement | null = null;
+    let hideTimer: number | null = null;
+
+    const openForm = (form: "bug" | "feature") => {
+      hide(true);
+      feedbackPendingForm = form;
+      feedbackSub = form === "bug" ? "bugs" : "features";
+      activeKey = "feedback";
+      saveActivePanel(activeKey);
+      state = { ...state, collapsed: false };
+      saveOverlayState(state);
+      render();
+    };
+
+    const position = () => {
+      if (!card) return;
+      const r = btn.getBoundingClientRect();
+      const cw = card.offsetWidth;
+      const ch = card.offsetHeight;
+      const margin = 8;
+      // Pick a side based on which edge the panel is anchored to. Keeps the
+      // card on the "outside" so it doesn't overlap the panel body.
+      let left: number;
+      let top: number;
+      if (state.edge === "right") {
+        left = r.left - cw - margin;
+        top = r.top + r.height / 2 - ch / 2;
+      } else if (state.edge === "left") {
+        left = r.right + margin;
+        top = r.top + r.height / 2 - ch / 2;
+      } else if (state.edge === "top") {
+        left = r.left + r.width / 2 - cw / 2;
+        top = r.bottom + margin;
+      } else {
+        left = r.left + r.width / 2 - cw / 2;
+        top = r.top - ch - margin;
+      }
+      // Clamp to viewport.
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      left = Math.max(8, Math.min(vw - cw - 8, left));
+      top = Math.max(8, Math.min(vh - ch - 8, top));
+      card.style.left = `${left}px`;
+      card.style.top = `${top}px`;
+    };
+
+    const show = () => {
+      if (hideTimer) {
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+      if (card) return;
+      card = document.createElement("div");
+      card.className = "se-qa";
+      card.innerHTML =
+        `<span class="qa-hd">Quick actions</span>` +
+        `<button data-qa="bug">${I.bug}<span>File a bug</span><span class="sub">screenshot · video</span></button>` +
+        `<button data-qa="feature">${I.sparkles}<span>Request a feature</span></button>`;
+      shadow.appendChild(card);
+      position();
+      // Two RAFs so the browser commits the initial transform before the
+      // .show class swaps it — avoids a janky pop-in on first hover.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => card?.classList.add("show"));
+      });
+      card.addEventListener("mouseenter", show);
+      card.addEventListener("mouseleave", () => hide());
+      card.querySelectorAll<HTMLButtonElement>("[data-qa]").forEach((b) => {
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openForm(b.dataset.qa as "bug" | "feature");
+        });
+      });
+    };
+    const hide = (immediate = false) => {
+      if (hideTimer) {
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+      const drop = () => {
+        if (card) {
+          card.remove();
+          card = null;
+        }
+      };
+      if (immediate) {
+        drop();
+      } else {
+        hideTimer = window.setTimeout(drop, 160);
+      }
+    };
+    btn.addEventListener("mouseenter", show);
+    btn.addEventListener("mouseleave", () => hide());
+  }
+
   function renderCollapsed(panel: HTMLElement): void {
     const sz = state.railIconSize;
     // Unauthed: collapse all tab icons into one lock icon. The user can't do
@@ -405,6 +509,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         saveOverlayState(state);
         render();
       });
+      if (btn.dataset.tab === "feedback") attachFeedbackQuickActions(btn);
     });
 
     const resize = panel.querySelector<HTMLElement>(".dtf-rail-resize")!;
@@ -679,6 +784,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         saveActivePanel(activeKey);
         render();
       });
+      if (btn.dataset.tab === "feedback") attachFeedbackQuickActions(btn);
     });
 
     // Search + view
@@ -790,6 +896,10 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
           setSub: (s) => {
             feedbackSub = s;
             renderTabBody();
+          },
+          pendingForm: feedbackPendingForm,
+          consumePendingForm: () => {
+            feedbackPendingForm = null;
           },
         });
         break;

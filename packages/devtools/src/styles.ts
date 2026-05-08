@@ -46,7 +46,7 @@ button { font-family: inherit; }
    instead of always claiming full viewport height. */
 .dtf-panel { position:fixed; z-index:2147483646;
   width:420px;
-  min-height:360px;
+  min-height:520px;
   max-height:calc(100vh - 36px);
   background:linear-gradient(180deg, var(--bg-1), var(--bg-0));
   border:1px solid var(--line); border-radius:6px;
@@ -216,7 +216,7 @@ button { font-family: inherit; }
   padding:4px 6px; cursor:pointer; outline:none; max-width:140px; }
 .dtf-locale-sel:hover { border-color:var(--fg-4); }
 
-.dtf-body { flex:1; overflow-y:auto;
+.dtf-body { flex:1; overflow-y:auto; min-height:340px;
   scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
 .dtf-body::-webkit-scrollbar { width:6px; }
 .dtf-body::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
@@ -378,7 +378,8 @@ button { font-family: inherit; }
 
 /* empty states */
 .dtf-empty { padding:32px 20px; text-align:center; color:var(--fg-2);
-  display:flex; flex-direction:column; align-items:center; }
+  display:flex; flex-direction:column; align-items:center;
+  min-height:300px; justify-content:center; }
 .dtf-empty .vis { width:96px; height:96px; position:relative; margin-bottom:18px;
   display:grid; place-items:center; }
 .dtf-empty .vis .ring { position:absolute; inset:18px; border:1px solid var(--line);
@@ -412,7 +413,7 @@ button { font-family: inherit; }
   background:radial-gradient(circle, var(--warn), transparent 70%); animation:dtf-pulse 1.6s infinite; }
 
 /* loading */
-.dtf-load { padding:8px 0 0; position:relative; }
+.dtf-load { padding:8px 0 0; position:relative; min-height:300px; }
 .dtf-load .topstrip { position:absolute; top:0; left:0; right:0; height:1.5px;
   background:linear-gradient(90deg, transparent, var(--accent), transparent);
   background-size:200% 100%; animation:dtf-strip 1.4s linear infinite; }
@@ -845,7 +846,16 @@ button { font-family: inherit; }
 .se-status { font-family:var(--mono); font-size:10px; color:var(--fg-3);
   min-height:14px; }
 
-/* Annotator (screenshot markup tool) */
+/* Annotator (screenshot markup tool).
+   The default .dtf-modal sizes to its intrinsic content because of
+   align-self:center on the grid track — fine for short forms but lethal for
+   a canvas with 1080p natural dimensions, which would push the modal past the
+   viewport and break the flex chain. The .annotate variant locks the modal
+   to fill the panel so the body has a real max-height for the canvas to
+   contain itself against. */
+.dtf-modal-bg.annotate { padding:14px; }
+.dtf-modal.annot-modal { align-self:stretch; height:100%;
+  max-height:100%; }
 .dtf-modal .bd.annot-bd { padding:0; gap:0; overflow:hidden; }
 .se-annot { display:flex; flex-direction:column; flex:1; min-height:0;
   background:var(--bg-1); }
@@ -870,68 +880,83 @@ button { font-family: inherit; }
 .se-annot-swatch:hover { transform:scale(1.08); }
 .se-annot-swatch.on { border-color:var(--fg); transform:scale(1.12); }
 .se-annot-stage { position:relative; flex:1; min-height:0; min-width:0;
-  display:grid; place-items:center; padding:12px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  padding:12px; box-sizing:border-box; overflow:hidden;
   background:
     linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%) 0 0/14px 14px,
     linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%) 0 0/14px 14px,
     var(--bg-0); }
-.se-annot-canvas { display:block; max-width:100%; max-height:100%;
+.se-annot-canvas { display:block;
+  max-width:100%; max-height:100%;
   width:auto; height:auto; object-fit:contain;
   border:1px solid var(--line); border-radius:4px;
   box-shadow:0 8px 24px -8px rgba(0,0,0,0.6); background:#fff; }
 .se-annot-text-input { font-family:ui-sans-serif, system-ui, sans-serif; }
 
-/* Lightbox modal — full-size preview of an attached screenshot or recording */
-.dtf-lightbox { position:absolute; inset:0; z-index:60;
-  background:rgba(0,0,0,0.78); backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
+/* Lightbox modal — preview of an attached screenshot or recording.
+   Capped at 50vw/50vh (per request — small enough to not dominate the page)
+   with a strong border + elevation so it stays visible against arbitrary
+   dark / busy customer backgrounds. */
+.dtf-lightbox { position:fixed; inset:0; z-index:2147483647;
+  background:rgba(0,0,0,0.78); backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
   display:grid; place-items:center; padding:24px;
   animation:dtf-modal-bg-in .14s ease-out; }
-.dtf-lightbox .frame { position:relative; max-width:100%; max-height:100%;
-  display:flex; flex-direction:column; gap:8px; align-items:center; min-height:0; }
-.dtf-lightbox img, .dtf-lightbox video { max-width:100%;
-  max-height:calc(100% - 28px); object-fit:contain;
+.dtf-lightbox .frame { position:relative;
+  max-width:min(50vw, 1100px); max-height:50vh;
+  display:flex; flex-direction:column; gap:10px;
+  padding:14px; box-sizing:border-box;
+  background:var(--bg-1);
+  border:2px solid color-mix(in oklab, var(--accent) 42%, var(--line));
+  border-radius:10px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.5),
+    0 30px 80px -10px rgba(0,0,0,0.85),
+    0 0 40px -8px color-mix(in oklab, var(--accent) 50%, transparent);
+  animation:dtf-modal-in .18s cubic-bezier(.2,.8,.3,1); }
+.dtf-lightbox img, .dtf-lightbox video { display:block;
+  max-width:100%; max-height:calc(50vh - 80px);
+  width:auto; height:auto; object-fit:contain;
   border-radius:6px; border:1px solid var(--line);
-  box-shadow:0 24px 60px -16px rgba(0,0,0,0.8); background:#000; }
+  background:#000; }
 .dtf-lightbox .cap { font-family:var(--mono); font-size:10.5px;
-  color:var(--fg-2); display:flex; gap:10px; align-items:center; }
-.dtf-lightbox .x { position:absolute; top:-2px; right:-2px;
-  width:28px; height:28px; border-radius:50%; border:0;
-  background:var(--bg-2); color:var(--fg);
+  color:var(--fg-2); display:flex; gap:10px; align-items:center;
+  padding-top:8px; border-top:1px dashed var(--line-2); }
+.dtf-lightbox .x { position:absolute; top:-12px; right:-12px;
+  width:30px; height:30px; border-radius:50%;
+  border:2px solid color-mix(in oklab, var(--accent) 42%, var(--line));
+  background:var(--bg-1); color:var(--fg);
   display:grid; place-items:center; cursor:pointer;
-  box-shadow:0 4px 10px rgba(0,0,0,0.5); }
-.dtf-lightbox .x:hover { background:var(--bg-3); }
-.dtf-lightbox .x svg { width:13px; height:13px; }
+  box-shadow:0 6px 18px rgba(0,0,0,0.7); }
+.dtf-lightbox .x:hover { background:var(--bg-2);
+  border-color:var(--accent); color:var(--accent); }
+.dtf-lightbox .x svg { width:14px; height:14px; }
 
-/* Quick-actions hovercard on the feedback rail icon */
-.se-qa { position:absolute; z-index:20;
+/* Quick-actions hovercard on the feedback rail icon. Mounted at shadow-root
+   level with position:fixed so it never gets clipped by .dtf-panel overflow.
+   Top/left set in JS based on the button's bounding rect. */
+.se-qa { position:fixed; z-index:2147483647;
   background:var(--bg-2); border:1px solid var(--line); border-radius:6px;
   padding:5px; display:flex; flex-direction:column; gap:2px;
-  min-width:170px;
+  min-width:200px;
   box-shadow:0 14px 30px -10px rgba(0,0,0,0.7);
-  opacity:0; pointer-events:none; transition:opacity .12s ease;
+  opacity:0; pointer-events:none;
+  transform:translateY(2px);
+  transition:opacity .12s ease, transform .12s ease;
   font-family:var(--mono); font-size:11px; color:var(--fg-2); }
-.se-qa.show { opacity:1; pointer-events:auto; }
-.se-qa::before {
-  content:""; position:absolute;
-  /* invisible bridge to keep hover alive while moving cursor */ }
+.se-qa.show { opacity:1; pointer-events:auto; transform:translateY(0); }
 .se-qa .qa-hd { display:block; padding:5px 8px 4px;
   font-size:9.5px; color:var(--fg-4); letter-spacing:.06em;
   text-transform:uppercase; }
 .se-qa button { display:flex; align-items:center; gap:8px;
   background:transparent; border:0; color:var(--fg-2);
   font-family:var(--mono); font-size:11px; text-align:left;
-  padding:7px 8px; border-radius:4px; cursor:pointer; }
+  padding:7px 8px; border-radius:4px; cursor:pointer; width:100%; }
 .se-qa button:hover { background:var(--bg-3); color:var(--fg); }
 .se-qa button svg { width:12px; height:12px; flex-shrink:0; color:var(--fg-3); }
 .se-qa button:hover svg { color:var(--accent); }
-/* Position the card by edge — placed by JS on .dtf-panel-rail .ri.feedback or
-   .dtf-rail .t.feedback. */
-.dtf-panel.collapsed[data-edge="right"]  .se-qa.qa-rail-collapsed { right:calc(100% + 8px); }
-.dtf-panel.collapsed[data-edge="left"]   .se-qa.qa-rail-collapsed { left:calc(100% + 8px); }
-.dtf-panel.collapsed[data-edge="top"]    .se-qa.qa-rail-collapsed { top:calc(100% + 8px); }
-.dtf-panel.collapsed[data-edge="bottom"] .se-qa.qa-rail-collapsed { bottom:calc(100% + 8px); }
-.se-qa.qa-rail-expanded { left:calc(100% + 6px); top:50%; transform:translateY(-50%); }
+.se-qa button .sub { color:var(--fg-4); font-size:9.5px;
+  margin-left:auto; padding-left:10px; white-space:nowrap; }
 .se-status.err { color:var(--danger); }
 
 .ibtn { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
