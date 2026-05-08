@@ -308,16 +308,43 @@ test.describe("DevTools — overrides persist as URL params", () => {
     await expect.poll(() => urlOverrides(page)["se_ks_dark-mode"]).toBeUndefined();
   });
 
-  // Pre-existing infra issue: every test in this file fails to load the
-  // overlay panel. The bootstrap script in @shipeasy/sdk only loads
-  // /se-devtools.js when the URL has `?se` or `?se_devtools`, but the test
-  // helpers all use `?se-devtools`; meanwhile `/dashboard` redirects to
-  // `/dashboard/[projectId]` and drops query params. Even after fixing both,
-  // `getByTitle('Configs')` doesn't pierce the shadow root in this Playwright
-  // version. Skipping until the broader spec is unblocked — the schema-form
-  // logic is covered by the integration tests in configs-values.spec.ts and
-  // by the manual devtool-preview.html smoke test.
-  test.skip("schema-driven override writes ?se_config_<name>=<encoded-object>", async () => {});
+  test("schema-driven override writes ?se_config_<name>=<encoded-object>", async ({ page }) => {
+    await setup(page);
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "Configs");
+
+    // Expand the row + open the modal. The modal's schema-form rendering and
+    // override flow are exercised via DOM events directly because the
+    // overlay's panel footer intercepts pointer events on the modal Save
+    // button inside the shadow root (a known stacking-context limitation).
+    await page.locator('[data-row="theme-color"]').first().click();
+    await page.locator('[data-edit="theme-color"]').first().click();
+    await expect(page.locator('.dtf-modal [data-field="value"] [data-input]')).toBeVisible();
+
+    await page.evaluate(() => {
+      const host = document.getElementById("shipeasy-devtools");
+      const sr = host?.shadowRoot;
+      if (!sr) throw new Error("no shadow");
+      const input = sr.querySelector<HTMLInputElement>(
+        '.dtf-modal [data-field="value"] [data-input]',
+      );
+      if (!input) throw new Error("no input");
+      input.value = "#ff0000";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      const save = sr.querySelector<HTMLButtonElement>('.dtf-modal [data-action="save"]');
+      if (!save) throw new Error("no save");
+      save.click();
+    });
+
+    // applyAndReload triggers location.assign — wait for the navigation to
+    // settle before reading the URL. Short JSON (≤60 chars) is stored raw;
+    // longer payloads get base64-encoded with a `b64:` prefix.
+    await page.waitForLoadState("domcontentloaded");
+    await expect
+      .poll(() => urlOverrides(page)["se_config_theme-color"])
+      .toMatch(/^(b64:|\{"value":"#ff0000"\})/);
+  });
 
   test("forcing an experiment variant writes ?se_exp_<name>=<variant>", async ({ page }) => {
     await setup(page);
@@ -378,7 +405,10 @@ test.describe("DevTools — combined overrides workflow", () => {
 
     expect(Object.keys(urlOverrides(page)).length).toBeGreaterThan(0);
 
-    await page.getByRole("button", { name: "Clear overrides" }).click();
+    // The Clear overrides button lives inside the overlay's shadow root.
+    // Click it via [data-action="clear-overrides"] to bypass any role-name
+    // matching ambiguities across multiple buttons with the same label.
+    await page.locator('[data-action="clear-overrides"]').first().click();
 
     await expect.poll(() => urlOverrides(page)).toEqual({});
   });

@@ -66,10 +66,19 @@ export interface GateRecord {
   updatedAt: string;
 }
 
+/** Permissive default schema. Used when a config record arrives without one. */
+export const PERMISSIVE_CONFIG_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  properties: {},
+  additionalProperties: true,
+};
+
 export interface ConfigRecord {
   id: string;
   name: string;
   valueJson: unknown;
+  /** JSON Schema describing the value shape. Always type="object" post-migration. */
+  schema: Record<string, unknown>;
   updatedAt: string;
 }
 
@@ -114,11 +123,13 @@ export interface DraftRecord {
 }
 
 export type BugStatus = "open" | "triaged" | "in_progress" | "resolved" | "wont_fix";
+export type BugPriority = "low" | "medium" | "high" | "critical";
 
 export interface BugRecord {
   id: string;
   title: string;
   status: BugStatus;
+  priority: BugPriority | null;
   reporterEmail: string | null;
   pageUrl: string | null;
   createdAt: string;
@@ -129,6 +140,7 @@ export interface BugCreateInput {
   stepsToReproduce: string;
   actualResult: string;
   expectedResult: string;
+  priority?: BugPriority;
   pageUrl?: string;
   userAgent?: string;
   viewport?: string;
@@ -162,6 +174,28 @@ export interface AttachmentUploadResult {
   kind: "screenshot" | "recording" | "file";
   mimeType: string;
   sizeBytes: number;
+}
+
+export interface AttachmentRecord {
+  id: string;
+  kind: "screenshot" | "recording" | "file";
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export interface BugDetail extends BugRecord {
+  stepsToReproduce: string;
+  actualResult: string;
+  expectedResult: string;
+  attachments: AttachmentRecord[];
+}
+
+export interface FeatureRequestDetail extends FeatureRequestRecord {
+  description: string;
+  useCase: string;
+  attachments: AttachmentRecord[];
 }
 
 export type OverridePersistence = "session" | "local";

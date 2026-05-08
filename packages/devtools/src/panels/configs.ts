@@ -1,7 +1,9 @@
+import { Validator } from "@cfworker/json-schema";
 import type { DevtoolsApi } from "../api";
 import { getConfigOverride, setConfigOverride } from "../overrides";
 import type { ConfigRecord, ShipeasySdkBridge } from "../types";
 import { I } from "../icons";
+import { renderSchemaForm } from "../forms/schema-form";
 import {
   emptyState,
   escapeHtml,
@@ -56,6 +58,7 @@ interface RenderRow {
   effective: unknown;
   live: unknown;
   updatedAt: string;
+  schema: Record<string, unknown>;
 }
 
 function buildRow(c: ConfigRecord): RenderRow {
@@ -69,6 +72,7 @@ function buildRow(c: ConfigRecord): RenderRow {
     live,
     effective,
     updatedAt: c.updatedAt,
+    schema: c.schema,
   };
 }
 
@@ -220,26 +224,38 @@ function clone<T>(v: T): T {
   return v == null || typeof v !== "object" ? v : (JSON.parse(JSON.stringify(v)) as T);
 }
 
-function setAt(obj: unknown, path: Array<string | number>, value: unknown): unknown {
-  if (path.length === 0) return value;
-  const [head, ...rest] = path;
-  const parent = obj as Record<string | number, unknown> | unknown[];
-  if (Array.isArray(parent)) {
-    const next = parent.slice();
-    next[head as number] = setAt(parent[head as number], rest, value);
-    return next;
+function validateAgainstSchema(value: unknown, schema: Record<string, unknown>): string | null {
+  try {
+    const v = new Validator(schema as object, "2020-12", false);
+    const result = v.validate(value ?? {});
+    if (result.valid) return null;
+    return result.errors
+      .slice(0, 3)
+      .map((e) => `${e.instanceLocation || "/"}: ${e.error}`)
+      .join("; ");
+  } catch (err) {
+    return (err as Error).message;
   }
-  const next = { ...(parent as Record<string, unknown>) };
-  next[String(head)] = setAt((parent as Record<string, unknown>)[String(head)], rest, value);
-  return next;
 }
 
 function openOverrideModal(
   modalRoot: ParentNode & { appendChild: (n: Node) => Node },
-  row: { name: string; real: unknown; override: unknown },
+  row: {
+    name: string;
+    real: unknown;
+    override: unknown;
+    schema: Record<string, unknown>;
+  },
 ): void {
-  const initial = row.override !== undefined ? row.override : row.real;
-  let draft: unknown = clone(initial);
+  // Devtool can't edit schemas — only values. Schema is used purely to drive
+  // the form layout and validation. Coerce primitive legacy values to {} so
+  // the form has an object to render against.
+  const initialRaw = row.override !== undefined ? row.override : row.real;
+  const initial =
+    initialRaw !== null && typeof initialRaw === "object" && !Array.isArray(initialRaw)
+      ? (initialRaw as Record<string, unknown>)
+      : {};
+  let draft: Record<string, unknown> = clone(initial);
 
   const wrap = document.createElement("div");
   wrap.className = "dtf-modal-bg";
@@ -256,24 +272,29 @@ function openOverrideModal(
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save();
   }
   function save(): void {
+    const err = validateAgainstSchema(draft, row.schema);
+    if (err) {
+      paintError(err);
+      return;
+    }
     setConfigOverride(row.name, draft);
     close();
   }
+  function paintError(message: string | null): void {
+    const errEl = modal.querySelector<HTMLElement>("[data-error]");
+    if (errEl) errEl.textContent = message ?? "";
+  }
   function paint(): void {
     const dirty = !valEqual(draft, row.real);
-    const t = jsonType(draft);
     modal.innerHTML = `
       <div class="hd">
         <span class="k">${escapeHtml(row.name)}</span>
-        <span class="type-tag t-${t}">${t}</span>
+        <span class="type-tag t-object">object</span>
         <button class="x" data-action="close" title="Close (Esc)">${I.x}</button>
       </div>
       <div class="bd">
-        ${
-          t === "object" || t === "array"
-            ? `<div class="json-tree" id="tree"></div>`
-            : `<div class="row"><span class="lbl">${t}</span><span data-leaf></span></div>`
-        }
+        <div data-form></div>
+        <div class="dtf-sf-error" data-error></div>
       </div>
       <div class="ft">
         <button class="ghost" data-action="reset" ${dirty ? "" : "disabled"} style="${dirty ? "" : "opacity:.4"}">↺ Reset all</button>
@@ -282,25 +303,29 @@ function openOverrideModal(
         <button class="primary" data-action="save">Save override <span style="opacity:.6;margin-left:4px">⌘⏎</span></button>
       </div>`;
 
-    const treeEl = modal.querySelector<HTMLElement>("#tree");
-    if (treeEl)
-      renderJsonChildren(treeEl, draft, row.real, (next) => {
-        draft = next;
-        paint();
-      });
-    const leafEl = modal.querySelector<HTMLElement>("[data-leaf]");
-    if (leafEl) {
-      leafEl.innerHTML = renderLeafEditor(draft, row.real);
-      wireLeafEditor(leafEl, draft, row.real, (next) => {
-        draft = next;
-        paint();
-      });
-    }
+    const formHost = modal.querySelector<HTMLElement>("[data-form]")!;
+    renderSchemaForm(formHost, row.schema, draft, (next) => {
+      draft = next;
+      // Live-validate to clear stale errors as the user types.
+      paintError(null);
+      // Re-render only on dirty toggle to refresh the Reset button state.
+      const nowDirty = !valEqual(draft, row.real);
+      const resetBtn = modal.querySelector<HTMLButtonElement>('[data-action="reset"]');
+      if (resetBtn) {
+        resetBtn.disabled = !nowDirty;
+        resetBtn.style.opacity = nowDirty ? "" : ".4";
+      }
+    });
+
     modal.querySelector('[data-action="close"]')!.addEventListener("click", close);
     modal.querySelector('[data-action="cancel"]')!.addEventListener("click", close);
     modal.querySelector('[data-action="save"]')!.addEventListener("click", save);
     modal.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
-      draft = clone(row.real);
+      const realObj =
+        row.real !== null && typeof row.real === "object" && !Array.isArray(row.real)
+          ? (row.real as Record<string, unknown>)
+          : {};
+      draft = clone(realObj);
       paint();
     });
   }
@@ -310,125 +335,6 @@ function openOverrideModal(
   });
   document.addEventListener("keydown", onKey);
   paint();
-}
-
-function renderJsonChildren(
-  container: HTMLElement,
-  value: unknown,
-  realValue: unknown,
-  onChange: (next: unknown) => void,
-): void {
-  const t = jsonType(value);
-  const entries: Array<[string | number, unknown]> =
-    t === "array"
-      ? (value as unknown[]).map((v, i) => [i, v])
-      : Object.entries(value as Record<string, unknown>);
-  container.innerHTML = `<div class="json-children"></div>`;
-  const children = container.querySelector<HTMLElement>(".json-children")!;
-  for (const [k, v] of entries) {
-    const childT = jsonType(v);
-    const childReal = (realValue as Record<string | number, unknown> | null)?.[k as never];
-    if (childT === "object" || childT === "array") {
-      const branch = document.createElement("div");
-      const dirty = !valEqual(v, childReal);
-      branch.innerHTML = `
-        <div class="json-row branch${dirty ? " dirty" : ""}">
-          <span class="caret">▾</span>
-          <span class="key branch-key">${escapeHtml(String(k))}</span>
-          <span class="type t-${childT}">${childT}</span>
-          <span class="summary">${escapeHtml(summarizeVal(v))}</span>
-          ${dirty ? `<button class="reset" title="reset subtree">↺</button>` : ""}
-        </div>
-        <div class="json-children-host"></div>`;
-      children.appendChild(branch);
-      const sub = branch.querySelector<HTMLElement>(".json-children-host")!;
-      const branchRow = branch.querySelector<HTMLElement>(".json-row")!;
-      let open = true;
-      const repaintBranch = () => {
-        sub.innerHTML = "";
-        if (open) {
-          renderJsonChildren(sub, v, childReal, (nv) => {
-            onChange(setAt(value, [k], nv));
-          });
-        }
-      };
-      repaintBranch();
-      branchRow.addEventListener("click", () => {
-        open = !open;
-        branchRow.querySelector(".caret")!.textContent = open ? "▾" : "▸";
-        repaintBranch();
-      });
-      branch.querySelector(".reset")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        onChange(setAt(value, [k], clone(childReal)));
-      });
-    } else {
-      const dirty = !valEqual(v, childReal);
-      const row = document.createElement("div");
-      row.className = `json-row leaf${dirty ? " dirty" : ""}`;
-      row.innerHTML = `
-        <span class="caret"></span>
-        <span class="key">${escapeHtml(String(k))}</span>
-        <span class="type t-${childT}">${childT}</span>
-        ${renderLeafEditor(v, childReal)}`;
-      children.appendChild(row);
-      wireLeafEditor(row, v, childReal, (nv) => onChange(setAt(value, [k], nv)));
-    }
-  }
-}
-
-function renderLeafEditor(value: unknown, real: unknown): string {
-  const t = jsonType(value);
-  const dirty = !valEqual(value, real);
-  if (t === "boolean") {
-    return `<span class="ctl${dirty ? " changed" : ""}">
-      <span class="bool">
-        <button class="t${value === true ? " on" : ""}" data-bool="true">true</button>
-        <button class="f${value === false ? " on" : ""}" data-bool="false">false</button>
-      </span>
-      <button class="reset" title="reset to ${escapeAttr(String(real))}">↺</button>
-    </span>`;
-  }
-  if (t === "number") {
-    return `<span class="ctl${dirty ? " changed" : ""}">
-      <input type="number" value="${escapeAttr(String(value))}"/>
-      <button class="reset" title="reset to ${escapeAttr(String(real))}">↺</button>
-    </span>`;
-  }
-  if (t === "string") {
-    return `<span class="ctl${dirty ? " changed" : ""}">
-      <input type="text" value="${escapeAttr(String(value))}"/>
-      <button class="reset" title="reset to ${escapeAttr(String(real))}">↺</button>
-    </span>`;
-  }
-  return `<span class="summary">${escapeHtml(String(value))}</span>`;
-}
-
-function wireLeafEditor(
-  row: HTMLElement,
-  value: unknown,
-  real: unknown,
-  onChange: (next: unknown) => void,
-): void {
-  const t = jsonType(value);
-  if (t === "boolean") {
-    row.querySelectorAll<HTMLButtonElement>("[data-bool]").forEach((b) => {
-      b.addEventListener("click", () => onChange(b.dataset.bool === "true"));
-    });
-  } else if (t === "number") {
-    const input = row.querySelector<HTMLInputElement>("input")!;
-    input.addEventListener("input", () => {
-      const n = input.value === "" ? value : Number(input.value);
-      if (!Number.isNaN(n)) onChange(n);
-    });
-  } else if (t === "string") {
-    const input = row.querySelector<HTMLInputElement>("input")!;
-    input.addEventListener("input", () => onChange(input.value));
-  }
-  row.querySelector(".reset")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    onChange(clone(real));
-  });
 }
 
 function escapeAttr(s: string): string {

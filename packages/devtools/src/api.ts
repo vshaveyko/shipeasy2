@@ -1,11 +1,13 @@
 import type {
   AttachmentUploadResult,
   BugCreateInput,
+  BugDetail,
   BugRecord,
   ConfigRecord,
   DraftRecord,
   ExperimentRecord,
   FeatureRequestCreateInput,
+  FeatureRequestDetail,
   FeatureRequestRecord,
   GateRecord,
   KeyRecord,
@@ -13,6 +15,7 @@ import type {
   ProjectRecord,
   UniverseRecord,
 } from "./types";
+import { PERMISSIVE_CONFIG_SCHEMA } from "./types";
 
 export class DevtoolsApi {
   constructor(
@@ -82,13 +85,13 @@ export class DevtoolsApi {
   }
 
   async configs(): Promise<ConfigRecord[]> {
-    // The list endpoint shed `valueJson` when configs went per-env (migration
-    // 0004). Fetch the per-id detail and project the active env's value back
-    // into `valueJson` so the panel stays untouched. Default env is `prod`.
+    // The list endpoint sheds `valueJson` (per-env), so fetch each config's
+    // detail and project the active env's value back into `valueJson`.
+    // Default env is `prod`.
     const list =
-      await this.get<Array<ConfigRecord & { envs?: Record<string, unknown> }>>(
-        "/api/admin/configs",
-      );
+      await this.get<
+        Array<{ id: string; name: string; updatedAt: string; schema?: Record<string, unknown> }>
+      >("/api/admin/configs");
     const env = "prod";
     const details = await Promise.all(
       list.map(async (c) => {
@@ -96,12 +99,26 @@ export class DevtoolsApi {
           const detail = await this.get<{
             values?: Record<string, unknown>;
             valueJson?: unknown;
+            schema?: Record<string, unknown>;
           }>(`/api/admin/configs/${c.id}`);
           const valueJson =
-            detail.valueJson !== undefined ? detail.valueJson : (detail.values?.[env] ?? null);
-          return { ...c, valueJson } as ConfigRecord;
+            detail.valueJson !== undefined ? detail.valueJson : (detail.values?.[env] ?? {});
+          const schema = detail.schema ?? c.schema ?? PERMISSIVE_CONFIG_SCHEMA;
+          return {
+            id: c.id,
+            name: c.name,
+            updatedAt: c.updatedAt,
+            valueJson,
+            schema,
+          } as ConfigRecord;
         } catch {
-          return { ...c, valueJson: null } as ConfigRecord;
+          return {
+            id: c.id,
+            name: c.name,
+            updatedAt: c.updatedAt,
+            valueJson: {},
+            schema: c.schema ?? PERMISSIVE_CONFIG_SCHEMA,
+          } as ConfigRecord;
         }
       }),
     );
@@ -180,6 +197,10 @@ export class DevtoolsApi {
     return this.get("/api/admin/bugs");
   }
 
+  bug(id: string): Promise<BugDetail> {
+    return this.get(`/api/admin/bugs/${encodeURIComponent(id)}`);
+  }
+
   createBug(input: BugCreateInput): Promise<{ id: string }> {
     return this.post("/api/admin/bugs", input);
   }
@@ -188,8 +209,27 @@ export class DevtoolsApi {
     return this.get("/api/admin/feature-requests");
   }
 
+  featureRequest(id: string): Promise<FeatureRequestDetail> {
+    return this.get(`/api/admin/feature-requests/${encodeURIComponent(id)}`);
+  }
+
   createFeatureRequest(input: FeatureRequestCreateInput): Promise<{ id: string }> {
     return this.post("/api/admin/feature-requests", input);
+  }
+
+  /** Fetch an attachment file as a Blob via the authenticated stream route.
+   * The lightbox needs raw bytes (not a URL) because <img>/<video> can't send
+   * the Authorization header — we materialize an object URL on the consumer
+   * side and revoke it after preview. */
+  async attachmentBlob(id: string): Promise<Blob> {
+    const res = await fetch(
+      `${this.adminUrl}/api/admin/reports/attachments/${encodeURIComponent(id)}`,
+      { headers: { Authorization: `Bearer ${this.token}` } },
+    );
+    if (!res.ok) {
+      throw new Error(`attachment ${id} → HTTP ${res.status}`);
+    }
+    return res.blob();
   }
 
   async uploadAttachment(args: {

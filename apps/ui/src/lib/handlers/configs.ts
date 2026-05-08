@@ -1,16 +1,20 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { Validator } from "@cfworker/json-schema";
 import {
   checkLimit,
   rebuildFlags,
   ApiError,
   getEffectivePlan,
   CONFIG_ENVS,
+  DEFAULT_CONFIG_SCHEMA,
   type ConfigEnv,
+  type JsonSchema,
 } from "@shipeasy/core";
 import { configs, configValues, configDrafts, auditLog } from "@shipeasy/core/db/schema";
 import {
   configCreateSchema,
   configUpdateSchema,
+  configSchemaUpdateSchema,
   configDraftUpsertSchema,
   configPublishSchema,
 } from "@shipeasy/core/schemas/configs";
@@ -25,7 +29,7 @@ export type ConfigSummary = {
   id: string;
   name: string;
   description: string | null;
-  valueType: string;
+  schema: JsonSchema;
   updatedAt: string;
   envs: Partial<Record<ConfigEnv, { version: number; publishedAt: string; publishedBy: string }>>;
   drafts: Partial<
@@ -59,6 +63,26 @@ function latestRowsPerEnv<T extends { configId: string; env: string; version: nu
     out.push(r);
   }
   return out;
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** Throws ApiError(400) if `value` does not conform to `schema`. */
+function assertValueMatchesSchema(value: unknown, schema: JsonSchema): void {
+  if (!isPlainObject(value)) {
+    throw new ApiError("Config value must be a JSON object", 400);
+  }
+  const validator = new Validator(schema as object, "2020-12", false);
+  const result = validator.validate(value);
+  if (!result.valid) {
+    const detail = result.errors
+      .map((e) => `${e.instanceLocation || "/"}: ${e.error}`)
+      .slice(0, 5)
+      .join("; ");
+    throw new ApiError(`Config value does not match schema: ${detail}`, 400);
+  }
 }
 
 export async function listConfigs(identity: AdminIdentity): Promise<ConfigSummary[]> {
@@ -118,7 +142,7 @@ export async function listConfigs(identity: AdminIdentity): Promise<ConfigSummar
     id: m.id,
     name: m.name,
     description: m.description,
-    valueType: m.valueType,
+    schema: m.schemaJson,
     updatedAt: m.updatedAt,
     envs: envByConfig.get(m.id) ?? {},
     drafts: draftsByConfig.get(m.id) ?? {},
@@ -163,7 +187,7 @@ export async function getConfig(identity: AdminIdentity, id: string): Promise<Co
     id: meta.id,
     name: meta.name,
     description: meta.description,
-    valueType: meta.valueType,
+    schema: meta.schemaJson,
     updatedAt: meta.updatedAt,
     envs,
     drafts,
@@ -181,7 +205,7 @@ function seedValues(parsed: { value: unknown }): Record<ConfigEnv, unknown> {
       envKeys.length > 0 && envKeys.every((k) => (CONFIG_ENVS as readonly string[]).includes(k));
     if (isEnvMap) {
       const out = {} as Record<ConfigEnv, unknown>;
-      for (const envName of CONFIG_ENVS) out[envName] = candidate[envName] ?? null;
+      for (const envName of CONFIG_ENVS) out[envName] = candidate[envName] ?? {};
       return out;
     }
   }
@@ -198,14 +222,18 @@ export async function createConfig(identity: AdminIdentity, input: unknown) {
 
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  const seed = seedValues(parsed);
+  const seed = seedValues({ value: parsed.value ?? {} });
+  for (const envName of CONFIG_ENVS) {
+    assertValueMatchesSchema(seed[envName], parsed.schema);
+  }
+
   const s = await scopedDbSA(identity.projectId);
   try {
     await s.insert(configs).values({
       id,
       name: parsed.name,
       description: parsed.description ?? null,
-      valueType: parsed.valueType ?? "object",
+      schemaJson: parsed.schema,
       updatedAt: now,
     });
   } catch (err) {
@@ -231,7 +259,7 @@ export async function createConfig(identity: AdminIdentity, input: unknown) {
   return { id, name: parsed.name };
 }
 
-/** Flat update — writes the same value to all envs by creating a new version in each. */
+/** Flat update — accepts an optional new schema and/or a flat value applied to all envs. */
 export async function updateConfig(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = configUpdateSchema.parse(input);
   const project = await loadProject(identity.projectId);
@@ -241,28 +269,57 @@ export async function updateConfig(identity: AdminIdentity, id: string, input: u
 
   const rows = await s.selectWhere(configs, eq(configs.id, id));
   if (rows.length === 0) throw new ApiError("Config not found", 404);
+  const meta = rows[0];
 
-  for (const envName of CONFIG_ENVS) {
-    const latest = await s
-      .selectWhere(configValues, and(eq(configValues.configId, id), eq(configValues.env, envName))!)
-      .orderBy(desc(configValues.version))
-      .limit(1);
-    const nextVersion = (latest[0]?.version ?? 0) + 1;
-    await s.insert(configValues).values({
-      id: crypto.randomUUID(),
-      configId: id,
-      env: envName,
-      valueJson: parsed.value,
-      version: nextVersion,
-      publishedAt: now,
-      publishedBy: identity.actorEmail,
-    });
+  const schema = parsed.schema ?? meta.schemaJson;
+
+  if (parsed.value !== undefined) {
+    assertValueMatchesSchema(parsed.value, schema);
+
+    for (const envName of CONFIG_ENVS) {
+      const latest = await s
+        .selectWhere(
+          configValues,
+          and(eq(configValues.configId, id), eq(configValues.env, envName))!,
+        )
+        .orderBy(desc(configValues.version))
+        .limit(1);
+      const nextVersion = (latest[0]?.version ?? 0) + 1;
+      await s.insert(configValues).values({
+        id: crypto.randomUUID(),
+        configId: id,
+        env: envName,
+        valueJson: parsed.value,
+        version: nextVersion,
+        publishedAt: now,
+        publishedBy: identity.actorEmail,
+      });
+    }
   }
-  await s.update(configs).set({ updatedAt: now }).where(eq(configs.id, id));
 
-  await rebuildFlags(env, identity.projectId, project.plan);
+  const update: Partial<{ schemaJson: JsonSchema; updatedAt: string }> = { updatedAt: now };
+  if (parsed.schema) update.schemaJson = parsed.schema;
+  await s.update(configs).set(update).where(eq(configs.id, id));
+
+  if (parsed.value !== undefined) {
+    await rebuildFlags(env, identity.projectId, project.plan);
+  }
   await writeAudit(identity, "config.update", "config", id, parsed);
   return { id };
+}
+
+/** Update only the schema — does NOT bump value versions and does NOT rebuild KV. */
+export async function updateConfigSchema(identity: AdminIdentity, id: string, input: unknown) {
+  const parsed = configSchemaUpdateSchema.parse(input);
+  const s = await scopedDbSA(identity.projectId);
+  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  if (rows.length === 0) throw new ApiError("Config not found", 404);
+  await s
+    .update(configs)
+    .set({ schemaJson: parsed.schema, updatedAt: new Date().toISOString() })
+    .where(eq(configs.id, id));
+  await writeAudit(identity, "config.schema.update", "config", id, parsed);
+  return { id, schema: parsed.schema };
 }
 
 export async function saveDraft(identity: AdminIdentity, id: string, input: unknown) {
@@ -271,6 +328,7 @@ export async function saveDraft(identity: AdminIdentity, id: string, input: unkn
 
   const rows = await s.selectWhere(configs, eq(configs.id, id));
   if (rows.length === 0) throw new ApiError("Config not found", 404);
+  assertValueMatchesSchema(parsed.value, rows[0].schemaJson);
 
   const latest = await s
     .selectWhere(
@@ -341,6 +399,7 @@ export async function publishDraft(identity: AdminIdentity, id: string, input: u
 
   const rows = await s.selectWhere(configs, eq(configs.id, id));
   if (rows.length === 0) throw new ApiError("Config not found", 404);
+  const meta = rows[0];
 
   const draft = await s
     .selectWhere(
@@ -349,6 +408,7 @@ export async function publishDraft(identity: AdminIdentity, id: string, input: u
     )
     .limit(1);
   if (draft.length === 0) throw new ApiError(`No draft to publish for env=${parsed.env}`, 404);
+  assertValueMatchesSchema(draft[0].valueJson, meta.schemaJson);
 
   const latest = await s
     .selectWhere(
@@ -442,3 +502,5 @@ function safeParse(s: string): unknown {
     return s;
   }
 }
+
+export { DEFAULT_CONFIG_SCHEMA };

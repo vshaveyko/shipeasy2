@@ -1,0 +1,27 @@
+{
+  "name": "@shipeasy/admin-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared typed client for the Shipeasy admin API. Single source of truth for endpoint paths, request/response shapes, and the resource registry consumed by @shipeasy/cli and @shipeasy/mcp.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./resources/*": "./src/resources/*.ts",
+    "./transport": "./src/transport.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@shipeasy/core": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.4",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

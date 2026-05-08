@@ -2,14 +2,17 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, GitBranch, BookOpen, Code2, Check, Trash2 } from "lucide-react";
+import { GitBranch, Check, Trash2, AlertTriangle } from "lucide-react";
+import { Validator } from "@cfworker/json-schema";
 
 import type { ConfigActivity, ConfigDetail } from "@/lib/handlers/configs";
-import type { ConfigEnv } from "@shipeasy/core";
+import type { ConfigEnv, JsonSchema } from "@shipeasy/core";
 import { EnvTabs, CONFIG_ENVS } from "@/components/dashboard/env-tabs";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { SchemaBuilder } from "@/components/configs/schema-builder";
+import { ValueForm } from "@/components/configs/value-form";
+import { updateConfigSchema as updateConfigSchemaAction } from "@/actions/configs";
 import { formatDistanceToNow } from "./format-time";
 
 type Props = {
@@ -17,84 +20,12 @@ type Props = {
   initialActivity: ConfigActivity[];
 };
 
-function formatValue(value: unknown): string {
-  if (value === undefined) return "";
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
-
-function parseValue(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
-  const trimmed = text.trim();
-  if (trimmed === "") return { ok: true, value: null };
-  try {
-    return { ok: true, value: JSON.parse(trimmed) };
-  } catch (err) {
-    return { ok: false, error: (err as Error).message };
-  }
-}
-
 function deepEqual(a: unknown, b: unknown): boolean {
   try {
     return JSON.stringify(a) === JSON.stringify(b);
   } catch {
     return a === b;
   }
-}
-
-function countDiffLines(baseText: string, draftText: string): number {
-  const baseLines = baseText.split("\n");
-  const draftLines = draftText.split("\n");
-  let diff = 0;
-  const max = Math.max(baseLines.length, draftLines.length);
-  for (let i = 0; i < max; i++) {
-    if ((baseLines[i] ?? "") !== (draftLines[i] ?? "")) diff++;
-  }
-  return diff;
-}
-
-/** Minimal JSON tokenizer for syntax-highlighted read-only display. */
-function highlightJson(text: string): { cls: string; text: string }[] {
-  const out: { cls: string; text: string }[] = [];
-  const tokenPattern =
-    /("(?:\\.|[^"\\])*")(\s*:)?|(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)|(true|false|null)|([{}\[\],])|(\s+)|([^\s]+)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = tokenPattern.exec(text))) {
-    if (m[1] !== undefined) {
-      // Strings: keys (":") vs values
-      out.push({ cls: m[2] ? "k" : "s", text: m[1] + (m[2] ?? "") });
-    } else if (m[3] !== undefined) {
-      out.push({ cls: "n", text: m[3] });
-    } else if (m[4] !== undefined) {
-      out.push({ cls: "b", text: m[4] });
-    } else if (m[5] !== undefined) {
-      out.push({ cls: "", text: m[5] });
-    } else if (m[6] !== undefined) {
-      out.push({ cls: "", text: m[6] });
-    } else if (m[7] !== undefined) {
-      out.push({ cls: "c", text: m[7] });
-    }
-  }
-  return out;
-}
-
-function JsonView({ text }: { text: string }) {
-  const tokens = useMemo(() => highlightJson(text), [text]);
-  return (
-    <pre className="se-json">
-      {tokens.map((t, i) =>
-        t.cls ? (
-          <span key={i} className={t.cls}>
-            {t.text}
-          </span>
-        ) : (
-          t.text
-        ),
-      )}
-    </pre>
-  );
 }
 
 function actionLabel(action: string): string {
@@ -105,6 +36,8 @@ function actionLabel(action: string): string {
       return "published";
     case "config.update":
       return "edited";
+    case "config.schema.update":
+      return "updated the schema";
     case "config.draft.save":
       return "saved a draft";
     case "config.draft.discard":
@@ -113,6 +46,20 @@ function actionLabel(action: string): string {
       return "deleted";
     default:
       return action.replace(/^config\./, "");
+  }
+}
+
+function validateValue(value: unknown, schema: JsonSchema): string | null {
+  try {
+    const v = new Validator(schema as object, "2020-12", false);
+    const result = v.validate(value ?? {});
+    if (result.valid) return null;
+    return result.errors
+      .slice(0, 3)
+      .map((e) => `${e.instanceLocation || "/"}: ${e.error}`)
+      .join("; ");
+  } catch (err) {
+    return (err as Error).message;
   }
 }
 
@@ -128,64 +75,78 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const publishedValue = detail.values[selectedEnv];
-  const publishedText = formatValue(publishedValue);
-  const draftExists = Boolean(detail.drafts[selectedEnv]);
-  const initialDraftText = draftExists
-    ? formatValue(detail.draftValues[selectedEnv])
-    : publishedText;
-
-  const [draftTextByEnv, setDraftTextByEnv] = useState<Partial<Record<ConfigEnv, string>>>({
-    [selectedEnv]: initialDraftText,
-  });
-  const draftText = draftTextByEnv[selectedEnv] ?? initialDraftText;
-
-  const parsed = useMemo(() => parseValue(draftText), [draftText]);
-  const hasChanges = useMemo(() => {
-    if (!parsed.ok) return false;
-    return !deepEqual(parsed.value, publishedValue ?? null);
-  }, [parsed, publishedValue]);
-  const diffLines = useMemo(
-    () => countDiffLines(publishedText, draftText),
-    [publishedText, draftText],
+  const [schemaDraft, setSchemaDraft] = useState<JsonSchema>(detail.schema);
+  const schemaDirty = useMemo(
+    () => !deepEqual(schemaDraft, detail.schema),
+    [schemaDraft, detail.schema],
   );
 
+  const initialValueByEnv: Partial<Record<ConfigEnv, unknown>> = {};
+  for (const e of CONFIG_ENVS) {
+    initialValueByEnv[e] = detail.drafts[e]
+      ? (detail.draftValues[e] ?? {})
+      : (detail.values[e] ?? {});
+  }
+  const [valueByEnv, setValueByEnv] =
+    useState<Partial<Record<ConfigEnv, unknown>>>(initialValueByEnv);
+
+  const publishedValue = detail.values[selectedEnv] ?? null;
+  const draftExists = Boolean(detail.drafts[selectedEnv]);
+  const currentValue = valueByEnv[selectedEnv] ?? {};
+  const hasChanges = !deepEqual(currentValue, publishedValue);
   const version = detail.envs[selectedEnv]?.version ?? 0;
   const draftInfo = detail.drafts[selectedEnv];
 
+  const envsFailingValidation = useMemo(() => {
+    const failing: ConfigEnv[] = [];
+    for (const e of CONFIG_ENVS) {
+      const v = detail.values[e];
+      if (v === undefined) continue;
+      if (validateValue(v, detail.schema) !== null) failing.push(e);
+    }
+    return failing;
+  }, [detail.values, detail.schema]);
+
   const handleEnvChange = (env: ConfigEnv) => {
     setSelectedEnv(env);
-    if (!(env in draftTextByEnv)) {
-      const pub = formatValue(detail.values[env]);
-      const d = detail.drafts[env] ? formatValue(detail.draftValues[env]) : pub;
-      setDraftTextByEnv((s) => ({ ...s, [env]: d }));
-    }
     setError(null);
     setNotice(null);
   };
 
-  const handleDraftChange = (text: string) => {
-    setDraftTextByEnv((s) => ({ ...s, [selectedEnv]: text }));
+  const handleValueChange = (next: unknown) => {
+    setValueByEnv((s) => ({ ...s, [selectedEnv]: next }));
     setError(null);
     setNotice(null);
   };
 
-  const resetToPublished = () => {
-    setDraftTextByEnv((s) => ({ ...s, [selectedEnv]: publishedText }));
+  const resetValueToPublished = () => {
+    setValueByEnv((s) => ({ ...s, [selectedEnv]: publishedValue ?? {} }));
     setError(null);
     setNotice(null);
+  };
+
+  const saveSchema = () => {
+    startTransition(async () => {
+      try {
+        await updateConfigSchemaAction(detail.id, schemaDraft);
+        setDetail((d) => ({ ...d, schema: schemaDraft }));
+        setNotice("Schema saved");
+      } catch (err) {
+        setError((err as Error).message);
+      }
+    });
+  };
+
+  const resetSchema = () => {
+    setSchemaDraft(detail.schema);
   };
 
   const saveDraft = () => {
-    if (!parsed.ok) {
-      setError(parsed.error);
-      return;
-    }
     startTransition(async () => {
       const res = await fetch(`/api/admin/configs/${detail.id}/drafts`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ env: selectedEnv, value: parsed.value }),
+        body: JSON.stringify({ env: selectedEnv, value: currentValue }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -199,7 +160,7 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
 
   const discardDraft = () => {
     if (!draftExists) {
-      resetToPublished();
+      resetValueToPublished();
       return;
     }
     startTransition(async () => {
@@ -214,22 +175,18 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
         return;
       }
       await refreshDetail();
-      resetToPublished();
+      resetValueToPublished();
       setNotice("Draft discarded");
     });
   };
 
   const publishDraft = () => {
-    if (!parsed.ok) {
-      setError(parsed.error);
-      return;
-    }
     startTransition(async () => {
-      if (!deepEqual(parsed.value, detail.draftValues[selectedEnv])) {
+      if (!deepEqual(currentValue, detail.draftValues[selectedEnv])) {
         const saveRes = await fetch(`/api/admin/configs/${detail.id}/drafts`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ env: selectedEnv, value: parsed.value }),
+          body: JSON.stringify({ env: selectedEnv, value: currentValue }),
         });
         if (!saveRes.ok) {
           const body = (await saveRes.json().catch(() => ({}))) as { error?: string };
@@ -275,21 +232,23 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
     if (detailRes.ok) {
       const fresh = (await detailRes.json()) as ConfigDetail;
       setDetail(fresh);
-      const updated: Partial<Record<ConfigEnv, string>> = {};
+      const updated: Partial<Record<ConfigEnv, unknown>> = {};
       for (const envName of CONFIG_ENVS) {
-        if (fresh.drafts[envName]) {
-          updated[envName] = formatValue(fresh.draftValues[envName]);
-        } else {
-          updated[envName] = formatValue(fresh.values[envName]);
-        }
+        updated[envName] = fresh.drafts[envName]
+          ? (fresh.draftValues[envName] ?? {})
+          : (fresh.values[envName] ?? {});
       }
-      setDraftTextByEnv(updated);
+      setValueByEnv(updated);
     }
     if (activityRes.ok) {
       const fresh = (await activityRes.json()) as ConfigActivity[];
       setActivity(fresh);
     }
   }
+
+  const fieldCount = Object.keys(
+    (detail.schema.properties as Record<string, unknown> | undefined) ?? {},
+  ).length;
 
   return (
     <div className="flex h-full flex-col">
@@ -301,9 +260,6 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <EnvTabs value={selectedEnv} onChange={handleEnvChange} />
-          <Button variant="secondary" size="sm" disabled>
-            <Sparkles className="size-3" /> Ask Claude
-          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -320,20 +276,19 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
           >
             <Check className="size-3" />
             Publish
-            {diffLines > 0 ? (
-              <span className="ml-1 text-[11px] opacity-80">· {diffLines} changes</span>
-            ) : null}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-col gap-6 p-6">
         <PageHeader
-          kicker={`${detail.valueType} · last updated ${formatDistanceToNow(detail.updatedAt)}`}
+          kicker={`${fieldCount} ${
+            fieldCount === 1 ? "field" : "fields"
+          } · last updated ${formatDistanceToNow(detail.updatedAt)}`}
           title={detail.name}
           description={
             detail.description ??
-            "Runtime-editable configuration with typed schema, live validation, and per-environment overrides."
+            "Schema-driven configuration with per-environment publishing. Edit the schema on the left, the value on the right."
           }
         />
 
@@ -349,16 +304,10 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
               title={`Draft by ${draftInfo?.authorEmail ?? "unknown"}`}
             >
               <span className="dot" />
-              {diffLines > 0 ? `${diffLines} UNPUBLISHED` : "DRAFT"}
+              DRAFT
             </span>
           ) : null}
           <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" disabled>
-              <BookOpen className="size-3" /> Schema
-            </Button>
-            <Button variant="ghost" size="sm" disabled>
-              <Code2 className="size-3" /> Usage
-            </Button>
             <Button variant="ghost" size="sm" disabled>
               <GitBranch className="size-3" /> History
             </Button>
@@ -397,15 +346,18 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-2)] px-4 py-2.5">
-          <Sparkles className="size-3.5 text-[var(--se-accent)]" />
-          <div className="text-[13px] flex-1">
-            <b>Claude suggestions</b>{" "}
-            <span className="text-muted-foreground">
-              aren't wired up yet — will surface here once the assist channel ships.
-            </span>
+        {envsFailingValidation.length > 0 ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[color-mix(in_oklab,var(--se-warn)_30%,transparent)] bg-[var(--se-warn-soft)] px-4 py-2.5 text-[13px] text-[var(--se-warn)]"
+          >
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+            <div>
+              Published values for {envsFailingValidation.join(", ")} no longer match the current
+              schema. The SDK will keep serving them until you publish an update.
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-[var(--radius-md)] border border-[color-mix(in_oklab,var(--se-danger)_30%,transparent)] bg-[var(--se-danger-soft)] px-4 py-2 text-[13px] text-[var(--se-danger)]">
@@ -419,46 +371,65 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
         ) : null}
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <div>
-            <div className="t-caps dim-2 mb-2 flex items-center justify-between">
-              <span>Draft · {selectedEnv}</span>
-              <span className="text-[var(--se-fg-4)]">
-                {hasChanges
-                  ? `${diffLines} line${diffLines === 1 ? "" : "s"} changed`
-                  : "no changes"}
-              </span>
+          <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-2)] p-4">
+            <div className="flex items-center justify-between">
+              <div className="t-caps dim-2">Schema</div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetSchema}
+                  disabled={pending || !schemaDirty}
+                >
+                  Revert
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveSchema}
+                  disabled={pending || !schemaDirty}
+                  data-testid="save-schema-button"
+                >
+                  Save schema
+                </Button>
+              </div>
             </div>
-            <textarea
-              value={draftText}
-              onChange={(e) => handleDraftChange(e.target.value)}
-              className={cn(
-                "se-json w-full min-h-[280px] resize-y",
-                !parsed.ok && "border-[var(--se-danger)]",
-              )}
-              style={{ whiteSpace: "pre", color: "var(--se-fg)" }}
-              spellCheck={false}
-            />
-            <div className="mt-2 flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={saveDraft}
-                disabled={pending || !parsed.ok || !hasChanges}
-              >
-                Save draft
-              </Button>
-              <Button variant="ghost" size="sm" onClick={resetToPublished} disabled={pending}>
-                Revert
-              </Button>
-              {!parsed.ok ? (
-                <span className="text-[12px] text-[var(--se-danger)]">{parsed.error}</span>
-              ) : null}
-            </div>
+            <SchemaBuilder value={schemaDraft} onChange={setSchemaDraft} />
           </div>
 
-          <div>
-            <div className="t-caps dim-2 mb-2">Published · v{version}</div>
-            <JsonView text={publishedText || "null"} />
+          <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-2)] p-4">
+            <div className="flex items-center justify-between">
+              <div className="t-caps dim-2">
+                Value · {selectedEnv}{" "}
+                <span className="text-[var(--se-fg-4)]">
+                  {hasChanges ? "(unsaved)" : "(in sync)"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetValueToPublished}
+                  disabled={pending || !hasChanges}
+                >
+                  Revert
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={saveDraft}
+                  disabled={pending || !hasChanges}
+                >
+                  Save draft
+                </Button>
+              </div>
+            </div>
+            <ValueForm
+              key={`${detail.id}-${selectedEnv}-${JSON.stringify(detail.schema)}`}
+              schema={detail.schema}
+              value={currentValue}
+              onChange={handleValueChange}
+              disabled={pending}
+            />
           </div>
         </div>
 

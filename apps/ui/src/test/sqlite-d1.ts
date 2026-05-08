@@ -19,6 +19,13 @@ const MIGRATIONS = [
   join(__dirname, "../../../../packages/worker/migrations/0010_add_project_domain.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0011_multi_project.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0012_project_modules.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0013_connectors.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0014_sdk_key_creator.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0015_drop_owner_email_unique.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0016_projects_owner_domain_uniq.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0017_project_modules_user_events.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0018_bug_priority.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0019_configs_schema.sql"),
 ];
 
 class SqliteStatement {

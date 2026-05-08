@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS configs (
   project_id TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
-  value_type TEXT NOT NULL DEFAULT 'object',
+  schema_json TEXT NOT NULL DEFAULT '{"type":"object","properties":{},"additionalProperties":true}',
   updated_at TEXT NOT NULL,
   deleted_at TEXT
 );

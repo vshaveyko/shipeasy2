@@ -22,7 +22,8 @@ import { PUT as UPDATE_DRAFT, DELETE as DELETE_DRAFT } from "../drafts/[id]/rout
 
 beforeEach(async () => {
   const env = createTestEnv();
-  await seedProject(env);
+  // Paid plan — these tests need to create multiple profiles + many keys.
+  await seedProject(env, undefined, undefined, "paid");
   mockEnv.DB = env.DB;
   mockEnv.FLAGS_KV = env.FLAGS_KV;
 });
@@ -110,7 +111,12 @@ async function upsertKeys(profileId: string, keys = [{ key: "hello", value: "Hel
 
 describe("GET /admin/i18n/keys", () => {
   it("returns empty list initially", async () => {
-    expect(await (await LIST_KEYS(req("GET", "/api/admin/i18n/keys"))).json()).toEqual([]);
+    const body = (await (await LIST_KEYS(req("GET", "/api/admin/i18n/keys"))).json()) as {
+      keys: unknown[];
+      total: number;
+    };
+    expect(body.keys).toEqual([]);
+    expect(body.total).toBe(0);
   });
 
   it("lists keys for a profile", async () => {
@@ -120,8 +126,10 @@ describe("GET /admin/i18n/keys", () => {
       { key: "farewell", value: "Goodbye" },
     ]);
     const url = `http://localhost/api/admin/i18n/keys?profile_id=${id}`;
-    const body = (await (await LIST_KEYS(new Request(url))).json()) as { key: string }[];
-    expect(body.map((k) => k.key).sort()).toEqual(["farewell", "greeting"]);
+    const body = (await (await LIST_KEYS(new Request(url))).json()) as {
+      keys: { key: string }[];
+    };
+    expect(body.keys.map((k) => k.key).sort()).toEqual(["farewell", "greeting"]);
   });
 });
 
@@ -135,14 +143,13 @@ describe("POST /admin/i18n/keys (upsert)", () => {
   it("updates existing keys on conflict", async () => {
     const { id } = await createProfile("en");
     await upsertKeys(id, [{ key: "hi", value: "Hello" }]);
-    const body = await upsertKeys(id, [{ key: "hi", value: "Hi there" }]);
-    expect(body.upserted).toBe(1);
+    const upsertResult = await upsertKeys(id, [{ key: "hi", value: "Hi there" }]);
+    expect(upsertResult.upserted).toBe(1);
     const url = `http://localhost/api/admin/i18n/keys?profile_id=${id}`;
-    const list = (await (await LIST_KEYS(new Request(url))).json()) as {
-      key: string;
-      value: string;
-    }[];
-    expect(list.find((k) => k.key === "hi")?.value).toBe("Hi there");
+    const listBody = (await (await LIST_KEYS(new Request(url))).json()) as {
+      keys: { key: string; value: string }[];
+    };
+    expect(listBody.keys.find((k) => k.key === "hi")?.value).toBe("Hi there");
   });
 
   it("returns 404 for unknown profile_id", async () => {
@@ -163,8 +170,10 @@ describe("PUT /admin/i18n/keys/:id", () => {
     const { id: profileId } = await createProfile("en");
     await upsertKeys(profileId, [{ key: "btn", value: "Click" }]);
     const url = `http://localhost/api/admin/i18n/keys?profile_id=${profileId}`;
-    const list = (await (await LIST_KEYS(new Request(url))).json()) as { id: string }[];
-    const keyId = list[0].id;
+    const body = (await (await LIST_KEYS(new Request(url))).json()) as {
+      keys: { id: string }[];
+    };
+    const keyId = body.keys[0].id;
 
     const res = await UPDATE_KEY(req("PUT", `/api/admin/i18n/keys/${keyId}`, { value: "Tap" }), {
       params: Promise.resolve({ id: keyId }),
@@ -188,8 +197,10 @@ describe("DELETE /admin/i18n/keys/:id", () => {
     const { id: profileId } = await createProfile("en");
     await upsertKeys(profileId, [{ key: "bye", value: "Bye" }]);
     const url = `http://localhost/api/admin/i18n/keys?profile_id=${profileId}`;
-    const list = (await (await LIST_KEYS(new Request(url))).json()) as { id: string }[];
-    const keyId = list[0].id;
+    const body = (await (await LIST_KEYS(new Request(url))).json()) as {
+      keys: { id: string }[];
+    };
+    const keyId = body.keys[0].id;
 
     expect(
       (

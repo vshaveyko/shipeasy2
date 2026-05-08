@@ -1391,3 +1391,97 @@
     color: var(--se-accent-fg);
   }
 }
+
+/* RJSF (react-jsonschema-form) base styling, scoped to .se-rjsf so it doesn't
+   bleed into other forms. The library renders unstyled HTML inputs by default. */
+.se-rjsf .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+}
+.se-rjsf .field-description,
+.se-rjsf .control-label {
+  font-size: 12px;
+  color: var(--se-fg-3);
+}
+.se-rjsf .control-label {
+  font-weight: 500;
+}
+.se-rjsf .required:after {
+  content: " *";
+  color: var(--se-warn);
+}
+.se-rjsf input[type="text"],
+.se-rjsf input[type="number"],
+.se-rjsf input[type="url"],
+.se-rjsf input[type="email"],
+.se-rjsf textarea,
+.se-rjsf select {
+  height: 2rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: transparent;
+  padding: 0.25rem 0.625rem;
+  font-size: 13px;
+  outline: none;
+}
+.se-rjsf input[type="text"]:focus-visible,
+.se-rjsf input[type="number"]:focus-visible,
+.se-rjsf textarea:focus-visible,
+.se-rjsf select:focus-visible {
+  border-color: var(--ring);
+}
+.se-rjsf input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+.se-rjsf .checkbox label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 13px;
+}
+.se-rjsf .field-array {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.se-rjsf .array-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.se-rjsf .array-item .form-group {
+  flex: 1;
+  margin: 0;
+}
+.se-rjsf .btn {
+  height: 1.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0 0.5rem;
+  font-size: 12px;
+  background-color: transparent;
+  cursor: pointer;
+}
+.se-rjsf .btn:hover {
+  background-color: var(--muted);
+}
+.se-rjsf .field-error,
+.se-rjsf .text-danger {
+  color: var(--destructive);
+  font-size: 12px;
+}
+.se-rjsf .panel-danger,
+.se-rjsf .errors {
+  display: none;
+}
+.se-rjsf legend {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--se-fg-3);
+  padding-top: 0.4rem;
+}

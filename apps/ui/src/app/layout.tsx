@@ -80,6 +80,18 @@ export default async function RootLayout({
         )}
         {/* eslint-disable-next-line react/no-danger */}
         <script dangerouslySetInnerHTML={{ __html: seConfig.getBootstrapHtml() }} />
+        {/*
+          Compat shim: the SDK bootstrap only loads /se-devtools.js when the URL
+          has ?se or ?se_devtools (underscore). Existing test fixtures and
+          customer code use ?se-devtools (dash). Pick up the dash variant here
+          so both forms work without round-tripping through the submodule.
+        */}
+        {/* eslint-disable-next-line react/no-danger */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var p=new URLSearchParams(location.search);if(!p.has('se-devtools'))return;if(document.querySelector('script[data-se-devtools]'))return;var s=document.createElement('script');s.src='/se-devtools.js';s.setAttribute('data-se-devtools','1');document.head.appendChild(s);})();`,
+          }}
+        />
         {children}
         <Toaster theme="dark" position="bottom-right" richColors />
       </body>

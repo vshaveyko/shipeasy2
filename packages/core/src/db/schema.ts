@@ -248,8 +248,15 @@ export const gates = sqliteTable(
 
 export const CONFIG_ENVS = ["dev", "staging", "prod"] as const;
 export type ConfigEnv = (typeof CONFIG_ENVS)[number];
-export const CONFIG_VALUE_TYPES = ["string", "number", "boolean", "object", "array"] as const;
-export type ConfigValueType = (typeof CONFIG_VALUE_TYPES)[number];
+
+/** Permissive default schema — accepts any object. */
+export const DEFAULT_CONFIG_SCHEMA = {
+  type: "object" as const,
+  properties: {},
+  additionalProperties: true,
+};
+
+export type JsonSchema = Record<string, unknown>;
 
 export const configs = sqliteTable(
   "configs",
@@ -260,7 +267,10 @@ export const configs = sqliteTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
-    valueType: text("value_type", { enum: CONFIG_VALUE_TYPES }).notNull().default("object"),
+    schemaJson: text("schema_json", { mode: "json" })
+      .$type<JsonSchema>()
+      .notNull()
+      .default(DEFAULT_CONFIG_SCHEMA),
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
@@ -643,6 +653,9 @@ export const labelDraftKeys = sqliteTable(
 export const BUG_STATUSES = ["open", "triaged", "in_progress", "resolved", "wont_fix"] as const;
 export type BugStatus = (typeof BUG_STATUSES)[number];
 
+export const BUG_PRIORITIES = ["low", "medium", "high", "critical"] as const;
+export type BugPriority = (typeof BUG_PRIORITIES)[number];
+
 export const bugReports = sqliteTable(
   "bug_reports",
   {
@@ -655,6 +668,7 @@ export const bugReports = sqliteTable(
     actualResult: text("actual_result").notNull().default(""),
     expectedResult: text("expected_result").notNull().default(""),
     status: text("status", { enum: BUG_STATUSES }).notNull().default("open"),
+    priority: text("priority", { enum: BUG_PRIORITIES }),
     reporterEmail: text("reporter_email"),
     pageUrl: text("page_url"),
     userAgent: text("user_agent"),

@@ -18,10 +18,18 @@ import { PATCH, DELETE } from "../[id]/route";
 
 beforeEach(async () => {
   const env = createTestEnv();
-  await seedProject(env);
+  // Paid plan by default — most tests create multiple universes. Tests that
+  // explicitly need free-plan behavior flip the row themselves.
+  await seedProject(env, undefined, undefined, "paid");
   mockEnv.DB = env.DB;
   mockEnv.FLAGS_KV = env.FLAGS_KV;
 });
+
+async function setProjectPlan(plan: "free" | "paid"): Promise<void> {
+  await mockEnv.DB.prepare("UPDATE projects SET plan = ? WHERE id = ?")
+    .bind(plan, TEST_PROJECT_ID)
+    .run();
+}
 
 async function createUniverse(name = "main") {
   const res = await POST(req("POST", "/api/admin/universes", { name, unit_type: "user_id" }));
@@ -77,6 +85,7 @@ describe("PATCH /admin/universes/:id", () => {
 
   it("returns 403 setting holdout_range on free plan", async () => {
     const { id } = await createUniverse("holdout-gated");
+    await setProjectPlan("free");
     const res = await PATCH(
       req("PATCH", `/api/admin/universes/${id}`, { holdout_range: [0, 500] }),
       {

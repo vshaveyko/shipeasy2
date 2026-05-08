@@ -23,6 +23,12 @@ function draftCount(c: ConfigSummary): number {
   return Object.keys(c.drafts).length;
 }
 
+function fieldCount(schema: { properties?: Record<string, unknown> } | unknown): number {
+  if (!schema || typeof schema !== "object") return 0;
+  const props = (schema as { properties?: Record<string, unknown> }).properties;
+  return props ? Object.keys(props).length : 0;
+}
+
 function activeIdFromPath(pathname: string | null): string | undefined {
   if (!pathname) return undefined;
   const m = pathname.match(/\/dashboard\/configs\/values\/([^/]+)$/);
@@ -115,7 +121,7 @@ export function ConfigsTree({ configs }: Props) {
                           />
                         ) : null}
                         <span className="t-mono-xs text-[10px] text-[var(--se-fg-4)]">
-                          {c.valueType}
+                          {fieldCount(c.schema)} {fieldCount(c.schema) === 1 ? "field" : "fields"}
                         </span>
                       </Link>
                     </li>

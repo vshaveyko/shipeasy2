@@ -225,6 +225,11 @@ button { font-family: inherit; }
 
 .dtf-body { flex:1; overflow-y:auto; min-height:340px;
   scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+/* When an inline form mounts inside the panel body, swap the body to a flex
+   column with no scroll of its own — the form's own .bd then handles the
+   scroll and its .hd / .ft (Submit / Cancel) stay pinned at top/bottom. */
+.dtf-body:has(> .dtf-inline-form) { display:flex; flex-direction:column;
+  overflow:hidden; }
 .dtf-body::-webkit-scrollbar { width:6px; }
 .dtf-body::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
 .dtf-body::-webkit-scrollbar-thumb:hover { background:var(--fg-4); }
@@ -690,6 +695,40 @@ button { font-family: inherit; }
 .json-children { margin-left:6px; border-left:1px dashed var(--line); padding-left:8px; }
 .json-tree > .json-children { margin-left:0; padding-left:0; border-left:0; }
 
+/* schema-driven config form (devtool override modal) */
+.dtf-sf { display:flex; flex-direction:column; gap:8px;
+  font-family:var(--mono); font-size:11px; }
+.dtf-sf-empty { font-family:var(--mono); font-size:11px; color:var(--fg-3);
+  padding:14px; border:1px dashed var(--line); border-radius:6px; text-align:center; }
+.dtf-sf-field { display:grid; grid-template-columns:140px 1fr; gap:8px;
+  align-items:center; }
+.dtf-sf-field .dtf-sf-desc { grid-column:2; color:var(--fg-4); font-size:10px;
+  margin-top:-2px; }
+.dtf-sf-lbl { display:flex; align-items:center; gap:6px; color:var(--fg-2); }
+.dtf-sf-lbl .k { color:var(--fg); }
+.dtf-sf-lbl .req { color:var(--warn); }
+.dtf-sf-lbl .t { color:var(--fg-4); font-size:9.5px; text-transform:uppercase;
+  letter-spacing:.04em; margin-left:auto; }
+.dtf-sf input[type="text"], .dtf-sf input[type="number"], .dtf-sf select {
+  background:var(--bg-3); border:1px solid var(--line); color:var(--fg);
+  font-family:var(--mono); font-size:11px;
+  padding:4px 8px; border-radius:4px; outline:none; width:100%; box-sizing:border-box; }
+.dtf-sf input[type="text"]:focus, .dtf-sf input[type="number"]:focus,
+.dtf-sf select:focus {
+  border-color:color-mix(in oklab, var(--pri) 45%, var(--line)); }
+.dtf-sf-bool { display:inline-flex; gap:0; }
+.dtf-sf-bool button { background:var(--bg-3); border:1px solid var(--line);
+  color:var(--fg-3); font-family:var(--mono); font-size:11px;
+  padding:3px 10px; cursor:pointer; }
+.dtf-sf-bool button.t { border-radius:4px 0 0 4px; }
+.dtf-sf-bool button.f { border-radius:0 4px 4px 0; border-left:0; }
+.dtf-sf-bool button.t.on { background:color-mix(in oklab, var(--pass) 25%, var(--bg-3));
+  color:var(--pass); border-color:color-mix(in oklab, var(--pass) 35%, var(--line)); }
+.dtf-sf-bool button.f.on { background:color-mix(in oklab, var(--danger) 25%, var(--bg-3));
+  color:var(--danger); border-color:color-mix(in oklab, var(--danger) 35%, var(--line)); }
+.dtf-sf-error { color:var(--danger); font-family:var(--mono); font-size:10.5px;
+  min-height:14px; }
+
 /* feedback (bugs / feature requests) */
 .se-fb-subtabs { display:flex; gap:0; padding:0 10px;
   border-bottom:1px solid var(--line); background:var(--bg-1); }
@@ -746,6 +785,11 @@ button { font-family: inherit; }
   font-family:var(--mono); font-size:10px; color:var(--fg-2);
   padding-top:6px; border-top:1px dashed var(--line-2); }
 .se-fb-meta .k { color:var(--fg-4); letter-spacing:.04em; text-transform:uppercase; font-size:9.5px; }
+.se-attach-slot:empty { display:none; }
+.se-attach-slot-loading { font-family:var(--mono); font-size:10px;
+  color:var(--fg-3); padding:6px 0 2px; }
+.se-attach-slot-loading.err { color:var(--danger); }
+.se-attach-card.readonly .preview { cursor:pointer; }
 .se-fb-actions { display:flex; gap:5px; }
 
 .badge { font-family:var(--mono); font-size:9px; font-weight:600;
@@ -769,11 +813,20 @@ button { font-family: inherit; }
 .se-field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .se-label { font-family:var(--mono); font-size:9.5px; color:var(--fg-3);
   letter-spacing:.04em; text-transform:uppercase; }
+.se-req { color:var(--danger); margin-left:2px; }
 .se-input { background:var(--bg-2); border:1px solid var(--line);
   border-radius:4px; padding:6px 8px; color:var(--fg);
   font-family:var(--sans); font-size:12px; line-height:1.4;
   outline:none; box-sizing:border-box; }
 .se-input:focus { border-color:color-mix(in oklab, var(--accent) 45%, var(--line)); }
+/* Field-level validation: applied to .se-field on submit when its input is
+   missing/invalid. Cleared when the user types into the field. The label
+   turns red too so the failing field is obvious even after the user has
+   scrolled past the input. */
+.se-field.invalid .se-input { border-color:var(--danger);
+  background:color-mix(in oklab, var(--danger) 8%, var(--bg-2)); }
+.se-field.invalid .se-label { color:var(--danger); }
+.se-field.invalid .se-input:focus { border-color:var(--danger); }
 .se-textarea { resize:vertical; min-height:54px; font-family:var(--sans); }
 .se-actions { display:flex; gap:6px; flex-wrap:wrap; }
 .se-actions .ibtn { display:inline-flex; align-items:center; gap:5px; }
@@ -860,11 +913,26 @@ button { font-family: inherit; }
    viewport and break the flex chain. The .annotate variant locks the modal
    to fill the panel so the body has a real max-height for the canvas to
    contain itself against. */
-.dtf-modal-bg.annotate { padding:14px; }
-.dtf-modal.annot-modal { align-self:stretch; height:100%;
-  max-height:100%; }
+/* Annotator scrim is fixed to the viewport (not the panel-relative absolute
+   default) so JS can carve out room for the docked devtools panel. */
+.dtf-modal-bg.annotate { position:fixed; padding:24px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.72); }
+.dtf-modal.annot-modal { align-self:center; justify-self:center;
+  width:auto; height:auto; max-width:100%; max-height:100%;
+  border:2px solid color-mix(in oklab, var(--accent) 50%, var(--line));
+  box-shadow:0 28px 70px -12px rgba(0,0,0,0.85),
+    0 0 0 1px rgba(255,255,255,0.04) inset; }
+.dtf-modal.annot-modal .ft button.primary {
+  background:color-mix(in oklab, var(--accent) 24%, var(--bg-3));
+  color:var(--accent);
+  border-color:color-mix(in oklab, var(--accent) 55%, var(--line));
+  font-weight:600; padding:6px 14px; }
+.dtf-modal.annot-modal .ft button.primary:hover {
+  background:color-mix(in oklab, var(--accent) 38%, var(--bg-3));
+  color:var(--fg); }
 .dtf-modal .bd.annot-bd { padding:0; gap:0; overflow:hidden; }
-.se-annot { display:flex; flex-direction:column; flex:1; min-height:0;
+.se-annot { display:flex; flex-direction:column; flex:0 1 auto; min-height:0;
   background:var(--bg-1); }
 .se-annot-toolbar { display:flex; align-items:center; gap:6px;
   padding:8px 10px; background:var(--bg-2);
@@ -886,16 +954,16 @@ button { font-family: inherit; }
   transition:transform .12s, border-color .12s; }
 .se-annot-swatch:hover { transform:scale(1.08); }
 .se-annot-swatch.on { border-color:var(--fg); transform:scale(1.12); }
-.se-annot-stage { position:relative; flex:1; min-height:0; min-width:0;
+.se-annot-stage { position:relative; flex:0 1 auto;
   display:flex; align-items:center; justify-content:center;
   padding:12px; box-sizing:border-box; overflow:hidden;
   background:
     linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%) 0 0/14px 14px,
     linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%) 0 0/14px 14px,
     var(--bg-0); }
+/* Canvas display dims are set inline by the annotator after measuring the
+   available area in the modal (see fitAnnotator in feedback.ts). */
 .se-annot-canvas { display:block;
-  max-width:100%; max-height:100%;
-  width:auto; height:auto; object-fit:contain;
   border:1px solid var(--line); border-radius:4px;
   box-shadow:0 8px 24px -8px rgba(0,0,0,0.6); background:#fff; }
 .se-annot-text-input { font-family:ui-sans-serif, system-ui, sans-serif; }

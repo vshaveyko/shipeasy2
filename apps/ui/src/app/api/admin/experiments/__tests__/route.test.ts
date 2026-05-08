@@ -179,7 +179,7 @@ describe("PATCH /admin/experiments/:id", () => {
 });
 
 describe("DELETE /admin/experiments/:id", () => {
-  it("deletes a draft experiment", async () => {
+  it("archives a draft experiment", async () => {
     const { id } = await createExp();
     expect(
       (
@@ -188,13 +188,14 @@ describe("DELETE /admin/experiments/:id", () => {
         })
       ).status,
     ).toBe(200);
-    expect(
-      (
-        await GET_ONE(req("GET", `/api/admin/experiments/${id}`), {
-          params: Promise.resolve({ id }),
-        })
-      ).status,
-    ).toBe(404);
+    // The handler soft-deletes by flipping status to "archived" rather than
+    // hard-deleting the row. The record is still readable but no longer in
+    // the running set.
+    const after = await GET_ONE(req("GET", `/api/admin/experiments/${id}`), {
+      params: Promise.resolve({ id }),
+    });
+    expect(after.status).toBe(200);
+    expect(((await after.json()) as { status: string }).status).toBe("archived");
   });
 
   it("returns 409 when deleting a running experiment", async () => {

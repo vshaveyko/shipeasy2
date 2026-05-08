@@ -67,10 +67,8 @@ async function seedConfig(
 ): Promise<void> {
   const now = new Date().toISOString();
   await env
-    .DB!.prepare(
-      "INSERT INTO configs (id, project_id, name, value_type, updated_at) VALUES (?, ?, ?, ?, ?)",
-    )
-    .bind(opts.id, opts.projectId, opts.name, "object", now)
+    .DB!.prepare("INSERT INTO configs (id, project_id, name, updated_at) VALUES (?, ?, ?, ?)")
+    .bind(opts.id, opts.projectId, opts.name, now)
     .run();
   for (const envName of ["dev", "staging", "prod"] as const) {
     await env
@@ -1085,11 +1083,15 @@ describe("GET /sdk/bootstrap", () => {
     t = await makeTestEnv();
   });
 
-  it("400 when X-User-Context header is missing", async () => {
+  it("evaluates with an empty user context when X-User-Context is missing", async () => {
     await rebuildFlags(t.env, t.projectId, "free");
     await rebuildExperiments(t.env, t.projectId);
     const resp = await fetchApp(req("GET", "/sdk/bootstrap", t.serverKey), t.env);
-    expect(resp.status).toBe(400);
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { flags: object; configs: object; experiments: object };
+    expect(body).toHaveProperty("flags");
+    expect(body).toHaveProperty("configs");
+    expect(body).toHaveProperty("experiments");
   });
 
   it("returns evaluated flags, configs, and experiments for the given user", async () => {

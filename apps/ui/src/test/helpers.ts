@@ -26,13 +26,14 @@ export async function seedProject(
   env: TestEnv,
   id = TEST_PROJECT_ID,
   email = TEST_EMAIL,
+  plan: "free" | "paid" = "free",
 ): Promise<void> {
   const db = drizzle(env.DB, {});
   await db.insert(projects).values({
     id,
     name: "Test Project",
     ownerEmail: email,
-    plan: "free",
+    plan,
     status: "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
