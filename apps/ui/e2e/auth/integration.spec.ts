@@ -25,50 +25,50 @@ test.describe("Integration: full experiment lifecycle", () => {
     page,
   }) => {
     // 1. Register event
-    await page.goto("/dashboard/experiments/events");
+    await page.goto("/dashboard/e2e-project-id/experiments/events");
     await page.locator("#event-name").fill(evName);
     await page.getByRole("button", { name: /^add event$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/events$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/events$/);
     await expect(divRow(page, evName).getByText(/^approved$/i)).toBeVisible();
 
     // 2. Create metric referencing the new event
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.getByLabel(/^name$/i).fill(mName);
     await page.getByLabel(/^event name$/i).fill(evName);
     await page.getByRole("button", { name: /^new metric$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/metrics/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(page.getByText(mName)).toBeVisible();
 
     // 3. Create experiment (uses seeded default universe)
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page.locator("#exp-key").fill(expKey);
     await page.getByRole("button", { name: /^save draft$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(divRow(page, expKey).getByText(/^draft$/i)).toBeVisible();
 
     // 4. Start the experiment
     await divRow(page, expKey)
       .getByRole("button", { name: /^start$/i })
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(divRow(page, expKey).getByText(/^running$/i)).toBeVisible();
 
     // 5. Stop the experiment
     await divRow(page, expKey)
       .getByRole("button", { name: /^stop$/i })
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(divRow(page, expKey).getByText(/^stopped$/i)).toBeVisible();
 
     // 6. Delete the stopped experiment
     await divRow(page, expKey)
       .getByRole("button", { name: /^delete$/i })
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(page.getByText(expKey, { exact: true })).not.toBeVisible();
 
     // 7. Clean up: delete metric and event
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page
       .getByText(mName, { exact: true })
       .locator("..")
@@ -76,7 +76,7 @@ test.describe("Integration: full experiment lifecycle", () => {
       .getByRole("button", { name: /^delete$/i })
       .click();
 
-    await page.goto("/dashboard/experiments/events");
+    await page.goto("/dashboard/e2e-project-id/experiments/events");
     await divRow(page, evName)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -94,21 +94,21 @@ test.describe("Integration: gate and config for the same feature", () => {
 
   test("create gate + config → gate is enabled → delete both", async ({ page }) => {
     // 1. Create the feature gate
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await page.locator("#gate-key").fill(featureSlug);
     await page.getByRole("button", { name: /^create gate$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/configs\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
     await expect(divRow(page, featureSlug).getByText("enabled")).toBeVisible();
 
     // 2. Create the feature config
-    await page.goto("/dashboard/configs/values/new");
+    await page.goto("/dashboard/e2e-project-id/configs/values/new");
     await page.locator("#config-key").fill(featureSlug);
     await page.getByRole("button", { name: /^create config$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/configs\/values$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values$/);
     await expect(page.getByText(featureSlug, { exact: true })).toBeVisible();
 
     // 3. Disable then re-enable the gate (test the toggle cycle)
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     await divRow(page, featureSlug)
       .getByRole("button", { name: /^disable$/i })
       .click();
@@ -125,7 +125,7 @@ test.describe("Integration: gate and config for the same feature", () => {
     await expect(page.getByText(featureSlug, { exact: true })).not.toBeVisible();
 
     // 5. Delete the config
-    await page.goto("/dashboard/configs/values");
+    await page.goto("/dashboard/e2e-project-id/configs/values");
     await page
       .getByText(featureSlug, { exact: true })
       .locator("..")
@@ -153,10 +153,10 @@ test.describe("Integration: i18n profile and draft lifecycle", () => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
     for (const name of [prof1, prof2]) {
-      await p.goto("/dashboard/i18n/profiles/new");
+      await p.goto("/dashboard/e2e-project-id/i18n/profiles/new");
       await p.getByLabel(/^name$/i).fill(name);
       await p.getByRole("button", { name: /^create profile$/i }).click();
-      await expect(p).toHaveURL(/\/dashboard\/i18n\/profiles$/);
+      await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/profiles$/);
     }
     await ctx.close();
   });
@@ -166,7 +166,7 @@ test.describe("Integration: i18n profile and draft lifecycle", () => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
     for (const name of [prof1, prof2]) {
-      await p.goto("/dashboard/i18n/profiles");
+      await p.goto("/dashboard/e2e-project-id/i18n/profiles");
       const btn = p.getByRole("button", { name: new RegExp(`delete profile ${name}`, "i") });
       if ((await btn.count()) > 0) await btn.click();
     }
@@ -174,12 +174,12 @@ test.describe("Integration: i18n profile and draft lifecycle", () => {
   });
 
   test("create draft → drafts list shows profile name and creator email", async ({ page }) => {
-    await page.goto("/dashboard/i18n/drafts/new");
+    await page.goto("/dashboard/e2e-project-id/i18n/drafts/new");
     await page.getByLabel(/^name$/i).fill(draftA);
     await page.locator("#draft-profile").selectOption({ label: prof1 });
     await page.getByRole("button", { name: /^create draft$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/i18n\/drafts$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/drafts$/);
     const row = page.getByRole("row").filter({ hasText: draftA });
     await expect(row.getByText(prof1)).toBeVisible();
     await expect(row.getByText(/e2e@shipeasy\.test/i)).toBeVisible();
@@ -188,13 +188,13 @@ test.describe("Integration: i18n profile and draft lifecycle", () => {
 
   test("abandon first draft → create second draft for different profile", async ({ page }) => {
     // Abandon draftA
-    await page.goto("/dashboard/i18n/drafts");
+    await page.goto("/dashboard/e2e-project-id/i18n/drafts");
     await page
       .getByRole("row")
       .filter({ hasText: draftA })
       .getByRole("button", { name: /^abandon$/i })
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/i18n\/drafts$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/drafts$/);
     await expect(
       page
         .getByRole("row")
@@ -204,11 +204,11 @@ test.describe("Integration: i18n profile and draft lifecycle", () => {
     ).toBeVisible();
 
     // Create draftB for the second profile
-    await page.goto("/dashboard/i18n/drafts/new");
+    await page.goto("/dashboard/e2e-project-id/i18n/drafts/new");
     await page.getByLabel(/^name$/i).fill(draftB);
     await page.locator("#draft-profile").selectOption({ label: prof2 });
     await page.getByRole("button", { name: /^create draft$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/i18n\/drafts$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/drafts$/);
     await expect(
       page
         .getByRole("row")
@@ -219,14 +219,14 @@ test.describe("Integration: i18n profile and draft lifecycle", () => {
   });
 
   test("both drafts visible simultaneously → delete both", async ({ page }) => {
-    await page.goto("/dashboard/i18n/drafts");
+    await page.goto("/dashboard/e2e-project-id/i18n/drafts");
     // Both drafts should be in the list
     await expect(page.getByRole("row").filter({ hasText: draftA })).toBeVisible();
     await expect(page.getByRole("row").filter({ hasText: draftB })).toBeVisible();
 
     // Delete abandoned draftA (trash icon)
     await page.getByRole("button", { name: new RegExp(`delete draft ${draftA}`, "i") }).click();
-    await expect(page).toHaveURL(/\/dashboard\/i18n\/drafts$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/drafts$/);
     await expect(page.getByRole("row").filter({ hasText: draftA })).toHaveCount(0);
 
     // Abandon then delete draftB
@@ -248,7 +248,7 @@ test.describe("Integration: SDK key rotation", () => {
   test.describe.configure({ mode: "serial" });
 
   test("create server and client keys → revoke both", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
     const revokedBefore = await page.getByText("revoked").count();
 
@@ -291,33 +291,33 @@ test.describe("Integration: attributes and universe as experiment infrastructure
 
   test("declare attribute and universe → both appear in their lists", async ({ page }) => {
     // 1. Declare a user attribute
-    await page.goto("/dashboard/experiments/attributes");
+    await page.goto("/dashboard/e2e-project-id/experiments/attributes");
     await page.locator("#attr-name").fill(attrName);
     await page.getByRole("button", { name: /^add attribute$/i }).click();
     await expect(page.getByText(attrName, { exact: true })).toBeVisible();
     await expect(divRow(page, attrName).getByText("string")).toBeVisible();
 
     // 2. Create a custom universe
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await page.locator("#universe-name").fill(uniName);
     await page.getByRole("button", { name: /^create universe$/i }).click();
     await expect(page.getByText(uniName, { exact: true })).toBeVisible();
 
     // 3. Both resources persist across navigation
-    await page.goto("/dashboard/experiments/attributes");
+    await page.goto("/dashboard/e2e-project-id/experiments/attributes");
     await expect(page.getByText(attrName, { exact: true })).toBeVisible();
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await expect(page.getByText(uniName, { exact: true })).toBeVisible();
   });
 
   test("delete both → infrastructure is cleaned up", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await divRow(page, uniName)
       .getByRole("button", { name: /^delete$/i })
       .click();
     await expect(page.getByText(uniName, { exact: true })).not.toBeVisible();
 
-    await page.goto("/dashboard/experiments/attributes");
+    await page.goto("/dashboard/e2e-project-id/experiments/attributes");
     await divRow(page, attrName)
       .getByRole("button", { name: /^delete$/i })
       .click();

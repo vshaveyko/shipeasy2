@@ -4,28 +4,26 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Plans — settings page display", () => {
   test("current plan is shown in the Plan section", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
     await expect(page.getByText(/^plan$/i).first()).toBeVisible();
     await expect(page.getByText(/^current$/i)).toBeVisible();
     // Plan name should be one of: free, paid
-    await expect(
-      page.getByText(/\bfree\b/i).or(page.getByText(/\bpaid\b/i)),
-    ).toBeVisible();
+    await expect(page.getByText(/\bfree\b/i).or(page.getByText(/\bpaid\b/i))).toBeVisible();
   });
 
   test("Manage billing link is visible in Plan section", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
     await expect(page.getByRole("link", { name: /manage billing/i })).toBeVisible();
   });
 
   test("plan section shows poll interval setting", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
     // Poll interval is a plan-level knob surfaced to the user
     await expect(page.getByText(/poll.*interval/i).or(page.getByText(/polling/i))).toBeVisible();
   });
 
   test("plan section shows resource limits (gates, configs, experiments)", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
     // Plans have per-resource limits shown on the settings page
     await expect(
       page
@@ -42,7 +40,7 @@ test.describe("Plans — gated feature display", () => {
   test("'Translate with AI' button on i18n keys page is disabled on free plan", async ({
     page,
   }) => {
-    await page.goto("/dashboard/i18n/keys");
+    await page.goto("/dashboard/e2e-project-id/i18n/keys");
     const btn = page.getByRole("button", { name: /translate with ai/i });
     await expect(btn).toBeVisible();
     await expect(btn).toBeDisabled();
@@ -51,7 +49,7 @@ test.describe("Plans — gated feature display", () => {
   test("sequential testing note shown on experiment results page for free plan", async ({
     page,
   }) => {
-    await page.goto("/dashboard/experiments/any_id");
+    await page.goto("/dashboard/e2e-project-id/experiments/any_id");
     await expect(
       page
         .getByText(/sequential testing.*available/i)
@@ -61,7 +59,7 @@ test.describe("Plans — gated feature display", () => {
   });
 
   test("CUPED note visible on experiment results page", async ({ page }) => {
-    await page.goto("/dashboard/experiments/any_id");
+    await page.goto("/dashboard/e2e-project-id/experiments/any_id");
     // CUPED is available from Pro plan. For free plan, it may show an upgrade note.
     await expect(page.getByText(/cuped/i).or(page.getByText(/variance reduction/i))).toBeVisible();
   });
@@ -71,13 +69,13 @@ test.describe("Plans — gated feature display", () => {
 
 test.describe("Plans — plan config values (plans.yaml)", () => {
   test("free plan poll_interval shown as the default on the settings page", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
     // Free plan has a longer poll interval — it should be surfaced to the user
     await expect(page.getByText(/poll.*interval/i).or(page.getByText(/\d+s/i))).toBeVisible();
   });
 
   test("ae_retention_days shown or implied in settings", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
     // Analytics retention is a plan feature visible in settings
     await expect(page.getByText(/retention/i).or(page.getByText(/analytics/i))).toBeVisible();
   });

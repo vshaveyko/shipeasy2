@@ -12,19 +12,19 @@ function uniRow(page: Page, name: string) {
 
 test.describe("Default universe", () => {
   test("default universe is always present in the list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await expect(page.getByText("default", { exact: true })).toBeVisible();
   });
 
   test("default universe has no Delete button", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await expect(
       uniRow(page, "default").getByRole("button", { name: /^delete$/i }),
     ).not.toBeVisible();
   });
 
   test("default universe shows 'no holdout' label", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     // Default universe has no holdout range configured
     await expect(
       page.getByText(/no holdout/i).or(page.getByText("default", { exact: true })),
@@ -40,17 +40,17 @@ test.describe("Custom universe — basic CRUD", () => {
   const name = `e2uni_basic_${RUN}`;
 
   test("create universe → appears in list with Delete button", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await page.locator("#universe-name").fill(name);
     await page.getByRole("button", { name: /^create universe$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/universes$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/universes$/);
     await expect(page.getByText(name, { exact: true })).toBeVisible();
     await expect(uniRow(page, name).getByRole("button", { name: /^delete$/i })).toBeVisible();
   });
 
   test("custom universe has Delete button; default universe still has none", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await expect(uniRow(page, name).getByRole("button", { name: /^delete$/i })).toBeVisible();
     await expect(
       uniRow(page, "default").getByRole("button", { name: /^delete$/i }),
@@ -58,12 +58,12 @@ test.describe("Custom universe — basic CRUD", () => {
   });
 
   test("delete universe → removed from list; default remains", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await uniRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/universes$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/universes$/);
     await expect(page.getByText(name, { exact: true })).not.toBeVisible();
     await expect(page.getByText("default", { exact: true })).toBeVisible();
   });
@@ -79,7 +79,7 @@ test.describe("Universe with holdout range", () => {
   const name = `e2uni_holdout_${RUN}`;
 
   test("holdout-range fields are present on the create form", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     // Forward-looking: holdout lo/hi inputs expected once the feature ships
     await expect(
       page.locator("#universe-holdout-lo").or(page.getByLabel(/holdout.*lo/i)),
@@ -90,7 +90,7 @@ test.describe("Universe with holdout range", () => {
   });
 
   test("create universe with 10% holdout (0–1000 bp) → holdout label in list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await page.locator("#universe-name").fill(name);
 
     const loInput = page.locator("#universe-holdout-lo").or(page.getByLabel(/holdout.*lo/i));
@@ -99,14 +99,14 @@ test.describe("Universe with holdout range", () => {
     await hiInput.fill("1000");
 
     await page.getByRole("button", { name: /^create universe$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/universes$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/universes$/);
 
     // Holdout range shown as "holdout [0–1000]" next to the name
     await expect(page.getByText(/holdout.*0.*1000/i)).toBeVisible();
   });
 
   test("cleanup: delete holdout universe", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     await uniRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -123,7 +123,7 @@ test.describe("Universe with custom unit type", () => {
   const name = `e2uni_unit_${RUN}`;
 
   test("unit-type selector is present (default: user_id)", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     const unitSel = page.locator("#universe-unit-type").or(page.getByLabel(/unit.*type/i));
     // Forward-looking: may not exist yet — skip gracefully
     expect(await unitSel.count(), "unit_type selector not yet implemented").toBeGreaterThan(0);
@@ -132,14 +132,14 @@ test.describe("Universe with custom unit type", () => {
   });
 
   test("create universe with device_id unit type → appears in list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/universes");
+    await page.goto("/dashboard/e2e-project-id/experiments/universes");
     const unitSel = page.locator("#universe-unit-type").or(page.getByLabel(/unit.*type/i));
     expect(await unitSel.count(), "unit_type selector not yet implemented").toBeGreaterThan(0);
 
     await page.locator("#universe-name").fill(name);
     await unitSel.selectOption("device_id");
     await page.getByRole("button", { name: /^create universe$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/universes$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/universes$/);
     await expect(page.getByText(name, { exact: true })).toBeVisible();
 
     // Cleanup

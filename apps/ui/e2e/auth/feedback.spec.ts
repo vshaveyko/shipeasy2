@@ -34,15 +34,15 @@ test.describe("Bugs dashboard", () => {
     bugId = created.id;
 
     // Old route still works — it redirects into the combined feedback page.
-    await page.goto("/dashboard/bugs");
-    await expect(page).toHaveURL(/\/dashboard\/feedback/);
+    await page.goto("/dashboard/e2e-project-id/bugs");
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/feedback/);
     await expect(page.getByRole("heading", { name: /^feedback$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   });
 
   test("detail page renders fields and updates status", async ({ page, request }) => {
     test.skip(!bugId, "previous test failed");
-    await page.goto(`/dashboard/bugs/${bugId}`);
+    await page.goto(`/dashboard/e2e-project-id/bugs/${bugId}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.getByText(/1\. visit \//)).toBeVisible();
     await expect(page.getByText("boom")).toBeVisible();
@@ -50,7 +50,7 @@ test.describe("Bugs dashboard", () => {
     // Update status via the form on the detail page.
     await page.getByLabel(/^status$/i).selectOption("in_progress");
     await page.getByRole("button", { name: /update status/i }).click();
-    await expect(page).toHaveURL(new RegExp(`/dashboard/bugs/${bugId}$`));
+    await expect(page).toHaveURL(new RegExp(`/dashboard/e2e-project-id/bugs/${bugId}$`));
     await page.reload();
     await expect(page.getByLabel(/^status$/i)).toHaveValue("in_progress");
 
@@ -75,14 +75,14 @@ test.describe("Feature requests dashboard", () => {
     });
     id = created.id;
 
-    await page.goto("/dashboard/feedback?tab=requests");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
     await expect(page.getByRole("heading", { name: /^feedback$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   });
 
   test("detail page renders + status update", async ({ page, request }) => {
     test.skip(!id, "previous test failed");
-    await page.goto(`/dashboard/feature-requests/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/feature-requests/${id}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.getByText(/would be cool/)).toBeVisible();
 

@@ -7,13 +7,13 @@ import { createKey as createKeyHandler, revokeKey as revokeKeyHandler } from "@/
 export async function createKey(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await createKeyHandler(identity, input);
-  revalidatePath("/dashboard/keys");
+  revalidatePath("/dashboard/[projectId]/keys", "page");
   return result;
 }
 
 export async function revokeKey(id: string) {
   const identity = await authenticateAdmin();
   const result = await revokeKeyHandler(identity, id);
-  revalidatePath("/dashboard/keys");
+  revalidatePath("/dashboard/[projectId]/keys", "page");
   return result;
 }

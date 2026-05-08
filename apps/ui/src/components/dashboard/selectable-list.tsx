@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
-import { RowCheckbox } from "@/app/dashboard/i18n/keys/_components/row-checkbox";
+import { RowCheckbox } from "@/app/dashboard/[projectId]/i18n/keys/_components/row-checkbox";
 import { Button } from "@/components/ui/button";
-import { BulkActionsBar } from "@/app/dashboard/i18n/keys/_components/bulk-actions-bar";
-import type { BulkAction } from "@/app/dashboard/i18n/keys/_components/bulk-actions";
+import { BulkActionsBar } from "@/app/dashboard/[projectId]/i18n/keys/_components/bulk-actions-bar";
+import type { BulkAction } from "@/app/dashboard/[projectId]/i18n/keys/_components/bulk-actions";
 
 interface Props<T extends { id: string }> {
   items: T[];

@@ -6,17 +6,17 @@ const RUN = Date.now();
 
 test.describe("SDK Keys — reference section", () => {
   test("server key description is visible", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     await expect(page.getByText(/full read of flags/i)).toBeVisible();
   });
 
   test("client key description is visible", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     await expect(page.getByText(/evaluate-only\. safe to include/i)).toBeVisible();
   });
 
   test("admin key description is visible", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     await expect(page.getByText(/scoped to admin rest/i)).toBeVisible();
   });
 });
@@ -25,7 +25,7 @@ test.describe("SDK Keys — reference section", () => {
 
 test.describe("SDK Keys — type selector", () => {
   test("selector has server, client, admin options", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const sel = page.locator("#key-type");
     await expect(sel.locator("option[value='server']")).toHaveCount(1);
     await expect(sel.locator("option[value='client']")).toHaveCount(1);
@@ -39,13 +39,13 @@ test.describe("Server key — create and revoke", () => {
   test.describe.configure({ mode: "serial" });
 
   test("create server key → server type badge visible", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
 
     await page.locator("#key-type").selectOption("server");
     await page.getByRole("button", { name: /^create key$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/keys/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
     await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(revokeBefore + 1);
     await expect(
       page
@@ -56,7 +56,7 @@ test.describe("Server key — create and revoke", () => {
   });
 
   test("revoke the newly created server key → revoked badge count +1", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
     const revokedBefore = await page.getByText("revoked").count();
 
@@ -75,13 +75,13 @@ test.describe("Client key — create and revoke", () => {
   test.describe.configure({ mode: "serial" });
 
   test("create client key → client type badge visible", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
 
     await page.locator("#key-type").selectOption("client");
     await page.getByRole("button", { name: /^create key$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/keys/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
     await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(revokeBefore + 1);
     await expect(
       page
@@ -92,7 +92,7 @@ test.describe("Client key — create and revoke", () => {
   });
 
   test("revoke the client key", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
     if (revokeBefore === 0) return; // already cleaned up
 
@@ -110,13 +110,13 @@ test.describe("Admin key — create and revoke", () => {
   test.describe.configure({ mode: "serial" });
 
   test("create admin key → admin type badge visible", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
 
     await page.locator("#key-type").selectOption("admin");
     await page.getByRole("button", { name: /^create key$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/keys/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
     await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(revokeBefore + 1);
     await expect(
       page
@@ -127,13 +127,13 @@ test.describe("Admin key — create and revoke", () => {
   });
 
   test("admin key shows expiry date (90-day expiry)", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     // Admin keys are scoped to the CLI and expire in 90 days — expiry should be shown
     await expect(page.getByText(/expires|expir/i).first()).toBeVisible();
   });
 
   test("revoke the admin key", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
     if (revokeBefore === 0) return;
 
@@ -145,15 +145,51 @@ test.describe("Admin key — create and revoke", () => {
   });
 });
 
+// ── Auto-revoke prior key + revoked section ──────────────────────────────────
+
+test.describe("Auto-revoke + revoked section", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test("creating two keys of same type leaves one active and one in revoked section", async ({
+    page,
+  }) => {
+    await page.goto("/dashboard/e2e-project-id/keys");
+    const initialActive = await page.getByRole("button", { name: /^revoke$/i }).count();
+
+    // Create the first server key
+    await page.locator("#key-type").selectOption("server");
+    await page.getByRole("button", { name: /^create key$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
+    await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(initialActive + 1);
+
+    // Create a second server key — the prior one should auto-revoke, so the
+    // active-key count stays the same as after the first create.
+    await page.locator("#key-type").selectOption("server");
+    await page.getByRole("button", { name: /^create key$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
+    await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(initialActive + 1);
+
+    // The revoked section should now be visible (heading + at least one row)
+    await expect(page.getByText(/^revoked$/i).first()).toBeVisible();
+
+    // Cleanup: revoke the surviving key
+    await page
+      .getByRole("button", { name: /^revoke$/i })
+      .first()
+      .click();
+    await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(initialActive);
+  });
+});
+
 // ── Key shown once on creation ────────────────────────────────────────────────
 
 test.describe("Key raw value — shown once on creation", () => {
   test("raw key value is displayed immediately after creation", async ({ page }) => {
-    await page.goto("/dashboard/keys");
+    await page.goto("/dashboard/e2e-project-id/keys");
     await page.locator("#key-type").selectOption("server");
     await page.getByRole("button", { name: /^create key$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/keys/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
     // Raw key shown once — prefixed with "sk_" (server), "ck_" (client), or "ak_" (admin)
     await expect(
       page

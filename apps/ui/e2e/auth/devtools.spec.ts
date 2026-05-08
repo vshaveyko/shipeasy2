@@ -348,7 +348,7 @@ test.describe("DevTools — Experiments panel", () => {
 
     await expect(page.getByText(/No experiments in .beta-cohort. yet/)).toBeVisible();
     const cta = page.getByRole("link", { name: /Create new experiment/i });
-    await expect(cta).toHaveAttribute("href", /\/dashboard\/experiments\/new$/);
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/e2e-project-id\/experiments\/new$/);
   });
 
   test("running experiment shows force-variant select with default selected", async ({ page }) => {
@@ -399,7 +399,10 @@ test.describe("DevTools — Experiments panel", () => {
 
     await expect(page.getByText("No universes yet")).toBeVisible();
     const cta = page.getByRole("link", { name: /Create a universe/i });
-    await expect(cta).toHaveAttribute("href", /\/dashboard\/experiments\/universes$/);
+    await expect(cta).toHaveAttribute(
+      "href",
+      /\/dashboard\/e2e-project-id\/experiments\/universes$/,
+    );
     // No per-universe tabs render in this state.
     await expect(page.locator(".tab[data-universe]")).toHaveCount(0);
   });
@@ -656,7 +659,7 @@ test.describe("DevTools — empty states", () => {
     await expect(page.getByText("No gates yet")).toBeVisible();
     const cta = page.getByRole("link", { name: /Create new gate/i });
     await expect(cta).toBeVisible();
-    await expect(cta).toHaveAttribute("href", /\/dashboard\/gates\/new$/);
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/e2e-project-id\/gates\/new$/);
     await expect(cta).toHaveAttribute("target", "_blank");
   });
 
@@ -668,7 +671,7 @@ test.describe("DevTools — empty states", () => {
 
     await expect(page.getByText("No configs yet")).toBeVisible();
     const cta = page.getByRole("link", { name: /Create new config/i });
-    await expect(cta).toHaveAttribute("href", /\/dashboard\/configs\/values\/new$/);
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/e2e-project-id\/configs\/values\/new$/);
   });
 
   // The Experiments panel's no-universes empty state is covered directly in
@@ -683,7 +686,7 @@ test.describe("DevTools — empty states", () => {
 
     await expect(page.getByText("No translation keys yet")).toBeVisible();
     const cta = page.getByRole("link", { name: /Create new key/i });
-    await expect(cta).toHaveAttribute("href", /\/dashboard\/i18n\/keys$/);
+    await expect(cta).toHaveAttribute("href", /\/dashboard\/e2e-project-id\/i18n\/keys$/);
   });
 });
 

@@ -24,7 +24,7 @@ test.describe("Results page — stat cards", () => {
   test("four stat cards are always present: Status, Users / group, Days running, Verdict", async ({
     page,
   }) => {
-    await page.goto("/dashboard/experiments/any_id");
+    await page.goto("/dashboard/e2e-project-id/experiments/any_id");
     await expect(page.getByText(/^status$/i)).toBeVisible();
     await expect(page.getByText(/^users \/ group$/i)).toBeVisible();
     await expect(page.getByText(/^days running$/i)).toBeVisible();
@@ -42,17 +42,17 @@ test.describe("Results page — draft state", () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments/new");
+    await p.goto("/dashboard/e2e-project-id/experiments/new");
     await p.locator("#exp-key").fill(name);
     await p.getByRole("button", { name: /^save draft$/i }).click();
-    await expect(p).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await ctx.close();
   });
 
   test.afterAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments");
+    await p.goto("/dashboard/e2e-project-id/experiments");
     const delBtn = expRow(p, name).getByRole("button", { name: /^delete$/i });
     if ((await delBtn.count()) > 0) {
       await delBtn.click();
@@ -63,51 +63,51 @@ test.describe("Results page — draft state", () => {
 
   test("Status stat card shows 'Draft'", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText("Draft")).toBeVisible();
   });
 
   test("Verdict stat card shows '—' before any analysis", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText("—").first()).toBeVisible();
   });
 
   test("Goal metric card shows 'No results yet' empty state", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText(/no results yet/i)).toBeVisible();
   });
 
   test("Days running stat card shows 0", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText("0")).toBeVisible();
   });
 
   test("Users / group stat card shows '—' (no exposures yet)", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     // Two "—" expected: Users/group and Verdict
     await expect(page.getByText("—").first()).toBeVisible();
   });
 
   test("Start button is visible; Stop button is not", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByRole("button", { name: /^start$/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /^stop$/i })).not.toBeVisible();
   });
 
   test("Guardrails card is rendered", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByRole("heading", { name: /guardrails/i })).toBeVisible();
   });
 
   test("Setup card shows groups and allocation from the experiment", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     // Setup card shows group names and allocation percentage
     await expect(page.getByRole("heading", { name: /setup/i })).toBeVisible();
     await expect(page.getByText(/control/i)).toBeVisible();
@@ -125,10 +125,10 @@ test.describe("Results page — running state", () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments/new");
+    await p.goto("/dashboard/e2e-project-id/experiments/new");
     await p.locator("#exp-key").fill(name);
     await p.getByRole("button", { name: /^save draft$/i }).click();
-    await expect(p).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await p
       .getByText(name, { exact: true })
       .locator("..")
@@ -148,7 +148,7 @@ test.describe("Results page — running state", () => {
   test.afterAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments");
+    await p.goto("/dashboard/e2e-project-id/experiments");
     const row = p.getByText(name, { exact: true }).locator("..").locator("..");
     const stopBtn = row.getByRole("button", { name: /^stop$/i });
     if ((await stopBtn.count()) > 0) {
@@ -169,26 +169,26 @@ test.describe("Results page — running state", () => {
 
   test("Status stat card shows 'Running'", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText("Running")).toBeVisible();
   });
 
   test("Stop button visible; Start button not visible", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByRole("button", { name: /^stop$/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /^start$/i })).not.toBeVisible();
   });
 
   test("Verdict is '—' before first analysis run", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText("—").first()).toBeVisible();
   });
 
   test("Days running is 0 on the day the experiment starts", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText("0")).toBeVisible();
   });
 });
@@ -203,10 +203,10 @@ test.describe("Results page — stopped state", () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments/new");
+    await p.goto("/dashboard/e2e-project-id/experiments/new");
     await p.locator("#exp-key").fill(name);
     await p.getByRole("button", { name: /^save draft$/i }).click();
-    await expect(p).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     const row = p.getByText(name, { exact: true }).locator("..").locator("..");
     await row.getByRole("button", { name: /^start$/i }).click();
     await row.getByRole("button", { name: /^stop$/i }).click();
@@ -216,7 +216,7 @@ test.describe("Results page — stopped state", () => {
   test.afterAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments");
+    await p.goto("/dashboard/e2e-project-id/experiments");
     const delBtn = p
       .getByText(name, { exact: true })
       .locator("..")
@@ -231,13 +231,13 @@ test.describe("Results page — stopped state", () => {
 
   test("Status shows 'Stopped' on results page", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText("Stopped")).toBeVisible();
   });
 
   test("neither Start nor Stop button visible once stopped", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByRole("button", { name: /^start$/i })).not.toBeVisible();
     await expect(page.getByRole("button", { name: /^stop$/i })).not.toBeVisible();
   });
@@ -258,7 +258,7 @@ test.describe("Results page — verdict label mapping", () => {
   test("'Wait' verdict renders when pValue is null (insufficient data)", async ({ page }) => {
     // The deriveVerdict function returns "Wait" when pValue is null.
     // This state is the default before analysis — covered by draft/running tests above.
-    await page.goto("/dashboard/experiments/any_id");
+    await page.goto("/dashboard/e2e-project-id/experiments/any_id");
     // Any experiment with no results should show "—" (no analysis) or "Wait"
     await expect(page.getByText("—").first().or(page.getByText("Wait"))).toBeVisible();
   });
@@ -268,15 +268,15 @@ test.describe("Results page — verdict label mapping", () => {
     // This test verifies the badge renders correctly when data is present.
     // Seed path: analysis cron writes srmDetected=1 to experiment_results table.
     // For now, verify the badge component exists in the page template.
-    await page.goto("/dashboard/experiments/any_id");
+    await page.goto("/dashboard/e2e-project-id/experiments/any_id");
     // The page renders conditionally — just verify it doesn't crash with SRM data
-    expect(page.url()).toContain("/dashboard/experiments/any_id");
+    expect(page.url()).toContain("/dashboard/e2e-project-id/experiments/any_id");
   });
 
   test("'Peek warning' badge shown when peek_warning=1 in results", async ({ page }) => {
     // Peek warning suppresses the verdict before min_runtime_days.
-    await page.goto("/dashboard/experiments/any_id");
-    expect(page.url()).toContain("/dashboard/experiments");
+    await page.goto("/dashboard/e2e-project-id/experiments/any_id");
+    expect(page.url()).toContain("/dashboard/e2e-project-id/experiments");
   });
 });
 
@@ -286,7 +286,7 @@ test.describe("Results page — mSPRT column (Premium plan)", () => {
   test("mSPRT column header visible when plan has sequential_testing enabled", async ({ page }) => {
     // The mSPRT column renders only when plan.sequential_testing=true AND results exist.
     // On the e2e project (free plan), the column should not appear.
-    await page.goto("/dashboard/experiments/any_id");
+    await page.goto("/dashboard/e2e-project-id/experiments/any_id");
     // Free-plan note about sequential testing should be visible
     await expect(
       page
@@ -307,18 +307,18 @@ test.describe("Results page — multi-variant setup card", () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments/new");
+    await p.goto("/dashboard/e2e-project-id/experiments/new");
     await p.getByRole("button", { name: /\+ add variant/i }).click();
     await p.locator("#exp-key").fill(name);
     await p.getByRole("button", { name: /^save draft$/i }).click();
-    await expect(p).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await ctx.close();
   });
 
   test.afterAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/experiments");
+    await p.goto("/dashboard/e2e-project-id/experiments");
     const delBtn = p
       .getByText(name, { exact: true })
       .locator("..")
@@ -333,7 +333,7 @@ test.describe("Results page — multi-variant setup card", () => {
 
   test("Setup card shows all 3 group names (control, test, variant_2)", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByText(/control/i)).toBeVisible();
     await expect(page.getByText(/\btest\b/i)).toBeVisible();
     await expect(page.getByText(/variant_2/i)).toBeVisible();

@@ -24,9 +24,13 @@ type TopBarProps = {
   };
   projectName?: string;
   planLabel?: string;
+  /** Active projectId — used to build project-scoped account-menu links. */
+  projectId?: string;
 };
 
-export function TopBar({ user, projectName = "Default project" }: TopBarProps) {
+export function TopBar({ user, projectName = "Default project", projectId }: TopBarProps) {
+  const settingsHref = projectId ? `/dashboard/${projectId}/settings` : "/dashboard/settings";
+  const keysHref = projectId ? `/dashboard/${projectId}/keys` : "/dashboard/keys";
   const initials =
     user.name
       ?.split(" ")
@@ -102,10 +106,8 @@ export function TopBar({ user, projectName = "Default project" }: TopBarProps) {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem render={<Link href="/dashboard/settings" />}>
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href="/dashboard/keys" />}>SDK Keys</DropdownMenuItem>
+            <DropdownMenuItem render={<Link href={settingsHref} />}>Settings</DropdownMenuItem>
+            <DropdownMenuItem render={<Link href={keysHref} />}>SDK Keys</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem render={<SignOutButton />} />
           </DropdownMenuContent>

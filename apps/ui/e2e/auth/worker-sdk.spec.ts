@@ -222,57 +222,63 @@ test.describe("Gates → /sdk/flags", () => {
 test.describe("Configs → /sdk/flags", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("string config → configs blob has the key with correct string value", async ({
+  const PERMISSIVE_SCHEMA = {
+    type: "object",
+    properties: {},
+    additionalProperties: true,
+  };
+
+  test("scalar-shaped object config → configs blob has the key with correct shape", async ({
     request,
   }) => {
     const name = `e2cwrk_str_${RUN}`;
     await adminPost(request, "/api/admin/configs", {
       name,
-      value_type: "string",
-      value: "hello-worker",
+      schema: { type: "object", properties: { value: { type: "string" } } },
+      value: { value: "hello-worker" },
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
     expect(resp.ok()).toBe(true);
     const flags = await resp.json();
     expect(flags.configs[name]).toBeDefined();
-    expect(flags.configs[name].value).toBe("hello-worker");
+    expect(flags.configs[name].value).toEqual({ value: "hello-worker" });
   });
 
-  test("number config → value is numeric", async ({ request }) => {
+  test("numeric-field object config → value preserved", async ({ request }) => {
     const name = `e2cwrk_num_${RUN}`;
     await adminPost(request, "/api/admin/configs", {
       name,
-      value_type: "number",
-      value: 42,
+      schema: { type: "object", properties: { value: { type: "number" } } },
+      value: { value: 42 },
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
     expect(resp.ok()).toBe(true);
     const flags = await resp.json();
-    expect(flags.configs[name].value).toBe(42);
+    expect(flags.configs[name].value).toEqual({ value: 42 });
   });
 
-  test("boolean config (true) → value is boolean true", async ({ request }) => {
+  test("boolean-field object config → value preserved", async ({ request }) => {
     const name = `e2cwrk_bool_${RUN}`;
     await adminPost(request, "/api/admin/configs", {
       name,
-      value_type: "boolean",
-      value: true,
+      schema: { type: "object", properties: { value: { type: "boolean" } } },
+      value: { value: true },
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
     expect(resp.ok()).toBe(true);
     const flags = await resp.json();
-    expect(flags.configs[name].value).toBe(true);
+    expect(flags.configs[name].value).toEqual({ value: true });
   });
 
-  test("object config → value is parsed object", async ({ request }) => {
+  test("nested object config → value is parsed object", async ({ request }) => {
     const name = `e2cwrk_obj_${RUN}`;
     const obj = { threshold: 75, label: "beta" };
     await adminPost(request, "/api/admin/configs", {
       name,
-      value_type: "object",
+      schema: PERMISSIVE_SCHEMA,
       value: obj,
     });
 
@@ -282,27 +288,27 @@ test.describe("Configs → /sdk/flags", () => {
     expect(flags.configs[name].value).toMatchObject(obj);
   });
 
-  test("array config → value is an array", async ({ request }) => {
+  test("array-valued field on object config → value is preserved", async ({ request }) => {
     const name = `e2cwrk_arr_${RUN}`;
     const arr = ["plan_a", "plan_b"];
     await adminPost(request, "/api/admin/configs", {
       name,
-      value_type: "array",
-      value: arr,
+      schema: { type: "object", properties: { items: { type: "array" } } },
+      value: { items: arr },
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
     expect(resp.ok()).toBe(true);
     const flags = await resp.json();
-    expect(flags.configs[name].value).toEqual(arr);
+    expect(flags.configs[name].value).toEqual({ items: arr });
   });
 
   test("deleting a config → gone from flags blob", async ({ request }) => {
     const name = `e2cwrk_del_${RUN}`;
     const created = await adminPost(request, "/api/admin/configs", {
       name,
-      value_type: "string",
-      value: "temp",
+      schema: PERMISSIVE_SCHEMA,
+      value: { value: "temp" },
     });
 
     // Confirm it's there
@@ -393,12 +399,13 @@ test.describe("User evaluation → /sdk/evaluate", () => {
     expect(body.flags[name]).toBeFalsy();
   });
 
-  test("string config appears in evaluate response", async ({ request }) => {
+  test("config appears in evaluate response", async ({ request }) => {
     const name = `e2eval_cfg_${RUN}`;
+    const value = { variant: "variant-a" };
     await adminPost(request, "/api/admin/configs", {
       name,
-      value_type: "string",
-      value: "variant-a",
+      schema: { type: "object", properties: { variant: { type: "string" } } },
+      value,
     });
 
     const resp = await workerPost(request, "/sdk/evaluate", clientKey, {
@@ -406,7 +413,7 @@ test.describe("User evaluation → /sdk/evaluate", () => {
     });
     expect(resp.ok()).toBe(true);
     const body = await resp.json();
-    expect(body.configs[name]).toBe("variant-a");
+    expect(body.configs[name]).toEqual(value);
   });
 
   test("evaluate with empty user object still returns flags and configs", async ({ request }) => {

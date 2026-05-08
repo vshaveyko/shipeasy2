@@ -13,14 +13,14 @@ function gateRow(page: Page, name: string) {
 
 test.describe("Configs gate form UI", () => {
   test("renders heading, key and description fields", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await expect(page.getByRole("heading", { name: /^new gate$/i, level: 1 })).toBeVisible();
     await expect(page.locator("#gate-key")).toBeVisible();
     await expect(page.locator("#gate-description")).toBeVisible();
   });
 
   test("default state selector has Off and On options", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     const sel = page.locator("#gate-default");
     await expect(sel).toBeVisible();
     await expect(sel.locator("option[value='off']")).toHaveCount(1);
@@ -28,12 +28,12 @@ test.describe("Configs gate form UI", () => {
   });
 
   test("default state defaults to Off", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await expect(page.locator("#gate-default")).toHaveValue("off");
   });
 
   test("environment selector has Development, Staging, Production", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     const sel = page.locator("#gate-env");
     await expect(sel).toBeVisible();
     await expect(sel.locator("option[value='development']")).toHaveCount(1);
@@ -42,27 +42,27 @@ test.describe("Configs gate form UI", () => {
   });
 
   test("environment defaults to production", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await expect(page.locator("#gate-env")).toHaveValue("production");
   });
 
   test("targeting rules section shows placeholder text", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await expect(page.getByText(/rules builder/i)).toBeVisible();
   });
 
   test("Create gate button is present and enabled", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await expect(page.getByRole("button", { name: /^create gate$/i })).toBeEnabled();
   });
 
   test("cancel link returns to configs gates list", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await page
       .getByRole("link", { name: /^cancel$/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/configs\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
   });
 });
 
@@ -75,17 +75,17 @@ test.describe("Configs gate — create with description", () => {
   const description = "Rolls out the new onboarding to beta users";
 
   test("create gate with description → gate appears in list", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await page.locator("#gate-key").fill(key);
     await page.locator("#gate-description").fill(description);
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/configs\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
     await expect(page.getByText(key, { exact: true })).toBeVisible();
   });
 
   test("cleanup: delete gate", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -101,17 +101,17 @@ test.describe("Configs gate — create with default On", () => {
   const key = `e2cg_on_${RUN}`;
 
   test("create gate with On default → gate appears in list", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await page.locator("#gate-key").fill(key);
     await page.locator("#gate-default").selectOption("on");
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/configs\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
     await expect(page.getByText(key, { exact: true })).toBeVisible();
   });
 
   test("cleanup: delete On-default gate", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -127,17 +127,17 @@ test.describe("Configs gate — staging environment", () => {
   const key = `e2cg_stg_${RUN}`;
 
   test("create gate with staging environment → gate appears in list", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await page.locator("#gate-key").fill(key);
     await page.locator("#gate-env").selectOption("staging");
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/configs\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
     await expect(page.getByText(key, { exact: true })).toBeVisible();
   });
 
   test("cleanup: delete staging gate", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^delete$/i })
       .click();

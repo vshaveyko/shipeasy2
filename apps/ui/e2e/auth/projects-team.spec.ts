@@ -40,7 +40,9 @@ test.describe("Projects page", () => {
     await page.getByRole("button", { name: /create project/i }).click();
 
     // Should redirect to /dashboard after creation
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // Creating a project sends the user to /dashboard, which now resolves
+    // into the new project's home (/dashboard/<projectId>).
+    await expect(page).toHaveURL(/\/dashboard\/[^/]+$/);
 
     // The new project appears in the list with the canonical "<name>:<domain>"
     // label (the form normalises away the scheme).
@@ -66,7 +68,9 @@ test.describe("Projects page", () => {
     await page.getByLabel(/domain/i).fill("*");
     await page.getByRole("button", { name: /create project/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // Creating a project sends the user to /dashboard, which now resolves
+    // into the new project's home (/dashboard/<projectId>).
+    await expect(page).toHaveURL(/\/dashboard\/[^/]+$/);
     await page.goto("/dashboard/projects");
     await expect(page.getByText(unique).first()).toBeVisible();
   });
@@ -80,7 +84,9 @@ test.describe("Projects page", () => {
     await page.getByLabel(/display name/i).fill(unique);
     await page.getByLabel(/domain/i).fill(`https://${dupDomain}`);
     await page.getByRole("button", { name: /create project/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // Creating a project sends the user to /dashboard, which now resolves
+    // into the new project's home (/dashboard/<projectId>).
+    await expect(page).toHaveURL(/\/dashboard\/[^/]+$/);
 
     // Second create with the same domain is blocked.
     await page.goto("/dashboard/projects/new");

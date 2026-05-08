@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("sdk keys page shows heading, key-type reference and create button", async ({ page }) => {
-  await page.goto("/dashboard/keys");
+  await page.goto("/dashboard/e2e-project-id/keys");
 
   await expect(page.getByRole("heading", { name: /^sdk keys$/i, level: 1 })).toBeVisible();
 

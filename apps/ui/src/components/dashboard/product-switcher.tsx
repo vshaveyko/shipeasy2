@@ -15,10 +15,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PRODUCTS, getProductFromPath } from "@/lib/products";
+import { projectIdFromPathname } from "@/lib/project-path";
 
 export function ProductSwitcher() {
   const pathname = usePathname();
   const current = getProductFromPath(pathname);
+  const projectId = projectIdFromPathname(pathname);
+  const scopedHref = (href: string) =>
+    projectId && href.startsWith("/dashboard/")
+      ? href.replace("/dashboard/", `/dashboard/${projectId}/`)
+      : href;
 
   return (
     <DropdownMenu>
@@ -45,9 +51,7 @@ export function ProductSwitcher() {
               <ChevronsUpDown className="size-4" />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-medium text-foreground">
-                Choose a product
-              </span>
+              <span className="truncate font-medium text-foreground">Choose a product</span>
               <span className="truncate text-[11px] text-muted-foreground">
                 Feature flags, A/B tests, i18n
               </span>
@@ -68,7 +72,7 @@ export function ProductSwitcher() {
               <DropdownMenuItem
                 key={p.id}
                 className="gap-2 py-2"
-                render={<Link href={p.rootHref} />}
+                render={<Link href={scopedHref(p.rootHref)} />}
               >
                 <span className="flex size-8 shrink-0 items-center justify-center rounded bg-muted">
                   <p.icon className="size-4" />

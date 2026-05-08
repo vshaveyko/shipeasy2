@@ -10,93 +10,101 @@ function treeItem(page: Page, name: string) {
     .first();
 }
 
-async function createConfig(
+/**
+ * Create a config via the admin API. The new-config UI is now a schema-driven
+ * form — exercising every field type via the UI is covered separately by the
+ * "New config form UI" describe. Here we just need rows to operate on.
+ */
+async function createConfigViaApi(
   page: Page,
-  opts: { key: string; type?: "string" | "number" | "boolean" | "object" | "array"; value: string },
+  opts: {
+    key: string;
+    schema?: Record<string, unknown>;
+    value?: unknown;
+    description?: string;
+  },
 ): Promise<void> {
-  await page.goto("/dashboard/configs/values/new");
-  const type = opts.type ?? "string";
-  if (type !== "string") {
-    await page.getByText(type.charAt(0).toUpperCase() + type.slice(1), { exact: true }).click();
-  }
-  await page.locator("#config-key").fill(opts.key);
-  if (type === "boolean") {
-    await page.locator("#config-value").selectOption(opts.value);
-  } else {
-    await page.locator("#config-value").fill(opts.value);
-  }
-  await page.getByRole("button", { name: /^create config$/i }).click();
-  // After create the user lands on the new config's detail page.
-  await expect(page).toHaveURL(/\/dashboard\/configs\/values\/[^/]+$/);
+  const schema = opts.schema ?? {
+    type: "object",
+    properties: {},
+    additionalProperties: true,
+  };
+  const resp = await page.request.post("/api/admin/configs", {
+    data: {
+      name: opts.key,
+      schema,
+      value: opts.value ?? {},
+      ...(opts.description ? { description: opts.description } : {}),
+    },
+  });
+  expect(resp.ok()).toBe(true);
 }
 
 async function deleteActiveConfig(page: Page): Promise<void> {
-  page.once("dialog", (dialog) => dialog.accept());
+  // Editor uses an inline two-step confirm — first click reveals "Confirm delete".
   await page.getByRole("button", { name: /delete config/i }).click();
-  await expect(page).toHaveURL(/\/dashboard\/configs\/values\/?$/);
+  await page.getByRole("button", { name: /confirm delete/i }).click();
+  await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
 }
 
-// ── Type-selector UI (create page) ────────────────────────────────────────────
+// ── New-config form UI (schema builder + value form) ──────────────────────────
 
 test.describe("New config form UI", () => {
-  test("renders all five value-type options", async ({ page }) => {
-    await page.goto("/dashboard/configs/values/new");
-    for (const label of ["String", "Number", "Boolean", "Object", "Array"]) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
-    }
+  test("renders the schema builder with an Add field button", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values/new");
+    await expect(page.getByRole("heading", { name: /^new config$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /add field/i })).toBeVisible();
   });
 
-  test("String is selected by default and shows a text input", async ({ page }) => {
-    await page.goto("/dashboard/configs/values/new");
-    const valueInput = page.locator("#config-value");
-    await expect(valueInput).toBeVisible();
-    await expect(valueInput).toHaveAttribute("type", "text");
+  test("clicking Add field appends a new row with name + type controls", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values/new");
+    await page.getByRole("button", { name: /add field/i }).click();
+    await expect(page.getByRole("textbox", { name: /field name/i })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: /field type/i })).toBeVisible();
   });
 
-  test("selecting Number shows a number input", async ({ page }) => {
-    await page.goto("/dashboard/configs/values/new");
-    await page.getByText("Number", { exact: true }).click();
-    await expect(page.locator("#config-value")).toHaveAttribute("type", "number");
-  });
-
-  test("selecting Boolean shows a select element", async ({ page }) => {
-    await page.goto("/dashboard/configs/values/new");
-    await page.getByText("Boolean", { exact: true }).click();
-    const tagName = await page.locator("#config-value").evaluate((el) => el.tagName.toLowerCase());
-    expect(tagName).toBe("select");
-  });
-
-  test("selecting Object shows a textarea for JSON", async ({ page }) => {
-    await page.goto("/dashboard/configs/values/new");
-    await page.getByText("Object", { exact: true }).click();
-    const tagName = await page.locator("#config-value").evaluate((el) => el.tagName.toLowerCase());
-    expect(tagName).toBe("textarea");
+  test("create button is enabled and configurable", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values/new");
+    await expect(page.getByTestId("config-key-input")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^create config$/i })).toBeEnabled();
   });
 });
 
 // ── Create, view in tree, delete ──────────────────────────────────────────────
 
-test.describe("String config — create, view, delete", () => {
+test.describe("Object config — create, view, delete", () => {
   test.describe.configure({ mode: "serial" });
-  const key = `e2cfg_str_${RUN}`;
+  const key = `e2cfg_obj_${RUN}`;
 
-  test("create lands on editor page and tree shows the new key", async ({ page }) => {
-    await createConfig(page, { key, value: "hello" });
+  test("create via API and verify tree shows the new key", async ({ page }) => {
+    await createConfigViaApi(page, {
+      key,
+      schema: {
+        type: "object",
+        properties: { greeting: { type: "string" } },
+      },
+      value: { greeting: "hello" },
+    });
+    await page.goto("/dashboard/e2e-project-id/configs/values");
     await expect(treeItem(page, key)).toBeVisible();
 
     const resp = await page.request.get("/api/admin/configs");
     expect(resp.ok()).toBe(true);
-    const configs = (await resp.json()) as { name: string }[];
-    expect(configs.some((c) => c.name === key)).toBe(true);
+    const configs = (await resp.json()) as { name: string; schema: { type: string } }[];
+    const cfg = configs.find((c) => c.name === key);
+    expect(cfg).toBeDefined();
+    expect(cfg!.schema.type).toBe("object");
   });
 
   test("editor shows env tabs and prod is active by default", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values");
     await treeItem(page, key).click();
     await expect(page.getByRole("tab", { name: "prod" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByRole("tab", { name: "dev" })).toHaveAttribute("aria-selected", "false");
   });
 
   test("delete from editor removes it from the list", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values");
     await treeItem(page, key).click();
     await deleteActiveConfig(page);
 
@@ -106,82 +114,95 @@ test.describe("String config — create, view, delete", () => {
   });
 });
 
-// ── Draft → Publish flow (the new workflow) ───────────────────────────────────
+// ── Schema-only edits do NOT bump value version ───────────────────────────────
 
-test.describe("Draft and publish flow", () => {
+test.describe("Schema vs value separation", () => {
   test.describe.configure({ mode: "serial" });
-  const key = `e2cfg_pub_${RUN}`;
+  const key = `e2cfg_schema_${RUN}`;
 
-  test("create config to publish into", async ({ page }) => {
-    await createConfig(page, {
+  test("schema update via PATCH does not bump value version", async ({ page }) => {
+    await createConfigViaApi(page, {
       key,
-      type: "object",
-      value: JSON.stringify({ a: 1 }),
+      schema: { type: "object", properties: { a: { type: "number" } } },
+      value: { a: 1 },
     });
-  });
 
-  test("editing the draft and publishing creates a new version", async ({ page }) => {
-    await page.goto("/dashboard/configs/values");
-    await treeItem(page, key).click();
-
-    // Switch to dev env (versions are independent per env).
-    await page.getByRole("tab", { name: "dev" }).click();
-
-    // Replace the draft JSON with a new object.
-    const newValue = JSON.stringify({ a: 2, b: "two" }, null, 2);
-    const textarea = page.locator("textarea").first();
-    await textarea.fill(newValue);
-
-    // Publish sends the draft live.
-    await page.getByTestId("publish-button").click();
-    await expect(page.getByText(/Published to dev/i)).toBeVisible();
-
-    const resp = await page.request.get(`/api/admin/configs`);
-    const configs = (await resp.json()) as {
+    // Find the new config's id.
+    const list = (await (await page.request.get("/api/admin/configs")).json()) as {
       id: string;
       name: string;
+      schema: Record<string, unknown>;
       envs: Record<string, { version: number } | undefined>;
     }[];
-    const cfg = configs.find((c) => c.name === key)!;
-    expect(cfg.envs.dev?.version).toBe(2);
+    const cfg = list.find((c) => c.name === key)!;
     expect(cfg.envs.prod?.version).toBe(1);
+
+    // PATCH the schema only.
+    const patchResp = await page.request.patch(`/api/admin/configs/${cfg.id}`, {
+      data: {
+        schema: {
+          type: "object",
+          properties: { a: { type: "number" }, b: { type: "string" } },
+        },
+      },
+    });
+    expect(patchResp.ok()).toBe(true);
+
+    // Version unchanged after schema-only update.
+    const after = (await (await page.request.get("/api/admin/configs")).json()) as {
+      name: string;
+      schema: { properties?: Record<string, unknown> };
+      envs: Record<string, { version: number } | undefined>;
+    }[];
+    const updated = after.find((c) => c.name === key)!;
+    expect(updated.envs.prod?.version).toBe(1);
+    expect(Object.keys(updated.schema.properties ?? {})).toEqual(["a", "b"]);
+  });
+
+  test("server rejects a value that violates the current schema", async ({ page }) => {
+    const list = (await (await page.request.get("/api/admin/configs")).json()) as {
+      id: string;
+      name: string;
+    }[];
+    const cfg = list.find((c) => c.name === key)!;
+
+    // Tighten schema: require `b`.
+    await page.request.patch(`/api/admin/configs/${cfg.id}`, {
+      data: {
+        schema: {
+          type: "object",
+          properties: { a: { type: "number" }, b: { type: "string" } },
+          required: ["b"],
+        },
+      },
+    });
+
+    // Try to publish a draft missing `b`.
+    const draftResp = await page.request.put(`/api/admin/configs/${cfg.id}/drafts`, {
+      data: { env: "dev", value: { a: 5 } },
+    });
+    // Schema validation runs in saveDraft; should fail with 400.
+    expect(draftResp.status()).toBe(400);
   });
 
   test("cleanup", async ({ page }) => {
-    await page.goto("/dashboard/configs/values");
+    await page.goto("/dashboard/e2e-project-id/configs/values");
     await treeItem(page, key).click();
     await deleteActiveConfig(page);
   });
 });
 
-// ── Number / Boolean / Object / Array creates ─────────────────────────────────
+// ── Top-level non-object value is rejected ────────────────────────────────────
 
-test.describe("Typed configs — smoke", () => {
-  test.describe.configure({ mode: "serial" });
-
-  const specs: Array<{
-    label: string;
-    type: "number" | "boolean" | "object" | "array";
-    value: string;
-    suffix: string;
-  }> = [
-    { label: "number", type: "number", value: "99", suffix: "num" },
-    { label: "boolean", type: "boolean", value: "true", suffix: "bool" },
-    {
-      label: "object",
-      type: "object",
-      value: '{"threshold": 50, "enabled": true}',
-      suffix: "obj",
-    },
-    { label: "array", type: "array", value: '["a", "b"]', suffix: "arr" },
-  ];
-
-  for (const { label, type, value, suffix } of specs) {
-    test(`create ${label} config and delete it`, async ({ page }) => {
-      const key = `e2cfg_${suffix}_${RUN}`;
-      await createConfig(page, { key, type, value });
-      await expect(treeItem(page, key)).toBeVisible();
-      await deleteActiveConfig(page);
+test.describe("Object-only enforcement", () => {
+  test("creating a config with a non-object value returns 400", async ({ page }) => {
+    const resp = await page.request.post("/api/admin/configs", {
+      data: {
+        name: `e2cfg_reject_${RUN}`,
+        schema: { type: "object", properties: {} },
+        value: "just a string",
+      },
     });
-  }
+    expect(resp.status()).toBe(400);
+  });
 });

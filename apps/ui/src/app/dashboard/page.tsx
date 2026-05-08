@@ -1,120 +1,75 @@
-import type { Metadata } from "next";
-import { ArrowRight, Gauge } from "lucide-react";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { auth } from "@/auth";
-import { PageHeader } from "@/components/dashboard/page-header";
-import { StatCard } from "@/components/dashboard/stat-card";
-import { PRODUCTS } from "@/lib/products";
-import { listGates } from "@/lib/handlers/gates";
-import { listConfigs } from "@/lib/handlers/configs";
-import { listExperiments } from "@/lib/handlers/experiments";
-import { listProfiles } from "@/lib/handlers/i18n";
-import { getProject } from "@/lib/handlers/projects";
-import { getEffectivePlan } from "@shipeasy/core";
+import { getEnvAsync } from "@/lib/env";
+import { findProjectById, listProjectsByEmail } from "@shipeasy/core";
 
-export const metadata: Metadata = { title: "Overview" };
-
-const EXTRA_PRODUCTS = [
-  {
-    id: "metrics",
-    name: "Metrics",
-    tagline: "Web vitals, errors & custom events",
-    icon: Gauge,
-    rootHref: "/dashboard/metrics",
-  },
-];
-
-export default async function OverviewPage() {
+export default async function DashboardRootPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await auth();
-  const firstName = session?.user?.name?.split(" ")[0];
-  const projectId = session?.user?.project_id ?? "";
-  const actorEmail = session?.user?.email ?? "unknown";
-  const identity = { projectId, actorEmail, source: "jwt" as const };
+  if (!session) redirect("/auth/signin");
 
-  let gatesCount = 0;
-  let configsCount = 0;
-  let runningCount = 0;
-  let localesCount = 0;
-  let planName = "Free";
-  let projectName: string | null = null;
+  const email = session.user?.email ?? "";
+  const sessionProjectId = session.user?.project_id ?? "";
+  const cookieStore = await cookies();
+  const cookieProjectId = cookieStore.get("active_project_id")?.value ?? "";
 
-  if (projectId) {
+  const env = await getEnvAsync().catch(() => null);
+
+  let target: string | null = null;
+
+  // Prefer the cookie/session-provided projectId. Use DB only to verify
+  // ownership when the DB is reachable; if the lookup fails (DB unavailable,
+  // schema not yet migrated, etc.) fall back to trusting the session value
+  // — the [projectId]/layout still enforces access on the destination.
+  async function verify(id: string | undefined | null): Promise<string | null> {
+    if (!id) return null;
+    if (!env) return id;
     try {
-      const [gates, configs, experiments, profiles, project] = await Promise.all([
-        listGates(identity).catch(() => []),
-        listConfigs(identity).catch(() => []),
-        listExperiments(identity).catch(() => []),
-        listProfiles(identity).catch(() => []),
-        getProject(identity, projectId).catch(() => null),
-      ]);
-      gatesCount = gates.length;
-      configsCount = configs.length;
-      runningCount = experiments.filter((e) => e.status === "running").length;
-      localesCount = profiles.length;
-      if (project) {
-        planName = getEffectivePlan(project).display_name ?? "Free";
-        projectName = project.name ?? null;
-      }
+      const proj = await findProjectById(env.DB, id);
+      if (!proj) return id; // schema/data may be missing in dev — trust input
+      if (proj.ownerEmail === email) return proj.id;
+      return null;
     } catch {
-      // DB not available in dev without wrangler
+      return id;
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        kicker={projectName ? `Workspace overview · ${projectName}` : "Workspace overview"}
-        title={firstName ? `Welcome back, ${firstName}` : "Overview"}
-        description="Pick a product to work in, or keep tabs on everything at a glance."
-      />
+  target = await verify(cookieProjectId);
+  if (!target) target = await verify(sessionProjectId);
+  if (!target && env) {
+    const list = await listProjectsByEmail(env.DB, email).catch(() => []);
+    target = list[0]?.id ?? null;
+  }
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Gates + configs"
-          value={String(gatesCount + configsCount)}
-          hint="across environments"
-        />
-        <StatCard
-          label="Running experiments"
-          value={String(runningCount)}
-          hint="live with traffic"
-          accent
-        />
-        <StatCard
-          label="Published locales"
-          value={String(localesCount)}
-          hint="string profiles live"
-        />
-        <a href="/dashboard/billing" className="block">
-          <StatCard label="Plan" value={planName} hint="upgrade for more limits" />
-        </a>
-      </div>
+  if (!target) redirect("/dashboard/projects/new");
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        {[...PRODUCTS, ...EXTRA_PRODUCTS].map((p) => (
-          <a
-            key={p.id}
-            href={p.rootHref}
-            className="group flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-5 transition-colors hover:border-[var(--se-line-2)] hover:bg-[var(--se-bg-2)]"
-          >
-            <div className="flex items-center justify-between">
-              <span
-                className="grid size-9 place-items-center rounded-[8px]"
-                style={{
-                  background: "var(--se-accent-soft)",
-                  color: "var(--se-accent)",
-                  border: "1px solid color-mix(in oklab, var(--se-accent) 30%, transparent)",
-                }}
-              >
-                <p.icon className="size-4" />
-              </span>
-              <ArrowRight className="size-3.5 text-[var(--se-fg-4)] transition-colors group-hover:text-[var(--se-accent)]" />
-            </div>
-            <div className="text-[15px] font-medium tracking-[-0.01em]">{p.name}</div>
-            <div className="text-[12.5px] leading-[1.5] text-[var(--se-fg-2)]">{p.tagline}</div>
-          </a>
-        ))}
-      </div>
-    </div>
-  );
+  // Honor `?next=/dashboard/<feature>/...` (set by middleware when it
+  // intercepts a legacy URL with no active-project cookie). Inject the
+  // resolved projectId between /dashboard/ and the rest.
+  const params = await searchParams;
+  const next = typeof params.next === "string" ? params.next : undefined;
+
+  // Forward all non-`next` query params on the redirect so triggers like
+  // `?se`, `?se_devtools`, `?se_edit_labels`, and `?se_*` overrides survive
+  // the project-resolving hop.
+  const forwarded = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (k === "next" || v === undefined) continue;
+    if (Array.isArray(v)) v.forEach((item) => forwarded.append(k, item));
+    else forwarded.append(k, v);
+  }
+  const qs = forwarded.toString();
+  const suffix = qs ? `?${qs}` : "";
+
+  if (next && next.startsWith("/dashboard/") && !next.startsWith(`/dashboard/${target}`)) {
+    const remainder = next.slice("/dashboard/".length);
+    redirect(`/dashboard/${target}/${remainder}${suffix}`);
+  }
+
+  redirect(`/dashboard/${target}${suffix}`);
 }

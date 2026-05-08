@@ -11,20 +11,20 @@ import {
 export async function createUniverse(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await createUniverseHandler(identity, input);
-  revalidatePath("/dashboard/experiments/universes");
+  revalidatePath("/dashboard/[projectId]/experiments/universes", "page");
   return result;
 }
 
 export async function updateUniverse(id: string, input: unknown) {
   const identity = await authenticateAdmin();
   const result = await updateUniverseHandler(identity, id, input);
-  revalidatePath("/dashboard/experiments/universes");
+  revalidatePath("/dashboard/[projectId]/experiments/universes", "page");
   return result;
 }
 
 export async function deleteUniverse(id: string) {
   const identity = await authenticateAdmin();
   const result = await deleteUniverseHandler(identity, id);
-  revalidatePath("/dashboard/experiments/universes");
+  revalidatePath("/dashboard/[projectId]/experiments/universes", "page");
   return result;
 }

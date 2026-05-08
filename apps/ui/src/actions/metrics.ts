@@ -11,20 +11,20 @@ import {
 export async function createMetric(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await createMetricHandler(identity, input);
-  revalidatePath("/dashboard/experiments/metrics");
+  revalidatePath("/dashboard/[projectId]/experiments/metrics", "page");
   return result;
 }
 
 export async function updateMetric(id: string, input: unknown) {
   const identity = await authenticateAdmin();
   const result = await updateMetricHandler(identity, id, input);
-  revalidatePath("/dashboard/experiments/metrics");
+  revalidatePath("/dashboard/[projectId]/experiments/metrics", "page");
   return result;
 }
 
 export async function deleteMetric(id: string) {
   const identity = await authenticateAdmin();
   const result = await deleteMetricHandler(identity, id);
-  revalidatePath("/dashboard/experiments/metrics");
+  revalidatePath("/dashboard/[projectId]/experiments/metrics", "page");
   return result;
 }

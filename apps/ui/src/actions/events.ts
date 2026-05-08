@@ -12,27 +12,27 @@ import {
 export async function createEvent(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await createEventHandler(identity, input);
-  revalidatePath("/dashboard/experiments/events");
+  revalidatePath("/dashboard/[projectId]/experiments/events", "page");
   return result;
 }
 
 export async function updateEvent(id: string, input: unknown) {
   const identity = await authenticateAdmin();
   const result = await updateEventHandler(identity, id, input);
-  revalidatePath("/dashboard/experiments/events");
+  revalidatePath("/dashboard/[projectId]/experiments/events", "page");
   return result;
 }
 
 export async function approveEvent(id: string, input: unknown = {}) {
   const identity = await authenticateAdmin();
   const result = await approveEventHandler(identity, id, input);
-  revalidatePath("/dashboard/experiments/events");
+  revalidatePath("/dashboard/[projectId]/experiments/events", "page");
   return result;
 }
 
 export async function deleteEvent(id: string) {
   const identity = await authenticateAdmin();
   const result = await deleteEventHandler(identity, id);
-  revalidatePath("/dashboard/experiments/events");
+  revalidatePath("/dashboard/[projectId]/experiments/events", "page");
   return result;
 }

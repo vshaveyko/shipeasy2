@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { ChevronDown, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { switchProjectAction } from "@/app/dashboard/projects/actions";
 import { projectLabel } from "@/lib/project-label";
+import { replaceProjectIdInPath } from "@/lib/project-path";
 
 interface Project {
   id: string;
@@ -40,6 +41,7 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
   const [, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   const active = projects.find((p) => p.id === activeProjectId) ?? projects[0];
   const displayName = active ? projectLabel(active.name, active.domain) : "Project";
@@ -71,6 +73,12 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
         toast.error(result.error);
         return;
       }
+      // Navigate to the same page under the new project — keeps the user
+      // on the tab they were viewing (e.g. /dashboard/<old>/gates →
+      // /dashboard/<new>/gates). Workspace routes get redirected to the
+      // new project's home.
+      const nextPath = replaceProjectIdInPath(pathname, projectId);
+      router.push(nextPath);
       router.refresh();
     });
   }

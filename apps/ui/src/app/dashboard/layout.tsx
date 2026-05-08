@@ -70,7 +70,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
       {/* Right column: topbar + billing banner + page content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <TopBar user={session.user ?? {}} planLabel={planLabel} projectName={projectLabel} />
+        <TopBar
+          user={session.user ?? {}}
+          planLabel={planLabel}
+          projectName={projectLabel}
+          projectId={activeProjectId}
+        />
         {billingStatus && (
           <BillingBanner status={billingStatus.status} trialEndsAt={billingStatus.trialEndsAt} />
         )}

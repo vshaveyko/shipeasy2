@@ -9,57 +9,38 @@ type NavCase = {
 
 const GATES_NAV: NavCase[] = [
   {
-    startAt: "/dashboard/gates",
+    startAt: "/dashboard/e2e-project-id/gates",
     label: /^gates$/i,
-    url: /\/dashboard\/gates$/,
+    url: /\/dashboard\/e2e-project-id\/gates$/,
     heading: /^gates$/i,
   },
 ];
 
 const CONFIGS_NAV: NavCase[] = [
   {
-    startAt: "/dashboard/configs/values",
+    startAt: "/dashboard/e2e-project-id/configs/values",
     label: /^configs$/i,
-    url: /\/dashboard\/configs\/values$/,
+    url: /\/dashboard\/e2e-project-id\/configs\/values$/,
     heading: /^dynamic configs$/i,
   },
 ];
 
+// The redesigned project sidebar surfaces only top-level product tabs;
+// sub-product navigation (Universes/Metrics/Events/Attributes) lives inside
+// the experiments routes themselves, not in the global sidebar.
 const EXPERIMENTS_NAV: NavCase[] = [
   {
-    startAt: "/dashboard/experiments",
+    startAt: "/dashboard/e2e-project-id/experiments",
     label: /^experiments$/i,
-    url: /\/dashboard\/experiments$/,
+    url: /\/dashboard\/e2e-project-id\/experiments$/,
     heading: /^experiments$/i,
-  },
-  {
-    startAt: "/dashboard/experiments",
-    label: /^universes$/i,
-    url: /\/dashboard\/experiments\/universes$/,
-    heading: /^universes$/i,
-  },
-  {
-    startAt: "/dashboard/experiments",
-    label: /^metrics$/i,
-    url: /\/dashboard\/experiments\/metrics$/,
-    heading: /^metrics$/i,
-  },
-  {
-    startAt: "/dashboard/experiments",
-    label: /^events$/i,
-    url: /\/dashboard\/experiments\/events$/,
-    heading: /^events$/i,
-  },
-  {
-    startAt: "/dashboard/experiments",
-    label: /^attributes$/i,
-    url: /\/dashboard\/experiments\/attributes$/,
-    heading: /^user attributes$/i,
   },
 ];
 
 async function runNavSuite(page: import("@playwright/test").Page, cases: NavCase[]) {
-  const sidebar = page.locator("aside");
+  // Some product pages render a secondary <aside> (e.g. configs tree). Scope
+  // assertions to the primary navigation rail, which is always the first.
+  const sidebar = page.locator("aside").first();
   for (const c of cases) {
     await page.goto(c.startAt);
     await expect(sidebar).toBeVisible();
@@ -83,31 +64,33 @@ test.describe("Sidebar navigation", () => {
   });
 
   test("active nav item is visually highlighted", async ({ page }) => {
-    await page.goto("/dashboard/experiments");
+    await page.goto("/dashboard/e2e-project-id/experiments");
 
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").first();
     const active = sidebar.getByRole("link", { name: /^experiments$/i }).first();
     await expect(active).toBeVisible();
-    await expect(active).toHaveClass(/font-medium/);
+    // Active state is communicated via background colour + a left rail.
+    await expect(active).toHaveClass(/text-foreground/);
   });
 
   test("shared nav exposes SDK Keys and Settings from Configs and Experiments", async ({
     page,
   }) => {
-    const sidebar = page.locator("aside");
+    const sidebar = page.locator("aside").first();
 
-    await page.goto("/dashboard/configs/values");
+    await page.goto("/dashboard/e2e-project-id/configs/values");
     await sidebar.getByRole("link", { name: /^sdk keys$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/keys$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys$/);
 
-    await page.goto("/dashboard/experiments");
+    await page.goto("/dashboard/e2e-project-id/experiments");
     await sidebar.getByRole("link", { name: /^settings$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/settings$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/settings$/);
   });
 
   test("top-bar brand link returns to overview", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
     await page.getByRole("link", { name: /^shipeasy$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // Brand link goes to /dashboard which redirects into the active project.
+    await expect(page).toHaveURL(/\/dashboard(\/e2e-project-id)?$/);
   });
 });

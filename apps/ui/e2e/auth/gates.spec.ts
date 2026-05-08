@@ -12,32 +12,32 @@ function gateRow(page: Page, name: string) {
 
 test.describe("New gate form UI", () => {
   test("renders all four quick-setup profiles", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     for (const label of ["Rollout", "Targeted", "Killswitch", "Beta"]) {
       await expect(page.getByText(label, { exact: true })).toBeVisible();
     }
   });
 
   test("Rollout profile is selected by default and shows 10%", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     // The percentage display shows 10 for the default Rollout profile
     await expect(page.getByText("10%")).toBeVisible();
   });
 
   test("selecting Killswitch profile sets percentage to 0%", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     await page.getByText("Killswitch", { exact: true }).locator("..").click();
     await expect(page.getByText("0%")).toBeVisible();
   });
 
   test("selecting Targeted profile sets percentage to 100%", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     await page.getByText("Targeted", { exact: true }).locator("..").click();
     await expect(page.getByText("100%")).toBeVisible();
   });
 
   test("moving the slider updates the displayed percentage", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     const slider = page.locator("input[type=range]");
     await slider.evaluate((el: HTMLInputElement) => {
       Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(
@@ -50,16 +50,16 @@ test.describe("New gate form UI", () => {
   });
 
   test("cancel link returns to the gates list", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     await page
       .getByRole("link", { name: /^cancel$/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
   });
 
   test("Create gate button is present and enabled", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     await expect(page.getByRole("button", { name: /^create gate$/i })).toBeEnabled();
   });
 });
@@ -74,7 +74,7 @@ test.describe("Rollout gate — full CRUD", () => {
   test("create at 50% rollout → appears in list as enabled, propagates to admin API", async ({
     page,
   }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
 
     // Set slider to 50
     const slider = page.locator("input[type=range]");
@@ -88,7 +88,7 @@ test.describe("Rollout gate — full CRUD", () => {
     await page.locator("#gate-key").fill(key);
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
     await expect(gateRow(page, key).getByText("enabled", { exact: true })).toBeVisible();
 
     // Admin API: gate is present with correct rolloutPct (50% → 5000 in 0-10000 scale)
@@ -103,12 +103,12 @@ test.describe("Rollout gate — full CRUD", () => {
   });
 
   test("disable gate → disabled badge; admin API reflects enabled=0", async ({ page }) => {
-    await page.goto("/dashboard/gates");
+    await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^disable$/i })
       .click();
 
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
     await expect(gateRow(page, key).getByText("disabled")).toBeVisible();
     await expect(gateRow(page, key).getByRole("button", { name: /^enable$/i })).toBeVisible();
 
@@ -119,12 +119,12 @@ test.describe("Rollout gate — full CRUD", () => {
   });
 
   test("re-enable gate → enabled badge; admin API reflects enabled=1", async ({ page }) => {
-    await page.goto("/dashboard/gates");
+    await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^enable$/i })
       .click();
 
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
     await expect(gateRow(page, key).getByText("enabled", { exact: true })).toBeVisible();
 
     const resp = await page.request.get("/api/admin/gates");
@@ -134,12 +134,12 @@ test.describe("Rollout gate — full CRUD", () => {
   });
 
   test("delete gate → removed from list and from admin API", async ({ page }) => {
-    await page.goto("/dashboard/gates");
+    await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^delete$/i })
       .click();
 
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
     await expect(page.getByText(key, { exact: true })).not.toBeVisible();
 
     const resp = await page.request.get("/api/admin/gates");
@@ -157,7 +157,7 @@ test.describe("Killswitch gate — create with killswitch=true", () => {
   const key = `e2g_ks_${RUN}`;
 
   test("create with Killswitch profile → killswitch=1 in admin API", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     // Select the Killswitch profile card
     await page.getByText("Killswitch", { exact: true }).locator("..").click();
     await expect(page.getByText("0%")).toBeVisible();
@@ -165,7 +165,7 @@ test.describe("Killswitch gate — create with killswitch=true", () => {
     await page.locator("#gate-key").fill(key);
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
 
     const resp = await page.request.get("/api/admin/gates");
     const gates = await resp.json();
@@ -176,7 +176,7 @@ test.describe("Killswitch gate — create with killswitch=true", () => {
   });
 
   test("cleanup: delete killswitch gate", async ({ page }) => {
-    await page.goto("/dashboard/gates");
+    await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -192,12 +192,12 @@ test.describe("Beta gate — create and verify 0% default", () => {
   const key = `e2g_beta_${RUN}`;
 
   test("create with Beta profile → 0% rollout, killswitch=0", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     await page.getByText("Beta", { exact: true }).locator("..").click();
     await page.locator("#gate-key").fill(key);
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
 
     const resp = await page.request.get("/api/admin/gates");
     const gates = await resp.json();
@@ -208,7 +208,7 @@ test.describe("Beta gate — create and verify 0% default", () => {
   });
 
   test("cleanup: delete beta gate", async ({ page }) => {
-    await page.goto("/dashboard/gates");
+    await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -224,13 +224,13 @@ test.describe("Full rollout gate — 100%", () => {
   const key = `e2g_full_${RUN}`;
 
   test("create at 100% → rolloutPct=10000 in admin API", async ({ page }) => {
-    await page.goto("/dashboard/gates/new");
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     // Targeted profile defaults to 100%
     await page.getByText("Targeted", { exact: true }).locator("..").click();
     await page.locator("#gate-key").fill(key);
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
 
     const resp = await page.request.get("/api/admin/gates");
     const gates = await resp.json();
@@ -240,7 +240,7 @@ test.describe("Full rollout gate — 100%", () => {
   });
 
   test("cleanup: delete full-rollout gate", async ({ page }) => {
-    await page.goto("/dashboard/gates");
+    await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
       .getByRole("button", { name: /^delete$/i })
       .click();

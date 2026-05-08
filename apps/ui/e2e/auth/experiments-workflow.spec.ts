@@ -38,43 +38,43 @@ async function getExperimentId(page: Page, name: string): Promise<string> {
 
 test.describe("New experiment form UI", () => {
   test("renders all five quick-setup profiles", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     for (const label of ["Conversion", "Revenue", "Retention", "Performance", "Onboarding"]) {
       await expect(page.getByText(label, { exact: true })).toBeVisible();
     }
   });
 
   test("Conversion profile is selected by default and shows its goal metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await expect(page.getByText("conversion_rate")).toBeVisible();
   });
 
   test("selecting Revenue profile shows revenue_per_user metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page.getByText("Revenue", { exact: true }).locator("..").click();
     await expect(page.getByText("revenue_per_user")).toBeVisible();
   });
 
   test("selecting Retention profile shows d7_retention metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page.getByText("Retention", { exact: true }).locator("..").click();
     await expect(page.getByText("d7_retention")).toBeVisible();
   });
 
   test("selecting Performance profile shows p50_latency_ms metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page.getByText("Performance", { exact: true }).locator("..").click();
     await expect(page.getByText("p50_latency_ms")).toBeVisible();
   });
 
   test("selecting Onboarding profile shows activation_rate metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page.getByText("Onboarding", { exact: true }).locator("..").click();
     await expect(page.getByText("activation_rate")).toBeVisible();
   });
 
   test("Add variant button adds a third group row and updates the split", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     // Initially 2 groups: control and test — verify via input values
     await expect(page.locator('input[name="group_name_0"]')).toHaveValue("control");
     await expect(page.locator('input[name="group_name_1"]')).toHaveValue("test");
@@ -88,7 +88,7 @@ test.describe("New experiment form UI", () => {
   });
 
   test("allocation slider updates the percentage display", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     const slider = page.locator("input[type=range]");
     await slider.evaluate((el: HTMLInputElement) => {
       // Use native setter so React's synthetic onChange fires
@@ -102,12 +102,12 @@ test.describe("New experiment form UI", () => {
   });
 
   test("cancel link returns to experiments list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page
       .getByRole("link", { name: /^cancel$/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
   });
 });
 
@@ -123,13 +123,13 @@ test.describe("Conversion experiment — full lifecycle", () => {
   });
 
   test("create draft experiment → appears in list with 'draft' badge", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     // Conversion selected by default
     await page.locator("#exp-key").fill(name);
     await page.locator("#exp-question").fill("Does the new checkout increase conversions?");
     await page.getByRole("button", { name: /^save draft$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(expRow(page, name).getByText(/draft/i)).toBeVisible();
   });
 
@@ -149,7 +149,7 @@ test.describe("Conversion experiment — full lifecycle", () => {
     page,
   }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
     await expect(page.getByText("Draft", { exact: true })).toBeVisible(); // status stat card
     await expect(page.getByText("—").first()).toBeVisible(); // verdict stat card
@@ -158,7 +158,7 @@ test.describe("Conversion experiment — full lifecycle", () => {
 
   test("results page: setup card shows groups and universe", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
     await expect(page.getByText(/control/i)).toBeVisible();
     await expect(page.getByText(/universe: default/i)).toBeVisible();
@@ -167,24 +167,24 @@ test.describe("Conversion experiment — full lifecycle", () => {
   test("start experiment → list shows 'running' badge, detail page shows Start button gone", async ({
     page,
   }) => {
-    await page.goto("/dashboard/experiments");
+    await page.goto("/dashboard/e2e-project-id/experiments");
     await expRow(page, name)
       .getByRole("button", { name: /^start$/i })
       .click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(expRow(page, name).getByText(/running/i)).toBeVisible();
 
     // Detail page: no Start button, Stop button present
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await expect(page.getByRole("button", { name: /^start$/i })).not.toBeVisible();
     await expect(page.getByRole("button", { name: /^stop$/i })).toBeVisible();
   });
 
   test("results page for running experiment: status stat shows 'Running'", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
     await expect(page.getByText("Running", { exact: true })).toBeVisible();
     await expect(page.getByText("0", { exact: true })).toBeVisible(); // days running (0 on day of start)
@@ -192,10 +192,10 @@ test.describe("Conversion experiment — full lifecycle", () => {
 
   test("stop experiment from detail page → list shows 'stopped' badge", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
     await page.getByRole("button", { name: /^stop$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(expRow(page, name).getByText(/stopped/i)).toBeVisible();
   });
 
@@ -215,7 +215,7 @@ test.describe("Conversion experiment — full lifecycle", () => {
   });
 
   test("delete stopped experiment → removed from list and admin API", async ({ page }) => {
-    await page.goto("/dashboard/experiments");
+    await page.goto("/dashboard/e2e-project-id/experiments");
     await expRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -243,7 +243,7 @@ test.describe("Multi-variant experiment — 3 groups", () => {
   test("create with 3 groups → admin API stores 3 groups with correct weights", async ({
     page,
   }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     // Add a third variant
     await page.getByRole("button", { name: /\+ add variant/i }).click();
     // Rename variant_2 for clarity
@@ -252,7 +252,7 @@ test.describe("Multi-variant experiment — 3 groups", () => {
     await page.locator("#exp-key").fill(name);
     await page.getByRole("button", { name: /^save draft$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
 
     const resp = await page.request.get("/api/admin/experiments");
     const exps = await resp.json();
@@ -269,7 +269,7 @@ test.describe("Multi-variant experiment — 3 groups", () => {
 
   test("results page: setup card shows all 3 groups", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
     // Setup card text: "control 33% / test 33% / variant_b 34% — Allocation …"
     await expect(page.getByText(/control \d+%/i)).toBeVisible();
@@ -277,7 +277,7 @@ test.describe("Multi-variant experiment — 3 groups", () => {
   });
 
   test("cleanup: delete multi-variant experiment", async ({ page }) => {
-    await page.goto("/dashboard/experiments");
+    await page.goto("/dashboard/e2e-project-id/experiments");
     await expRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -297,7 +297,7 @@ test.describe("Revenue experiment — 60% allocation", () => {
   });
 
   test("create with Revenue profile and 60% allocation → allocation_pct=6000", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page.getByText("Revenue", { exact: true }).locator("..").click();
 
     const slider = page.locator("input[type=range]");
@@ -308,7 +308,7 @@ test.describe("Revenue experiment — 60% allocation", () => {
     await page.locator("#exp-key").fill(name);
     await page.getByRole("button", { name: /^save draft$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
 
     const resp = await page.request.get("/api/admin/experiments");
     const exps = await resp.json();
@@ -319,13 +319,13 @@ test.describe("Revenue experiment — 60% allocation", () => {
 
   test("results page shows 60% allocation in setup card", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
     await expect(page.getByText(/allocation 60%/i)).toBeVisible();
   });
 
   test("cleanup: delete revenue experiment", async ({ page }) => {
-    await page.goto("/dashboard/experiments");
+    await page.goto("/dashboard/e2e-project-id/experiments");
     await expRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -343,13 +343,13 @@ test.describe("Results page — SRM and verdict display states", () => {
   });
 
   test("verdict shows '—' when results array is empty (new draft)", async ({ page }) => {
-    await page.goto("/dashboard/experiments/new");
+    await page.goto("/dashboard/e2e-project-id/experiments/new");
     await page.locator("#exp-key").fill(tmpName);
     await page.getByRole("button", { name: /^save draft$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
 
     const id = await getExperimentId(page, tmpName);
-    await page.goto(`/dashboard/experiments/${id}`);
+    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
     // No analysis run yet → verdict must be "—"
     await expect(page.getByText("Goal metric", { exact: true })).toBeVisible();

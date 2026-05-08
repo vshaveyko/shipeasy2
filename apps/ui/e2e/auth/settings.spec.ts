@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Settings", () => {
   test("shows project, plan, and account sections", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
 
     await expect(page.getByRole("heading", { name: /^settings$/i, level: 1 })).toBeVisible();
 
@@ -21,7 +21,7 @@ test.describe("Settings", () => {
   });
 
   test("sign-out button on settings page signs the user out", async ({ page }) => {
-    await page.goto("/dashboard/settings");
+    await page.goto("/dashboard/e2e-project-id/settings");
 
     await page
       .locator("main")

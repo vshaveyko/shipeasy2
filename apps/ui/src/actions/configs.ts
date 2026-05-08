@@ -5,6 +5,7 @@ import { authenticateAdmin } from "@/lib/admin-auth";
 import {
   createConfig as createConfigHandler,
   updateConfig as updateConfigHandler,
+  updateConfigSchema as updateConfigSchemaHandler,
   deleteConfig as deleteConfigHandler,
 } from "@/lib/handlers/configs";
 
@@ -20,6 +21,13 @@ export async function createConfig(input: unknown) {
 export async function updateConfig(id: string, input: unknown) {
   const identity = await authenticateAdmin();
   const result = await updateConfigHandler(identity, id, input);
+  revalidatePath(CONFIGS_PATH);
+  return result;
+}
+
+export async function updateConfigSchema(id: string, schema: unknown) {
+  const identity = await authenticateAdmin();
+  const result = await updateConfigSchemaHandler(identity, id, { schema });
   revalidatePath(CONFIGS_PATH);
   return result;
 }

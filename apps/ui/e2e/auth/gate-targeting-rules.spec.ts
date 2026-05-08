@@ -18,7 +18,7 @@ function gateRow(page: Page, name: string) {
 
 test.describe("New gate form — targeting rules section", () => {
   test("shows targeting-rules card with placeholder", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates/new");
+    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
     await expect(page.getByRole("heading", { name: /targeting rules/i })).toBeVisible();
     await expect(page.getByText(/rules builder/i)).toBeVisible();
   });
@@ -36,17 +36,17 @@ test.describe("Gate detail — rules builder UI", () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/configs/gates/new");
+    await p.goto("/dashboard/e2e-project-id/configs/gates/new");
     await p.locator("#gate-key").fill(key);
     await p.getByRole("button", { name: /^create gate$/i }).click();
-    await expect(p).toHaveURL(/\/dashboard\/configs\/gates$/);
+    await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
     await ctx.close();
   });
 
   test.afterAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
-    await p.goto("/dashboard/configs/gates");
+    await p.goto("/dashboard/e2e-project-id/configs/gates");
     await gateRow(p, key)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -54,7 +54,7 @@ test.describe("Gate detail — rules builder UI", () => {
   });
 
   test("gate detail page renders 'Add rule' button", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     // Navigate to gate detail (via Edit or detail link)
     const editLink = gateRow(page, key).getByRole("link", { name: /edit/i });
     if ((await editLink.count()) > 0) {
@@ -68,7 +68,7 @@ test.describe("Gate detail — rules builder UI", () => {
   test("adding a rule shows a rule row with attribute, operator, value fields", async ({
     page,
   }) => {
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     const editLink = gateRow(page, key).getByRole("link", { name: /edit/i });
     if ((await editLink.count()) > 0) {
       await editLink.click();
@@ -87,7 +87,7 @@ test.describe("Gate detail — rules builder UI", () => {
   });
 
   test("removing a rule clears the rule row", async ({ page }) => {
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     const editLink = gateRow(page, key).getByRole("link", { name: /edit/i });
     if ((await editLink.count()) > 0) {
       await editLink.click();
@@ -123,17 +123,17 @@ test.describe("Gate — full rules workflow", () => {
     const p = await ctx.newPage();
 
     // Create attribute to use in rule
-    await p.goto("/dashboard/experiments/attributes");
+    await p.goto("/dashboard/e2e-project-id/experiments/attributes");
     await p.locator("#attr-name").fill(attrName);
     await p.locator("#attr-type").selectOption("string");
     await p.getByRole("button", { name: /^add attribute$/i }).click();
-    await expect(p).toHaveURL(/\/dashboard\/experiments\/attributes$/);
+    await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/attributes$/);
 
     // Create gate
-    await p.goto("/dashboard/configs/gates/new");
+    await p.goto("/dashboard/e2e-project-id/configs/gates/new");
     await p.locator("#gate-key").fill(key);
     await p.getByRole("button", { name: /^create gate$/i }).click();
-    await expect(p).toHaveURL(/\/dashboard\/configs\/gates$/);
+    await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
 
     await ctx.close();
   });
@@ -142,11 +142,11 @@ test.describe("Gate — full rules workflow", () => {
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
 
-    await p.goto("/dashboard/configs/gates");
+    await p.goto("/dashboard/e2e-project-id/configs/gates");
     const delBtn = gateRow(p, key).getByRole("button", { name: /^delete$/i });
     if ((await delBtn.count()) > 0) await delBtn.click();
 
-    await p.goto("/dashboard/experiments/attributes");
+    await p.goto("/dashboard/e2e-project-id/experiments/attributes");
     const attrDelBtn = p
       .getByText(attrName, { exact: true })
       .locator("..")
@@ -160,7 +160,7 @@ test.describe("Gate — full rules workflow", () => {
   test("save a rule targeting the registered attribute → rule persists on reload", async ({
     page,
   }) => {
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     const editLink = gateRow(page, key).getByRole("link", { name: /edit/i });
     expect(await editLink.count(), "Gate detail/edit page not yet implemented").toBeGreaterThan(0);
     await editLink.click();
@@ -182,10 +182,10 @@ test.describe("Gate — full rules workflow", () => {
 
     // Save
     await page.getByRole("button", { name: /save.*rules|save/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/configs\/gates/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates/);
 
     // Reload and confirm rule persists
-    await page.goto("/dashboard/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/configs/gates");
     await editLink.click();
     await expect(valInput).toHaveValue("beta");
   });

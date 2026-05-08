@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Combined feedback page", () => {
   test("renders both tabs and a connectors trigger", async ({ page }) => {
-    await page.goto("/dashboard/feedback");
+    await page.goto("/dashboard/e2e-project-id/feedback");
     await expect(page.getByRole("heading", { name: /^feedback$/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /^bugs/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /feature requests/i })).toBeVisible();
@@ -10,7 +10,7 @@ test.describe("Combined feedback page", () => {
   });
 
   test("tab switch updates URL and content", async ({ page }) => {
-    await page.goto("/dashboard/feedback");
+    await page.goto("/dashboard/e2e-project-id/feedback");
     await page
       .getByRole("link", { name: /feature requests/i })
       .first()
@@ -21,7 +21,7 @@ test.describe("Combined feedback page", () => {
 
 test.describe("Connectors wizard modal", () => {
   test("opens from feedback page and walks the new-connector wizard", async ({ page }) => {
-    await page.goto("/dashboard/feedback");
+    await page.goto("/dashboard/e2e-project-id/feedback");
     await page.getByRole("button", { name: /^connectors$/i }).click();
 
     // Modal heading + empty state are visible.
@@ -40,7 +40,7 @@ test.describe("Connectors wizard modal", () => {
   });
 
   test("auto-opens when ?connectors=open is present", async ({ page }) => {
-    await page.goto("/dashboard/feedback?connectors=open");
+    await page.goto("/dashboard/e2e-project-id/feedback?connectors=open");
     await expect(page.getByRole("heading", { name: /^connectors$/i })).toBeVisible();
   });
 });

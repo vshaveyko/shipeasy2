@@ -12,7 +12,7 @@ function metricRow(page: Page, name: string) {
 
 test.describe("Metrics form UI", () => {
   test("aggregation selector has all five options", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     const sel = page.locator("#metric-agg");
     await expect(sel).toBeVisible();
     for (const opt of ["count_users", "count_events", "sum", "avg", "retention_Nd"]) {
@@ -21,12 +21,12 @@ test.describe("Metrics form UI", () => {
   });
 
   test("default aggregation is count_users", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await expect(page.locator("#metric-agg")).toHaveValue("count_users");
   });
 
   test("sum aggregation shows value-path field", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.locator("#metric-agg").selectOption("sum");
     // Forward-looking: value_path field expected for sum/avg aggregations
     await expect(
@@ -35,7 +35,7 @@ test.describe("Metrics form UI", () => {
   });
 
   test("avg aggregation shows value-path field", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.locator("#metric-agg").selectOption("avg");
     await expect(
       page.locator("#metric-value-path").or(page.getByLabel(/value.*path/i)),
@@ -43,7 +43,7 @@ test.describe("Metrics form UI", () => {
   });
 
   test("count_users does not show value-path field", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     // Default is count_users — no value_path needed
     await expect(
       page.locator("#metric-value-path").or(page.getByLabel(/value.*path/i)),
@@ -59,19 +59,19 @@ test.describe("count_users metric — CRUD", () => {
   const name = `e2m_cu_${RUN}`;
 
   test("create count_users metric → aggregation label in list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.locator("#metric-name").fill(name);
     await page.locator("#metric-event").fill("e2e_event");
     await page.locator("#metric-agg").selectOption("count_users");
     await page.getByRole("button", { name: /^new metric$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/metrics/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(page.getByText(name)).toBeVisible();
     await expect(metricRow(page, name).getByText(/count_users on e2e_event/i)).toBeVisible();
   });
 
   test("cleanup: delete count_users metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await metricRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -87,18 +87,18 @@ test.describe("count_events metric — CRUD", () => {
   const name = `e2m_ce_${RUN}`;
 
   test("create count_events metric → label in list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.locator("#metric-name").fill(name);
     await page.locator("#metric-event").fill("e2e_event");
     await page.locator("#metric-agg").selectOption("count_events");
     await page.getByRole("button", { name: /^new metric$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/metrics/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(metricRow(page, name).getByText(/count_events on e2e_event/i)).toBeVisible();
   });
 
   test("cleanup: delete count_events metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await metricRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -114,7 +114,7 @@ test.describe("sum metric — CRUD with value_path", () => {
   const name = `e2m_sum_${RUN}`;
 
   test("create sum metric with value_path → label in list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.locator("#metric-name").fill(name);
     await page.locator("#metric-event").fill("e2e_event");
     await page.locator("#metric-agg").selectOption("sum");
@@ -127,13 +127,13 @@ test.describe("sum metric — CRUD with value_path", () => {
 
     await page.getByRole("button", { name: /^new metric$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/metrics/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(page.getByText(name)).toBeVisible();
     await expect(metricRow(page, name).getByText(/sum on e2e_event/i)).toBeVisible();
   });
 
   test("cleanup: delete sum metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await metricRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -149,7 +149,7 @@ test.describe("avg metric — CRUD with value_path", () => {
   const name = `e2m_avg_${RUN}`;
 
   test("create avg metric → label in list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.locator("#metric-name").fill(name);
     await page.locator("#metric-event").fill("e2e_event");
     await page.locator("#metric-agg").selectOption("avg");
@@ -161,12 +161,12 @@ test.describe("avg metric — CRUD with value_path", () => {
 
     await page.getByRole("button", { name: /^new metric$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/metrics/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(metricRow(page, name).getByText(/avg on e2e_event/i)).toBeVisible();
   });
 
   test("cleanup: delete avg metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await metricRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -182,18 +182,18 @@ test.describe("retention_Nd metric — CRUD", () => {
   const name = `e2m_ret_${RUN}`;
 
   test("create retention_Nd metric → label in list", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page.locator("#metric-name").fill(name);
     await page.locator("#metric-event").fill("e2e_event");
     await page.locator("#metric-agg").selectOption("retention_Nd");
     await page.getByRole("button", { name: /^new metric$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/metrics/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(metricRow(page, name).getByText(/retention_nd on e2e_event/i)).toBeVisible();
   });
 
   test("cleanup: delete retention_Nd metric", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await metricRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();
@@ -209,7 +209,7 @@ test.describe("Metric advanced fields — winsorize_pct and MDE", () => {
   const name = `e2m_adv_${RUN}`;
 
   test("winsorize_pct field defaults to 99", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     const winsorizeField = page.locator("#metric-winsorize").or(page.getByLabel(/winsoriz/i));
     expect(await winsorizeField.count(), "winsorize_pct field not yet implemented").toBeGreaterThan(
       0,
@@ -218,7 +218,7 @@ test.describe("Metric advanced fields — winsorize_pct and MDE", () => {
   });
 
   test("mde (min detectable effect) field accepts a number", async ({ page }) => {
-    await page.goto("/dashboard/experiments/metrics");
+    await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     const mdeField = page.locator("#metric-mde").or(page.getByLabel(/min.*detectable/i));
     expect(await mdeField.count(), "MDE field not yet implemented").toBeGreaterThan(0);
     await mdeField.fill("0.02");
@@ -228,7 +228,7 @@ test.describe("Metric advanced fields — winsorize_pct and MDE", () => {
     await page.locator("#metric-name").fill(name);
     await page.locator("#metric-event").fill("e2e_event");
     await page.getByRole("button", { name: /^new metric$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/experiments\/metrics/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await metricRow(page, name)
       .getByRole("button", { name: /^delete$/i })
       .click();

@@ -59,7 +59,7 @@ test.describe("i18n keys — bulk selection + delete", () => {
 
   /** Load the keys page, switch to our fixture profile, expand the tree. */
   async function openProfile(page: import("@playwright/test").Page) {
-    await page.goto("/dashboard/i18n/keys");
+    await page.goto("/dashboard/e2e-project-id/i18n/keys");
     await page.getByRole("button", { name: profileName, exact: true }).click();
     // Wait for table header — appears once sections load from the API.
     await expect(page.getByLabel("Select all visible keys")).toBeVisible();

@@ -90,6 +90,15 @@ export const E2E_USER = {
   email: "e2e@shipeasy.test",
 };
 
+export const E2E_PROJECT_ID = "e2e-project-id";
+
+/** Helper to build project-scoped dashboard paths for the e2e fixture project. */
+export function dash(subPath: string = ""): string {
+  if (!subPath) return `/dashboard/${E2E_PROJECT_ID}`;
+  const tail = subPath.startsWith("/") ? subPath : `/${subPath}`;
+  return `/dashboard/${E2E_PROJECT_ID}${tail}`;
+}
+
 setup("authenticate", async ({ browser, baseURL }) => {
   cleanE2eTestData();
   if (!baseURL) throw new Error("baseURL missing from Playwright config");
@@ -114,6 +123,18 @@ setup("authenticate", async ({ browser, baseURL }) => {
     {
       name: SESSION_COOKIE,
       value: token,
+      domain: url.hostname,
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+      expires: Math.floor(Date.now() / 1000) + ONE_DAY,
+    },
+    {
+      // Required so middleware skips the active-project resolution roundtrip
+      // and renders /dashboard/<projectId>/... directly.
+      name: "active_project_id",
+      value: "e2e-project-id",
       domain: url.hostname,
       path: "/",
       httpOnly: true,

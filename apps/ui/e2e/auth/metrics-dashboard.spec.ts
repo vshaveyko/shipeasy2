@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Metrics dashboard (top-level)", () => {
   test("empty state renders the hero copy and CTAs", async ({ page }) => {
-    await page.goto("/dashboard/metrics");
+    await page.goto("/dashboard/e2e-project-id/metrics");
 
     await expect(page.getByText(/track anything you ship\./i)).toBeVisible();
     await expect(page.getByRole("button", { name: /start setup/i })).toBeVisible();
@@ -10,7 +10,7 @@ test.describe("Metrics dashboard (top-level)", () => {
   });
 
   test('"skip to demo data" reveals the populated dashboard', async ({ page }) => {
-    await page.goto("/dashboard/metrics");
+    await page.goto("/dashboard/e2e-project-id/metrics");
 
     await page.getByRole("button", { name: /skip to demo data/i }).click();
 
@@ -23,14 +23,14 @@ test.describe("Metrics dashboard (top-level)", () => {
   });
 
   test("?demo=1 deep-links into the populated dashboard", async ({ page }) => {
-    await page.goto("/dashboard/metrics?demo=1");
+    await page.goto("/dashboard/e2e-project-id/metrics?demo=1");
 
     await expect(page.getByRole("heading", { name: /^metrics$/i, level: 1 })).toBeVisible();
     await expect(page.getByText(/events over time/i)).toBeVisible();
   });
 
   test("register-event CTA opens the event drawer with code preview", async ({ page }) => {
-    await page.goto("/dashboard/metrics?demo=1");
+    await page.goto("/dashboard/e2e-project-id/metrics?demo=1");
 
     await page
       .getByRole("button", { name: /^register event$/i })
@@ -45,7 +45,7 @@ test.describe("Metrics dashboard (top-level)", () => {
   });
 
   test('"start setup" opens the onboarding wizard', async ({ page }) => {
-    await page.goto("/dashboard/metrics");
+    await page.goto("/dashboard/e2e-project-id/metrics");
 
     await page.getByRole("button", { name: /start setup/i }).click();
 

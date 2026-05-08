@@ -221,11 +221,41 @@ export const SHARED_NAV: NavGroup = {
   ],
 };
 
+/**
+ * Strip a leading /dashboard/<projectId> segment so the remaining path can
+ * be matched against the workspace-relative basePaths declared above.
+ * Returns the original path if it doesn't include a projectId segment.
+ */
+function stripProjectPrefix(pathname: string): string {
+  const m = pathname.match(/^\/dashboard\/([^/]+)(\/.*)?$/);
+  if (!m) return pathname;
+  const seg = m[1]!;
+  // Workspace-scoped segments are kept as-is.
+  if (seg === "projects" || seg === "team" || seg === "billing") return pathname;
+  // Legacy paths like /dashboard/gates already match basePaths directly.
+  const KNOWN_PRODUCT_SEGMENTS = new Set([
+    "gates",
+    "configs",
+    "experiments",
+    "metrics",
+    "i18n",
+    "feedback",
+    "keys",
+    "settings",
+    "bugs",
+    "feature-requests",
+  ]);
+  if (KNOWN_PRODUCT_SEGMENTS.has(seg)) return pathname;
+  // Otherwise treat the segment as a projectId and strip it.
+  return `/dashboard${m[2] ?? ""}`;
+}
+
 export function getProductFromPath(pathname: string): Product | null {
+  const stripped = stripProjectPrefix(pathname);
   return (
     PRODUCTS.find((p) => {
       const paths = [p.basePath, ...(p.extraPaths ?? [])];
-      return paths.some((bp) => pathname === bp || pathname.startsWith(`${bp}/`));
+      return paths.some((bp) => stripped === bp || stripped.startsWith(`${bp}/`));
     }) ?? null
   );
 }

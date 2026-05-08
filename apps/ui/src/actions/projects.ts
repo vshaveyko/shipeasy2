@@ -10,13 +10,13 @@ import {
 export async function updateProject(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await updateProjectHandler(identity, identity.projectId, input);
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/[projectId]/settings", "page");
   return result;
 }
 
 export async function updatePlan(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await updateProjectPlanHandler(identity, identity.projectId, input);
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/[projectId]/settings", "page");
   return result;
 }
