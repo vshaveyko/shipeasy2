@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { updateBug, deleteBug } from "@/lib/handlers/bugs";
 import { BUG_STATUSES } from "@shipeasy/core/db/schema";
-import { ok, type ActionResult } from "@/lib/action-result";
 
 async function identityOrThrow() {
   const session = await auth();
@@ -24,10 +24,10 @@ export async function updateBugStatusAction(formData: FormData) {
   revalidatePath(`/dashboard/[projectId]/feedback`, "page");
 }
 
-export async function deleteBugAction(formData: FormData): Promise<ActionResult> {
+export async function deleteBugAction(formData: FormData) {
   const id = String(formData.get("id"));
   const identity = await identityOrThrow();
   await deleteBug(identity, id);
   revalidatePath(`/dashboard/[projectId]/feedback`, "page");
-  return ok("Bug deleted");
+  redirect(`/dashboard/${identity.projectId}/feedback?tab=bugs`);
 }

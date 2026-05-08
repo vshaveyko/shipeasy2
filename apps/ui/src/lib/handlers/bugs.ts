@@ -62,6 +62,7 @@ export async function createBug(identity: AdminIdentity, input: unknown) {
     actualResult: improved.actualResult ?? "",
     expectedResult: improved.expectedResult ?? "",
     status: "open",
+    priority: parsed.priority ?? null,
     reporterEmail: improved.reporterEmail ?? identity.actorEmail ?? null,
     pageUrl: improved.pageUrl ?? null,
     userAgent: improved.userAgent ?? null,
@@ -105,6 +106,7 @@ export async function updateBug(identity: AdminIdentity, id: string, input: unkn
   if (parsed.actualResult !== undefined) patch.actualResult = parsed.actualResult;
   if (parsed.expectedResult !== undefined) patch.expectedResult = parsed.expectedResult;
   if (parsed.status !== undefined) patch.status = parsed.status;
+  if (parsed.priority !== undefined) patch.priority = parsed.priority;
   await s.update(bugReports).set(patch).where(eq(bugReports.id, id));
   await writeAudit(identity, "bug.update", "bug_report", id, parsed);
   return { id };

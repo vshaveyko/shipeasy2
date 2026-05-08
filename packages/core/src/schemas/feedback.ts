@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { BUG_STATUSES, FEATURE_REQUEST_STATUSES, FEATURE_REQUEST_IMPORTANCES } from "../db/schema";
+import {
+  BUG_STATUSES,
+  BUG_PRIORITIES,
+  FEATURE_REQUEST_STATUSES,
+  FEATURE_REQUEST_IMPORTANCES,
+} from "../db/schema";
 
 const titleSchema = z.string().trim().min(1).max(200);
 
@@ -8,6 +13,7 @@ export const bugCreateSchema = z.object({
   stepsToReproduce: z.string().max(8000).optional().default(""),
   actualResult: z.string().max(8000).optional().default(""),
   expectedResult: z.string().max(8000).optional().default(""),
+  priority: z.enum(BUG_PRIORITIES).optional().nullable(),
   reporterEmail: z.string().email().optional().nullable(),
   pageUrl: z.string().url().optional().nullable(),
   userAgent: z.string().max(500).optional().nullable(),
@@ -21,6 +27,7 @@ export const bugUpdateSchema = z.object({
   actualResult: z.string().max(8000).optional(),
   expectedResult: z.string().max(8000).optional(),
   status: z.enum(BUG_STATUSES).optional(),
+  priority: z.enum(BUG_PRIORITIES).nullable().optional(),
 });
 
 export const featureRequestCreateSchema = z.object({
