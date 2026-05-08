@@ -52,6 +52,29 @@ export async function renderFeedbackPanel(
 ): Promise<void> {
   const shadow = container.getRootNode() as ShadowRoot;
 
+  // Panel-local form mode: when a user clicks "+ File a bug" / "+ Request a
+  // feature" we replace the list with the form inline (no modal).  `null`
+  // = list view.  The Back / Cancel button on the form flips this back.
+  let formMode: "bug" | "feature" | null = null;
+
+  async function render(): Promise<void> {
+    if (formMode === "bug") {
+      mountBugForm(container, api, modalRoot, shadow, () => {
+        formMode = null;
+        void render();
+      });
+      return;
+    }
+    if (formMode === "feature") {
+      mountFeatureForm(container, api, () => {
+        formMode = null;
+        void render();
+      });
+      return;
+    }
+    await refresh();
+  }
+
   async function refresh(): Promise<void> {
     container.innerHTML = `
       <div class="se-fb-subtabs">
@@ -73,8 +96,8 @@ export async function renderFeedbackPanel(
       btn.addEventListener("click", () => hook.setSub(btn.dataset.sub as "bugs" | "features"));
     });
     container.querySelector('[data-action="file"]')!.addEventListener("click", () => {
-      if (hook.sub === "bugs") openBugForm(api, modalRoot, shadow, refresh);
-      else openFeatureForm(api, modalRoot, refresh);
+      formMode = hook.sub === "bugs" ? "bug" : "feature";
+      void render();
     });
 
     const listEl = container.querySelector<HTMLElement>("[data-list]")!;
@@ -129,7 +152,10 @@ export async function renderFeedbackPanel(
           {
             icon: "+",
             label: "File a bug",
-            onClick: () => openBugForm(api, modalRoot, shadow, refresh),
+            onClick: () => {
+              formMode = "bug";
+              void render();
+            },
           },
           ...(api.hideAdminLinks
             ? []
@@ -196,7 +222,10 @@ export async function renderFeedbackPanel(
           {
             icon: "+",
             label: "Request a feature",
-            onClick: () => openFeatureForm(api, modalRoot, refresh),
+            onClick: () => {
+              formMode = "feature";
+              void render();
+            },
           },
           ...(api.hideAdminLinks
             ? []
@@ -255,10 +284,76 @@ export async function renderFeedbackPanel(
     paint();
   }
 
-  await refresh();
+  await render();
 }
 
-// ── Form modal infrastructure ───────────────────────────────────────────────
+// ── Inline form scaffold ────────────────────────────────────────────────────
+//
+// Bug + feature forms render inline inside the feedback panel container,
+// not as floating modals. The scaffold below lays out the same header /
+// body / footer as the old modal but as a normal element tree, so the
+// panel rail and footer stay visible while the user is filling out the
+// form. `onCancel` is invoked when the user discards or hits Back.
+function mountInlineForm(
+  container: HTMLElement,
+  opts: {
+    title: string;
+    bodyHtml: string;
+    isDirty: () => boolean;
+    onSubmit: () => Promise<void> | void;
+    onCancel: () => void;
+  },
+): { host: HTMLElement; close: () => void } {
+  container.innerHTML = `
+    <div class="dtf-inline-form">
+      <div class="hd">
+        <button class="back" data-action="cancel">${I.arrowLeft} Back</button>
+        <span class="k" style="margin-left:8px">${escapeHtml(opts.title)}</span>
+      </div>
+      <div class="bd">${opts.bodyHtml}</div>
+      <div class="ft">
+        <span class="sp"></span>
+        <button data-action="cancel">Cancel</button>
+        <button class="primary" data-action="submit">Submit</button>
+      </div>
+    </div>`;
+  const host = container.querySelector<HTMLElement>(".dtf-inline-form")!;
+
+  let askDiscard = false;
+  const tryClose = () => {
+    if (!opts.isDirty()) return doClose();
+    if (askDiscard) return doClose();
+    askDiscard = true;
+    const banner = document.createElement("div");
+    banner.className = "dtf-discard";
+    banner.innerHTML = `${I.alert}<span>Discard your changes?</span><span style="flex:1"></span>
+      <button class="ibtn" data-action="keep">Keep editing</button>
+      <button class="ibtn danger" data-action="discard">Discard</button>`;
+    host.querySelector(".hd")!.after(banner);
+    banner.querySelector('[data-action="keep"]')!.addEventListener("click", () => {
+      banner.remove();
+      askDiscard = false;
+    });
+    banner.querySelector('[data-action="discard"]')!.addEventListener("click", () => doClose());
+  };
+  const doClose = () => {
+    document.removeEventListener("keydown", onKey);
+    opts.onCancel();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") tryClose();
+  };
+  document.addEventListener("keydown", onKey);
+  host.querySelectorAll('[data-action="cancel"]').forEach((b) => {
+    b.addEventListener("click", () => tryClose());
+  });
+  host.querySelector('[data-action="submit"]')!.addEventListener("click", async () => {
+    await opts.onSubmit();
+  });
+  return { host, close: doClose };
+}
+
+// ── Form modal infrastructure (annotator only) ──────────────────────────────
 
 function openFormModal(
   modalRoot: ParentNode & { appendChild: (n: Node) => Node },
@@ -363,13 +458,14 @@ function fmtDuration(ms: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-// ── Bug form ────────────────────────────────────────────────────────────────
+// ── Bug form (inline) ───────────────────────────────────────────────────────
 
-function openBugForm(
+function mountBugForm(
+  container: HTMLElement,
   api: DevtoolsApi,
   modalRoot: ParentNode & { appendChild: (n: Node) => Node },
   shadow: ShadowRoot,
-  onSubmitted: () => void,
+  onClose: () => void,
 ): void {
   const attachments: PendingAttachment[] = [];
   let recording: RecordingHandle | null = null;
@@ -410,7 +506,7 @@ function openBugForm(
 
   const formState = { title: "", steps: "", actual: "", expected: "" };
 
-  const handle = openFormModal(modalRoot, {
+  const handle = mountInlineForm(container, {
     title: "File a bug",
     bodyHtml,
     isDirty: () =>
@@ -422,9 +518,10 @@ function openBugForm(
         attachments.length
       ),
     onSubmit: submit,
+    onCancel: onClose,
   });
 
-  const modal = handle.modal;
+  const modal = handle.host;
   const status = modal.querySelector<HTMLElement>("[data-status]")!;
   const setStatus = (msg: string, err = false) => {
     status.textContent = msg;
@@ -545,7 +642,6 @@ function openBugForm(
         });
       }
       handle.close();
-      onSubmitted();
     } catch (err) {
       setStatus(err instanceof Error ? err.message : String(err), true);
     }
@@ -597,13 +693,9 @@ function openAnnotateModal(
     });
 }
 
-// ── Feature request form ────────────────────────────────────────────────────
+// ── Feature request form (inline) ───────────────────────────────────────────
 
-function openFeatureForm(
-  api: DevtoolsApi,
-  modalRoot: ParentNode & { appendChild: (n: Node) => Node },
-  onSubmitted: () => void,
-): void {
+function mountFeatureForm(container: HTMLElement, api: DevtoolsApi, onClose: () => void): void {
   const formState = {
     title: "",
     description: "",
@@ -637,7 +729,7 @@ function openFeatureForm(
       <div class="se-status" data-status></div>
     </div>`;
 
-  const handle = openFormModal(modalRoot, {
+  const handle = mountInlineForm(container, {
     title: "Request a feature",
     bodyHtml,
     isDirty: () =>
@@ -648,9 +740,10 @@ function openFeatureForm(
         formState.importance !== "nice_to_have"
       ),
     onSubmit: submit,
+    onCancel: onClose,
   });
 
-  const modal = handle.modal;
+  const modal = handle.host;
   const status = modal.querySelector<HTMLElement>("[data-status]")!;
   const setStatus = (msg: string, err = false) => {
     status.textContent = msg;
@@ -683,7 +776,6 @@ function openFeatureForm(
         userAgent: navigator.userAgent,
       });
       handle.close();
-      onSubmitted();
     } catch (err) {
       setStatus(err instanceof Error ? err.message : String(err), true);
     }
