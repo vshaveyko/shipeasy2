@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import {
   checkLimit,
   ApiError,
@@ -10,7 +10,7 @@ import {
 import { sdkKeys } from "@shipeasy/core/db/schema";
 import { keyCreateSchema } from "@shipeasy/core/schemas/keys";
 import { scopedDb, scopedDbSA } from "../db";
-import { getEnv, getEnvAsync } from "../env";
+import { getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
@@ -24,7 +24,53 @@ export async function listKeys(identity: AdminIdentity) {
     created_at: r.createdAt,
     revoked_at: r.revokedAt,
     expires_at: r.expiresAt,
+    created_by_email: r.createdByEmail,
   }));
+}
+
+export async function listActiveKeys(identity: AdminIdentity) {
+  const s = scopedDb(identity.projectId);
+  const rows = await s.selectWhere(sdkKeys, isNull(sdkKeys.revokedAt));
+  return rows.map((r) => ({
+    id: r.id,
+    type: r.type,
+    created_at: r.createdAt,
+    revoked_at: r.revokedAt,
+    expires_at: r.expiresAt,
+    created_by_email: r.createdByEmail,
+  }));
+}
+
+export async function listRevokedKeys(
+  identity: AdminIdentity,
+  opts: { offset?: number; limit?: number } = {},
+) {
+  const offset = Math.max(0, opts.offset ?? 0);
+  const limit = Math.min(100, Math.max(1, opts.limit ?? 10));
+  const s = scopedDb(identity.projectId);
+  // Drizzle scoped helper doesn't expose orderBy/limit, so dip into raw db
+  // for the paginated read. Same project-scope filter applied manually.
+  const rows = await s.raw
+    .select()
+    .from(sdkKeys)
+    .where(and(eq(sdkKeys.projectId, identity.projectId), isNotNull(sdkKeys.revokedAt))!)
+    .orderBy(desc(sdkKeys.revokedAt))
+    .limit(limit + 1)
+    .offset(offset);
+  const hasMore = rows.length > limit;
+  const page = rows.slice(0, limit);
+  return {
+    rows: page.map((r) => ({
+      id: r.id,
+      type: r.type,
+      created_at: r.createdAt,
+      revoked_at: r.revokedAt,
+      expires_at: r.expiresAt,
+      created_by_email: r.createdByEmail,
+    })),
+    hasMore,
+    nextOffset: offset + page.length,
+  };
 }
 
 export async function createKey(identity: AdminIdentity, input: unknown) {
@@ -46,8 +92,46 @@ export async function createKey(identity: AdminIdentity, input: unknown) {
   const expiresAt =
     parsed.type === "admin" ? new Date(Date.now() + 90 * 86_400_000).toISOString() : null;
 
-  const creatorEmail = identity.source === "jwt" ? identity.actorEmail : null;
+  // Track creator from any auth source so we can enforce one-active-key-per-user
+  // on subsequent creates. "cli"/"unknown" are placeholder actor strings used
+  // when an older SDK key has no createdByEmail — treat those as no-owner.
+  const creatorEmail =
+    identity.actorEmail && identity.actorEmail !== "cli" && identity.actorEmail !== "unknown"
+      ? identity.actorEmail
+      : null;
   const s = await scopedDbSA(identity.projectId);
+
+  // Auto-revoke prior active keys for the same (project, user, type) before
+  // minting the new one — at most one active key per human per type per
+  // project. Skip when we don't know the owner: revoking unowned keys would
+  // sweep service keys minted by other actors.
+  if (creatorEmail) {
+    const prior = await s.selectWhere(
+      sdkKeys,
+      and(
+        eq(sdkKeys.type, parsed.type),
+        eq(sdkKeys.createdByEmail, creatorEmail),
+        isNull(sdkKeys.revokedAt),
+      )!,
+    );
+    if (prior.length > 0) {
+      await s
+        .update(sdkKeys)
+        .set({ revokedAt: now })
+        .where(
+          and(
+            eq(sdkKeys.type, parsed.type),
+            eq(sdkKeys.createdByEmail, creatorEmail),
+            isNull(sdkKeys.revokedAt),
+          )!,
+        );
+      for (const k of prior) {
+        await deleteSdkKeyEntry(env, k.keyHash);
+        await writeAudit(identity, "key.revoke", "sdk_key", k.id, { reason: "superseded" });
+      }
+    }
+  }
+
   await s.insert(sdkKeys).values({
     id,
     keyHash: hash,

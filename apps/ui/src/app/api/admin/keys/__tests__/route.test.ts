@@ -78,6 +78,40 @@ describe("POST /admin/keys", () => {
   });
 });
 
+describe("POST /admin/keys auto-revoke", () => {
+  it("revokes a prior active key of the same type for the same user", async () => {
+    const first = await createKey("server");
+    const second = await createKey("server");
+
+    const all = (await (await GET(req("GET", "/api/admin/keys"))).json()) as {
+      id: string;
+      revoked_at: string | null;
+    }[];
+    const firstRow = all.find((k) => k.id === first.id);
+    const secondRow = all.find((k) => k.id === second.id);
+    expect(firstRow?.revoked_at).not.toBeNull();
+    expect(secondRow?.revoked_at).toBeNull();
+
+    // KV should only contain the new key's hash; the revoked one is purged.
+    const kv = mockEnv.FLAGS_KV as unknown as MemoryKV;
+    const entries = [...kv.store.keys()].filter((k) => k.startsWith("sdk_key:"));
+    expect(entries.length).toBe(1);
+  });
+
+  it("does not revoke keys of a different type", async () => {
+    const server = await createKey("server");
+    await createKey("client");
+
+    const all = (await (await GET(req("GET", "/api/admin/keys"))).json()) as {
+      id: string;
+      type: string;
+      revoked_at: string | null;
+    }[];
+    const serverRow = all.find((k) => k.id === server.id);
+    expect(serverRow?.revoked_at).toBeNull();
+  });
+});
+
 describe("POST /admin/keys/:id/revoke", () => {
   it("revokes an active key", async () => {
     const { id } = await createKey("server");
