@@ -1,90 +1,90 @@
 "use strict";
 (() => {
-  var ln = Object.create;
-  var be = Object.defineProperty;
-  var dn = Object.getOwnPropertyDescriptor;
-  var cn = Object.getOwnPropertyNames;
-  var un = Object.getPrototypeOf,
-    pn = Object.prototype.hasOwnProperty;
-  var fn = (e, t, n) =>
-    t in e ? be(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
-  var gn = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports);
-  var mn = (e, t, n, r) => {
+  var Un = Object.create;
+  var Ge = Object.defineProperty;
+  var Nn = Object.getOwnPropertyDescriptor;
+  var Kn = Object.getOwnPropertyNames;
+  var Fn = Object.getPrototypeOf,
+    Gn = Object.prototype.hasOwnProperty;
+  var Wn = (e, t, n) =>
+    t in e ? Ge(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : (e[t] = n);
+  var Jn = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports);
+  var Vn = (e, t, n, r) => {
     if ((t && typeof t == "object") || typeof t == "function")
-      for (let o of cn(t))
-        !pn.call(e, o) &&
-          o !== n &&
-          be(e, o, { get: () => t[o], enumerable: !(r = dn(t, o)) || r.enumerable });
+      for (let a of Kn(t))
+        !Gn.call(e, a) &&
+          a !== n &&
+          Ge(e, a, { get: () => t[a], enumerable: !(r = Nn(t, a)) || r.enumerable });
     return e;
   };
-  var vn = (e, t, n) => (
-    (n = e != null ? ln(un(e)) : {}),
-    mn(t || !e || !e.__esModule ? be(n, "default", { value: e, enumerable: !0 }) : n, e)
+  var Yn = (e, t, n) => (
+    (n = e != null ? Un(Fn(e)) : {}),
+    Vn(t || !e || !e.__esModule ? Ge(n, "default", { value: e, enumerable: !0 }) : n, e)
   );
-  var P = (e, t, n) => fn(e, typeof t != "symbol" ? t + "" : t, n);
-  var At = gn((ao, Mt) => {
+  var D = (e, t, n) => Wn(e, typeof t != "symbol" ? t + "" : t, n);
+  var on = Jn((ro, an) => {
     "use strict";
-    var qe = Object.defineProperty,
-      Mn = Object.getOwnPropertyDescriptor,
-      An = Object.getOwnPropertyNames,
-      Pn = Object.prototype.hasOwnProperty,
-      $n = (e, t) => {
-        for (var n in t) qe(e, n, { get: t[n], enumerable: !0 });
+    var ut = Object.defineProperty,
+      fr = Object.getOwnPropertyDescriptor,
+      gr = Object.getOwnPropertyNames,
+      vr = Object.prototype.hasOwnProperty,
+      mr = (e, t) => {
+        for (var n in t) ut(e, n, { get: t[n], enumerable: !0 });
       },
-      Cn = (e, t, n, r) => {
+      br = (e, t, n, r) => {
         if ((t && typeof t == "object") || typeof t == "function")
-          for (let o of An(t))
-            !Pn.call(e, o) &&
-              o !== n &&
-              qe(e, o, { get: () => t[o], enumerable: !(r = Mn(t, o)) || r.enumerable });
+          for (let a of gr(t))
+            !vr.call(e, a) &&
+              a !== n &&
+              ut(e, a, { get: () => t[a], enumerable: !(r = fr(t, a)) || r.enumerable });
         return e;
       },
-      On = (e) => Cn(qe({}, "__esModule", { value: !0 }), e),
-      yt = {};
-    $n(yt, {
-      FlagsClientBrowser: () => xt,
-      LABEL_MARKER_END: () => Tt,
-      LABEL_MARKER_RE: () => Yn,
-      LABEL_MARKER_SEP: () => _t,
-      LABEL_MARKER_START: () => Lt,
-      _resetShipeasyForTests: () => Gn,
-      attachDevtools: () => Et,
-      configureShipeasy: () => Ne,
-      encodeLabelMarker: () => Rt,
-      flags: () => St,
-      getShipeasyClient: () => Jn,
-      i18n: () => lr,
-      isDevtoolsRequested: () => Oe,
-      labelAttrs: () => Xn,
-      loadDevtools: () => He,
-      readConfigOverride: () => Ue,
-      readExpOverride: () => wt,
-      readGateOverride: () => De,
-      shipeasy: () => kt,
-      version: () => Hn,
+      hr = (e) => br(ut({}, "__esModule", { value: !0 }), e),
+      Jt = {};
+    mr(Jt, {
+      FlagsClientBrowser: () => Vt,
+      LABEL_MARKER_END: () => nn,
+      LABEL_MARKER_RE: () => Hr,
+      LABEL_MARKER_SEP: () => tn,
+      LABEL_MARKER_START: () => en,
+      _resetShipeasyForTests: () => Pr,
+      attachDevtools: () => Xt,
+      configureShipeasy: () => vt,
+      encodeLabelMarker: () => rn,
+      flags: () => Qt,
+      getShipeasyClient: () => Ar,
+      i18n: () => Gr,
+      isDevtoolsRequested: () => lt,
+      labelAttrs: () => Or,
+      loadDevtools: () => dt,
+      readConfigOverride: () => gt,
+      readExpOverride: () => Yt,
+      readGateOverride: () => ft,
+      shipeasy: () => Zt,
+      version: () => xr,
     });
-    Mt.exports = On(yt);
-    var Hn = "1.0.0",
-      Bn = 5e3,
-      In = 100,
-      mt = "__se_anon_id",
-      vt = "__se_seen",
-      ne = "__se_pending_alias",
-      qn = class {
+    an.exports = hr(Jt);
+    var xr = "1.0.0",
+      yr = 5e3,
+      wr = 100,
+      Kt = "__se_anon_id",
+      Ft = "__se_seen",
+      xe = "__se_pending_alias",
+      kr = class {
         constructor(e, t) {
-          P(this, "collectUrl");
-          P(this, "sdkKey");
-          P(this, "queue", []);
-          P(this, "exposureSeen", new Set());
-          P(this, "timer", null);
+          D(this, "collectUrl");
+          D(this, "sdkKey");
+          D(this, "queue", []);
+          D(this, "exposureSeen", new Set());
+          D(this, "timer", null);
           if (((this.collectUrl = e), (this.sdkKey = t), typeof window < "u")) {
-            ((this.timer = setInterval(() => this.flush(), Bn)),
+            ((this.timer = setInterval(() => this.flush(), yr)),
               window.addEventListener("beforeunload", () => this.flush()),
               document.addEventListener("visibilitychange", () => {
                 document.visibilityState === "hidden" && this.flush(!0);
               }));
             try {
-              let n = sessionStorage.getItem(vt);
+              let n = sessionStorage.getItem(Ft);
               n && (this.exposureSeen = new Set(JSON.parse(n)));
             } catch {}
           }
@@ -93,11 +93,11 @@
           this.timer !== null && (clearInterval(this.timer), (this.timer = null));
         }
         pushExposure(e, t, n, r) {
-          let o = `${n || r}:${e}`;
-          if (!this.exposureSeen.has(o)) {
-            this.exposureSeen.add(o);
+          let a = `${n || r}:${e}`;
+          if (!this.exposureSeen.has(a)) {
+            this.exposureSeen.add(a);
             try {
-              sessionStorage.setItem(vt, JSON.stringify([...this.exposureSeen]));
+              sessionStorage.setItem(Ft, JSON.stringify([...this.exposureSeen]));
             } catch {}
             this.enqueue({
               type: "exposure",
@@ -122,23 +122,23 @@
         async alias(e, t) {
           let n = { anonymousId: e, userId: t, ts: Date.now() };
           try {
-            localStorage.setItem(ne, JSON.stringify(n));
+            localStorage.setItem(xe, JSON.stringify(n));
           } catch {}
           (await this.flushAsync(), await this._sendAlias(e, t));
           try {
-            localStorage.removeItem(ne);
+            localStorage.removeItem(xe);
           } catch {}
         }
         async flushPendingAlias() {
           try {
-            let e = localStorage.getItem(ne);
+            let e = localStorage.getItem(xe);
             if (!e) return;
             let t = JSON.parse(e);
             if (Date.now() - t.ts > 7 * 864e5) {
-              localStorage.removeItem(ne);
+              localStorage.removeItem(xe);
               return;
             }
-            (await this._sendAlias(t.anonymousId, t.userId), localStorage.removeItem(ne));
+            (await this._sendAlias(t.anonymousId, t.userId), localStorage.removeItem(xe));
           } catch {}
         }
         async _sendAlias(e, t) {
@@ -146,7 +146,7 @@
             await this.flushAsync());
         }
         enqueue(e) {
-          (this.queue.push(e), this.queue.length >= In && this.flush());
+          (this.queue.push(e), this.queue.length >= wr && this.flush());
         }
         flush(e = !1) {
           if (!this.queue.length) return;
@@ -174,141 +174,141 @@
           }).catch(() => {});
         }
       },
-      fe = 5;
-    function Dn(e, t, n) {
+      qe = 5;
+    function Er(e, t, n) {
       if (typeof window > "u" || typeof PerformanceObserver > "u") return;
       let r = null,
-        o = null,
-        i = !1,
-        a = 0,
+        a = null,
+        o = !1,
         s = 0,
-        d = !1;
+        i = 0,
+        c = !1;
       try {
-        new PerformanceObserver((v) => {
-          let p = v.getEntries();
-          p.length && (r = p[p.length - 1].startTime);
+        new PerformanceObserver((p) => {
+          let v = p.getEntries();
+          v.length && (r = v[v.length - 1].startTime);
         }).observe({ type: "largest-contentful-paint", buffered: !0 });
       } catch {}
       try {
-        new PerformanceObserver((v) => {
-          for (let p of v.getEntries()) {
-            let l = p.duration ?? 0;
-            (o === null || l > o) && (o = l);
+        new PerformanceObserver((p) => {
+          for (let v of p.getEntries()) {
+            let w = v.duration ?? 0;
+            (a === null || w > a) && (a = w);
           }
         }).observe({ type: "event", buffered: !0, durationThreshold: 16 });
       } catch {}
       try {
-        new PerformanceObserver((v) => {
-          for (let p of v.getEntries()) p.value > 0.1 && (i = !0);
+        new PerformanceObserver((p) => {
+          for (let v of p.getEntries()) v.value > 0.1 && (o = !0);
         }).observe({ type: "layout-shift", buffered: !0 });
       } catch {}
-      let u = window.onerror;
-      ((window.onerror = (b, v, p, l, y) => (
-        a < fe &&
-          ((a += 1),
+      let f = window.onerror;
+      ((window.onerror = (g, p, v, w, R) => (
+        s < qe &&
+          ((s += 1),
           e.pushMetric("__auto_js_error", t, n, {
             value: 1,
             kind: "exception",
-            message: typeof b == "string" ? b.slice(0, 200) : String(y ?? "").slice(0, 200),
-            source: typeof v == "string" ? v.slice(0, 200) : "",
-            line: p ?? 0,
+            message: typeof g == "string" ? g.slice(0, 200) : String(R ?? "").slice(0, 200),
+            source: typeof p == "string" ? p.slice(0, 200) : "",
+            line: v ?? 0,
           })),
-        typeof u == "function" ? u(b, v, p, l, y) : !1
+        typeof f == "function" ? f(g, p, v, w, R) : !1
       )),
-        window.addEventListener("unhandledrejection", (b) => {
-          if (a < fe) {
-            a += 1;
-            let v = b.reason,
-              p = v instanceof Error ? v.message : typeof v == "string" ? v : String(v);
+        window.addEventListener("unhandledrejection", (g) => {
+          if (s < qe) {
+            s += 1;
+            let p = g.reason,
+              v = p instanceof Error ? p.message : typeof p == "string" ? p : String(p);
             e.pushMetric("__auto_js_error", t, n, {
               value: 1,
               kind: "unhandled_rejection",
-              message: p.slice(0, 200),
+              message: v.slice(0, 200),
             });
           }
         }));
-      let g = window.fetch;
-      window.fetch = async function (...b) {
-        let v = typeof performance < "u" ? performance.now() : 0,
-          p = typeof b[0] == "string" ? b[0] : b[0].toString(),
-          l;
+      let l = window.fetch;
+      window.fetch = async function (...g) {
+        let p = typeof performance < "u" ? performance.now() : 0,
+          v = typeof g[0] == "string" ? g[0] : g[0].toString(),
+          w;
         try {
-          l = await g.apply(this, b);
-        } catch (y) {
+          w = await l.apply(this, g);
+        } catch (R) {
           throw (
-            s < fe &&
-              ((s += 1),
+            i < qe &&
+              ((i += 1),
               e.pushMetric("__auto_network_error", t, n, {
                 value: 1,
                 kind: "network",
                 status: 0,
-                url: p.slice(0, 200),
+                url: v.slice(0, 200),
               })),
-            y
+            R
           );
         }
-        if (l.status >= 500 && s < fe) {
-          s += 1;
-          let y = typeof performance < "u" ? performance.now() - v : 0;
+        if (w.status >= 500 && i < qe) {
+          i += 1;
+          let R = typeof performance < "u" ? performance.now() - p : 0;
           e.pushMetric("__auto_network_error", t, n, {
             value: 1,
             kind: "5xx",
-            status: l.status,
-            url: p.slice(0, 200),
-            duration_ms: Math.round(y),
+            status: w.status,
+            url: v.slice(0, 200),
+            duration_ms: Math.round(R),
           });
         }
-        return l;
+        return w;
       };
-      let h = () => {
-        if (!d) {
-          d = !0;
+      let u = () => {
+        if (!c) {
+          c = !0;
           try {
-            let v = performance.getEntriesByType("navigation")[0];
-            if (v) {
-              let l = v.startTime ?? 0;
-              (v.loadEventEnd > 0 &&
-                e.pushMetric("__auto_page_load", t, n, { value: v.loadEventEnd - l }),
-                v.responseStart > 0 &&
-                  e.pushMetric("__auto_ttfb", t, n, { value: v.responseStart - l }),
-                v.domContentLoadedEventEnd > 0 &&
+            let p = performance.getEntriesByType("navigation")[0];
+            if (p) {
+              let w = p.startTime ?? 0;
+              (p.loadEventEnd > 0 &&
+                e.pushMetric("__auto_page_load", t, n, { value: p.loadEventEnd - w }),
+                p.responseStart > 0 &&
+                  e.pushMetric("__auto_ttfb", t, n, { value: p.responseStart - w }),
+                p.domContentLoadedEventEnd > 0 &&
                   e.pushMetric("__auto_dom_ready", t, n, {
-                    value: v.domContentLoadedEventEnd - l,
+                    value: p.domContentLoadedEventEnd - w,
                   }));
             }
-            let p = performance.getEntriesByType("paint");
-            for (let l of p)
-              l.name === "first-paint"
-                ? e.pushMetric("__auto_fp", t, n, { value: l.startTime })
-                : l.name === "first-contentful-paint" &&
-                  e.pushMetric("__auto_fcp", t, n, { value: l.startTime });
+            let v = performance.getEntriesByType("paint");
+            for (let w of v)
+              w.name === "first-paint"
+                ? e.pushMetric("__auto_fp", t, n, { value: w.startTime })
+                : w.name === "first-contentful-paint" &&
+                  e.pushMetric("__auto_fcp", t, n, { value: w.startTime });
           } catch {}
         }
       };
       document.readyState === "complete"
-        ? setTimeout(h, 0)
+        ? setTimeout(u, 0)
         : window.addEventListener(
             "load",
             () => {
-              setTimeout(h, 0);
+              setTimeout(u, 0);
             },
             { once: !0 },
           );
-      let m = () => {
-        (h(),
+      let d = () => {
+        (u(),
           r !== null && e.pushMetric("__auto_lcp", t, n, { value: r }),
-          o !== null && e.pushMetric("__auto_inp", t, n, { value: o }),
-          i && e.pushMetric("__auto_cls_binary", t, n, { value: 1 }));
-        let b = r === null ? 1 : 0;
-        (e.pushMetric("__auto_abandoned", t, n, { value: b }), e.flush(!0));
+          a !== null && e.pushMetric("__auto_inp", t, n, { value: a }),
+          o && e.pushMetric("__auto_cls_binary", t, n, { value: 1 }));
+        let g = r === null ? 1 : 0;
+        (e.pushMetric("__auto_abandoned", t, n, { value: g }), e.flush(!0));
       };
       document.addEventListener("visibilitychange", () => {
-        document.visibilityState === "hidden" && m();
+        document.visibilityState === "hidden" && d();
       });
     }
-    function Un() {
+    function Lr() {
       try {
-        let t = localStorage.getItem(mt);
+        let t = localStorage.getItem(Kt);
         if (t) return t;
       } catch {}
       let e =
@@ -316,11 +316,11 @@
           ? crypto.randomUUID()
           : `anon_${Math.random().toString(36).slice(2)}`;
       try {
-        localStorage.setItem(mt, e);
+        localStorage.setItem(Kt, e);
       } catch {}
       return e;
     }
-    function Nn() {
+    function Sr() {
       if (typeof window > "u") return {};
       let e = {};
       try {
@@ -347,7 +347,7 @@
       } catch {}
       return e;
     }
-    function jn() {
+    function $r() {
       if (typeof window > "u") return {};
       let e = {};
       try {
@@ -360,28 +360,28 @@
       } catch {}
       return e;
     }
-    var xt = class {
+    var Vt = class {
         constructor(e) {
-          P(this, "sdkKey");
-          P(this, "baseUrl");
-          P(this, "autoGuardrails");
-          P(this, "env");
-          P(this, "evalResult", null);
-          P(this, "anonId");
-          P(this, "userId", "");
-          P(this, "buffer");
-          P(this, "guardrailsInstalled", !1);
-          P(this, "listeners", new Set());
-          P(this, "overrideListenerInstalled", !1);
-          P(this, "onOverrideChange", () => {
+          D(this, "sdkKey");
+          D(this, "baseUrl");
+          D(this, "autoGuardrails");
+          D(this, "env");
+          D(this, "evalResult", null);
+          D(this, "anonId");
+          D(this, "userId", "");
+          D(this, "buffer");
+          D(this, "guardrailsInstalled", !1);
+          D(this, "listeners", new Set());
+          D(this, "overrideListenerInstalled", !1);
+          D(this, "onOverrideChange", () => {
             (this.installBridge(), this.notify());
           });
           ((this.sdkKey = e.sdkKey),
             (this.baseUrl = (e.baseUrl ?? "https://edge.shipeasy.dev").replace(/\/$/, "")),
             (this.env = e.env ?? "prod"),
             (this.autoGuardrails = e.autoGuardrails !== !1),
-            (this.anonId = Un()),
-            (this.buffer = new qn(`${this.baseUrl}/collect`, this.sdkKey)),
+            (this.anonId = Lr()),
+            (this.buffer = new kr(`${this.baseUrl}/collect`, this.sdkKey)),
             this.buffer.flushPendingAlias());
         }
         async identify(e) {
@@ -391,17 +391,17 @@
               this.userId &&
               this.userId !== t &&
               (await this.buffer.alias(this.anonId, this.userId)));
-          let n = { ...Nn(), anonymous_id: this.anonId, ...e },
+          let n = { ...Sr(), anonymous_id: this.anonId, ...e },
             r = await fetch(`${this.baseUrl}/sdk/evaluate?env=${this.env}`, {
               method: "POST",
               headers: { "X-SDK-Key": this.sdkKey, "Content-Type": "application/json" },
-              body: JSON.stringify({ user: n, experiment_overrides: jn() }),
+              body: JSON.stringify({ user: n, experiment_overrides: $r() }),
             });
           if (!r.ok) throw new Error(`/sdk/evaluate returned ${r.status}`);
           ((this.evalResult = await r.json()),
             this.autoGuardrails &&
               !this.guardrailsInstalled &&
-              ((this.guardrailsInstalled = !0), Dn(this.buffer, this.userId, this.anonId)),
+              ((this.guardrailsInstalled = !0), Er(this.buffer, this.userId, this.anonId)),
             this.notify());
         }
         get ready() {
@@ -420,39 +420,39 @@
         }
         getFlag(e) {
           if (this.evalResult === null) return !1;
-          let t = De(e);
+          let t = ft(e);
           return t !== null ? t : (this.evalResult.flags[e] ?? !1);
         }
         getConfig(e, t) {
           if (this.evalResult === null) return;
-          let n = Ue(e),
+          let n = gt(e),
             r = n !== void 0 ? n : this.evalResult.configs?.[e];
           if (r !== void 0) {
             if (!t) return r;
             try {
               return t(r);
-            } catch (o) {
-              console.warn(`[shipeasy] getConfig('${e}') decode failed:`, String(o));
+            } catch (a) {
+              console.warn(`[shipeasy] getConfig('${e}') decode failed:`, String(a));
               return;
             }
           }
         }
         getExperiment(e, t, n, r) {
-          let o = { inExperiment: !1, group: "control", params: t },
-            i = wt(e);
-          if (i !== null) {
-            let s = r?.[i],
-              d = s ? { ...t, ...s } : t;
-            return { inExperiment: !0, group: i, params: d };
+          let a = { inExperiment: !1, group: "control", params: t },
+            o = Yt(e);
+          if (o !== null) {
+            let i = r?.[o],
+              c = i ? { ...t, ...i } : t;
+            return { inExperiment: !0, group: o, params: c };
           }
-          let a = this.evalResult?.experiments[e];
-          if (!a || !a.inExperiment) return o;
-          if ((this.buffer.pushExposure(e, a.group, this.userId, this.anonId), !n))
-            return { inExperiment: !0, group: a.group, params: a.params };
+          let s = this.evalResult?.experiments[e];
+          if (!s || !s.inExperiment) return a;
+          if ((this.buffer.pushExposure(e, s.group, this.userId, this.anonId), !n))
+            return { inExperiment: !0, group: s.group, params: s.params };
           try {
-            return { inExperiment: !0, group: a.group, params: n(a.params) };
-          } catch (s) {
-            return (console.warn(`[shipeasy] getExperiment('${e}') decode failed:`, String(s)), o);
+            return { inExperiment: !0, group: s.group, params: n(s.params) };
+          } catch (i) {
+            return (console.warn(`[shipeasy] getExperiment('${e}') decode failed:`, String(i)), a);
           }
         }
         subscribe(e) {
@@ -499,12 +499,12 @@
               (this.overrideListenerInstalled = !1)));
         }
       },
-      Kn = /^(true|on|1|yes)$/i,
-      zn = /^(false|off|0|no)$/i;
-    function Fn(e) {
-      return Kn.test(e) ? !0 : zn.test(e) ? !1 : null;
+      _r = /^(true|on|1|yes)$/i,
+      Tr = /^(false|off|0|no)$/i;
+    function Mr(e) {
+      return _r.test(e) ? !0 : Tr.test(e) ? !1 : null;
     }
-    function Wn(e) {
+    function Rr(e) {
       if (e.startsWith("b64:"))
         try {
           let t = atob(e.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
@@ -518,137 +518,137 @@
         return e;
       }
     }
-    function re(e, t) {
+    function ye(e, t) {
       if (typeof window > "u" || !window.location) return null;
       let n = new URLSearchParams(window.location.search),
         r = n.get(e);
       if (r !== null) return r;
       if (t) {
-        let o = n.get(t);
-        if (o !== null) return o;
+        let a = n.get(t);
+        if (a !== null) return a;
       }
       return null;
     }
-    function De(e) {
-      let t = re(`se_ks_${e}`) ?? re(`se_gate_${e}`) ?? re(`se-gate-${e}`);
-      return t === null ? null : Fn(t);
+    function ft(e) {
+      let t = ye(`se_ks_${e}`) ?? ye(`se_gate_${e}`) ?? ye(`se-gate-${e}`);
+      return t === null ? null : Mr(t);
     }
-    function Ue(e) {
-      let t = re(`se_config_${e}`, `se-config-${e}`);
-      if (t !== null) return Wn(t);
+    function gt(e) {
+      let t = ye(`se_config_${e}`, `se-config-${e}`);
+      if (t !== null) return Rr(t);
     }
-    function wt(e) {
-      let t = re(`se_exp_${e}`, `se-exp-${e}`);
+    function Yt(e) {
+      let t = ye(`se_exp_${e}`, `se-exp-${e}`);
       return t === null || t === "" || t === "default" || t === "none" ? null : t;
     }
-    function Oe() {
+    function lt() {
       if (typeof window > "u" || !window.location) return !1;
       let e = new URLSearchParams(window.location.search);
       return e.has("se") || e.has("se_devtools") || e.has("se-devtools");
     }
-    function He(e = {}) {
+    function dt(e = {}) {
       if (typeof window > "u") return;
       let n = window.__shipeasy_devtools_global;
       if (!n) return;
       n.init(e);
       let r = window;
       if (!r.__shipeasy_devtools) {
-        let o = !0;
+        let a = !0;
         r.__shipeasy_devtools = {
           toggle() {
-            o ? (n.destroy(), (o = !1)) : (n.init(e), (o = !0));
+            a ? (n.destroy(), (a = !1)) : (n.init(e), (a = !0));
           },
         };
       }
     }
-    function Et(e, t = {}) {
+    function Xt(e, t = {}) {
       if (typeof window > "u") return () => {};
       let r = (t.hotkey ?? "Shift+Alt+S").split("+"),
-        o = r[r.length - 1],
-        i = r.includes("Shift"),
-        a = r.includes("Alt"),
-        s = r.includes("Ctrl") || r.includes("Control"),
-        d = r.includes("Meta") || r.includes("Cmd");
-      (e.installBridge(), Oe() && He({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl }));
-      let u = Oe();
-      function g(m) {
-        m.key === o &&
-          m.shiftKey === i &&
-          m.altKey === a &&
-          m.ctrlKey === s &&
-          m.metaKey === d &&
-          (u
+        a = r[r.length - 1],
+        o = r.includes("Shift"),
+        s = r.includes("Alt"),
+        i = r.includes("Ctrl") || r.includes("Control"),
+        c = r.includes("Meta") || r.includes("Cmd");
+      (e.installBridge(), lt() && dt({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl }));
+      let f = lt();
+      function l(d) {
+        d.key === a &&
+          d.shiftKey === o &&
+          d.altKey === s &&
+          d.ctrlKey === i &&
+          d.metaKey === c &&
+          (f
             ? window.__shipeasy_devtools?.toggle()
-            : ((u = !0), He({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl })));
+            : ((f = !0), dt({ adminUrl: t.adminUrl, edgeUrl: t.edgeUrl })));
       }
-      window.addEventListener("keydown", g);
-      let h = e.subscribe(() => e.installBridge());
+      window.addEventListener("keydown", l);
+      let u = e.subscribe(() => e.installBridge());
       return () => {
-        (window.removeEventListener("keydown", g), h());
+        (window.removeEventListener("keydown", l), u());
       };
     }
-    var O = null;
-    function kt(e) {
-      let t = Ne({ sdkKey: e.apiKey, baseUrl: e.baseUrl ?? "https://cdn.shipeasy.ai" });
-      return (St.notifyMounted(), Et(t, { adminUrl: e.adminUrl }));
+    var N = null;
+    function Zt(e) {
+      let t = vt({ sdkKey: e.apiKey, baseUrl: e.baseUrl ?? "https://cdn.shipeasy.ai" });
+      return (Qt.notifyMounted(), Xt(t, { adminUrl: e.adminUrl }));
     }
-    function Ne(e) {
-      return O || ((O = new xt(e)), O);
+    function vt(e) {
+      return N || ((N = new Vt(e)), N);
     }
-    function Jn() {
-      return O;
+    function Ar() {
+      return N;
     }
-    function Gn() {
-      (O?.destroy(), (O = null));
+    function Pr() {
+      (N?.destroy(), (N = null));
     }
-    function ht() {
+    function Gt() {
       return typeof window > "u" ? null : (window.__SE_BOOTSTRAP ?? null);
     }
-    var Pe = !1,
-      Be = new Set(),
-      bt = !1;
-    function Vn() {
-      bt ||
+    var ot = !1,
+      ct = new Set(),
+      Wt = !1;
+    function Cr() {
+      Wt ||
         typeof window > "u" ||
-        ((bt = !0),
+        ((Wt = !0),
         window.addEventListener("se:override:change", () => {
-          for (let e of Be) e();
+          for (let e of ct) e();
         }));
     }
-    var St = {
+    var Qt = {
         configure(e) {
-          Ne(e);
+          vt(e);
         },
         identify(e) {
-          return O
-            ? O.identify(e)
+          return N
+            ? N.identify(e)
             : (console.warn("[shipeasy] flags.identify called before configureShipeasy()"),
               Promise.resolve());
         },
         get(e) {
-          let t = ht();
+          let t = Gt();
           return t !== null && e in t.flags
             ? t.flags[e]
-            : Pe
-              ? O
-                ? O.getFlag(e)
-                : (De(e) ?? !1)
+            : ot
+              ? N
+                ? N.getFlag(e)
+                : (ft(e) ?? !1)
               : !1;
         },
         getConfig(e, t) {
-          let n = ht();
+          let n = Gt();
           if (n !== null && e in n.configs) {
-            let o = n.configs[e];
-            if (!t) return o;
+            let a = n.configs[e];
+            if (!t) return a;
             try {
-              return t(o);
+              return t(a);
             } catch {
               return;
             }
           }
-          if (!Pe) return;
-          if (O) return O.getConfig(e, t);
-          let r = Ue(e);
+          if (!ot) return;
+          if (N) return N.getConfig(e, t);
+          let r = gt(e);
           if (r !== void 0) {
             if (!t) return r;
             try {
@@ -659,61 +659,61 @@
           }
         },
         getExperiment(e, t, n, r) {
-          return O?.getExperiment(e, t, n, r) ?? { inExperiment: !1, group: "control", params: t };
+          return N?.getExperiment(e, t, n, r) ?? { inExperiment: !1, group: "control", params: t };
         },
         track(e, t) {
-          O?.track(e, t);
+          N?.track(e, t);
         },
         flush() {
-          return O?.flush() ?? Promise.resolve();
+          return N?.flush() ?? Promise.resolve();
         },
         notifyMounted() {
-          ((Pe = !0),
+          ((ot = !0),
             typeof window < "u" && window.dispatchEvent(new CustomEvent("se:override:change")));
         },
         subscribe(e) {
-          return O ? O.subscribe(e) : (Be.add(e), Vn(), () => Be.delete(e));
+          return N ? N.subscribe(e) : (ct.add(e), Cr(), () => ct.delete(e));
         },
         get ready() {
-          return O?.ready ?? !1;
+          return N?.ready ?? !1;
         },
       },
-      Lt = "\uFFF9",
-      _t = "\uFFFA",
-      Tt = "\uFFFB",
-      Yn = /￹([^￺￻]+)￺([^￻]*)￻/g;
-    function Rt(e, t) {
-      return `${Lt}${e}${_t}${t}${Tt}`;
+      en = "\uFFF9",
+      tn = "\uFFFA",
+      nn = "\uFFFB",
+      Hr = /￹([^￺￻]+)￺([^￻]*)￻/g;
+    function rn(e, t) {
+      return `${en}${e}${tn}${t}${nn}`;
     }
-    function Xn(e, t, n) {
+    function Or(e, t, n) {
       let r = { "data-label": e };
       return (t && (r["data-variables"] = JSON.stringify(t)), n && (r["data-label-desc"] = n), r);
     }
-    var Zn = null,
-      Qn = Symbol.for("@shipeasy/sdk:ssr-i18n"),
-      er = Symbol.for("@shipeasy/sdk:ssr-edit-mode");
-    function tr() {
-      return globalThis[Qn]?.() ?? null;
+    var Ir = null,
+      qr = Symbol.for("@shipeasy/sdk:ssr-i18n"),
+      Br = Symbol.for("@shipeasy/sdk:ssr-edit-mode");
+    function zr() {
+      return globalThis[qr]?.() ?? null;
     }
-    function nr() {
+    function jr() {
       if (typeof window < "u")
         return (
           !!window.__SE_BOOTSTRAP?.editLabels ||
           new URLSearchParams(location.search).has("se_edit_labels")
         );
-      let e = globalThis[er];
+      let e = globalThis[Br];
       return typeof e == "boolean" ? e : typeof e == "function" ? e() : !1;
     }
-    function ge(e, t) {
+    function Be(e, t) {
       return t
         ? e.replace(/\{\{(\w+)\}\}/g, (n, r) => {
-            let o = t[r];
-            return o != null ? String(o) : n;
+            let a = t[r];
+            return a != null ? String(a) : n;
           })
         : e;
     }
-    var rr = typeof document < "u",
-      or = [
+    var Dr = typeof document < "u",
+      Ur = [
         "b",
         "i",
         "u",
@@ -735,10 +735,10 @@
         "br",
         "hr",
       ];
-    function sr() {
+    function Nr() {
       let e = {};
-      for (let t of or)
-        e[t] = rr
+      for (let t of Ur)
+        e[t] = Dr
           ? (n) => {
               let r = document.createElement(t);
               return (t !== "br" && t !== "hr" && (r.textContent = n), r);
@@ -746,56 +746,56 @@
           : (n) => (t === "br" || t === "hr" ? `<${t}>` : `<${t}>${n}</${t}>`);
       return e;
     }
-    var ar = sr(),
-      Ie = {},
-      $e = /<(\w+)(?:\s*\/>|>([\s\S]*?)<\/\1>)/g;
-    function ir(e, t) {
+    var Kr = Nr(),
+      pt = {},
+      it = /<(\w+)(?:\s*\/>|>([\s\S]*?)<\/\1>)/g;
+    function Fr(e, t) {
       let n = [],
         r = 0,
-        o,
-        i = !0;
-      for ($e.lastIndex = 0; (o = $e.exec(e)) !== null; ) {
-        o.index > r && n.push(e.slice(r, o.index));
-        let a = o[1],
-          s = o[2] ?? "",
-          d = t[a] ?? Ie[a] ?? ar[a];
-        if (d) {
-          let u = d(s);
-          (typeof u != "string" && (i = !1), n.push(u));
-        } else n.push(s);
-        r = $e.lastIndex;
+        a,
+        o = !0;
+      for (it.lastIndex = 0; (a = it.exec(e)) !== null; ) {
+        a.index > r && n.push(e.slice(r, a.index));
+        let s = a[1],
+          i = a[2] ?? "",
+          c = t[s] ?? pt[s] ?? Kr[s];
+        if (c) {
+          let f = c(i);
+          (typeof f != "string" && (o = !1), n.push(f));
+        } else n.push(i);
+        r = it.lastIndex;
       }
-      return (r < e.length && n.push(e.slice(r)), i ? n.join("") : n);
+      return (r < e.length && n.push(e.slice(r)), o ? n.join("") : n);
     }
-    function Ce(e, t) {
+    function st(e, t) {
       if (typeof window < "u" && window.i18n) {
         let r = window.i18n.t(e, t);
         return r === e ? void 0 : r;
       }
-      let n = tr();
-      if (n?.strings[e]) return ge(n.strings[e], t);
+      let n = zr();
+      if (n?.strings[e]) return Be(n.strings[e], t);
     }
-    var lr = {
+    var Gr = {
       t(e, t, n) {
-        let r, o;
-        typeof t == "string" ? ((r = t), (o = n)) : (o = t);
-        let i = Ce(e, o);
-        return i !== void 0 ? i : r !== void 0 ? ge(r, o) : e;
+        let r, a;
+        typeof t == "string" ? ((r = t), (a = n)) : (a = t);
+        let o = st(e, a);
+        return o !== void 0 ? o : r !== void 0 ? Be(r, a) : e;
       },
       rich(e, t, n, r) {
-        let i = Ce(e, r) ?? ge(t, r);
-        return ir(i, n ?? {});
+        let o = st(e, r) ?? Be(t, r);
+        return Fr(o, n ?? {});
       },
       tEl(e, t, n, r) {
-        if (nr()) {
-          let i = Ce(e, n) ?? ge(t, n);
-          return Rt(e, i);
+        if (jr()) {
+          let o = st(e, n) ?? Be(t, n);
+          return rn(e, o);
         }
         return this.t(e, t, n);
       },
       configure(e) {
-        (e.components && (Ie = { ...Ie, ...e.components }),
-          e.createElement && (Zn = e.createElement));
+        (e.components && (pt = { ...pt, ...e.components }),
+          e.createElement && (Ir = e.createElement));
       },
       get locale() {
         return typeof window < "u" && window.i18n ? window.i18n.locale : null;
@@ -828,1237 +828,998 @@
     };
     if (typeof window < "u") {
       let e = window.__SE_BOOTSTRAP;
-      e?.apiKey && !O && kt({ apiKey: e.apiKey, baseUrl: e.apiUrl });
+      e?.apiKey && !N && Zt({ apiKey: e.apiKey, baseUrl: e.apiUrl });
     }
   });
-  var de = `
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+  var _e = `
 :host {
   all: initial;
-  /* Design tokens \u2014 kept in sync with the dashboard design system. */
-  --se-bg:    #0a0a0b;
-  --se-bg-1:  #111112;
-  --se-bg-2:  #16161a;
-  --se-bg-3:  #1c1c21;
-  --se-line:    rgba(255,255,255,0.07);
-  --se-line-2:  rgba(255,255,255,0.12);
-  --se-fg:    #f5f5f4;
-  --se-fg-2:  rgba(245,245,244,0.78);
-  --se-fg-3:  rgba(245,245,244,0.56);
-  --se-fg-4:  rgba(245,245,244,0.36);
-  --se-accent:      #4ade80;
-  --se-accent-fg:   #052e16;
-  --se-accent-soft: rgba(74,222,128,0.14);
-  --se-warn:        #f59e0b;
-  --se-warn-soft:   rgba(245,158,11,0.16);
-  --se-danger:      #f87171;
-  --se-danger-soft: rgba(248,113,113,0.14);
-  --se-mono: 'Geist Mono', 'SFMono-Regular', ui-monospace, Consolas, 'Courier New', monospace;
-  --se-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --se-r-sm: 5px;
-  --se-r-md: 8px;
-  --se-r-lg: 12px;
+  --bg-0:#050507;
+  --bg-1:#0a0a0c;
+  --bg-2:#101012;
+  --bg-3:#16161a;
+  --line:rgba(255,255,255,0.10);
+  --line-2:rgba(255,255,255,0.06);
+  --fg:#ededed;
+  --fg-2:#b6b6bc;
+  --fg-3:#8a8a92;
+  --fg-4:#5d5d65;
+  --fg-faint:#3d3d44;
+  --accent:#4ade80;
+  --pri:#7ab8ff;
+  --warn:#f59e0b;
+  --info:#7ab8ff;
+  --danger:#f87171;
+  --warn-bg-soft:color-mix(in oklab, var(--warn) 14%, var(--bg-3));
+  --warn-bg-strong:color-mix(in oklab, var(--warn) 22%, var(--bg-3));
+  --warn-border:color-mix(in oklab, var(--warn) 32%, var(--line));
+  --warn-bg-overbar:color-mix(in oklab, var(--warn) 10%, var(--bg-1));
+  --mono:'Geist Mono', ui-monospace, monospace;
+  --sans:'Geist', ui-sans-serif, system-ui, sans-serif;
+  --serif:'Instrument Serif', serif;
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+*, *::before, *::after { box-sizing: border-box; }
+:focus { outline: none; }
+:focus-visible { outline:2px solid var(--pri); outline-offset:2px; border-radius:3px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline:2px solid var(--pri); outline-offset:0; border-color:transparent !important; }
+button { font-family: inherit; }
+
+/* Panel \u2014 docked to one edge of the viewport. JS sets right/top/etc.
+   min-height anchors the inner flex chain (split / pane / body) so the
+   absolutely-positioned auth-locked overlay still has a non-zero pane
+   to fill, while letting the panel shrink to content (capped at viewport)
+   instead of always claiming full viewport height. */
+.dtf-panel { position:fixed; z-index:2147483646;
+  width:420px;
+  min-height:360px;
+  max-height:calc(100vh - 36px);
+  background:linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  border:1px solid var(--line); border-radius:6px;
+  display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.04) inset;
+  animation:dtf-panel-in .18s cubic-bezier(.2,.8,.3,1); }
+@keyframes dtf-panel-in {
+  from { opacity:0; transform:translateX(8px) scale(.985); }
+  to   { opacity:1; transform:translateX(0) scale(1); }
 }
 
-/* Toolbar \u2014 position/flex-direction/padding/borderRadius/boxShadow set by JS */
-.toolbar {
-  position: fixed;
-  z-index: 2147483646;
-  display: flex;
-  gap: 4px;
+/* collapsed = floating rail anchored to one edge */
+.dtf-panel.collapsed { background:rgba(8,8,10,0.72);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  border:1px solid var(--line); box-shadow:0 6px 20px -8px rgba(0,0,0,0.55);
+  border-radius:8px; overflow:visible; width:auto; height:auto; max-height:none; padding:0;
+  animation:dtf-fade-in .14s ease-out; }
+@keyframes dtf-fade-in { from { opacity:0; } to { opacity:1; } }
+.dtf-panel.collapsed .dtf-panel-rail { display:flex; align-items:center; gap:4px; padding:6px; }
+.dtf-panel.collapsed[data-edge="right"]  .dtf-panel-rail,
+.dtf-panel.collapsed[data-edge="left"]   .dtf-panel-rail { flex-direction:column; }
+.dtf-panel.collapsed[data-edge="top"]    .dtf-panel-rail,
+.dtf-panel.collapsed[data-edge="bottom"] .dtf-panel-rail { flex-direction:row; }
+.dtf-panel-rail .mk { border-radius:5px;
+  background:conic-gradient(from 140deg, var(--accent), #0a0a0b 40%, var(--accent) 80%);
+  box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 0 10px color-mix(in oklab, var(--accent) 35%, transparent);
+  flex-shrink:0; cursor:grab; user-select:none; touch-action:none; }
+.dtf-panel-rail .mk:active, .dtf-panel-rail .mk.dragging { cursor:grabbing;
+  box-shadow:0 0 0 2px color-mix(in oklab, var(--accent) 40%, transparent); }
+.dtf-panel-rail .ri { position:relative; display:grid; place-items:center;
+  border:0; background:transparent; color:var(--fg-2);
+  border-radius:6px; cursor:pointer;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6)) drop-shadow(0 0 1px rgba(0,0,0,0.9)); }
+.dtf-panel-rail .ri:hover { color:var(--accent);
+  background:color-mix(in oklab, var(--bg-1) 88%, transparent); }
+.dtf-panel-rail .ri .c { position:absolute; top:-1px; right:-1px;
+  font-family:var(--mono); font-size:8.5px; line-height:1; color:var(--fg);
+  background:var(--bg-3); border:1px solid var(--line);
+  padding:1px 3px; border-radius:6px; min-width:13px; text-align:center; }
+.dtf-panel-rail .ri .dotw { position:absolute; top:1px; left:1px;
+  width:5px; height:5px; border-radius:50%;
+  background:var(--warn); box-shadow:0 0 4px var(--warn); }
+.dtf-panel-rail .ri .tip { position:absolute; background:var(--bg-3); color:var(--fg);
+  font-family:var(--mono); font-size:10px; padding:3px 7px; border-radius:3px;
+  white-space:nowrap; border:1px solid var(--line);
+  opacity:0; pointer-events:none; transition:opacity .12s; z-index:10; }
+.dtf-panel-rail .ri:hover .tip { opacity:1; }
+/* Multi-line tooltip used by the unauthed lock icon \u2014 wraps and reads as a
+   short explanation rather than a one-word label. */
+.dtf-panel-rail .ri .tip.tip-multi,
+.dtf-rail .t .tip.tip-multi {
+  white-space:normal; max-width:240px; min-width:180px;
+  text-align:left; line-height:1.45; padding:8px 10px;
+  font-family:var(--sans); font-size:11px; color:var(--fg-2); }
+.dtf-panel-rail .ri .tip.tip-multi b,
+.dtf-rail .t .tip.tip-multi b {
+  display:block; margin-bottom:4px;
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--accent); font-weight:600; }
+.dtf-panel-rail .ri .tip.tip-multi .hint,
+.dtf-rail .t .tip.tip-multi .hint {
+  display:block; margin-top:6px;
+  font-family:var(--mono); font-size:9.5px; color:var(--fg-3); letter-spacing:.02em; }
+.dtf-panel.collapsed[data-edge="right"]  .ri .tip { right:calc(100% + 8px); top:50%; transform:translateY(-50%); }
+.dtf-panel.collapsed[data-edge="left"]   .ri .tip { left:calc(100% + 8px); top:50%; transform:translateY(-50%); }
+.dtf-panel.collapsed[data-edge="top"]    .ri .tip { top:calc(100% + 8px); left:50%; transform:translateX(-50%); }
+.dtf-panel.collapsed[data-edge="bottom"] .ri .tip { bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); }
+
+.dtf-rail-resize { position:relative; display:grid; place-items:center;
+  cursor:ns-resize; opacity:.7; transition:opacity .12s, background .12s; flex-shrink:0;
+  border-radius:4px; margin-top:4px; }
+.dtf-rail-resize:hover { opacity:1; background:var(--bg-3); }
+.dtf-rail-resize::before { content:''; background:var(--fg-3);
+  border-radius:999px; box-shadow:0 0 0 1px rgba(0,0,0,0.35); transition:background .12s; }
+.dtf-panel.collapsed[data-edge="right"]  .dtf-rail-resize,
+.dtf-panel.collapsed[data-edge="left"]   .dtf-rail-resize { cursor:ns-resize; }
+.dtf-panel.collapsed[data-edge="top"]    .dtf-rail-resize,
+.dtf-panel.collapsed[data-edge="bottom"] .dtf-rail-resize { cursor:ew-resize; }
+.dtf-panel.collapsed[data-edge="right"]  .dtf-rail-resize::before,
+.dtf-panel.collapsed[data-edge="left"]   .dtf-rail-resize::before { width:18px; height:4px; }
+.dtf-panel.collapsed[data-edge="top"]    .dtf-rail-resize::before,
+.dtf-panel.collapsed[data-edge="bottom"] .dtf-rail-resize::before { width:4px; height:18px; }
+.dtf-rail-resize:hover::before, .dtf-rail-resize.dragging::before {
+  background:var(--pri); transform:scale(1.15); }
+
+.dtf-head { display:flex; align-items:center; gap:10px; padding:11px 12px 10px;
+  border-bottom:1px solid var(--line); }
+.dtf-head .mk { width:14px; height:14px; border-radius:3px;
+  background:conic-gradient(from 140deg, var(--accent), #0a0a0b 40%, var(--accent) 80%);
+  box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 0 8px color-mix(in oklab, var(--accent) 30%, transparent);
+  cursor:grab; flex-shrink:0; }
+.dtf-head .mk.dragging { cursor:grabbing; }
+.dtf-head .ti { font-size:12px; font-weight:600; letter-spacing:.01em; flex:1;
+  display:flex; align-items:baseline; gap:8px; min-width:0; }
+.dtf-head .ti .title { color:var(--fg); font-weight:600; font-size:12px; white-space:nowrap; }
+.dtf-head .ti .sub { font-family:var(--mono); font-size:10px; font-weight:400; color:var(--fg-3);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.dtf-head .actions { display:flex; gap:2px; }
+.dtf-head .ib { width:26px; height:26px; border-radius:4px; border:0;
+  background:transparent; color:var(--fg-3); cursor:pointer;
+  display:grid; place-items:center; }
+.dtf-head .ib:hover { background:var(--bg-3); color:var(--fg); }
+.dtf-head .ib svg { width:11px; height:11px; }
+
+.dtf-split { display:flex; flex:1; min-height:0; }
+.dtf-rail { width:40px; flex:0 0 40px; display:flex; flex-direction:column;
+  gap:2px; padding:6px 4px; background:var(--bg-1);
+  border-right:1px solid var(--line); }
+.dtf-rail .t { position:relative; display:grid; place-items:center;
+  width:32px; height:32px; border:0; background:transparent; color:var(--fg-3);
+  border-radius:4px; cursor:pointer; overflow:visible; }
+.dtf-rail .t:hover { color:var(--fg); background:var(--bg-2); }
+.dtf-rail .t.active { color:var(--fg); background:var(--bg-3);
+  box-shadow:inset 2px 0 0 var(--pri); }
+.dtf-rail .t svg { width:14px; height:14px; }
+.dtf-rail .t .c { position:absolute; top:-3px; right:-3px;
+  font-family:var(--mono); font-size:9.5px; line-height:1;
+  color:var(--fg-2); background:var(--bg-3);
+  padding:1px 4px; border-radius:6px; min-width:13px; text-align:center;
+  border:1px solid var(--line); }
+.dtf-rail .t.active .c { color:var(--fg);
+  background:color-mix(in oklab, var(--pri) 18%, var(--bg-3)); }
+.dtf-rail .t .dotw { position:absolute; top:-2px; left:-2px;
+  width:6px; height:6px; border-radius:50%;
+  background:var(--warn); box-shadow:0 0 4px var(--warn), 0 0 0 1.5px var(--bg-1); }
+.dtf-rail .t .tip { position:absolute; left:calc(100% + 6px); top:50%;
+  transform:translateY(-50%); background:var(--bg-3); color:var(--fg);
+  font-family:var(--mono); font-size:10px; letter-spacing:.02em;
+  padding:3px 7px; border-radius:3px; white-space:nowrap;
+  border:1px solid var(--line);
+  opacity:0; pointer-events:none; transition:opacity .12s;
+  z-index:10; }
+.dtf-rail .t:hover .tip { opacity:1; }
+
+.dtf-pane { display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; }
+
+.dtf-overbar { display:flex; align-items:center; gap:8px; padding:8px 12px;
+  background:var(--warn-bg-overbar); border-bottom:1px solid var(--warn-border);
+  color:var(--fg); font-size:10.5px; font-family:var(--mono); }
+.dtf-overbar b { font-weight:600; color:var(--warn); }
+.dtf-overbar > span { flex:1; }
+.dtf-overbar button { background:transparent; border:1px solid var(--warn-border);
+  color:var(--warn); font-family:var(--mono); font-size:10px;
+  padding:2px 7px; border-radius:3px; cursor:pointer; }
+.dtf-overbar button:hover { background:var(--warn-bg-soft); }
+.dtf-overbar svg { width:11px; height:11px; flex-shrink:0; }
+
+.dtf-search { display:flex; gap:8px; padding:8px 10px; border-bottom:1px solid var(--line); }
+.dtf-search .input { flex:1; display:flex; align-items:center; gap:7px;
+  padding:5px 8px; background:var(--bg-2); border:1px solid var(--line);
+  border-radius:4px; }
+.dtf-search .input svg { width:11px; height:11px; color:var(--fg-3); }
+.dtf-search .input input { flex:1; background:transparent; border:0; outline:0;
+  color:var(--fg); font-family:var(--mono); font-size:11px; }
+.dtf-search .input input::placeholder { color:var(--fg-4); }
+.dtf-search .kbd { padding:1px 5px; border:1px solid var(--line); border-radius:3px;
+  font-size:10.5px; font-family:var(--mono); color:var(--fg-3); cursor:pointer; }
+.dtf-search .seg { display:flex; padding:2px; background:var(--bg-2);
+  border:1px solid var(--line); border-radius:4px; }
+.dtf-search .seg button { background:transparent; border:0; color:var(--fg-3);
+  font-family:var(--mono); font-size:10.5px; padding:3px 8px; border-radius:2px;
+  cursor:pointer; }
+.dtf-search .seg button.active { background:color-mix(in oklab, var(--pri) 16%, var(--bg-3));
+  color:var(--pri); }
+.dtf-locale-sel { background:var(--bg-2); border:1px solid var(--line);
+  border-radius:4px; color:var(--fg); font-family:var(--mono); font-size:11px;
+  padding:4px 6px; cursor:pointer; outline:none; max-width:140px; }
+.dtf-locale-sel:hover { border-color:var(--fg-4); }
+
+.dtf-body { flex:1; overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+.dtf-body::-webkit-scrollbar { width:6px; }
+.dtf-body::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
+.dtf-body::-webkit-scrollbar-thumb:hover { background:var(--fg-4); }
+.json-tree, .dtf-modal .bd { scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+
+.dtf-group { display:flex; align-items:center; gap:8px; padding:8px 12px 5px;
+  font-family:var(--mono); font-size:9.5px; color:var(--fg-3);
+  letter-spacing:.12em; text-transform:uppercase; }
+.dtf-group .c { color:var(--fg-4); }
+.dtf-group .pulse { display:flex; align-items:center; gap:5px; color:var(--accent);
+  margin-left:auto; }
+.dtf-group .pulse .d { width:5px; height:5px; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 6px var(--accent); animation:dtf-pulse 1.6s infinite; }
+@keyframes dtf-pulse { 50% { opacity:.4; } }
+
+.dtf-row { display:grid; grid-template-columns:18px minmax(0,1fr) auto 36px;
+  align-items:center; gap:10px; padding:8px 12px;
+  border-bottom:1px solid var(--line-2); cursor:pointer; position:relative; }
+.dtf-row:hover { background:var(--bg-2); }
+.dtf-row.expanded { background:var(--bg-2); }
+.dtf-row.muted .meta .k { color:var(--fg-3); }
+.dtf-row .ic { display:grid; place-items:center; color:var(--accent); }
+.dtf-row .ic svg { width:11px; height:11px; }
+.dtf-row .meta { min-width:0; }
+.dtf-row .meta .k { font-family:var(--mono); font-size:11px; color:var(--fg);
+  display:flex; align-items:center; gap:7px; min-width:0; }
+.dtf-row .meta .k .name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dtf-row .meta .v { font-family:var(--mono); font-size:9.5px;
+  color:var(--fg-3); margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dtf-row .override-tag { font-family:var(--mono); font-size:9px;
+  background:var(--warn-bg-soft); color:var(--warn);
+  padding:1px 5px; border-radius:3px; letter-spacing:.05em; }
+.dtf-row .live-dot { width:5px; height:5px; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 5px var(--accent);
+  animation:dtf-pulse 1.4s infinite; flex-shrink:0; }
+.dtf-row .val { font-family:var(--mono); font-size:11px;
+  padding:2px 7px; border-radius:3px; background:var(--bg-3); color:var(--fg-2);
+  letter-spacing:.02em; max-width:160px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dtf-row .val.on { color:var(--accent); background:color-mix(in oklab, var(--accent) 12%, var(--bg-3)); }
+.dtf-row .val.off { color:var(--fg-3); }
+.dtf-row .val.over { color:var(--warn); background:var(--warn-bg-soft); }
+.dtf-row .val.kill-live { color:var(--pri); background:transparent;
+  border:1px solid color-mix(in oklab, var(--pri) 50%, var(--line));
+  padding:1px 7px; text-transform:uppercase; font-size:10px; font-weight:600; letter-spacing:.06em; }
+.dtf-row .val.killed { color:#fff; background:var(--danger);
+  border:1px solid var(--danger); padding:1px 7px;
+  text-transform:uppercase; font-size:10px; font-weight:700; letter-spacing:.08em;
+  box-shadow:0 0 0 1px color-mix(in oklab, var(--danger) 25%, transparent); }
+.dtf-row .sel { font-family:var(--mono); font-size:10.5px;
+  background:var(--bg-3); color:var(--fg); border:1px solid var(--line);
+  border-radius:3px; padding:1px 4px; cursor:pointer; outline:none; }
+.dtf-row .sel.over { color:var(--warn); border-color:var(--warn-border); }
+
+.dtf-toggle { width:32px; height:18px; border-radius:9px; background:var(--bg-3);
+  border:1px solid var(--line); position:relative; cursor:pointer;
+  transition:all .15s; justify-self:end; flex-shrink:0; }
+.dtf-toggle::after { content:''; position:absolute; left:2px; top:2px;
+  width:12px; height:12px; border-radius:50%; background:var(--fg-3);
+  transition:all .15s; }
+.dtf-toggle.on { background:color-mix(in oklab, var(--accent) 22%, var(--bg-3));
+  border-color:color-mix(in oklab, var(--accent) 30%, var(--line)); }
+.dtf-toggle.on::after { left:16px; background:var(--accent); box-shadow:0 0 5px var(--accent); }
+.dtf-toggle.over { background:var(--warn-bg-strong); border-color:var(--warn-border); }
+.dtf-toggle.over::after { left:16px; background:var(--warn); box-shadow:0 0 5px var(--warn); }
+
+.dtf-detail { display:grid; grid-template-rows:0fr; transition:grid-template-rows .25s ease;
+  background:var(--bg-2); border-bottom:1px solid var(--line-2); }
+.dtf-detail.open { grid-template-rows:1fr; }
+.dtf-detail .inner { overflow:hidden; }
+@supports not (grid-template-rows: 1fr) {
+  .dtf-detail { display:block; max-height:0; overflow:hidden; transition:max-height .25s ease; }
+  .dtf-detail.open { max-height:600px; }
+}
+.dtf-detail .pad { padding:8px 12px 12px 38px; }
+.dtf-detail .crumbs { font-family:var(--mono); font-size:10.5px; color:var(--fg-2); line-height:1.7; }
+.dtf-detail .crumbs .pass { color:var(--accent); }
+.dtf-detail .crumbs .deny { color:var(--danger); }
+.dtf-detail .crumbs .skip { color:var(--warn); }
+.dtf-detail .crumbs .meta { color:var(--fg-3); }
+.dtf-detail .indent { padding-left:14px; color:var(--fg-3); position:relative; }
+.dtf-detail .indent::before { content:'\u251C'; position:absolute; left:2px; color:var(--fg-4); }
+.dtf-detail .indent:last-child::before { content:'\u2514'; }
+
+.dtf-detail .var-row { display:flex; align-items:center; gap:8px; padding:4px 0;
+  font-family:var(--mono); font-size:10.5px; color:var(--fg-3);
+  border-top:1px dashed var(--line-2); }
+.dtf-detail .var-row.assigned { color:var(--accent); }
+.dtf-detail .var-row .sw { width:8px; height:8px; border-radius:2px; }
+.dtf-detail .var-row .pct { color:var(--fg-3); margin-left:auto; }
+
+.dtf-detail .mini { display:grid; grid-template-columns:auto 1fr; gap:4px 12px;
+  margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2);
+  font-family:var(--mono); font-size:10px; }
+.dtf-detail .mini .lbl { color:var(--fg-3); letter-spacing:.04em; text-transform:uppercase; font-size:10px; }
+.dtf-detail .mini .v { color:var(--fg-2); }
+
+.dtf-detail .actions { display:flex; gap:5px; margin-top:10px; flex-wrap:wrap; }
+.dtf-detail .actions button, .dtf-detail .actions a { background:var(--bg-3); border:1px solid var(--line);
+  color:var(--fg-2); font-family:var(--mono); font-size:10px;
+  padding:3px 7px; border-radius:3px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+.dtf-detail .actions button:hover, .dtf-detail .actions a:hover { background:var(--bg-1); color:var(--fg); border-color:var(--fg-4); }
+.dtf-detail .actions button.primary { background:var(--warn-bg-soft);
+  color:var(--warn); border-color:var(--warn-border); }
+
+/* user tab */
+.dtf-user { display:flex; flex-direction:column; flex:1; min-height:0; }
+.dtf-user .who { display:flex; align-items:center; gap:10px; padding:10px 12px;
+  border-bottom:1px solid var(--line); }
+.dtf-user .who .av { width:30px; height:30px; border-radius:50%;
+  background:linear-gradient(135deg, color-mix(in oklab, var(--accent) 50%, var(--bg-3)), var(--bg-3));
+  color:var(--bg-0); display:grid; place-items:center; font-weight:600; font-size:13px; }
+.dtf-user .who .info { flex:1; min-width:0; }
+.dtf-user .who .e { font-size:12px; font-weight:500;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dtf-user .who .id { font-family:var(--mono); font-size:9.5px; color:var(--fg-3); margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.dtf-prop { display:grid; grid-template-columns:120px 1fr 6px;
+  align-items:center; gap:10px; padding:6px 12px;
+  font-family:var(--mono); font-size:11px; border-bottom:1px solid var(--line-2); }
+.dtf-prop .k { color:var(--fg-3); font-size:10.5px; }
+.dtf-prop .v { display:flex; align-items:center; }
+.dtf-prop .v input { background:transparent; border:0; outline:none;
+  color:var(--fg); font-family:var(--mono); font-size:11px; width:100%;
+  padding:1px 4px; border-radius:2px; }
+.dtf-prop .v input:focus { background:var(--bg-3); }
+.dtf-prop .v.muted { color:var(--fg-3); }
+.dtf-prop .changed { width:5px; height:5px; border-radius:50%; background:var(--warn);
+  box-shadow:0 0 4px var(--warn); }
+
+.dtf-evalbar { display:flex; gap:6px; padding:8px 10px;
+  border-top:1px solid var(--line); background:var(--bg-1); }
+.dtf-evalbar .b { flex:1; background:color-mix(in oklab, var(--accent) 14%, var(--bg-3));
+  color:var(--accent); border:1px solid color-mix(in oklab, var(--accent) 32%, var(--line));
+  font-family:var(--mono); font-size:11px; padding:7px 9px; min-height:28px;
+  border-radius:3px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+.dtf-evalbar .b:hover { background:color-mix(in oklab, var(--accent) 24%, var(--bg-3)); }
+.dtf-evalbar .b.g { flex:0; background:transparent; color:var(--fg-3);
+  border-color:var(--line); padding:7px 12px; }
+.dtf-evalbar .b.g:hover { color:var(--fg); }
+.dtf-evalbar .b svg { width:11px; height:11px; }
+
+/* events tab */
+.dtf-event { display:grid; grid-template-columns:62px 14px 1fr auto;
+  align-items:center; gap:8px; padding:6px 12px;
+  font-family:var(--mono); font-size:11px;
+  border-bottom:1px solid var(--line-2); }
+.dtf-event .ts { color:var(--fg-3); font-size:10.5px; }
+.dtf-event .lvl { color:var(--accent); }
+.dtf-event .lvl.warn { color:var(--warn); }
+.dtf-event .lvl.err { color:var(--danger); }
+.dtf-event .msg { color:var(--fg-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dtf-event .msg .k { color:var(--fg); }
+.dtf-event .msg .s { color:var(--accent); }
+.dtf-event .ms { color:var(--fg-3); font-size:10.5px; }
+
+/* empty states */
+.dtf-empty { padding:32px 20px; text-align:center; color:var(--fg-2);
+  display:flex; flex-direction:column; align-items:center; }
+.dtf-empty .vis { width:96px; height:96px; position:relative; margin-bottom:18px;
+  display:grid; place-items:center; }
+.dtf-empty .vis .ring { position:absolute; inset:18px; border:1px solid var(--line);
+  border-radius:50%; }
+.dtf-empty .vis .ring.r2 { inset:0; border-color:var(--line-2); border-style:dashed; animation:dtf-rot 30s linear infinite; }
+.dtf-empty .vis .core { width:42px; height:42px; border-radius:50%;
+  background:radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--accent) 26%, var(--bg-2)), var(--bg-1));
+  border:1px solid color-mix(in oklab, var(--accent) 22%, var(--line));
+  display:grid; place-items:center; color:var(--accent);
+  font-family:var(--mono); font-size:14px; }
+@keyframes dtf-rot { to { transform:rotate(360deg); } }
+.dtf-empty h3 { margin:0 0 8px; font-size:18px; font-weight:500; letter-spacing:-0.01em;
+  color:var(--fg); line-height:1.2; }
+.dtf-empty h3 em { font-family:var(--serif); font-style:italic; color:var(--accent); font-weight:400; }
+.dtf-empty p { margin:0 0 16px; font-size:11.5px; color:var(--fg-3); max-width:280px; line-height:1.5; }
+.dtf-empty .actions { display:flex; flex-direction:column; gap:5px; width:100%; max-width:240px; }
+.dtf-empty .actions .a { display:flex; align-items:center; gap:8px;
+  padding:7px 9px; background:var(--bg-2); border:1px solid var(--line);
+  border-radius:4px; cursor:pointer; color:var(--fg-2); text-decoration:none; }
+.dtf-empty .actions .a:hover { color:var(--fg); border-color:var(--fg-4); background:var(--bg-3); }
+.dtf-empty .actions .a .ic { width:18px; height:18px; border-radius:3px;
+  background:var(--bg-3); display:grid; place-items:center;
+  color:var(--accent); font-family:var(--mono); font-size:11px; }
+.dtf-empty .actions .a .k { font-size:11px; flex:1; text-align:left; }
+.dtf-empty .actions .a .kbd { font-family:var(--mono); font-size:10.5px;
+  color:var(--fg-3); border:1px solid var(--line); padding:1px 5px; border-radius:3px; }
+
+.dtf-empty.search .glyph { font-family:var(--mono); font-size:38px;
+  color:var(--fg-3); display:flex; align-items:center; gap:4px; margin-bottom:12px; }
+.dtf-empty.search .glyph .core { width:14px; height:14px; border-radius:50%;
+  background:radial-gradient(circle, var(--warn), transparent 70%); animation:dtf-pulse 1.6s infinite; }
+
+/* loading */
+.dtf-load { padding:8px 0 0; position:relative; }
+.dtf-load .topstrip { position:absolute; top:0; left:0; right:0; height:1.5px;
+  background:linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size:200% 100%; animation:dtf-strip 1.4s linear infinite; }
+@keyframes dtf-strip { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
+.skel-row { display:grid; grid-template-columns:18px minmax(0,1fr) auto 36px;
+  align-items:center; gap:10px; padding:9px 12px;
+  border-bottom:1px solid var(--line-2); }
+.skel-row .ic { width:11px; height:11px; border-radius:2px; background:var(--bg-3); }
+.skel-row .body { display:flex; flex-direction:column; gap:5px; }
+.skel-row .togsk { width:32px; height:18px; border-radius:9px; background:var(--bg-3);
+  border:1px solid var(--line); justify-self:end; }
+.skel { background:linear-gradient(90deg, var(--bg-3), var(--bg-2), var(--bg-3));
+  background-size:200% 100%; animation:dtf-shim 1.5s ease-in-out infinite; border-radius:2px; }
+@keyframes dtf-shim { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+.skel-row.live .ic { background:color-mix(in oklab, var(--accent) 30%, var(--bg-3)); }
+@keyframes dtf-spin { to { transform:rotate(360deg); } }
+
+/* footer */
+.dtf-foot { display:flex; flex-direction:column; gap:6px; padding:8px 10px;
+  border-top:1px solid var(--line); background:var(--bg-1);
+  font-family:var(--mono); font-size:10.5px; color:var(--fg-3); }
+.dtf-foot .stat-line { display:flex; align-items:center; gap:6px; }
+.dtf-foot .ok { width:5px; height:5px; border-radius:50%; background:var(--accent);
+  box-shadow:0 0 5px var(--accent); }
+.dtf-foot .stat { color:var(--fg-2); }
+.dtf-foot .stat b { color:var(--fg); font-weight:500; }
+.dtf-foot .sk { margin-left:auto; color:var(--fg-3); }
+.dtf-foot .actions { display:flex; gap:4px; flex-wrap:wrap; }
+.dtf-foot .ibtn { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+  font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:3px;
+  cursor:pointer; line-height:1.4; }
+.dtf-foot .ibtn:hover { color:var(--fg); border-color:var(--fg-4); background:var(--bg-2); }
+.dtf-foot .ibtn.danger { color:var(--danger);
+  border-color:color-mix(in oklab, var(--danger) 28%, var(--line));
+  background:color-mix(in oklab, var(--danger) 8%, var(--bg-3)); }
+.dtf-foot .ibtn.danger:hover { color:var(--fg);
+  background:color-mix(in oklab, var(--danger) 18%, var(--bg-3)); }
+.dtf-foot .ibtn.pri { color:var(--accent);
+  border-color:color-mix(in oklab, var(--accent) 30%, var(--line));
+  background:color-mix(in oklab, var(--accent) 12%, var(--bg-3)); }
+.dtf-foot .ibtn.pri:hover { background:color-mix(in oklab, var(--accent) 22%, var(--bg-3)); }
+.dtf-foot .grow { flex:1; }
+
+/* Labels tab */
+.dtf-group .cov-mini { font-family:var(--mono); font-size:10px; color:var(--fg-3);
+  background:var(--bg-3); padding:1px 6px; border-radius:3px;
+  letter-spacing:.02em; cursor:help; }
+.dtf-lbl-row { display:grid; grid-template-columns:auto 1fr 8px;
+  align-items:center; gap:10px; padding:7px 12px;
+  border-bottom:1px solid var(--line-2); cursor:pointer; }
+.dtf-lbl-row:hover, .dtf-lbl-row.expanded { background:var(--bg-2); }
+.dtf-lbl-row .meta { min-width:0; }
+.dtf-lbl-row .meta .src { font-size:11.5px; color:var(--fg);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:280px;
+  display:flex; align-items:center; gap:5px; }
+.dtf-lbl-row.missing .meta .src { color:var(--warn); font-style:italic; }
+.dtf-lbl-row .meta .sub { display:flex; align-items:center; gap:5px;
+  font-family:var(--mono); font-size:9.5px; color:var(--fg-4); margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dtf-lbl-row .meta .sub .k { color:var(--fg-3); }
+.dtf-lbl-row .meta .sub .dot { color:var(--fg-4); }
+.dtf-lbl-row .meta .sub .var { color:var(--info); }
+.lbl-pill { font-family:var(--mono); font-size:11px; line-height:1;
+  width:18px; height:18px; display:inline-grid; place-items:center;
+  border-radius:3px; flex-shrink:0; cursor:help; }
+.lbl-pill.ok { background:color-mix(in oklab, var(--accent) 14%, var(--bg-3)); color:var(--accent); }
+.lbl-pill.missing { background:color-mix(in oklab, var(--warn) 18%, var(--bg-3)); color:var(--warn); }
+.lbl-pill.review { background:color-mix(in oklab, var(--danger) 18%, var(--bg-3));
+  color:var(--danger); font-weight:700; }
+.lbl-pill.partial { background:color-mix(in oklab, var(--warn) 14%, var(--bg-3)); color:var(--warn); }
+.lbl-pill.edited { background:color-mix(in oklab, var(--info) 14%, var(--bg-3)); color:var(--info); }
+.lbl-pad { padding-left:14px !important; }
+.dtf-tree-node { display:flex; align-items:center; gap:6px; padding:5px 12px;
+  font-family:var(--mono); font-size:11px; color:var(--fg-2);
+  background:var(--bg-1); cursor:pointer;
+  border-bottom:1px solid var(--line-2); }
+.dtf-tree-node:hover { background:var(--bg-2); color:var(--fg); }
+.dtf-tree-node .caret { color:var(--fg-3); width:10px;
+  display:inline-block; text-align:center; flex-shrink:0; }
+.dtf-tree-node .seg { color:var(--fg); font-weight:500; }
+.dtf-tree-node .dotpath { color:var(--fg-3); font-size:10px; margin-left:4px; }
+.dtf-tree-node .counts { margin-left:auto; display:flex; gap:6px; align-items:center; }
+.dtf-tree-node .counts .m { color:var(--warn); font-size:10.5px;
+  background:color-mix(in oklab, var(--warn) 14%, var(--bg-3));
+  padding:1px 5px; border-radius:3px; }
+.dtf-tree-node .counts .t { color:var(--fg-2); background:var(--bg-3);
+  padding:1px 5px; border-radius:3px; font-size:10.5px; }
+.lbl-locales { display:grid; grid-template-columns:auto 1fr auto; gap:4px 10px;
+  margin-bottom:10px; padding:6px 0; border-top:1px dashed var(--line-2);
+  border-bottom:1px dashed var(--line-2); font-family:var(--mono); font-size:10.5px; }
+.lbl-locale { display:contents; cursor:pointer; }
+.lbl-locale .fl { color:var(--fg-3); font-weight:600; padding:2px 5px;
+  background:var(--bg-3); border-radius:2px; font-size:10px;
+  align-self:center; justify-self:start; transition:background .12s, color .12s; }
+.lbl-locale .nm { color:var(--fg-3); align-self:center; transition:color .12s; }
+.lbl-locale .tv { color:var(--fg-2); white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; max-width:170px; align-self:center; justify-self:end;
+  transition:color .12s; }
+.lbl-locale.miss .tv { color:var(--warn); }
+.lbl-locale.miss .fl { color:var(--warn); background:color-mix(in oklab, var(--warn) 14%, var(--bg-3)); }
+.lbl-locale.sel .fl { color:var(--accent); background:color-mix(in oklab, var(--accent) 18%, var(--bg-3)); }
+.lbl-locale.sel .nm, .lbl-locale.sel .tv { color:var(--fg); }
+.lbl-edit { background:var(--bg-1); border:1px solid var(--line); border-radius:4px;
+  margin-bottom:10px; }
+.lbl-edit .hd { display:flex; align-items:center; padding:6px 8px;
+  border-bottom:1px solid var(--line-2); font-family:var(--mono); font-size:10px;
+  color:var(--fg-2); }
+.lbl-edit .hd button { margin-left:auto; background:transparent; border:0;
+  color:var(--info); font-family:var(--mono); font-size:10px; cursor:pointer; }
+.lbl-edit textarea { width:100%; box-sizing:border-box; min-height:54px; resize:vertical;
+  background:transparent; border:0; outline:none; padding:8px;
+  color:var(--fg); font-family:var(--mono); font-size:11.5px; line-height:1.5; }
+.lbl-vars { display:flex; align-items:center; gap:5px; padding:5px 8px;
+  border-top:1px dashed var(--line-2); font-family:var(--mono); font-size:9.5px;
+  color:var(--fg-4); letter-spacing:.05em; text-transform:uppercase; }
+.lbl-vars .var { color:var(--info); background:color-mix(in oklab, var(--info) 12%, var(--bg-3));
+  padding:1px 4px; border-radius:2px; text-transform:none; letter-spacing:0; font-size:10px; }
+
+/* copy button */
+.dtf-copy { background:transparent; border:0; padding:2px 4px; border-radius:3px;
+  color:var(--fg-4); cursor:pointer; line-height:0; display:inline-grid; place-items:center;
+  transition:color .12s, background .12s, opacity .12s; opacity:.55; }
+.dtf-copy svg { width:11px; height:11px; }
+.dtf-copy:hover { color:var(--fg); background:var(--bg-3); opacity:1; }
+.dtf-copy.done { color:var(--accent); opacity:1; }
+.dtf-row .dtf-copy, .dtf-lbl-row .dtf-copy { opacity:0; }
+.dtf-row:hover .dtf-copy, .dtf-row.expanded .dtf-copy,
+.dtf-lbl-row:hover .dtf-copy, .dtf-lbl-row.expanded .dtf-copy { opacity:.7; }
+.dtf-row .dtf-copy:hover, .dtf-lbl-row .dtf-copy:hover { opacity:1; }
+.dtf-row .dtf-copy.done, .dtf-lbl-row .dtf-copy.done { opacity:1; }
+
+/* modal \u2014 sized to the panel */
+.dtf-modal-bg { position:absolute; inset:0; z-index:50;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  display:grid; place-items:stretch; padding:10px;
+  animation:dtf-modal-bg-in .14s ease-out; }
+@keyframes dtf-modal-bg-in { from { opacity:0; } to { opacity:1; } }
+.dtf-modal { width:100%; max-width:100%;
+  max-height:100%; align-self:center; justify-self:stretch;
+  background:var(--bg-1); border:1px solid var(--line); border-radius:8px;
+  overflow:hidden; display:flex; flex-direction:column;
+  box-shadow:0 24px 60px -16px rgba(0,0,0,0.7);
+  animation:dtf-modal-in .16s cubic-bezier(.2,.8,.3,1); }
+@keyframes dtf-modal-in {
+  from { opacity:0; transform:scale(.96) translateY(6px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+.dtf-modal .hd { display:flex; align-items:center; gap:8px;
+  padding:10px 12px; border-bottom:1px solid var(--line);
+  font-family:var(--mono); font-size:11px; color:var(--fg-2); }
+.dtf-modal .hd .k { color:var(--fg); flex:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.dtf-modal .hd .x { background:transparent; border:0; color:var(--fg-3);
+  cursor:pointer; padding:4px; line-height:0; border-radius:3px;
+  width:26px; height:26px; display:grid; place-items:center; }
+.dtf-modal .hd .x:hover { color:var(--fg); background:var(--bg-3); }
+.dtf-modal .hd .back { display:inline-flex; align-items:center; gap:4px;
+  background:var(--bg-3); border:1px solid var(--line);
+  color:var(--fg-2); font-family:var(--mono); font-size:10px;
+  padding:4px 8px 4px 6px; border-radius:3px; cursor:pointer; }
+.dtf-modal .hd .back:hover { color:var(--fg); border-color:var(--fg-3); }
+.dtf-modal .hd svg { width:11px; height:11px; }
+.dtf-modal .bd { padding:12px; display:flex; flex-direction:column; gap:10px;
+  flex:1; overflow-y:auto; min-height:0; }
+.dtf-modal .row { display:grid; grid-template-columns:80px 1fr; gap:8px; align-items:start;
+  font-family:var(--mono); font-size:10.5px; color:var(--fg-3); }
+.dtf-modal .row .lbl { padding-top:6px; letter-spacing:.04em; text-transform:uppercase; font-size:9.5px; }
+.dtf-modal textarea { width:100%; min-height:80px; box-sizing:border-box;
+  padding:6px 8px; background:var(--bg-2); border:1px solid var(--line);
+  border-radius:3px; outline:none; resize:vertical;
+  color:var(--fg); font-family:var(--mono); font-size:11.5px; line-height:1.45; }
+.dtf-modal textarea:focus { border-color:color-mix(in oklab, var(--pri) 45%, var(--line)); }
+.dtf-modal .ft { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--line);
+  background:var(--bg-2); }
+.dtf-modal .ft .sp { flex:1; }
+.dtf-modal .ft button { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+  font-family:var(--mono); font-size:10.5px; padding:5px 10px; border-radius:3px; cursor:pointer; }
+.dtf-modal .ft button:hover { color:var(--fg); border-color:var(--fg-4); }
+.dtf-modal .ft button.primary { background:var(--warn-bg-strong);
+  color:var(--warn); border-color:var(--warn-border); }
+.dtf-modal .ft button.primary:hover { background:color-mix(in oklab, var(--warn) 30%, var(--bg-3)); }
+.dtf-modal .ft button.ghost { background:transparent; }
+.dtf-modal .err { color:var(--danger); font-family:var(--mono); font-size:10px;
+  padding:4px 8px; border:1px solid color-mix(in oklab, var(--danger) 30%, var(--line));
+  background:color-mix(in oklab, var(--danger) 10%, var(--bg-2)); border-radius:3px; }
+.dtf-discard { display:flex; align-items:center; gap:8px;
+  padding:8px 12px; border-bottom:1px solid var(--warn-border);
+  background:var(--warn-bg-overbar);
+  color:var(--fg); font-family:var(--mono); font-size:11px; }
+.dtf-discard svg { color:var(--warn); flex-shrink:0; width:11px; height:11px; }
+
+/* Inline form (bug / feature) \u2014 renders inside the panel body, not as a
+   modal. Same visual rhythm as .dtf-modal but flows in the panel layout. */
+.dtf-inline-form { display:flex; flex-direction:column; flex:1; min-height:0; }
+.dtf-inline-form .hd { display:flex; align-items:center; gap:8px;
+  padding:10px 12px; border-bottom:1px solid var(--line);
+  font-family:var(--mono); font-size:11px; color:var(--fg-2); }
+.dtf-inline-form .hd .k { color:var(--fg); flex:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.dtf-inline-form .hd .back { display:inline-flex; align-items:center; gap:4px;
+  background:var(--bg-3); border:1px solid var(--line);
+  color:var(--fg-2); font-family:var(--mono); font-size:10px;
+  padding:4px 8px 4px 6px; border-radius:3px; cursor:pointer; }
+.dtf-inline-form .hd .back:hover { color:var(--fg); border-color:var(--fg-3); }
+.dtf-inline-form .hd svg { width:11px; height:11px; }
+.dtf-inline-form .bd { padding:12px; display:flex; flex-direction:column; gap:10px;
+  flex:1; overflow-y:auto; min-height:0; }
+.dtf-inline-form .ft { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--line);
+  background:var(--bg-2); }
+.dtf-inline-form .ft .sp { flex:1; }
+.dtf-inline-form .ft button { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+  font-family:var(--mono); font-size:10.5px; padding:5px 10px; border-radius:3px; cursor:pointer; }
+.dtf-inline-form .ft button:hover { color:var(--fg); border-color:var(--fg-4); }
+.dtf-inline-form .ft button.primary { background:var(--warn-bg-strong);
+  color:var(--warn); border-color:var(--warn-border); }
+.dtf-inline-form .ft button.primary:hover { background:color-mix(in oklab, var(--warn) 30%, var(--bg-3)); }
+
+/* JSON tree editor */
+.json-tree { font-family:var(--mono); font-size:11px; max-height:340px; overflow:auto;
+  padding:2px; background:var(--bg-2); border:1px solid var(--line); border-radius:4px; }
+.json-row { display:flex; align-items:center; gap:8px; padding:3px 6px;
+  border-radius:3px; min-height:24px; }
+.json-row:hover { background:var(--bg-3); }
+.json-row.branch { color:var(--fg-2); cursor:pointer; }
+.json-row .caret { color:var(--fg-4); width:10px; display:inline-block; text-align:center; flex-shrink:0; }
+.json-row .key { color:var(--fg); flex-shrink:0; }
+.json-row .key.branch-key { color:var(--info); }
+.json-row .type { font-size:9px; padding:1px 4px; border-radius:2px;
+  letter-spacing:.04em; text-transform:uppercase; flex-shrink:0; }
+.json-row .type.t-number  { color:var(--info);   background:color-mix(in oklab, var(--info)   16%, var(--bg-3)); }
+.json-row .type.t-string  { color:var(--accent); background:color-mix(in oklab, var(--accent) 14%, var(--bg-3)); }
+.json-row .type.t-boolean { color:var(--warn);   background:color-mix(in oklab, var(--warn)   16%, var(--bg-3)); }
+.json-row .type.t-null    { color:var(--fg-3);   background:var(--bg-3); }
+.json-row .type.t-object,
+.json-row .type.t-array   { color:var(--fg-2);   background:var(--bg-3); }
+.type-tag { font-family:var(--mono); font-size:10px; font-weight:600;
+  padding:2px 7px; border-radius:3px;
+  letter-spacing:.05em; text-transform:uppercase; flex-shrink:0;
+  margin-left:6px; }
+.type-tag.t-number  { color:var(--info);   background:color-mix(in oklab, var(--info)   16%, var(--bg-3)); }
+.type-tag.t-string  { color:var(--accent); background:color-mix(in oklab, var(--accent) 14%, var(--bg-3)); }
+.type-tag.t-boolean { color:var(--warn);   background:color-mix(in oklab, var(--warn)   16%, var(--bg-3)); }
+.type-tag.t-null    { color:var(--fg-3);   background:var(--bg-3); }
+.type-tag.t-object,
+.type-tag.t-array   { color:var(--fg-2);   background:var(--bg-3); }
+.json-row .summary { color:var(--fg-3); font-size:10.5px; margin-left:auto; }
+.json-row .ctl { margin-left:auto; display:flex; align-items:center; gap:6px; }
+.json-row .ctl input[type=text],
+.json-row .ctl input[type=number] {
+  background:var(--bg-1); border:1px solid var(--line); color:var(--fg);
+  font-family:var(--mono); font-size:11px; padding:2px 6px; border-radius:3px;
+  outline:none; min-width:60px; width:140px; }
+.json-row .ctl input:focus { border-color:color-mix(in oklab, var(--accent) 40%, var(--line)); }
+.json-row .ctl.changed input { border-color:color-mix(in oklab, var(--warn) 50%, var(--line));
+  background:color-mix(in oklab, var(--warn) 7%, var(--bg-1)); }
+.json-row .ctl .bool { display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
+.json-row .ctl .bool button { background:var(--bg-1); border:0; color:var(--fg-3);
+  font-family:var(--mono); font-size:10.5px; padding:2px 8px; cursor:pointer; }
+.json-row .ctl .bool button.on { color:var(--accent); background:color-mix(in oklab, var(--accent) 14%, var(--bg-1)); }
+.json-row .ctl .bool button.on.f { color:var(--danger); background:color-mix(in oklab, var(--danger) 14%, var(--bg-1)); }
+.json-row .reset { background:transparent; border:0; color:var(--fg-4); cursor:pointer;
+  font-family:var(--mono); font-size:10px; padding:2px 4px; border-radius:2px;
+  visibility:hidden; }
+.json-row.dirty .reset { visibility:visible; color:var(--warn); }
+.json-row .reset:hover { color:var(--fg); background:var(--bg-1); }
+.json-children { margin-left:6px; border-left:1px dashed var(--line); padding-left:8px; }
+.json-tree > .json-children { margin-left:0; padding-left:0; border-left:0; }
+
+/* feedback (bugs / feature requests) */
+.se-fb-subtabs { display:flex; gap:0; padding:0 10px;
+  border-bottom:1px solid var(--line); background:var(--bg-1); }
+.se-fb-subtabs button { display:inline-flex; align-items:center; gap:6px;
+  background:transparent; border:0; color:var(--fg-3);
+  font-family:var(--mono); font-size:11px; padding:8px 10px;
+  cursor:pointer; border-bottom:1.5px solid transparent;
+  margin-bottom:-1px; }
+.se-fb-subtabs button:hover { color:var(--fg); }
+.se-fb-subtabs button.active { color:var(--fg); border-bottom-color:var(--accent); }
+.se-fb-subtabs button .c { font-family:var(--mono); font-size:10.5px;
+  color:var(--fg-2); background:var(--bg-3);
+  padding:1px 6px; border-radius:3px; }
+.se-fb-subtabs button.active .c { color:var(--accent);
+  background:color-mix(in oklab, var(--accent) 10%, var(--bg-3)); }
+.se-fb-subtabs button svg { width:11px; height:11px; }
+
+.se-feedback-head { display:flex; align-items:center; gap:6px;
+  padding:8px 10px; border-bottom:1px solid var(--line-2); }
+.se-feedback-head .grow { flex:1; }
+.se-feedback-list { display:flex; flex-direction:column; gap:1px; }
+.se-feedback-row { display:flex; align-items:center; gap:8px;
+  padding:8px 12px; border-bottom:1px solid var(--line-2);
+  color:var(--fg-2); cursor:pointer; text-decoration:none; }
+.se-feedback-row:hover { background:var(--bg-2); }
+.se-feedback-row.expanded { background:var(--bg-2); }
+.se-feedback-row .row-name { font-size:11.5px; color:var(--fg);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.se-feedback-row .row-sub { font-family:var(--mono); font-size:9.5px;
+  color:var(--fg-4); margin-top:2px; }
+.se-feedback-row .grow { flex:1; min-width:0; }
+.se-feedback-row .chev { color:var(--fg-4); font-size:10px; width:10px;
+  display:inline-block; text-align:center; flex-shrink:0;
+  transition:transform .15s ease; }
+.se-feedback-row.expanded .chev { transform:rotate(90deg); color:var(--fg-2); }
+.se-feedback-detail { display:grid; grid-template-rows:0fr;
+  transition:grid-template-rows .22s ease;
+  background:var(--bg-2); border-bottom:1px solid var(--line-2); }
+.se-feedback-detail.open { grid-template-rows:1fr; }
+.se-feedback-detail .inner { overflow:hidden; }
+@supports not (grid-template-rows: 1fr) {
+  .se-feedback-detail { display:block; max-height:0; overflow:hidden;
+    transition:max-height .22s ease; }
+  .se-feedback-detail.open { max-height:600px; }
+}
+.se-feedback-detail .pad { padding:10px 14px 12px 30px;
+  display:flex; flex-direction:column; gap:8px; }
+.se-fb-block { font-size:11.5px; color:var(--fg-2); line-height:1.45;
+  white-space:pre-wrap; }
+.se-fb-section { display:flex; flex-direction:column; gap:3px; }
+.se-fb-section .lbl { font-family:var(--mono); font-size:9.5px; color:var(--fg-4);
+  letter-spacing:.06em; text-transform:uppercase; }
+.se-fb-meta { display:grid; grid-template-columns:auto 1fr; gap:3px 12px;
+  font-family:var(--mono); font-size:10px; color:var(--fg-2);
+  padding-top:6px; border-top:1px dashed var(--line-2); }
+.se-fb-meta .k { color:var(--fg-4); letter-spacing:.04em; text-transform:uppercase; font-size:9.5px; }
+.se-fb-actions { display:flex; gap:5px; }
+
+.badge { font-family:var(--mono); font-size:9px; font-weight:600;
+  letter-spacing:0.04em; padding:2px 7px; border-radius:999px;
+  white-space:nowrap; flex-shrink:0; border:1px solid transparent;
+  text-transform:uppercase; }
+.badge-on  { background:color-mix(in oklab, var(--accent) 14%, transparent);
+  color:var(--accent); border-color:color-mix(in oklab, var(--accent) 30%, transparent); }
+.badge-off { background:color-mix(in oklab, var(--danger) 14%, transparent);
+  color:var(--danger); border-color:color-mix(in oklab, var(--danger) 30%, transparent); }
+.badge-run { background:color-mix(in oklab, var(--pri) 14%, transparent);
+  color:var(--pri); border-color:color-mix(in oklab, var(--pri) 30%, transparent); }
+.badge-warn { background:color-mix(in oklab, var(--warn) 14%, transparent);
+  color:var(--warn); border-color:color-mix(in oklab, var(--warn) 30%, transparent); }
+.badge-draft { background:var(--bg-2); color:var(--fg-3); border-color:var(--line-2); }
+
+/* form (used by bug + feature modals) */
+.dtf-modal.lg { width:100%; max-width:100%; }
+.se-form { display:flex; flex-direction:column; gap:10px; padding:12px; }
+.se-field { display:flex; flex-direction:column; gap:4px; }
+.se-field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.se-label { font-family:var(--mono); font-size:9.5px; color:var(--fg-3);
+  letter-spacing:.04em; text-transform:uppercase; }
+.se-input { background:var(--bg-2); border:1px solid var(--line);
+  border-radius:4px; padding:6px 8px; color:var(--fg);
+  font-family:var(--sans); font-size:12px; line-height:1.4;
+  outline:none; box-sizing:border-box; }
+.se-input:focus { border-color:color-mix(in oklab, var(--accent) 45%, var(--line)); }
+.se-textarea { resize:vertical; min-height:54px; font-family:var(--sans); }
+.se-actions { display:flex; gap:6px; flex-wrap:wrap; }
+.se-actions .ibtn { display:inline-flex; align-items:center; gap:5px; }
+.se-attach-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px; }
+.se-attach-card { position:relative; background:var(--bg-2);
+  border:1px solid var(--line); border-radius:5px; overflow:hidden;
+  display:flex; flex-direction:column;
+  animation:dtf-attach-in .18s cubic-bezier(.2,.8,.3,1); }
+@keyframes dtf-attach-in {
+  from { opacity:0; transform:scale(.94) translateY(2px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+.se-attach-card .preview { position:relative; height:96px; overflow:hidden;
+  background:var(--bg-3); display:grid; place-items:center; color:var(--fg-3); }
+.se-attach-card .preview svg { width:22px; height:22px; }
+.se-attach-card .preview.screenshot {
   background:
-    linear-gradient(180deg, color-mix(in oklab, var(--se-accent) 8%, transparent), transparent 60%),
-    var(--se-bg);
-  border: 1px solid var(--se-line-2);
+    linear-gradient(180deg, color-mix(in oklab, var(--pri) 14%, var(--bg-3)) 0 12%, transparent 12%),
+    linear-gradient(180deg, transparent 30%, color-mix(in oklab, var(--accent) 10%, transparent) 30% 32%, transparent 32%),
+    linear-gradient(180deg, transparent 70%, color-mix(in oklab, var(--warn) 14%, transparent) 70% 76%, transparent 76%),
+    linear-gradient(135deg, var(--bg-2), var(--bg-3));
 }
+.se-attach-card .preview.recording {
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--bg-1) 60%, transparent), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 28px, rgba(255,255,255,0.025) 28px 29px),
+    linear-gradient(135deg, var(--bg-3), var(--bg-1));
+}
+.se-attach-card .preview.recording .play { width:32px; height:32px; border-radius:50%;
+  background:rgba(255,255,255,0.08); backdrop-filter:blur(2px);
+  display:grid; place-items:center; color:var(--fg);
+  box-shadow:0 0 0 1px rgba(255,255,255,0.12); }
+.se-attach-card .preview.recording .dur { position:absolute; right:6px; bottom:6px;
+  font-family:var(--mono); font-size:9.5px; color:var(--fg);
+  background:rgba(0,0,0,0.6); padding:1px 5px; border-radius:2px;
+  letter-spacing:.04em; }
+.se-attach-card .preview.file .ext { font-family:var(--mono); font-size:11px;
+  font-weight:600; color:var(--fg-2); padding:3px 8px;
+  background:var(--bg-1); border:1px solid var(--line); border-radius:3px;
+  margin-top:6px; letter-spacing:.06em; text-transform:uppercase; }
+.se-attach-card .meta { display:flex; align-items:center; gap:6px;
+  padding:6px 8px; border-top:1px solid var(--line-2);
+  font-family:var(--mono); font-size:10px; }
+.se-attach-card .meta .ic { color:var(--fg-3); display:grid; place-items:center; flex-shrink:0; }
+.se-attach-card .meta .ic svg { width:11px; height:11px; }
+.se-attach-card .meta .name { color:var(--fg); flex:1; min-width:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.se-attach-card .meta .size { color:var(--fg-3); flex-shrink:0; }
+.se-attach-card .rm { position:absolute; top:5px; right:5px;
+  width:22px; height:22px; border-radius:4px; border:0;
+  background:rgba(0,0,0,0.7); color:var(--fg);
+  display:grid; place-items:center; cursor:pointer;
+  opacity:.7; transition:opacity .12s, background .12s; }
+.se-attach-card:hover .rm { opacity:1; }
+.se-attach-card .rm:hover { background:var(--danger); opacity:1; }
+.se-attach-card .rm svg { width:11px; height:11px; }
+.se-attach-card .progress { position:absolute; left:0; right:0; bottom:0;
+  height:2px; background:rgba(255,255,255,0.06); overflow:hidden; }
+.se-attach-card .progress .fill { height:100%; background:var(--pri);
+  box-shadow:0 0 6px var(--pri); transition:width .15s linear; }
+.se-status { font-family:var(--mono); font-size:10px; color:var(--fg-3);
+  min-height:14px; }
+.se-status.err { color:var(--danger); }
 
-/* Drag handle \u2014 doubles as the ShipEasy brand mark. */
-.drag-handle {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--se-r-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  font-size: 15px;
-  color: var(--se-accent);
-  user-select: none;
-  flex-shrink: 0;
-  touch-action: none;
-  background: var(--se-accent-soft);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 30%, transparent);
-}
-.drag-handle:hover {
-  background: color-mix(in oklab, var(--se-accent) 22%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 50%, transparent);
-}
-.drag-handle.dragging {
-  cursor: grabbing;
-  color: var(--se-accent-fg);
-  background: var(--se-accent);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--se-accent) 40%, transparent);
-}
+.ibtn { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+  font-family:var(--mono); font-size:10.5px; padding:4px 9px; border-radius:3px;
+  cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px; line-height:1.4; }
+.ibtn:hover { color:var(--fg); border-color:var(--fg-4); background:var(--bg-2); }
+.ibtn.pri { background:color-mix(in oklab, var(--pri) 16%, var(--bg-3));
+  color:var(--pri); border-color:color-mix(in oklab, var(--pri) 35%, var(--line)); }
+.ibtn.pri:hover { background:color-mix(in oklab, var(--pri) 26%, var(--bg-3)); }
+.ibtn.danger { color:var(--danger); border-color:color-mix(in oklab, var(--danger) 28%, var(--line)); }
+.ibtn.danger:hover { background:color-mix(in oklab, var(--danger) 18%, var(--bg-3)); color:var(--fg); }
+.ibtn.recording { background:color-mix(in oklab, var(--danger) 18%, var(--bg-3));
+  color:var(--danger); border-color:color-mix(in oklab, var(--danger) 35%, var(--line)); }
+.ibtn svg { width:11px; height:11px; }
 
-.btn {
-  all: unset;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--se-r-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--se-fg-3);
-  transition: background 0.12s, color 0.12s;
-}
-.btn svg { width: 18px; height: 18px; display: block; }
-.btn:hover { background: var(--se-bg-2); color: var(--se-fg); }
-.btn.active {
-  background: var(--se-accent-soft);
-  color: var(--se-accent);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--se-accent) 32%, transparent);
-}
-.drag-handle svg { width: 18px; height: 18px; display: block; }
+.se-empty { padding:24px 16px; text-align:center; color:var(--fg-3); font-size:11.5px; }
 
-/* Panel \u2014 position/size/borderRadius/boxShadow/border-one-side set by JS */
-.panel {
-  position: fixed;
-  z-index: 2147483645;
-  display: flex;
-  flex-direction: column;
-  background: var(--se-bg);
-  border: 1px solid var(--se-line-2);
-  overflow: hidden;
-  font-family: var(--se-sans);
-  font-size: 13px;
-  color: var(--se-fg);
-  /* open/close animation */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s, transform 0.18s cubic-bezier(0.4,0,0.2,1);
-}
-.panel:not(.open)[data-edge="right"]  { transform: translateX(14px); }
-.panel:not(.open)[data-edge="left"]   { transform: translateX(-14px); }
-.panel:not(.open)[data-edge="top"]    { transform: translateY(-14px); }
-.panel:not(.open)[data-edge="bottom"] { transform: translateY(14px); }
-.panel.open { opacity: 1; pointer-events: auto; }
+/* auth-locked modal \u2014 covers the whole panel pane when no session */
+.auth-locked { position:absolute; inset:0; z-index:50;
+  background:rgba(5,5,7,0.78); backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center;
+  padding:18px;
+  animation:dtf-modal-bg-in .16s ease-out; }
+.auth-locked-card { width:100%; max-width:340px;
+  background:linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  border:1px solid var(--line); border-radius:8px;
+  padding:22px 20px;
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+  box-shadow:0 24px 60px -16px rgba(0,0,0,0.7);
+  animation:dtf-modal-in .18s cubic-bezier(.2,.8,.3,1); }
+.auth-locked-card .ic-big {
+  width:54px; height:54px; border-radius:50%;
+  display:grid; place-items:center; color:var(--accent);
+  background:radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--accent) 26%, var(--bg-2)), var(--bg-1));
+  border:1px solid color-mix(in oklab, var(--accent) 28%, var(--line));
+  box-shadow:0 0 24px -6px color-mix(in oklab, var(--accent) 30%, transparent); }
+.auth-locked-card .ic-big svg { width:22px; height:22px; }
+.auth-locked-card h2 { margin:0; font-size:18px; font-weight:500; letter-spacing:-0.01em;
+  color:var(--fg); text-align:center; line-height:1.2; }
+.auth-locked-card h2 em { font-family:var(--serif); font-style:italic; color:var(--accent); font-weight:400; }
+.auth-locked-card p { margin:0; font-size:11.5px; color:var(--fg-3); text-align:center;
+  line-height:1.5; max-width:280px; }
+.auth-locked-card .features { width:100%;
+  display:flex; flex-direction:column; gap:5px;
+  margin:4px 0 6px;
+  font-family:var(--mono); font-size:10.5px; color:var(--fg-2); }
+.auth-locked-card .features .row { display:flex; align-items:center; gap:9px;
+  padding:6px 9px; background:var(--bg-2); border:1px solid var(--line);
+  border-radius:4px; }
+.auth-locked-card .features .row .ic { width:16px; height:16px; display:grid; place-items:center;
+  color:var(--accent); flex-shrink:0; }
+.auth-locked-card .features .row .ic svg { width:11px; height:11px; }
+.auth-locked-card .features .row .k { color:var(--fg); }
+.auth-locked-card .features .row .d { color:var(--fg-3); margin-left:auto; font-size:10px; }
+.auth-locked-card .cta {
+  width:100%; padding:9px 12px; margin-top:4px;
+  background:color-mix(in oklab, var(--accent) 18%, var(--bg-3));
+  color:var(--accent);
+  border:1px solid color-mix(in oklab, var(--accent) 35%, var(--line));
+  border-radius:4px; cursor:pointer;
+  font-family:var(--sans); font-size:13px; font-weight:500;
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  transition:background .12s, color .12s; }
+.auth-locked-card .cta:hover:not(:disabled) {
+  background:color-mix(in oklab, var(--accent) 28%, var(--bg-3));
+  color:var(--fg); }
+.auth-locked-card .cta:disabled { opacity:.6; cursor:default; }
+.auth-locked-card .cta .spin { width:11px; height:11px; border-radius:50%;
+  border:1.5px solid color-mix(in oklab, var(--accent) 22%, transparent);
+  border-top-color:var(--accent);
+  animation:dtf-spin .9s linear infinite; }
+.auth-locked-card .meta { font-family:var(--mono); font-size:9.5px; color:var(--fg-4);
+  text-align:center; letter-spacing:.04em; }
+.auth-locked-card .status { font-family:var(--mono); font-size:10px; color:var(--accent);
+  min-height:14px; text-align:center; }
+.auth-locked-card .err { font-family:var(--mono); font-size:10px; color:var(--danger);
+  padding:5px 9px; border:1px solid color-mix(in oklab, var(--danger) 28%, var(--line));
+  background:color-mix(in oklab, var(--danger) 8%, var(--bg-2));
+  border-radius:3px; width:100%; box-sizing:border-box; text-align:center; }
 
-/* Resize handle \u2014 position/size/cursor set by JS.
-   A centered pill is always visible so the affordance is discoverable. */
-.resize-handle {
-  position: absolute;
-  z-index: 10;
-  background: transparent;
-  transition: background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.resize-handle::before {
-  content: "";
-  background: var(--se-fg-3);
-  border-radius: 999px;
-  opacity: 0.9;
-  transition: opacity 0.15s, background 0.15s, transform 0.15s;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
-}
-.resize-handle[data-dir="ew"]::before { width: 4px;  height: 56px; }
-.resize-handle[data-dir="ns"]::before { width: 56px; height: 4px;  }
-.resize-handle:hover, .resize-handle.dragging { background: var(--se-accent-soft); }
-.resize-handle:hover::before, .resize-handle.dragging::before {
-  background: var(--se-accent); opacity: 1; transform: scale(1.15);
-}
-
-/* Panel inner layout */
-.panel-inner {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-.panel-head {
-  display: flex;
-  align-items: center;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--se-line);
-  gap: 10px;
-  flex-shrink: 0;
-  background: var(--se-bg-1);
-}
-/* Brand mark \u2014 conic gradient square that matches the marketing site logo. */
-.panel-head .mk {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: conic-gradient(from 140deg, var(--se-accent), #0a0a0b 40%, var(--se-accent) 80%);
-  box-shadow: 0 0 0 1px var(--se-line-2);
-  position: relative;
-  flex-shrink: 0;
-}
-.panel-head .mk::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  background: var(--se-bg);
-  border-radius: 3px;
-}
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  flex: 1;
-  color: var(--se-fg);
-  min-width: 0;
-  line-height: 1.2;
-}
-.panel-title-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: var(--se-accent-soft);
-  color: var(--se-accent);
-  flex-shrink: 0;
-}
-.panel-title-icon svg { width: 14px; height: 14px; display: block; }
-.panel-title-label { white-space: nowrap; }
-.panel-title .sub {
-  display: block;
-  margin-left: auto;
-  padding-left: 8px;
-  font-family: var(--se-mono);
-  font-size: 10px;
-  color: var(--se-fg-4);
-  letter-spacing: 0.05em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.panel-head .live {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--se-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.06em;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: var(--se-accent-soft);
-  color: var(--se-accent);
-  border: 1px solid color-mix(in oklab, var(--se-accent) 30%, transparent);
-}
-.panel-head .live .dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--se-accent);
-  box-shadow: 0 0 6px var(--se-accent);
-}
-.close {
-  all: unset;
-  cursor: pointer;
-  color: var(--se-fg-3);
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-.close svg { width: 14px; height: 14px; display: block; }
-.close:hover { color: var(--se-fg); background: var(--se-bg-2); }
-
-.panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 6px 4px;
-  min-height: 0;
-  background: var(--se-bg);
-}
-.panel-body::-webkit-scrollbar { width: 6px; }
-.panel-body::-webkit-scrollbar-track { background: transparent; }
-.panel-body::-webkit-scrollbar-thumb { background: var(--se-line-2); border-radius: 3px; }
-
-.panel-footer {
-  padding: 8px 12px;
-  border-top: 1px solid var(--se-line);
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  row-gap: 6px;
-  background: var(--se-bg-1);
-  align-items: center;
-}
-.panel-footer .foot-status {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.panel-footer .ibtn { flex-shrink: 0; }
-
-/* Per-panel control bar that sits above the global Sign-out / Clear-overrides footer. */
-.panel-subfoot {
-  padding: 6px 10px;
-  border-top: 1px solid var(--se-line);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  background: var(--se-bg-1);
-}
-.panel-subfoot:empty {
-  display: none;
-}
-.subfoot-btn {
-  all: unset;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: var(--se-r-sm);
-  color: var(--se-fg-3);
-  border: 1px solid var(--se-line-2);
-  background: var(--se-bg-2);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.subfoot-btn:hover { background: var(--se-bg-3); color: var(--se-fg); }
-.subfoot-btn.dim { color: var(--se-fg-4); cursor: default; }
-.subfoot-btn.dim:hover { background: var(--se-bg-2); color: var(--se-fg-4); }
-.subfoot-btn.on {
-  background: var(--se-accent-soft);
-  color: var(--se-accent);
-  border-color: color-mix(in oklab, var(--se-accent) 30%, transparent);
-}
-.subfoot-btn .dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--se-fg-4);
-}
-.subfoot-btn.on .dot { background: var(--se-accent); box-shadow: 0 0 0 3px var(--se-accent-soft); }
-.subfoot-sel {
-  all: unset;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: var(--se-r-sm);
-  background: var(--se-bg-2);
-  color: var(--se-fg-3);
-  border: 1px solid var(--se-line-2);
-  max-width: 110px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.subfoot-sel:focus { border-color: var(--se-accent); }
-
-/* Row list \u2014 mirrors the design's .dt-item: icon \xB7 label \xB7 value \xB7 control. */
-.row {
-  display: flex;
-  align-items: center;
-  padding: 9px 10px;
-  border-radius: 6px;
-  gap: 10px;
-  margin-bottom: 1px;
-}
-.row:hover { background: var(--se-bg-1); }
-
-/* Tabular layout \u2014 for gates / configs / experiments lists where columns
-   should align across rows. Wrapping table in .dt-scroll keeps the panel
-   chrome (header, footer) fixed while the table body scrolls when content
-   exceeds panel width or height. */
-.dt-scroll {
-  overflow: auto;
-  width: 100%;
-  max-height: 100%;
-}
-.dt-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.dt-table th,
-.dt-table td {
-  padding: 7px 8px;
-  vertical-align: middle;
-  border-bottom: 1px solid var(--se-line);
-  text-align: left;
-}
-.dt-table tr:last-child td { border-bottom: none; }
-.dt-table tbody tr:hover { background: var(--se-bg-1); }
-.dt-table th {
-  font-family: var(--se-mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--se-fg-4);
-  padding-top: 6px;
-  padding-bottom: 6px;
-  background: var(--se-bg-1);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  white-space: nowrap;
-}
-.dt-table td.col-name {
-  font-family: var(--se-mono);
-  font-size: 11.5px;
-  color: var(--se-fg-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  max-width: 200px;
-}
-.dt-table td.col-sub {
-  font-family: var(--se-mono);
-  font-size: 10.5px;
-  color: var(--se-fg-4);
-  white-space: nowrap;
-  text-align: right;
-}
-.dt-table td.col-value {
-  font-family: var(--se-mono);
-  font-size: 11px;
-  color: var(--se-fg-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 180px;
-}
-.dt-table td.col-control { text-align: right; white-space: nowrap; }
-.dt-table td.col-badge   { text-align: center; white-space: nowrap; }
-.row-ic {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--se-r-sm);
-  background: var(--se-bg-3);
-  border: 1px solid var(--se-line-2);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  font-size: 11px;
-  color: var(--se-fg-3);
-}
-.row-name {
-  flex: 1;
-  font-family: var(--se-mono);
-  font-size: 12px;
-  color: var(--se-fg-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.row-sub {
-  font-family: var(--se-mono);
-  font-size: 10.5px;
-  color: var(--se-fg-4);
-  margin-top: 2px;
-  letter-spacing: 0.02em;
-}
-
-/* Badges */
-.badge {
-  font-family: var(--se-mono);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 2px 7px;
-  border-radius: 999px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  border: 1px solid transparent;
-}
-.badge-on  {
-  background: var(--se-accent-soft);
-  color: var(--se-accent);
-  border-color: color-mix(in oklab, var(--se-accent) 30%, transparent);
-}
-.badge-off {
-  background: var(--se-danger-soft);
-  color: var(--se-danger);
-  border-color: color-mix(in oklab, var(--se-danger) 30%, transparent);
-}
-.badge-run {
-  background: rgba(96,165,250,0.14);
-  color: #60a5fa;
-  border-color: rgba(96,165,250,0.30);
-}
-.badge-draft, .badge-stop {
-  background: var(--se-bg-2);
-  color: var(--se-fg-4);
-  border-color: var(--se-line-2);
-}
-
-/* Toggle group */
-.tog {
-  display: flex;
-  border-radius: var(--se-r-sm);
-  overflow: hidden;
-  border: 1px solid var(--se-line-2);
-  flex-shrink: 0;
-  background: var(--se-bg-2);
-}
-.tog-btn {
-  all: unset;
-  cursor: pointer;
-  font-family: var(--se-mono);
-  font-size: 10px;
-  padding: 3px 7px;
-  color: var(--se-fg-4);
-  background: transparent;
-  transition: background 0.1s, color 0.1s;
-  white-space: nowrap;
-  letter-spacing: 0.04em;
-}
-.tog-btn:hover { background: var(--se-bg-3); color: var(--se-fg-3); }
-.tog-btn.sel { background: var(--se-accent); color: var(--se-accent-fg); }
-
-/* Buttons */
-.ibtn {
-  all: unset;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 4px 10px;
-  border-radius: var(--se-r-sm);
-  background: var(--se-bg-2);
-  color: var(--se-fg-3);
-  border: 1px solid var(--se-line-2);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.ibtn:hover { background: var(--se-bg-3); color: var(--se-fg); }
-.ibtn.pri {
-  background: var(--se-accent);
-  color: var(--se-accent-fg);
-  border-color: transparent;
-  font-weight: 500;
-}
-.ibtn.pri:hover { background: color-mix(in oklab, var(--se-accent) 88%, white); }
-.ibtn.danger {
-  color: var(--se-danger);
-  border-color: color-mix(in oklab, var(--se-danger) 30%, transparent);
-  background: var(--se-danger-soft);
-}
-.ibtn.danger:hover { background: color-mix(in oklab, var(--se-danger) 22%, transparent); color: var(--se-fg); }
-.ibtn:disabled { opacity: 0.4; cursor: default; }
-
-/* Select */
-.sel-input {
-  all: unset;
-  cursor: pointer;
-  font-family: var(--se-mono);
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: var(--se-r-sm);
-  background: var(--se-bg-2);
-  color: var(--se-fg-2);
-  border: 1px solid var(--se-line-2);
-  flex-shrink: 0;
-}
-.sel-input:focus { border-color: var(--se-accent); }
-
-/* Config value editor */
-.mono {
-  font-family: var(--se-mono);
-  font-size: 11px;
-  color: var(--se-fg-3);
-}
-.val-display {
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-textarea.editor {
-  all: unset;
-  display: block;
-  width: 100%;
-  padding: 8px;
-  background: var(--se-bg-2);
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-sm);
-  color: var(--se-fg);
-  font-family: var(--se-mono);
-  font-size: 11px;
-  resize: vertical;
-  min-height: 56px;
-  line-height: 1.5;
-  margin-top: 4px;
-}
-textarea.editor:focus { border-color: var(--se-accent); outline: none; }
-.edit-row { display: flex; gap: 4px; margin-top: 4px; }
-
-/* Tabs */
-.tabs {
-  display: flex;
-  border-bottom: 1px solid var(--se-line);
-  flex-shrink: 0;
-  padding: 0 8px;
-  gap: 2px;
-  background: var(--se-bg-1);
-}
-.tab {
-  all: unset;
-  cursor: pointer;
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 8px 10px;
-  color: var(--se-fg-3);
-  border-bottom: 1.5px solid transparent;
-  margin-bottom: -1px;
-  transition: color 0.12s, border-color 0.12s;
-  white-space: nowrap;
-}
-.tab:hover { color: var(--se-fg-2); }
-.tab.active { color: var(--se-fg); border-bottom-color: var(--se-accent); }
-
-/* Section header \u2014 mono uppercase with optional right-aligned counter (.sec-c). */
-.sec-head {
-  display: flex;
-  align-items: center;
-  font-family: var(--se-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--se-fg-4);
-  padding: 9px 14px;
-  background: var(--se-bg-1);
-  border-top: 1px solid var(--se-line);
-  border-bottom: 1px solid var(--se-line);
-  margin: 6px -4px 4px;
-}
-.sec-head .sec-c {
-  margin-left: auto;
-  letter-spacing: 0;
-  text-transform: none;
-  font-size: 10.5px;
-  color: var(--se-fg-4);
-}
-
-/* Auth \u2014 vertically centered inside panel-body; no footer renders here */
-.panel-body.auth-mode {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.auth-box {
-  width: 100%;
-  max-width: 280px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: stretch;
-  text-align: center;
-}
-.auth-icon {
-  width: 36px; height: 36px;
-  margin: 0 auto 4px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, color-mix(in oklab, var(--se-accent) 80%, black) 0%, var(--se-accent) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  box-shadow: 0 0 0 1px var(--se-line-2);
-}
-.auth-title { font-size: 14px; font-weight: 600; color: var(--se-fg); }
-.auth-desc  { font-size: 11.5px; color: var(--se-fg-3); line-height: 1.5; }
-.auth-status { font-size: 11px; color: var(--se-fg-3); min-height: 14px; }
-.auth-err    { font-size: 11px; color: var(--se-danger); line-height: 1.4; }
-
-/* States */
-.loading { text-align: center; padding: 24px; color: var(--se-fg-4); font-size: 12px; }
-.empty   { text-align: center; padding: 24px; color: var(--se-fg-4); font-size: 12px; }
-.err     { text-align: center; padding: 24px; color: var(--se-danger); font-size: 12px; }
-
-/* Empty state with call-to-action */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 28px 20px;
-  text-align: center;
-  min-height: 160px;
-}
-.empty-icon {
-  width: 44px; height: 44px;
-  border-radius: 12px;
-  background: var(--se-bg-2);
-  border: 1px solid var(--se-line-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: var(--se-fg-3);
-}
-.empty-title { font-size: 13px; font-weight: 600; color: var(--se-fg-2); }
-.empty-msg   { font-size: 11.5px; color: var(--se-fg-3); line-height: 1.5; max-width: 240px; }
-.empty-cta {
-  all: unset;
-  cursor: pointer;
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 6px;
-  background: var(--se-accent);
-  color: var(--se-accent-fg);
-  text-decoration: none;
-  transition: background 0.12s;
-  margin-top: 4px;
-}
-.empty-cta:hover { background: color-mix(in oklab, var(--se-accent) 88%, white); }
-
-/* Switch */
-.sw { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-.sw-track {
-  width: 30px; height: 16px; border-radius: 8px;
-  background: var(--se-bg-3); position: relative;
-  transition: background 0.15s; flex-shrink: 0;
-  border: 1px solid var(--se-line-2);
-}
-.sw-track.on { background: var(--se-accent); border-color: transparent; }
-.sw-thumb {
-  position: absolute; width: 12px; height: 12px;
-  border-radius: 6px; background: #fff;
-  top: 1px; left: 1px; transition: transform 0.15s;
-}
-.sw-track.on .sw-thumb { transform: translateX(14px); }
-.sw-label { font-size: 12px; color: var(--se-fg-2); }
-
-/* Foot status \u2014 green dot + small mono text, right-aligned shortcuts. */
-.foot-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--se-fg-3);
-  margin-right: auto;
-}
-.foot-status .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--se-accent);
-  box-shadow: 0 0 6px var(--se-accent);
-}
-.foot-status b { font-weight: 500; color: var(--se-fg-2); }
-.foot-hint {
-  font-family: var(--se-mono);
-  font-size: 10px;
-  color: var(--se-fg-4);
-  letter-spacing: 0.03em;
-}
-
-/* Horizontally scrollable tab bar (for many chunk tabs) */
-.tabs.scroll {
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tabs.scroll::-webkit-scrollbar { display: none; }
-
-/* i18n tree view */
-.tree-row {
-  display: flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: var(--se-r-sm);
-  gap: 8px;
-  font-size: 11.5px;
-  line-height: 1.4;
-  min-height: 22px;
-}
-.tree-row:hover { background: var(--se-bg-1); }
-.tree-row.branch > .tree-seg { color: var(--se-fg-2); font-weight: 600; }
-/* Leaf rows render as a 2-column grid so the key segment and value align
-   like table columns across every row, regardless of segment length. The
-   indent (depth padding) is applied via inline padding-left on the row. */
-.tree-row.leaf {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: 12px;
-}
-.tree-row.leaf > .tree-seg {
-  color: var(--se-fg-2);
-  font-family: var(--se-mono);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-.tree-row.leaf > .tree-val {
-  text-align: right;
-  color: var(--se-fg-3);
-  font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-.tree-row.leaf > .tree-val.overridden {
-  color: var(--se-accent);
-  font-style: normal;
-}
-.tree-row .tree-caret {
-  display: inline-block;
-  width: 10px;
-  color: var(--se-fg-3);
-  font-size: 9px;
-  transition: transform 0.12s;
-}
-.tree-row.branch[data-branch] {
-  cursor: pointer;
-  user-select: none;
-}
-.tree-row.branch[data-branch]:focus-visible {
-  outline: 2px solid var(--se-accent);
-  outline-offset: -2px;
-}
-.tree-branch.collapsed > .tree-children { display: none; }
-
-/* Label popper \u2014 floats next to a page [data-label] element */
-.label-popper {
-  position: fixed;
-  z-index: 2147483647;
-  width: 300px;
-  max-width: calc(100vw - 24px);
-  background: var(--se-bg);
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-lg);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.55);
-  font-family: var(--se-sans);
-  font-size: 12px;
-  color: var(--se-fg);
-  overflow: hidden;
-  animation: lp-in 0.12s ease-out;
-}
-@keyframes lp-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.lp-head {
-  display: flex;
-  align-items: center;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--se-line);
-  gap: 8px;
-  background: var(--se-bg-1);
-}
-.lp-key {
-  flex: 1;
-  font-family: var(--se-mono);
-  font-size: 11px;
-  color: var(--se-accent);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.lp-close {
-  all: unset;
-  cursor: pointer;
-  color: var(--se-fg-3);
-  width: 20px; height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  font-size: 13px;
-}
-.lp-close:hover { color: var(--se-fg); background: var(--se-bg-2); }
-.lp-tabs {
-  display: flex;
-  gap: 2px;
-  padding: 0 8px;
-  background: var(--se-bg-1);
-  border-bottom: 1px solid var(--se-line);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.lp-tabs::-webkit-scrollbar { display: none; }
-.lp-tab {
-  all: unset;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 7px 9px;
-  color: var(--se-fg-3);
-  border-bottom: 1.5px solid transparent;
-  margin-bottom: -1px;
-  white-space: nowrap;
-  transition: color 0.12s, border-color 0.12s;
-}
-.lp-tab:hover { color: var(--se-fg-2); }
-.lp-tab.active { color: var(--se-fg); border-bottom-color: var(--se-accent); }
-.lp-tab .lp-tab-attr {
-  font-family: var(--se-mono);
-  font-size: 10px;
-  color: var(--se-fg-4);
-  margin-left: 4px;
-}
-.lp-tab.active .lp-tab-attr { color: var(--se-accent); }
-.lp-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
-.lp-field { display: flex; flex-direction: column; gap: 3px; }
-.lp-field > label {
-  font-family: var(--se-mono);
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--se-fg-4);
-}
-.lp-field > span {
-  font-size: 11px;
-  color: var(--se-fg-2);
-  line-height: 1.4;
-}
-.lp-field > span.empty { color: var(--se-fg-4); font-style: italic; }
-.lp-vars {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 6px 8px;
-  background: var(--se-bg-2);
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-sm);
-}
-.lp-var {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-  font-size: 11px;
-  line-height: 1.4;
-}
-.lp-var-k {
-  color: var(--se-accent, var(--se-fg-2));
-  flex-shrink: 0;
-}
-.lp-var-k::after { content: ":"; color: var(--se-fg-4); margin-left: 1px; }
-.lp-var-v {
-  color: var(--se-fg);
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-.lp-input {
-  all: unset;
-  display: block;
-  width: 100%;
-  padding: 7px 9px;
-  background: var(--se-bg-2);
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-sm);
-  color: var(--se-fg);
-  font-size: 12px;
-  line-height: 1.4;
-  min-height: 52px;
-  font-family: var(--se-sans);
-  box-sizing: border-box;
-  resize: vertical;
-}
-.lp-input:focus { border-color: var(--se-accent); outline: none; }
-.lp-actions {
-  display: flex;
-  gap: 6px;
-  padding: 8px 12px;
-  background: var(--se-bg-1);
-  border-top: 1px solid var(--se-line);
-  justify-content: flex-end;
-}
-.lp-err {
-  padding: 4px 12px 8px;
-  font-size: 11px;
-  color: var(--se-red, #f87171);
-  min-height: 0;
-}
-
-/* \u2500\u2500 Feedback (bugs / feature requests) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
-.se-feedback-head {
-  display: flex;
-  gap: 6px;
-  padding: 6px 6px 8px;
-  align-items: center;
-}
-.se-feedback-head .ibtn { flex-shrink: 0; }
-.se-feedback-list { display: flex; flex-direction: column; gap: 1px; }
-.se-feedback-row {
-  text-decoration: none;
-  color: inherit;
-}
-
-/* \u2500\u2500 Modal \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
-.se-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2147483647;
-  background: rgba(0,0,0,0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  font-family: var(--se-sans);
-  color: var(--se-fg);
-  animation: se-modal-fade 0.12s ease-out;
-}
-@keyframes se-modal-fade { from { opacity: 0; } to { opacity: 1; } }
-.se-modal {
-  background: var(--se-bg);
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-lg);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 48px);
-  width: 100%;
-  overflow: hidden;
-}
-.se-modal-md { max-width: 480px; }
-.se-modal-lg { max-width: 720px; }
-.se-modal-head {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--se-line);
-  gap: 10px;
-  background: var(--se-bg-1);
-  flex-shrink: 0;
-}
-.se-modal-title { flex: 1; font-size: 14px; font-weight: 600; }
-.se-modal-close {
-  all: unset;
-  cursor: pointer;
-  color: var(--se-fg-3);
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-.se-modal-close svg { width: 14px; height: 14px; }
-.se-modal-close:hover { color: var(--se-fg); background: var(--se-bg-2); }
-.se-modal-body {
-  padding: 14px 16px;
-  overflow-y: auto;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 13px;
-}
-.se-modal-footer {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  padding-top: 8px;
-  border-top: 1px solid var(--se-line);
-  margin-top: auto;
-}
-
-/* \u2500\u2500 Form \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
-.se-form { display: flex; flex-direction: column; gap: 12px; }
-.se-field { display: flex; flex-direction: column; gap: 4px; }
-.se-field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 520px) {
-  .se-field-row { grid-template-columns: 1fr; }
-}
-.se-label {
-  font-family: var(--se-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--se-fg-4);
-}
-.se-input {
-  all: unset;
-  display: block;
-  width: 100%;
-  padding: 8px 10px;
-  background: var(--se-bg-2);
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-sm);
-  color: var(--se-fg);
-  font-size: 12.5px;
-  line-height: 1.45;
-  font-family: var(--se-sans);
-  box-sizing: border-box;
-}
-.se-input:focus { border-color: var(--se-accent); outline: none; }
-.se-textarea { resize: vertical; min-height: 64px; font-family: var(--se-sans); }
-select.se-input { cursor: pointer; }
-
-.se-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.se-attach-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-.se-attach-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: var(--se-r-sm);
-  background: var(--se-bg-2);
-  border: 1px solid var(--se-line-2);
-  font-size: 11.5px;
-  color: var(--se-fg-2);
-  gap: 8px;
-}
-.se-attach-item .dim { color: var(--se-fg-4); }
-.se-status { font-size: 11px; color: var(--se-fg-3); min-height: 14px; }
-
-/* \u2500\u2500 Annotator \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
-.se-annot { display: flex; flex-direction: column; gap: 8px; }
-.se-annot-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 6px;
-  background: var(--se-bg-1);
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-sm);
-}
-.se-annot-btn {
-  all: unset;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: var(--se-r-sm);
-  background: var(--se-bg-2);
-  color: var(--se-fg-3);
-  border: 1px solid var(--se-line-2);
-}
-.se-annot-btn:hover { color: var(--se-fg); background: var(--se-bg-3); }
-.se-annot-btn.on {
-  background: var(--se-accent-soft);
-  color: var(--se-accent);
-  border-color: color-mix(in oklab, var(--se-accent) 30%, transparent);
-}
-.se-annot-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--se-line-2);
-  margin: 0 4px;
-}
-.se-annot-swatch {
-  all: unset;
-  cursor: pointer;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 2px solid transparent;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4);
-}
-.se-annot-swatch.on { border-color: var(--se-fg); }
-.se-annot-stage {
-  position: relative;
-  background: #000;
-  border: 1px solid var(--se-line-2);
-  border-radius: var(--se-r-sm);
-  overflow: hidden;
-  max-height: 60vh;
-  display: flex;
-  justify-content: center;
-}
-.se-annot-canvas {
-  display: block;
-  max-width: 100%;
-  max-height: 60vh;
-  height: auto;
-  width: auto;
-}
-.se-annot-host { display: flex; flex-direction: column; gap: 8px; }
-
-/* Edit-labels highlight (.__se_label_target) lives in panels/i18n.ts and
- * is injected directly into document.head \u2014 these elements are in the
- * customer page DOM, outside our shadow root, so shadow CSS can't reach
- * them. */
+/* lock icon in the rail (collapsed + expanded unauthed) */
+.dtf-rail .t.lock-only,
+.dtf-panel-rail .ri.lock-only { color:var(--accent); }
+.dtf-rail .t.lock-only.active { color:var(--accent);
+  box-shadow:inset 2px 0 0 var(--accent); }
 `;
-  var ye = "se_dt_session";
-  function Ze() {
+  var We = "se_dt_session";
+  function St() {
     try {
-      let e = sessionStorage.getItem(ye);
+      let e = sessionStorage.getItem(We);
       if (e) return JSON.parse(e);
     } catch {}
     return null;
   }
-  function hn(e) {
+  function Xn(e) {
     try {
-      sessionStorage.setItem(ye, JSON.stringify(e));
+      sessionStorage.setItem(We, JSON.stringify(e));
     } catch {}
   }
-  function xe() {
+  function Je() {
     try {
-      sessionStorage.removeItem(ye);
+      sessionStorage.removeItem(We);
     } catch {}
   }
-  async function Qe(e, t) {
+  function Zn() {
+    if (typeof window > "u") return null;
+    let e = window.__SE_BOOTSTRAP;
+    return typeof e?.apiKey == "string" && e.apiKey ? e.apiKey : null;
+  }
+  async function $t(e, t) {
     let n = new URL(e.adminUrl).origin,
       r = window.location.origin,
-      o = `shipeasy-devtools-auth-${Date.now()}`,
-      i = window.open(
-        `${e.adminUrl}/devtools-auth?origin=${encodeURIComponent(r)}`,
-        o,
-        "width=460,height=640,noopener=no",
-      );
+      a = `shipeasy-devtools-auth-${Date.now()}`,
+      o = new URL(`${e.adminUrl}/devtools-auth`);
+    o.searchParams.set("origin", r);
+    let s = Zn();
+    s && o.searchParams.set("sdkKey", s);
+    let i = window.open(o.toString(), a, "width=460,height=640,noopener=no");
     if (!i) throw new Error("Popup blocked. Allow popups for this site and try again.");
     try {
       i.focus();
     } catch {}
     return (
       t(),
-      new Promise((a, s) => {
+      new Promise((c, f) => {
         let u = !1;
-        function g(p, l) {
+        function d(R, m) {
           u ||
             ((u = !0),
-            window.removeEventListener("message", h),
-            clearInterval(b),
-            clearTimeout(v),
-            p ? s(p) : a(l));
+            window.removeEventListener("message", g),
+            clearInterval(v),
+            clearTimeout(w),
+            R ? f(R) : c(m));
         }
-        function h(p) {
-          if (p.origin !== n) return;
-          let l = p.data;
-          if (!l || l.type !== "se:devtools-auth" || !l.token || !l.projectId) return;
-          let y = { token: l.token, projectId: l.projectId };
-          (hn(y), g(null, y));
+        function g(R) {
+          if (R.origin !== n) return;
+          let m = R.data;
+          if (!m || m.type !== "se:devtools-auth" || !m.token || !m.projectId) return;
+          let $ = { token: m.token, projectId: m.projectId };
+          (Xn($), d(null, $));
         }
-        window.addEventListener("message", h);
-        let m = Date.now(),
-          b = setInterval(() => {
-            Date.now() - m < 1500 ||
-              (i.closed && !u && g(new Error("Sign-in window closed before approval.")));
+        window.addEventListener("message", g);
+        let p = Date.now(),
+          v = setInterval(() => {
+            Date.now() - p < 1500 ||
+              (i.closed && !u && d(new Error("Sign-in window closed before approval.")));
           }, 500),
-          v = setTimeout(() => {
-            g(new Error("Sign-in timed out after 10 minutes."));
+          w = setTimeout(() => {
+            d(new Error("Sign-in timed out after 10 minutes."));
           }, 6e5);
       })
     );
   }
-  var bn = /^(true|on|1|yes)$/i,
-    yn = /^(false|off|0|no)$/i,
-    et = /^se(?:_|-|$)/;
-  function ce(e) {
-    return bn.test(e) ? !0 : yn.test(e) ? !1 : null;
+  var Qn = /^(true|on|1|yes)$/i,
+    er = /^(false|off|0|no)$/i,
+    Ye = /^se(?:_|-|$)/;
+  function Te(e) {
+    return Qn.test(e) ? !0 : er.test(e) ? !1 : null;
   }
-  function we(e) {
+  function Ve(e) {
     if (e.startsWith("b64:"))
       try {
         let t = atob(e.slice(4).replace(/-/g, "+").replace(/_/g, "/"));
@@ -2072,137 +1833,124 @@ select.se-input { cursor: pointer; }
       return e;
     }
   }
-  function tt(e) {
+  function Tt(e) {
     let t = JSON.stringify(e);
     return t.length <= 60
       ? t
       : `b64:${btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
   }
-  function ue() {
+  function Me() {
     return typeof window > "u"
       ? new URLSearchParams()
       : new URLSearchParams(window.location.search);
   }
-  function j(e, t) {
-    let n = ue(),
+  function Q(e, t) {
+    let n = Me(),
       r = n.get(e);
     if (r !== null) return r;
     if (t) {
-      let o = n.get(t);
-      if (o !== null) return o;
+      let a = n.get(t);
+      if (a !== null) return a;
     }
     return null;
   }
-  function F(e) {
+  function Re(e) {
     if (typeof window > "u") return;
     let t = new URL(window.location.href);
     t.searchParams.set("se", "1");
     for (let [n, r] of e) r === null ? t.searchParams.delete(n) : t.searchParams.set(n, r);
     window.location.assign(t.toString());
   }
-  function pe() {
+  function Ae() {
     if (typeof window > "u") return !1;
-    let e = ue();
+    let e = Me();
     return e.has("se") || e.has("se_devtools") || e.has("se-devtools") || e.has("se_edit_labels");
   }
-  function W() {
-    return typeof window > "u" ? !1 : ue().has("se_edit_labels");
+  function se() {
+    return typeof window > "u" ? !1 : Me().has("se_edit_labels");
   }
-  function Ee(e) {
-    if (!e && typeof document < "u")
-      try {
-        document.cookie = "se_edit_labels=;path=/;max-age=0;samesite=lax";
-      } catch {}
-    F([["se_edit_labels", e ? "1" : null]]);
+  function Mt(e) {
+    let t = Q(`se_ks_${e}`) ?? Q(`se_gate_${e}`) ?? Q(`se-gate-${e}`);
+    return t === null ? null : Te(t);
   }
-  function ke(e) {
-    let t = j(`se_ks_${e}`) ?? j(`se_gate_${e}`) ?? j(`se-gate-${e}`);
-    return t === null ? null : ce(t);
-  }
-  function nt(e, t, n = "session") {
-    F([
+  function Pe(e, t, n = "session") {
+    Re([
       [`se_ks_${e}`, t === null ? null : t ? "true" : "false"],
       [`se_gate_${e}`, null],
       [`se-gate-${e}`, null],
     ]);
   }
-  function Se(e) {
-    let t = j(`se_config_${e}`, `se-config-${e}`);
-    if (t !== null) return we(t);
+  function Rt(e) {
+    let t = Q(`se_config_${e}`, `se-config-${e}`);
+    if (t !== null) return Ve(t);
   }
-  function Le(e, t, n = "session") {
-    F([
-      [`se_config_${e}`, t == null ? null : tt(t)],
+  function Xe(e, t, n = "session") {
+    Re([
+      [`se_config_${e}`, t == null ? null : Tt(t)],
       [`se-config-${e}`, null],
     ]);
   }
-  function rt(e) {
-    let t = j(`se_exp_${e}`, `se-exp-${e}`);
+  function At(e) {
+    let t = Q(`se_exp_${e}`, `se-exp-${e}`);
     return t === null || t === "" || t === "default" || t === "none" ? null : t;
   }
-  function ot(e, t, n = "session") {
-    F([
+  function Ze(e, t, n = "session") {
+    Re([
       [`se_exp_${e}`, t],
       [`se-exp-${e}`, null],
     ]);
   }
-  function Y() {
-    return j("se_i18n");
+  function Ce() {
+    return Q("se_i18n");
   }
-  function st(e, t = "session") {
-    F([["se_i18n", e]]);
+  function Pt() {
+    return Q("se_i18n_draft");
   }
-  function _e() {
-    return j("se_i18n_draft");
+  function oe(e) {
+    return Q(`se_i18n_label_${e}`);
   }
-  function at(e, t = "session") {
-    F([["se_i18n_draft", e]]);
+  function ve(e, t, n = "session") {
+    Re([[`se_i18n_label_${e}`, t]]);
   }
-  function J(e) {
-    return j(`se_i18n_label_${e}`);
-  }
-  function Te(e, t, n = "session") {
-    F([[`se_i18n_label_${e}`, t]]);
-  }
-  function it() {
+  function Ct() {
     if (typeof window > "u") return;
     let e = new URL(window.location.href);
-    for (let t of [...e.searchParams.keys()]) et.test(t) && e.searchParams.delete(t);
+    for (let t of [...e.searchParams.keys()]) Ye.test(t) && e.searchParams.delete(t);
     (e.searchParams.set("se", "1"), window.location.assign(e.toString()));
   }
-  function Re(e, t) {
+  function Qe(e, t) {
     let n = new URL(t ?? (typeof window < "u" ? window.location.href : "https://example.com/"));
-    for (let r of [...n.searchParams.keys()]) et.test(r) && n.searchParams.delete(r);
+    for (let r of [...n.searchParams.keys()]) Ye.test(r) && n.searchParams.delete(r);
     e.openDevtools && n.searchParams.set("se", "1");
-    for (let [r, o] of Object.entries(e.gates ?? {}))
-      n.searchParams.set(`se_ks_${r}`, o ? "true" : "false");
-    for (let [r, o] of Object.entries(e.experiments ?? {})) n.searchParams.set(`se_exp_${r}`, o);
-    for (let [r, o] of Object.entries(e.configs ?? {})) n.searchParams.set(`se_config_${r}`, tt(o));
+    for (let [r, a] of Object.entries(e.gates ?? {}))
+      n.searchParams.set(`se_ks_${r}`, a ? "true" : "false");
+    for (let [r, a] of Object.entries(e.experiments ?? {})) n.searchParams.set(`se_exp_${r}`, a);
+    for (let [r, a] of Object.entries(e.configs ?? {})) n.searchParams.set(`se_config_${r}`, Tt(a));
     (e.i18nProfile && n.searchParams.set("se_i18n", e.i18nProfile),
       e.i18nDraft && n.searchParams.set("se_i18n_draft", e.i18nDraft));
-    for (let [r, o] of Object.entries(e.i18nLabels ?? {}))
-      n.searchParams.set(`se_i18n_label_${r}`, o);
+    for (let [r, a] of Object.entries(e.i18nLabels ?? {}))
+      n.searchParams.set(`se_i18n_label_${r}`, a);
     return n.toString();
   }
-  function Me() {
+  function et() {
     let e = { gates: {}, experiments: {}, configs: {}, i18nLabels: {} };
     if (typeof window > "u") return e;
-    let t = ue();
+    let t = Me();
     for (let [n, r] of t)
       if (n.startsWith("se_ks_")) {
-        let o = ce(r);
-        o !== null && (e.gates[n.slice(6)] = o);
+        let a = Te(r);
+        a !== null && (e.gates[n.slice(6)] = a);
       } else if (n.startsWith("se_gate_")) {
-        let o = ce(r);
-        o !== null && (e.gates[n.slice(8)] = o);
+        let a = Te(r);
+        a !== null && (e.gates[n.slice(8)] = a);
       } else if (n.startsWith("se-gate-")) {
-        let o = ce(r);
-        o !== null && (e.gates[n.slice(8)] = o);
+        let a = Te(r);
+        a !== null && (e.gates[n.slice(8)] = a);
       } else
         n.startsWith("se_exp_") || n.startsWith("se-exp-")
           ? (e.experiments[n.slice(7)] = r)
           : n.startsWith("se_config_") || n.startsWith("se-config-")
-            ? (e.configs[n.slice(10)] = we(r))
+            ? (e.configs[n.slice(10)] = Ve(r))
             : n === "se_i18n"
               ? (e.i18nProfile = r)
               : n === "se_i18n_draft"
@@ -2210,17 +1958,85 @@ select.se-input { cursor: pointer; }
                 : n.startsWith("se_i18n_label_") && (e.i18nLabels[n.slice(14)] = r);
     return e;
   }
-  function lt(e) {
+  function Ht(e) {
     if (typeof window > "u") return;
-    let t = { ...Me(), ...e, openDevtools: !0 },
-      n = Re(t);
+    let t = { ...et(), ...e, openDevtools: !0 },
+      n = Qe(t);
     window.location.assign(n);
   }
-  var te = class {
-    constructor(t, n, r) {
-      P(this, "adminUrl", t);
-      P(this, "token", n);
-      P(this, "projectId", r);
+  function tr() {
+    let e = [];
+    if (typeof window > "u") return e;
+    for (let [t, n] of new URLSearchParams(window.location.search))
+      (t === "se" || Ye.test(t)) && e.push([t, n]);
+    return e;
+  }
+  function _t(e) {
+    for (let [t, n] of tr()) e.searchParams.has(t) || e.searchParams.set(t, n);
+  }
+  function Ot() {
+    if (typeof window > "u" || typeof document > "u") return () => {};
+    let e = window;
+    if (e.__seNavGuardInstalled) return () => {};
+    e.__seNavGuardInstalled = !0;
+    let t = window.location.origin;
+    function n(s) {
+      if (s.defaultPrevented) return;
+      let i = s.composedPath?.() ?? [],
+        c = null;
+      for (let d of i)
+        if (d instanceof HTMLAnchorElement) {
+          c = d;
+          break;
+        }
+      if (!c) return;
+      let f = c.getAttribute("href");
+      if (!f || /^(mailto:|tel:|javascript:|blob:|data:|#)/i.test(f)) return;
+      let l;
+      try {
+        l = new URL(f, window.location.href);
+      } catch {
+        return;
+      }
+      if (l.origin !== t) return;
+      _t(l);
+      let u = l.toString();
+      u !== c.href && (c.href = u);
+    }
+    document.addEventListener("click", n, !0);
+    let r = history.pushState.bind(history),
+      a = history.replaceState.bind(history);
+    function o(s) {
+      if (s == null) return s;
+      let i;
+      try {
+        i = new URL(s.toString(), window.location.href);
+      } catch {
+        return s;
+      }
+      return i.origin !== t ? s : (_t(i), i.toString());
+    }
+    return (
+      (history.pushState = function (s, i, c) {
+        return r(s, i, o(c));
+      }),
+      (history.replaceState = function (s, i, c) {
+        return a(s, i, o(c));
+      }),
+      () => {
+        (document.removeEventListener("click", n, !0),
+          (history.pushState = r),
+          (history.replaceState = a),
+          (e.__seNavGuardInstalled = !1));
+      }
+    );
+  }
+  var me = class {
+    constructor(t, n, r, a = !1) {
+      D(this, "adminUrl", t);
+      D(this, "token", n);
+      D(this, "projectId", r);
+      D(this, "hideAdminLinks", a);
     }
     async project() {
       let t = await this.get(`/api/admin/projects/${encodeURIComponent(this.projectId)}`),
@@ -2235,6 +2051,8 @@ select.se-input { cursor: pointer; }
           gates: n(t.moduleGates),
           experiments: n(t.moduleExperiments),
           feedback: n(t.moduleFeedback),
+          user: n(t.moduleUser),
+          events: n(t.moduleEvents),
         },
       };
     }
@@ -2243,16 +2061,16 @@ select.se-input { cursor: pointer; }
         headers: { Authorization: `Bearer ${this.token}` },
       });
       if (!n.ok) {
-        let o = "";
+        let a = "";
         try {
-          let i = await n.json();
-          o = i.detail ?? i.error ?? "";
+          let o = await n.json();
+          a = o.detail ?? o.error ?? "";
         } catch {
           try {
-            o = (await n.text()).slice(0, 200);
+            a = (await n.text()).slice(0, 200);
           } catch {}
         }
-        throw new Error(`${t} \u2192 HTTP ${n.status}${o ? ` \u2014 ${o}` : ""}`);
+        throw new Error(`${t} \u2192 HTTP ${n.status}${a ? ` \u2014 ${a}` : ""}`);
       }
       let r = await n.json();
       return Array.isArray(r) ? r : (r.data ?? r);
@@ -2264,13 +2082,13 @@ select.se-input { cursor: pointer; }
       let t = await this.get("/api/admin/configs"),
         n = "prod";
       return await Promise.all(
-        t.map(async (o) => {
+        t.map(async (a) => {
           try {
-            let i = await this.get(`/api/admin/configs/${o.id}`),
-              a = i.valueJson !== void 0 ? i.valueJson : (i.values?.[n] ?? null);
-            return { ...o, valueJson: a };
+            let o = await this.get(`/api/admin/configs/${a.id}`),
+              s = o.valueJson !== void 0 ? o.valueJson : (o.values?.[n] ?? null);
+            return { ...a, valueJson: s };
           } catch {
-            return { ...o, valueJson: null };
+            return { ...a, valueJson: null };
           }
         }),
       );
@@ -2294,16 +2112,16 @@ select.se-input { cursor: pointer; }
         body: JSON.stringify(n),
       });
       if (!r.ok) {
-        let o = "";
+        let a = "";
         try {
-          let i = await r.json();
-          o = i.detail ?? i.error ?? "";
+          let o = await r.json();
+          a = o.detail ?? o.error ?? "";
         } catch {
           try {
-            o = (await r.text()).slice(0, 200);
+            a = (await r.text()).slice(0, 200);
           } catch {}
         }
-        throw new Error(`${t} \u2192 HTTP ${r.status}${o ? ` \u2014 ${o}` : ""}`);
+        throw new Error(`${t} \u2192 HTTP ${r.status}${a ? ` \u2014 ${a}` : ""}`);
       }
       return await r.json();
     }
@@ -2314,16 +2132,16 @@ select.se-input { cursor: pointer; }
         body: JSON.stringify(n),
       });
       if (!r.ok) {
-        let o = "";
+        let a = "";
         try {
-          let i = await r.json();
-          o = i.detail ?? i.error ?? "";
+          let o = await r.json();
+          a = o.detail ?? o.error ?? "";
         } catch {
           try {
-            o = (await r.text()).slice(0, 200);
+            a = (await r.text()).slice(0, 200);
           } catch {}
         }
-        throw new Error(`${t} \u2192 HTTP ${r.status}${o ? ` \u2014 ${o}` : ""}`);
+        throw new Error(`${t} \u2192 HTTP ${r.status}${a ? ` \u2014 ${a}` : ""}`);
       }
       return await r.json();
     }
@@ -2352,11 +2170,11 @@ select.se-input { cursor: pointer; }
         body: n,
       });
       if (!r.ok) {
-        let o = "";
+        let a = "";
         try {
-          o = (await r.json()).error ?? "";
+          a = (await r.json()).error ?? "";
         } catch {}
-        throw new Error(`upload failed \u2192 HTTP ${r.status}${o ? ` \u2014 ${o}` : ""}`);
+        throw new Error(`upload failed \u2192 HTTP ${r.status}${a ? ` \u2014 ${a}` : ""}`);
       }
       return await r.json();
     }
@@ -2370,412 +2188,952 @@ select.se-input { cursor: pointer; }
       return this.put(`/api/admin/i18n/keys/${encodeURIComponent(t)}`, { value: n });
     }
     async keys(t) {
-      let r = (s) => {
-          let d = new URLSearchParams();
+      let r = (i) => {
+          let c = new URLSearchParams();
           return (
-            t && d.set("profile_id", t),
-            d.set("limit", String(500)),
-            d.set("offset", String(s)),
-            `?${d.toString()}`
+            t && c.set("profile_id", t),
+            c.set("limit", String(500)),
+            c.set("offset", String(i)),
+            `?${c.toString()}`
           );
         },
-        o = async (s) => {
-          let d = await this.get(`/api/admin/i18n/keys${r(s)}`);
-          if (Array.isArray(d)) return { keys: d, total: d.length };
-          let u = d.keys ?? [],
-            g = d.total ?? u.length;
-          return { keys: u, total: g };
+        a = async (i) => {
+          let c = await this.get(`/api/admin/i18n/keys${r(i)}`);
+          if (Array.isArray(c)) return { keys: c, total: c.length };
+          let f = c.keys ?? [],
+            l = c.total ?? f.length;
+          return { keys: f, total: l };
         },
-        i = await o(0),
-        a = i.keys.slice();
-      for (; a.length < i.total && i.keys.length > 0; ) {
-        let s = await o(a.length);
-        if (s.keys.length === 0) break;
-        a.push(...s.keys);
+        o = await a(0),
+        s = o.keys.slice();
+      for (; s.length < o.total && o.keys.length > 0; ) {
+        let i = await a(s.length);
+        if (i.keys.length === 0) break;
+        s.push(...i.keys);
       }
-      return a;
+      return s;
     }
   };
-  function U(e) {
-    return `
-    <div class="empty-state">
-      <div class="empty-icon">${e.icon}</div>
-      <div class="empty-title">${Ae(e.title)}</div>
-      <div class="empty-msg">${Ae(e.message)}</div>
-      <a class="empty-cta" href="${e.ctaHref}" target="_blank" rel="noopener">${Ae(e.ctaLabel)}</a>
-    </div>`;
-  }
-  function Ae(e) {
+  var j = (e, t = 1.75) =>
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${t}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${e}</svg>`,
+    E = {
+      shield: j(
+        '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+      ),
+      flask: j(
+        '<path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 0 1 3.923 10.5H6.077A6.5 6.5 0 0 1 10 9.3"/>',
+      ),
+      sliders: j(
+        '<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>',
+      ),
+      power: j('<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>'),
+      book: j('<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>'),
+      users: j(
+        '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+      ),
+      activity: j('<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'),
+      refresh: j(
+        '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
+      ),
+      settings: j(
+        '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+      ),
+      alert: j(
+        '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+      ),
+      search: j('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
+      play: j('<polygon points="6 3 20 12 6 21 6 3"/>'),
+      playFilled:
+        '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+      x: j('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+      copy: j(
+        '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+      ),
+      check: j('<path d="M20 6 9 17l-5-5"/>'),
+      bug: j(
+        '<path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/>',
+      ),
+      sparkles: j(
+        '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+      ),
+      camera: j(
+        '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+      ),
+      record: j(
+        '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+      ),
+      upload: j(
+        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+      ),
+      external: j(
+        '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+      ),
+      arrowLeft: j('<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'),
+      file: j(
+        '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><polyline points="14 2 14 8 20 8"/>',
+      ),
+      plus: j('<line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>'),
+      lock: j(
+        '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+      ),
+    };
+  function x(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function xn() {
-    return window.__shipeasy ?? null;
+  function J(e) {
+    let t = Date.now() - Date.parse(e);
+    if (Number.isNaN(t)) return "\u2014";
+    let n = Math.floor(t / 6e4);
+    if (n < 1) return "just now";
+    if (n < 60) return `${n}m ago`;
+    let r = Math.floor(n / 60);
+    return r < 24 ? `${r}h ago` : `${Math.floor(r / 24)}d ago`;
   }
-  function wn(e) {
-    let t = ke(e.name),
-      n = xn()?.getFlag(e.name);
-    return (t !== null ? t : (n ?? e.enabled))
-      ? '<span class="badge badge-on">ON</span>'
-      : '<span class="badge badge-off">OFF</span>';
+  function It(e) {
+    return e < 1024
+      ? `${e} B`
+      : e < 1024 * 1024
+        ? `${(e / 1024).toFixed(0)} KB`
+        : `${(e / 1024 / 1024).toFixed(1)} MB`;
   }
-  function En(e, t) {
-    let n = (r) => (t === (r === "on" ? !0 : r === "off" ? !1 : null) ? " sel" : "");
-    return `
-    <div class="tog" data-gate="${e}">
-      <button class="tog-btn${n("default")}" data-v="default">default</button>
-      <button class="tog-btn${n("on")}" data-v="on">ON</button>
-      <button class="tog-btn${n("off")}" data-v="off">OFF</button>
-    </div>`;
-  }
-  async function dt(e, t) {
-    e.innerHTML = '<div class="loading">Loading gates\u2026</div>';
-    let n;
-    try {
-      n = await t.gates();
-    } catch (i) {
-      e.innerHTML = `<div class="err">Failed to load gates: ${String(i)}</div>`;
-      return;
+  function ee() {
+    let e = '<div class="dtf-load"><div class="topstrip"></div>';
+    for (let t = 1; t <= 6; t++) {
+      let n = t <= 3 ? " live" : "",
+        r = 50 + ((t * 7) % 30),
+        a = 36 + ((t * 11) % 24);
+      e += `
+      <div class="skel-row${n}">
+        <div class="ic"></div>
+        <div class="body">
+          <div class="skel" style="height:9px; width:${r}%"></div>
+          <div class="skel" style="height:7px; width:${a}%"></div>
+        </div>
+        <div class="skel" style="height:10px; width:38px"></div>
+        <div class="togsk"></div>
+      </div>`;
     }
-    if (n.length === 0) {
-      e.innerHTML = U({
-        icon: "\u26F3",
-        title: "No gates yet",
-        message: "Feature flags let you gate releases and ramp rollouts safely.",
-        ctaLabel: "Create new gate",
-        ctaHref: `${t.adminUrl}/dashboard/gates/new`,
-      });
-      return;
-    }
-    function r() {
-      let i = n
-        .map(
-          (a) => `
-        <tr>
-          <td class="col-name">${a.name}</td>
-          <td class="col-sub">${(a.rolloutPct / 100).toFixed(a.rolloutPct % 100 === 0 ? 0 : 2)}%</td>
-          <td class="col-badge">${wn(a)}</td>
-          <td class="col-control">${En(a.name, ke(a.name))}</td>
-        </tr>`,
-        )
-        .join("");
-      ((e.innerHTML = `
-      <div class="dt-scroll">
-        <table class="dt-table">
-          <thead><tr>
-            <th>Name</th><th style="text-align:right">Rollout</th><th>Live</th><th style="text-align:right">Override</th>
-          </tr></thead>
-          <tbody>${i}</tbody>
-        </table>
-      </div>`),
-        e.querySelectorAll(".tog-btn").forEach((a) => {
-          a.addEventListener("click", () => {
-            let s = a.closest("[data-gate]").dataset.gate,
-              d = a.dataset.v;
-            (nt(s, d === "default" ? null : d === "on"), r());
-          });
-        }));
-    }
-    r();
-    let o = () => r();
-    window.addEventListener("se:state:update", o);
+    return e + "</div>";
   }
-  function kn(e) {
-    let t = typeof e == "string" ? e : JSON.stringify(e);
-    return t.length > 40 ? t.slice(0, 38) + "\u2026" : t;
-  }
-  function ct(e) {
-    return Se(e) === void 0 ? "" : '<span class="badge badge-run">overridden</span>';
-  }
-  async function ut(e, t) {
-    e.innerHTML = '<div class="loading">Loading configs\u2026</div>';
-    let n;
-    try {
-      n = await t.configs();
-    } catch (i) {
-      e.innerHTML = `<div class="err">Failed to load configs: ${String(i)}</div>`;
-      return;
-    }
-    if (n.length === 0) {
-      e.innerHTML = U({
-        icon: "\u2699",
-        title: "No configs yet",
-        message: "Remote config values you can tweak per-session without redeploying.",
-        ctaLabel: "Create new config",
-        ctaHref: `${t.adminUrl}/dashboard/configs/values/new`,
-      });
-      return;
-    }
-    let r = new Set();
-    function o() {
-      let i = n
-        .map((s) => {
-          let d = Se(s.name),
-            u = d !== void 0 ? d : s.valueJson;
-          return r.has(s.name)
-            ? `
-            <tr data-config="${s.name}">
-              <td colspan="4">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                  <span class="col-name" style="flex:1">${s.name}</span>
-                  ${ct(s.name)}
-                  <button class="ibtn cancel-edit" data-name="${s.name}">cancel</button>
-                </div>
-                <textarea class="editor" data-name="${s.name}" rows="3">${JSON.stringify(u, null, 2)}</textarea>
-                <div class="edit-row" style="display:flex;gap:6px;margin-top:6px">
-                  <button class="ibtn pri save-session" data-name="${s.name}">Save (session)</button>
-                  <button class="ibtn save-local" data-name="${s.name}">Save (local)</button>
-                  ${d !== void 0 ? `<button class="ibtn danger clear-ov" data-name="${s.name}">clear</button>` : ""}
-                </div>
-              </td>
-            </tr>`
-            : `
-          <tr data-config="${s.name}">
-            <td class="col-name">${s.name}</td>
-            <td class="col-value">${kn(u)}</td>
-            <td class="col-badge">${ct(s.name)}</td>
-            <td class="col-control"><button class="ibtn edit-btn" data-name="${s.name}">edit</button></td>
-          </tr>`;
-        })
-        .join("");
-      ((e.innerHTML = `
-      <div class="dt-scroll">
-        <table class="dt-table">
-          <thead><tr>
-            <th>Name</th><th>Value</th><th>Override</th><th></th>
-          </tr></thead>
-          <tbody>${i}</tbody>
-        </table>
-      </div>`),
-        e.querySelectorAll(".edit-btn").forEach((s) => {
-          s.addEventListener("click", () => {
-            (r.add(s.dataset.name), o());
-          });
-        }),
-        e.querySelectorAll(".cancel-edit").forEach((s) => {
-          s.addEventListener("click", () => {
-            (r.delete(s.dataset.name), o());
-          });
-        }));
-      function a(s, d) {
-        let u = s.dataset.name,
-          g = e.querySelector(`textarea[data-name="${u}"]`);
-        if (g)
-          try {
-            let h = JSON.parse(g.value);
-            (Le(u, h, d), r.delete(u), o());
-          } catch {
-            g.style.borderColor = "#f87171";
-          }
-      }
-      (e.querySelectorAll(".save-session").forEach((s) => {
-        s.addEventListener("click", () => a(s, "session"));
-      }),
-        e.querySelectorAll(".save-local").forEach((s) => {
-          s.addEventListener("click", () => a(s, "local"));
-        }),
-        e.querySelectorAll(".clear-ov").forEach((s) => {
-          s.addEventListener("click", () => {
-            (Le(s.dataset.name, null), r.delete(s.dataset.name), o());
-          });
-        }));
-    }
-    o();
-  }
-  function Sn() {
-    return window.__shipeasy ?? null;
-  }
-  function Ln(e) {
-    return `<span class="badge ${{ running: "badge-run", draft: "badge-draft", stopped: "badge-stop", archived: "badge-stop" }[e]}">${e}</span>`;
-  }
-  function _n(e) {
-    let t = rt(e.name),
-      n = ["control", ...e.groups.map((o) => o.name)],
-      r = [
-        `<option value="" ${t === null ? "selected" : ""}>default</option>`,
-        ...n.map((o) => `<option value="${o}" ${t === o ? "selected" : ""}>${o}</option>`),
-      ].join("");
-    return `<select class="sel-input exp-sel" data-name="${e.name}">${r}</select>`;
-  }
-  function Tn(e) {
-    let t = Sn()?.getExperiment(e);
-    return t
-      ? t.inExperiment
-        ? `<span class="badge badge-run">${t.group}</span>`
-        : '<span class="badge badge-draft">not enrolled</span>'
-      : "";
-  }
-  function Rn(e) {
-    let t = e.status === "running";
-    return `
-    <tr>
-      <td class="col-name">${e.name}</td>
-      <td class="col-badge">${Ln(e.status)}</td>
-      <td class="col-badge">${t ? Tn(e.name) : ""}</td>
-      <td class="col-control">${t ? _n(e) : ""}</td>
-    </tr>`;
-  }
-  function pt(e, t) {
-    return e.length === 0
-      ? ""
-      : `
-    <div class="sec-head">${t}</div>
-    <div class="dt-scroll">
-      <table class="dt-table">
-        <thead><tr>
-          <th>Name</th><th>Status</th><th>Live</th><th style="text-align:right">Override</th>
-        </tr></thead>
-        <tbody>${e.map(Rn).join("")}</tbody>
-      </table>
-    </div>`;
-  }
-  function ft(e, t, n, r) {
-    let o = n.filter((s) => s.universe === t.name);
-    if (o.length === 0) {
-      e.innerHTML = U({
-        icon: "\u{1F9EA}",
-        title: `No experiments in \u201C${t.name}\u201D yet`,
-        message: "Launch an experiment in this universe to start measuring impact.",
-        ctaLabel: "Create new experiment",
-        ctaHref: `${r}/dashboard/experiments/new`,
-      });
-      return;
-    }
-    let i = o.filter((s) => s.status === "running"),
-      a = o.filter((s) => s.status !== "running");
-    ((e.innerHTML = pt(i, "Running") + pt(a, "Other")),
-      e.querySelectorAll(".exp-sel").forEach((s) => {
-        s.addEventListener("change", () => {
-          let d = s.dataset.name;
-          ot(d, s.value || null);
+  function V(e) {
+    let t = (e.actions ?? [])
+      .map((a, o) =>
+        a.href
+          ? `<a class="a" target="_blank" rel="noopener" href="${x(a.href)}" data-i="${o}">
+            <span class="ic">${a.icon ?? "+"}</span><span class="k">${x(a.label)}</span>${a.kbd ? `<span class="kbd">${x(a.kbd)}</span>` : ""}
+          </a>`
+          : `<button class="a" data-i="${o}">
+            <span class="ic">${a.icon ?? "+"}</span><span class="k">${x(a.label)}</span>${a.kbd ? `<span class="kbd">${x(a.kbd)}</span>` : ""}
+          </button>`,
+      )
+      .join("");
+    return {
+      html: `
+    <div class="dtf-empty">
+      <div class="vis"><div class="ring r2"></div><div class="ring"></div><div class="core">0</div></div>
+      <h3>${e.title}</h3>
+      <p>${x(e.message)}</p>
+      ${t ? `<div class="actions">${t}</div>` : ""}
+    </div>`,
+      wire: (a) => {
+        a.querySelectorAll(".dtf-empty .actions [data-i]").forEach((o) => {
+          let s = Number(o.dataset.i),
+            i = e.actions?.[s];
+          i?.onClick && o.addEventListener("click", i.onClick);
         });
-      }));
+      },
+    };
   }
-  async function gt(e, t) {
-    e.innerHTML = '<div class="loading">Loading\u2026</div>';
-    let n, r;
-    try {
-      [n, r] = await Promise.all([t.experiments(), t.universes()]);
-    } catch (a) {
-      e.innerHTML = `<div class="err">Failed to load: ${String(a)}</div>`;
-      return;
-    }
-    if (r.length === 0) {
-      e.innerHTML = U({
-        icon: "\u{1F30C}",
-        title: "No universes yet",
-        message:
-          "Experiments live inside a universe \u2014 a named traffic segment with holdout control. Create one to get started.",
-        ctaLabel: "Create a universe",
-        ctaHref: `${t.adminUrl}/dashboard/experiments/universes`,
+  function le(e) {
+    return `
+    <div class="dtf-empty search">
+      <div class="glyph"><span>[</span><span class="core"></span><span>]</span></div>
+      <h3>No match for<br/><em style="font-family:var(--mono);font-style:normal;font-size:14px;color:var(--fg-3)">"${x(e)}"</em></h3>
+      <p>Nothing in your project shares that key.</p>
+    </div>`;
+  }
+  function de(e, t = "Copy value") {
+    return `<button class="dtf-copy" data-copy="${e}" title="${x(t)}">${E.copy}</button>`;
+  }
+  function ce(e, t) {
+    e.querySelectorAll(".dtf-copy[data-copy]").forEach((n) => {
+      let r = n.dataset.copy;
+      n.addEventListener("click", async (a) => {
+        a.stopPropagation();
+        let o = t[r]?.();
+        if (o != null) {
+          try {
+            await navigator.clipboard.writeText(o);
+          } catch {}
+          (n.classList.add("done"),
+            (n.innerHTML = E.check),
+            setTimeout(() => {
+              (n.classList.remove("done"), (n.innerHTML = E.copy));
+            }, 900));
+        }
       });
+    });
+  }
+  var nr = [
+    { k: "ctx.route", get: () => `"${window.location.pathname}"` },
+    { k: "ctx.user_agent", get: () => `"${(navigator.userAgent ?? "").slice(0, 64)}"` },
+    { k: "ctx.viewport", get: () => `${window.innerWidth}x${window.innerHeight}` },
+  ];
+  function rr() {
+    let e = window.__shipeasy;
+    if (!e) return null;
+    let t = e.user;
+    return t && typeof t == "object" ? t : null;
+  }
+  function ar(e) {
+    return e.trim().charAt(0).toUpperCase() || "?";
+  }
+  function qt(e, t, n, r) {
+    let a = rr();
+    if (!a && Object.keys(n.props).length === 0) {
+      let { html: d, wire: g } = V({
+        title: "No <em>identified user</em>",
+        message:
+          "The host app hasn't called shipeasy.identify() yet. Once it does, the user's properties will show here and you can simulate other users.",
+        actions: [],
+      });
+      ((e.innerHTML = d), g(e));
       return;
     }
-    let o = { activeUniverse: r[0].name };
-    function i() {
-      let a = r
+    let o = {};
+    if (a)
+      for (let [d, g] of Object.entries(a)) g == null || typeof g == "object" || (o[d] = String(g));
+    for (let [d, g] of Object.entries(n.props)) o[d] = g;
+    let s = o.id || o.userId || "\u2014",
+      i = o.email || o.user_email || "",
+      c = i || s,
+      f = Object.entries(o)
+        .map(([d, g]) => {
+          let p = n.dirty[d] ? '<span class="changed"></span>' : '<span style="width:5px"></span>';
+          return `<div class="dtf-prop">
+        <span class="k">user.${x(d)}</span>
+        <span class="v"><input data-prop="${x(d)}" value="${or(g)}"/></span>
+        ${p}
+      </div>`;
+        })
+        .join(""),
+      l = nr
         .map(
-          (u) => `
-          <button class="tab${u.name === o.activeUniverse ? " active" : ""}"
-                  data-universe="${u.name}">${u.name}</button>`,
+          (d) => `<div class="dtf-prop">
+      <span class="k">${x(d.k)}</span>
+      <span class="v" style="color:var(--accent)">${x(d.get())}</span>
+      <span style="width:5px"></span>
+    </div>`,
         )
-        .join("");
-      ((e.innerHTML = `
-      <div class="tabs scroll">${a}</div>
-      <div class="tab-body" style="overflow-y:auto;flex:1"></div>`),
-        e.querySelectorAll(".tab[data-universe]").forEach((u) => {
-          u.addEventListener("click", () => {
-            ((o.activeUniverse = u.dataset.universe), i());
-          });
-        }));
-      let s = e.querySelector(".tab-body"),
-        d = r.find((u) => u.name === o.activeUniverse);
-      ft(s, d, n, t.adminUrl);
-    }
-    (i(),
-      window.addEventListener("se:state:update", () => {
-        let a = e.querySelector(".tab-body"),
-          s = r.find((d) => d.name === o.activeUniverse);
-        a && s && ft(a, s, n, t.adminUrl);
+        .join(""),
+      u = Object.values(n.dirty).filter(Boolean).length;
+    ((e.innerHTML = `
+    <div class="dtf-user">
+      <div class="who">
+        <div class="av">${x(ar(c))}</div>
+        <div class="info">
+          <div class="e">${x(i || s)}</div>
+          <div class="id">${x(s)}</div>
+        </div>
+      </div>
+      <div class="dtf-group">User properties<span class="c">edit to simulate</span></div>
+      <div style="flex:1; overflow-y:auto">
+        ${f || '<div class="se-empty">No user properties yet.</div>'}
+        <div class="dtf-group">Request context<span class="c">read-only</span></div>
+        ${l}
+      </div>
+      <div class="dtf-evalbar">
+        <button class="b" data-action="reeval">${E.play} Re-evaluate ${u > 0 ? "with changes" : ""}</button>
+        <button class="b g" data-action="reset">Reset</button>
+      </div>
+    </div>`),
+      e.querySelectorAll("input[data-prop]").forEach((d) => {
+        d.addEventListener("input", () => {
+          let g = d.dataset.prop;
+          ((n.props[g] = d.value), (n.dirty[g] = (a ? String(a[g] ?? "") : "") !== d.value));
+        });
+      }),
+      e.querySelector('[data-action="reeval"]').addEventListener("click", () => r()),
+      e.querySelector('[data-action="reset"]').addEventListener("click", () => {
+        ((n.props = {}), (n.dirty = {}), r());
       }));
   }
-  var me = vn(At(), 1);
-  var X = /￹([^￺￻]+)￺(?:([^￺￻]*)￺)?([^￻]*)￻/g;
-  function je(e) {
+  function or(e) {
+    return x(e);
+  }
+  function ir() {
+    return window.__shipeasy ?? null;
+  }
+  function sr(e) {
+    let t = Mt(e.name),
+      n = ir()?.getFlag(e.name),
+      r = typeof n == "boolean" ? n : null,
+      a = t !== null ? t : (r ?? e.enabled);
+    return {
+      name: e.name,
+      killswitch: e.killswitch,
+      enabled: e.enabled,
+      rolloutPct: e.rolloutPct,
+      override: t,
+      effective: a,
+      live: r,
+      updatedAt: e.updatedAt,
+    };
+  }
+  function tt(e, t) {
+    let n = t === e.name,
+      r = e.override !== null,
+      a = e.killswitch ? e.effective : !e.effective,
+      o = e.killswitch ? E.power : E.shield,
+      s = e.killswitch
+        ? e.effective
+          ? "var(--danger)"
+          : "var(--accent)"
+        : e.effective
+          ? "var(--accent)"
+          : "var(--fg-3)",
+      i = "";
+    e.killswitch
+      ? (i = `<span class="val ${e.effective ? "killed" : "kill-live"}">${e.effective ? "KILLED" : "LIVE"}</span>`)
+      : (i = `<span class="val ${r ? "over" : e.effective ? "on" : "off"}">${e.effective ? "true" : "false"}</span>`);
+    let c = `<div class="dtf-toggle${e.effective ? (r ? " over" : " on") : ""}" data-toggle="${be(e.name)}"></div>`,
+      f = e.killswitch
+        ? e.effective
+          ? `killswitch \xB7 KILLED (override: ${r ? "yes" : "no"})`
+          : `killswitch \xB7 live \xB7 ${(e.rolloutPct / 100).toFixed(0)}% rollout`
+        : `gate \xB7 ${(e.rolloutPct / 100).toFixed(0)}% rollout \xB7 updated ${J(e.updatedAt)}`,
+      l = e.killswitch
+        ? `
+      <div class="crumbs">
+        <div><span class="${e.effective ? "deny" : "pass"}">${e.effective ? "\u2717" : "\u2713"}</span> killswitch
+          <span style="color:var(--fg-4)">\u2192</span>
+          <span class="${e.effective ? "deny" : "pass"}">${e.effective ? "KILLED" : "live"}</span>
+        </div>
+        <div class="indent meta">propagation: &lt;1s to 60+ regions</div>
+      </div>
+      <div class="actions">
+        <button class="${e.effective ? "primary" : ""}" data-toggle-detail="${be(e.name)}">${e.effective ? "\u2713 Restore" : "\u26A0 Pull the switch"}</button>
+      </div>`
+        : `
+      <div class="crumbs">
+        <div><span class="${r ? "skip" : e.effective ? "pass" : "deny"}">${r ? "\u21A6" : e.effective ? "\u2713" : "\u2717"}</span> ${x(e.name)}
+          <span style="color:var(--fg-4)">\u2192</span>
+          <span class="${r ? "skip" : e.effective ? "pass" : "deny"}">
+            ${r ? `forced ${e.effective ? "true" : "false"} (real: ${e.live === null ? "unknown" : e.live ? "true" : "false"})` : e.effective ? "true" : "false"}
+          </span>
+        </div>
+        <div class="indent">rollout <span style="color:var(--fg-4)">=</span> ${(e.rolloutPct / 100).toFixed(0)}%</div>
+      </div>
+      <div class="mini">
+        <span class="lbl">live</span><span class="v">${e.live === null ? "\u2014" : e.live ? "true" : "false"}</span>
+        <span class="lbl">override</span><span class="v">${r ? (e.override ? "true" : "false") : "none"}</span>
+        <span class="lbl">updated</span><span class="v">${J(e.updatedAt)}</span>
+      </div>
+      <div class="actions">
+        <button class="primary" data-toggle-detail="${be(e.name)}">\u2922 Force ${e.effective ? "false" : "true"}</button>
+        ${r ? `<button data-clear-detail="${be(e.name)}">\u21BA Clear override</button>` : ""}
+      </div>`;
+    return `
+    <div class="dtf-row${n ? " expanded" : ""}${a ? " muted" : ""}" data-row="${be(e.name)}">
+      <div class="ic"><span style="color:${s}">${o}</span></div>
+      <div class="meta">
+        <div class="k">
+          <span class="name">${x(e.name)}</span>
+          ${de("g:" + e.name, "Copy gate name")}
+          ${r ? '<span class="override-tag">forced</span>' : ""}
+          ${e.live ? '<span class="live-dot" title="firing on this page"></span>' : ""}
+        </div>
+        <div class="v">${x(f)}</div>
+      </div>
+      ${i}${c}
+    </div>
+    <div class="dtf-detail${n ? " open" : ""}">
+      <div class="inner"><div class="pad">${l}</div></div>
+    </div>`;
+  }
+  async function Bt(e, t, n, r) {
+    e.innerHTML = ee();
+    let a;
+    try {
+      a = await t.gates();
+    } catch (i) {
+      e.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed to load gates: ${x(String(i))}</div>`;
+      return;
+    }
+    if (a.length === 0) {
+      let { html: i, wire: c } = V({
+        title: "No <em>gates</em> yet",
+        message: "Feature flags let you gate releases and ramp rollouts safely.",
+        actions: t.hideAdminLinks
+          ? []
+          : [{ icon: "+", label: "Create new gate", href: `${t.adminUrl}/dashboard/gates/new` }],
+      });
+      ((e.innerHTML = i), c(e), r(0));
+      return;
+    }
+    let o = null;
+    function s() {
+      let i = n.search.trim().toLowerCase(),
+        f = (i ? a.filter((l) => l.name.toLowerCase().includes(i)) : a).map(sr);
+      if ((r(f.filter((l) => l.override !== null).length), f.length === 0)) {
+        e.innerHTML = le(n.search);
+        return;
+      }
+      if (n.view === "page") {
+        let l = f.filter((d) => d.live === !0 || d.killswitch),
+          u = f.filter((d) => !l.includes(d));
+        e.innerHTML =
+          `<div class="dtf-group">Active on this page<span class="pulse"><span class="d"></span>${l.length} firing</span></div>` +
+          l.map((d) => tt(d, o)).join("") +
+          (u.length
+            ? `<div class="dtf-group">Inactive<span class="c">${u.length} more</span></div>` +
+              u.map((d) => tt(d, o)).join("")
+            : "");
+      } else
+        e.innerHTML =
+          `<div class="dtf-group">All flags<span class="c">${f.length}</span></div>` +
+          f.map((l) => tt(l, o)).join("");
+      (e.querySelectorAll(".dtf-row").forEach((l) => {
+        l.addEventListener("click", (u) => {
+          let d = u.target;
+          if (d.closest(".dtf-toggle") || d.closest(".dtf-copy")) return;
+          let g = l.dataset.row;
+          ((o = o === g ? null : g), s());
+        });
+      }),
+        e.querySelectorAll("[data-toggle]").forEach((l) => {
+          l.addEventListener("click", (u) => {
+            u.stopPropagation();
+            let d = l.getAttribute("data-toggle"),
+              g = f.find((p) => p.name === d);
+            g && Pe(d, !g.effective);
+          });
+        }),
+        e.querySelectorAll("[data-toggle-detail]").forEach((l) => {
+          l.addEventListener("click", (u) => {
+            u.stopPropagation();
+            let d = l.getAttribute("data-toggle-detail"),
+              g = f.find((p) => p.name === d);
+            g && Pe(d, !g.effective);
+          });
+        }),
+        e.querySelectorAll("[data-clear-detail]").forEach((l) => {
+          l.addEventListener("click", (u) => {
+            u.stopPropagation();
+            let d = l.getAttribute("data-clear-detail");
+            Pe(d, null);
+          });
+        }),
+        ce(e, Object.fromEntries(f.map((l) => ["g:" + l.name, () => l.name]))));
+    }
+    s();
+  }
+  function be(e) {
+    return x(e);
+  }
+  function lr() {
+    return window.__shipeasy ?? null;
+  }
+  function dr(e) {
+    let t = At(e.name),
+      n = lr()?.getExperiment(e.name),
+      r = n?.inExperiment ? n.group : null,
+      a = ["control", ...e.groups.map((s) => s.name)],
+      o = t ?? r ?? "control";
+    return {
+      name: e.name,
+      status: e.status,
+      groups: [{ name: "control", weight: 0 }, ...e.groups]
+        .map((s, i) => ({ name: i === 0 ? "control" : s.name, weight: s.weight }))
+        .filter((s, i, c) => c.findIndex((f) => f.name === s.name) === i),
+      override: t,
+      liveGroup: r,
+      liveEnrolled: n?.inExperiment ?? !1,
+      effective: o,
+      updatedAt: e.updatedAt,
+    };
+  }
+  function nt(e, t) {
+    let n = t === e.name,
+      r = e.override !== null,
+      a = e.groups
+        .map(
+          (f) =>
+            `<option value="${He(f.name)}"${f.name === e.effective ? " selected" : ""}>${x(f.name)}</option>`,
+        )
+        .join(""),
+      o = `<select class="sel${r ? " over" : ""}" data-exp="${He(e.name)}" style="grid-column:3 / span 2; justify-self:end">
+    ${a}
+  </select>`,
+      s = `experiment \xB7 ${e.status} \xB7 ${e.groups.length} variants${e.liveGroup ? ` \xB7 live: ${e.liveGroup}` : ""}`,
+      i = e.groups
+        .map((f, l) => {
+          let u = f.name === e.effective,
+            d =
+              ["var(--info)", "var(--accent)", "var(--warn)", "var(--danger)", "var(--pri)"][l] ??
+              "var(--fg-3)";
+          return `<div class="var-row${u ? " assigned" : ""}">
+        <span class="sw" style="background:${d}"></span>
+        <span>${x(f.name)}</span>
+        <span class="pct">${f.weight}%</span>
+        <span style="font-size:9.5px;color:var(--fg-4)">${f.name === e.liveGroup ? "real" : f.name === e.override ? "forced" : ""}</span>
+      </div>`;
+        })
+        .join(""),
+      c = `
+    <div class="crumbs">
+      <div><span class="${r ? "skip" : "pass"}">\u25CF</span> ${r ? "forced via URL override" : e.liveGroup ? "assigned via SDK" : "no live assignment"}</div>
+    </div>
+    ${i}
+    <div class="mini">
+      <span class="lbl">status</span><span class="v">${e.status}</span>
+      <span class="lbl">updated</span><span class="v">${J(e.updatedAt)}</span>
+    </div>
+    <div class="actions">
+      ${r ? `<button data-clear="${He(e.name)}">\u21BA Clear override</button>` : ""}
+    </div>`;
+    return `
+    <div class="dtf-row${n ? " expanded" : ""}${e.status !== "running" ? " muted" : ""}" data-row="${He(e.name)}">
+      <div class="ic"><span style="color:${e.liveEnrolled ? "var(--accent)" : "var(--fg-3)"}">${E.flask}</span></div>
+      <div class="meta">
+        <div class="k">
+          <span class="name">${x(e.name)}</span>
+          ${de("e:" + e.name, "Copy experiment name")}
+          ${r ? '<span class="override-tag">forced</span>' : ""}
+          ${e.liveEnrolled ? '<span class="live-dot" title="enrolled on this page"></span>' : ""}
+        </div>
+        <div class="v">${x(s)}</div>
+      </div>
+      ${o}
+    </div>
+    <div class="dtf-detail${n ? " open" : ""}">
+      <div class="inner"><div class="pad">${c}</div></div>
+    </div>`;
+  }
+  async function zt(e, t, n, r) {
+    e.innerHTML = ee();
+    let a;
+    try {
+      a = await t.experiments();
+    } catch (i) {
+      e.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed to load experiments: ${x(String(i))}</div>`;
+      return;
+    }
+    if (a.length === 0) {
+      let { html: i, wire: c } = V({
+        title: "No <em>experiments</em> yet",
+        message:
+          "Run A/B tests with traffic-bucketed variants. Launch one to start measuring impact.",
+        actions: t.hideAdminLinks
+          ? []
+          : [
+              {
+                icon: "+",
+                label: "Create new experiment",
+                href: `${t.adminUrl}/dashboard/experiments/new`,
+              },
+            ],
+      });
+      ((e.innerHTML = i), c(e), r(0));
+      return;
+    }
+    let o = null;
+    function s() {
+      let i = n.search.trim().toLowerCase(),
+        f = (i ? a.filter((l) => l.name.toLowerCase().includes(i)) : a).map(dr);
+      if ((r(f.filter((l) => l.override !== null).length), f.length === 0)) {
+        e.innerHTML = le(n.search);
+        return;
+      }
+      if (n.view === "page") {
+        let l = f.filter((d) => d.liveEnrolled),
+          u = f.filter((d) => !d.liveEnrolled);
+        e.innerHTML =
+          `<div class="dtf-group">Active on this page<span class="pulse"><span class="d"></span>${l.length} enrolled</span></div>` +
+          (l.length
+            ? l.map((d) => nt(d, o)).join("")
+            : '<div class="se-empty">No experiments enrolled yet on this page.</div>') +
+          (u.length
+            ? `<div class="dtf-group">Other<span class="c">${u.length}</span></div>` +
+              u.map((d) => nt(d, o)).join("")
+            : "");
+      } else
+        e.innerHTML =
+          `<div class="dtf-group">All experiments<span class="c">${f.length}</span></div>` +
+          f.map((l) => nt(l, o)).join("");
+      (e.querySelectorAll(".dtf-row").forEach((l) => {
+        l.addEventListener("click", (u) => {
+          let d = u.target;
+          if (d.closest("select") || d.closest(".dtf-copy")) return;
+          let g = l.dataset.row;
+          ((o = o === g ? null : g), s());
+        });
+      }),
+        e.querySelectorAll("select[data-exp]").forEach((l) => {
+          l.addEventListener("change", () => {
+            Ze(l.dataset.exp, l.value || null);
+          });
+        }),
+        e.querySelectorAll("[data-clear]").forEach((l) => {
+          l.addEventListener("click", (u) => {
+            (u.stopPropagation(), Ze(l.getAttribute("data-clear"), null));
+          });
+        }),
+        ce(e, Object.fromEntries(f.map((l) => ["e:" + l.name, () => l.name]))));
+    }
+    s();
+  }
+  function He(e) {
+    return x(e);
+  }
+  function cr() {
+    return window.__shipeasy ?? null;
+  }
+  function ie(e) {
+    return e === null ? "null" : Array.isArray(e) ? "array" : typeof e;
+  }
+  function Oe(e, t) {
+    try {
+      return JSON.stringify(e) === JSON.stringify(t);
+    } catch {
+      return e === t;
+    }
+  }
+  function at(e) {
+    let t = ie(e);
+    if (t === "object") return `{${Object.keys(e).length} keys}`;
+    if (t === "array") return `[${e.length}]`;
+    if (t === "string") {
+      let n = e;
+      return `"${n.length > 22 ? n.slice(0, 22) + "\u2026" : n}"`;
+    }
+    return t === "null" ? "null" : String(e);
+  }
+  function pr(e) {
+    let t = Rt(e.name),
+      n = cr()?.getConfig(e.name),
+      r = t !== void 0 ? t : n !== void 0 ? n : e.valueJson;
+    return {
+      name: e.name,
+      real: e.valueJson,
+      override: t,
+      live: n,
+      effective: r,
+      updatedAt: e.updatedAt,
+    };
+  }
+  function rt(e, t) {
+    let n = t === e.name,
+      r = e.override !== void 0,
+      a = ie(e.effective),
+      o = `config \xB7 ${a} \xB7 updated ${J(e.updatedAt)}`,
+      s = `<span class="val${r ? " over" : ""}" style="grid-column:3 / span 2; justify-self:end">${x(at(e.effective))}</span>`,
+      i = `
+    <div class="crumbs">
+      <div><span class="pass">\u25CF</span> ${x(e.name)}
+        <span style="color:var(--fg-4)">=</span>
+        <span style="color:var(--fg-2)">${x(at(e.effective))}</span>
+        <span style="color:var(--fg-4)">\xB7 ${a}</span>
+      </div>
+    </div>
+    <div class="mini">
+      <span class="lbl">override</span><span class="v">${r ? "yes" : "none"}</span>
+      <span class="lbl">updated</span><span class="v">${J(e.updatedAt)}</span>
+    </div>
+    <div class="actions">
+      <button class="primary" data-edit="${te(e.name)}">\u2922 ${r ? "Edit override" : "Override value"}</button>
+      ${r ? `<button data-clear="${te(e.name)}">\u21BA Reset</button>` : ""}
+    </div>`;
+    return `
+    <div class="dtf-row${n ? " expanded" : ""}" data-row="${te(e.name)}">
+      <div class="ic"><span style="color:var(--accent)">${E.sliders}</span></div>
+      <div class="meta">
+        <div class="k">
+          <span class="name">${x(e.name)}</span>
+          ${de("c:" + e.name, "Copy config name")}
+          ${r ? '<span class="override-tag">forced</span>' : ""}
+        </div>
+        <div class="v">${x(o)}</div>
+      </div>
+      ${s}
+    </div>
+    <div class="dtf-detail${n ? " open" : ""}">
+      <div class="inner"><div class="pad">${i}</div></div>
+    </div>`;
+  }
+  async function jt(e, t, n, r, a) {
+    e.innerHTML = ee();
+    let o;
+    try {
+      o = await t.configs();
+    } catch (c) {
+      e.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed to load configs: ${x(String(c))}</div>`;
+      return;
+    }
+    if (o.length === 0) {
+      let { html: c, wire: f } = V({
+        title: "No <em>configs</em> yet",
+        message: "Remote config values you can tweak per-session without redeploying.",
+        actions: t.hideAdminLinks
+          ? []
+          : [
+              {
+                icon: "+",
+                label: "Create new config",
+                href: `${t.adminUrl}/dashboard/configs/values/new`,
+              },
+            ],
+      });
+      ((e.innerHTML = c), f(e), r(0));
+      return;
+    }
+    let s = null;
+    function i() {
+      let c = n.search.trim().toLowerCase(),
+        l = (c ? o.filter((u) => u.name.toLowerCase().includes(c)) : o).map(pr);
+      if ((r(l.filter((u) => u.override !== void 0).length), l.length === 0)) {
+        e.innerHTML = le(n.search);
+        return;
+      }
+      if (n.view === "page") {
+        let u = l.filter((g) => g.override !== void 0 || g.live !== void 0),
+          d = l.filter((g) => !u.includes(g));
+        e.innerHTML =
+          `<div class="dtf-group">Active on this page<span class="pulse"><span class="d"></span>${u.length} loaded</span></div>` +
+          (u.length
+            ? u.map((g) => rt(g, s)).join("")
+            : '<div class="se-empty">No configs read on this page yet.</div>') +
+          (d.length
+            ? `<div class="dtf-group">Other<span class="c">${d.length}</span></div>` +
+              d.map((g) => rt(g, s)).join("")
+            : "");
+      } else
+        e.innerHTML =
+          `<div class="dtf-group">All configs<span class="c">${l.length}</span></div>` +
+          l.map((u) => rt(u, s)).join("");
+      (e.querySelectorAll(".dtf-row").forEach((u) => {
+        u.addEventListener("click", (d) => {
+          if (d.target.closest(".dtf-copy")) return;
+          let p = u.dataset.row;
+          ((s = s === p ? null : p), i());
+        });
+      }),
+        e.querySelectorAll("[data-edit]").forEach((u) => {
+          u.addEventListener("click", (d) => {
+            d.stopPropagation();
+            let g = u.getAttribute("data-edit"),
+              p = l.find((v) => v.name === g);
+            ur(a, p);
+          });
+        }),
+        e.querySelectorAll("[data-clear]").forEach((u) => {
+          u.addEventListener("click", (d) => {
+            (d.stopPropagation(), Xe(u.getAttribute("data-clear"), null));
+          });
+        }),
+        ce(e, Object.fromEntries(l.map((u) => ["c:" + u.name, () => u.name]))));
+    }
+    i();
+  }
+  function Ie(e) {
+    return e == null || typeof e != "object" ? e : JSON.parse(JSON.stringify(e));
+  }
+  function he(e, t, n) {
+    if (t.length === 0) return n;
+    let [r, ...a] = t,
+      o = e;
+    if (Array.isArray(o)) {
+      let i = o.slice();
+      return ((i[r] = he(o[r], a, n)), i);
+    }
+    let s = { ...o };
+    return ((s[String(r)] = he(o[String(r)], a, n)), s);
+  }
+  function ur(e, t) {
+    let n = t.override !== void 0 ? t.override : t.real,
+      r = Ie(n),
+      a = document.createElement("div");
+    ((a.className = "dtf-modal-bg"),
+      (a.innerHTML = '<div class="dtf-modal" data-role="modal"></div>'));
+    let o = a.querySelector(".dtf-modal");
+    e.appendChild(a);
+    function s() {
+      (a.remove(), document.removeEventListener("keydown", i));
+    }
+    function i(l) {
+      (l.key === "Escape" && s(), l.key === "Enter" && (l.metaKey || l.ctrlKey) && c());
+    }
+    function c() {
+      (Xe(t.name, r), s());
+    }
+    function f() {
+      let l = !Oe(r, t.real),
+        u = ie(r);
+      o.innerHTML = `
+      <div class="hd">
+        <span class="k">${x(t.name)}</span>
+        <span class="type-tag t-${u}">${u}</span>
+        <button class="x" data-action="close" title="Close (Esc)">${E.x}</button>
+      </div>
+      <div class="bd">
+        ${u === "object" || u === "array" ? '<div class="json-tree" id="tree"></div>' : `<div class="row"><span class="lbl">${u}</span><span data-leaf></span></div>`}
+      </div>
+      <div class="ft">
+        <button class="ghost" data-action="reset" ${l ? "" : "disabled"} style="${l ? "" : "opacity:.4"}">\u21BA Reset all</button>
+        <span class="sp"></span>
+        <button data-action="cancel">Cancel <span style="opacity:.6;margin-left:4px">Esc</span></button>
+        <button class="primary" data-action="save">Save override <span style="opacity:.6;margin-left:4px">\u2318\u23CE</span></button>
+      </div>`;
+      let d = o.querySelector("#tree");
+      d &&
+        Dt(d, r, t.real, (p) => {
+          ((r = p), f());
+        });
+      let g = o.querySelector("[data-leaf]");
+      (g &&
+        ((g.innerHTML = Ut(r, t.real)),
+        Nt(g, r, t.real, (p) => {
+          ((r = p), f());
+        })),
+        o.querySelector('[data-action="close"]').addEventListener("click", s),
+        o.querySelector('[data-action="cancel"]').addEventListener("click", s),
+        o.querySelector('[data-action="save"]').addEventListener("click", c),
+        o.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
+          ((r = Ie(t.real)), f());
+        }));
+    }
+    (a.addEventListener("click", (l) => {
+      l.target === a && s();
+    }),
+      document.addEventListener("keydown", i),
+      f());
+  }
+  function Dt(e, t, n, r) {
+    let o = ie(t) === "array" ? t.map((i, c) => [c, i]) : Object.entries(t);
+    e.innerHTML = '<div class="json-children"></div>';
+    let s = e.querySelector(".json-children");
+    for (let [i, c] of o) {
+      let f = ie(c),
+        l = n?.[i];
+      if (f === "object" || f === "array") {
+        let u = document.createElement("div"),
+          d = !Oe(c, l);
+        ((u.innerHTML = `
+        <div class="json-row branch${d ? " dirty" : ""}">
+          <span class="caret">\u25BE</span>
+          <span class="key branch-key">${x(String(i))}</span>
+          <span class="type t-${f}">${f}</span>
+          <span class="summary">${x(at(c))}</span>
+          ${d ? '<button class="reset" title="reset subtree">\u21BA</button>' : ""}
+        </div>
+        <div class="json-children-host"></div>`),
+          s.appendChild(u));
+        let g = u.querySelector(".json-children-host"),
+          p = u.querySelector(".json-row"),
+          v = !0,
+          w = () => {
+            ((g.innerHTML = ""),
+              v &&
+                Dt(g, c, l, (R) => {
+                  r(he(t, [i], R));
+                }));
+          };
+        (w(),
+          p.addEventListener("click", () => {
+            ((v = !v), (p.querySelector(".caret").textContent = v ? "\u25BE" : "\u25B8"), w());
+          }),
+          u.querySelector(".reset")?.addEventListener("click", (R) => {
+            (R.stopPropagation(), r(he(t, [i], Ie(l))));
+          }));
+      } else {
+        let u = !Oe(c, l),
+          d = document.createElement("div");
+        ((d.className = `json-row leaf${u ? " dirty" : ""}`),
+          (d.innerHTML = `
+        <span class="caret"></span>
+        <span class="key">${x(String(i))}</span>
+        <span class="type t-${f}">${f}</span>
+        ${Ut(c, l)}`),
+          s.appendChild(d),
+          Nt(d, c, l, (g) => r(he(t, [i], g))));
+      }
+    }
+  }
+  function Ut(e, t) {
+    let n = ie(e),
+      r = !Oe(e, t);
+    return n === "boolean"
+      ? `<span class="ctl${r ? " changed" : ""}">
+      <span class="bool">
+        <button class="t${e === !0 ? " on" : ""}" data-bool="true">true</button>
+        <button class="f${e === !1 ? " on" : ""}" data-bool="false">false</button>
+      </span>
+      <button class="reset" title="reset to ${te(String(t))}">\u21BA</button>
+    </span>`
+      : n === "number"
+        ? `<span class="ctl${r ? " changed" : ""}">
+      <input type="number" value="${te(String(e))}"/>
+      <button class="reset" title="reset to ${te(String(t))}">\u21BA</button>
+    </span>`
+        : n === "string"
+          ? `<span class="ctl${r ? " changed" : ""}">
+      <input type="text" value="${te(String(e))}"/>
+      <button class="reset" title="reset to ${te(String(t))}">\u21BA</button>
+    </span>`
+          : `<span class="summary">${x(String(e))}</span>`;
+  }
+  function Nt(e, t, n, r) {
+    let a = ie(t);
+    if (a === "boolean")
+      e.querySelectorAll("[data-bool]").forEach((o) => {
+        o.addEventListener("click", () => r(o.dataset.bool === "true"));
+      });
+    else if (a === "number") {
+      let o = e.querySelector("input");
+      o.addEventListener("input", () => {
+        let s = o.value === "" ? t : Number(o.value);
+        Number.isNaN(s) || r(s);
+      });
+    } else if (a === "string") {
+      let o = e.querySelector("input");
+      o.addEventListener("input", () => r(o.value));
+    }
+    e.querySelector(".reset")?.addEventListener("click", (o) => {
+      (o.stopPropagation(), r(Ie(n)));
+    });
+  }
+  function te(e) {
+    return x(e);
+  }
+  var je = Yn(on(), 1);
+  var pe = /￹([^￺￻]+)￺(?:([^￺￻]*)￺)?([^￻]*)￻/g;
+  function Wr(e) {
     if (e.length === 0) return null;
     let t = e.find((n) => n.name === "en:prod");
     return t ? t.id : e[0].id;
   }
-  function dr(e) {
-    let t = new Map();
-    for (let n of e) {
-      if (!n.key || !n.key.trim()) continue;
-      let r = n.key.split("."),
-        o = r.length > 1 ? r[0] : "(root)",
-        i = o === "" ? "(root)" : o,
-        a = r.length > 1 ? r.slice(1) : r;
-      t.has(i) || t.set(i, { segment: i, children: [] });
-      let s = t.get(i);
-      for (let d = 0; d < a.length; d++) {
-        let u = a[d],
-          g = s.children.find((h) => h.segment === u);
-        (g || ((g = { segment: u, children: [] }), s.children.push(g)), (s = g));
-      }
-      ((s.value = n.value), (s.fullKey = n.key));
-    }
-    for (let n of t.values()) Ht(n);
-    return t;
-  }
-  function Ht(e) {
-    e.children.sort((t, n) => {
-      let r = t.value !== void 0,
-        o = n.value !== void 0;
-      return r !== o ? (r ? 1 : -1) : t.segment.localeCompare(n.segment);
-    });
-    for (let t of e.children) Ht(t);
-  }
-  function $(e) {
+  function z(e) {
     return e.replace(
       /[&<>"']/g,
       (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
     );
   }
-  function Bt(e, t) {
-    let n = t * 14 + 6;
-    if (e.value !== void 0) {
-      let o = e.fullKey ? J(e.fullKey) : null,
-        i = o ?? e.value;
-      return `
-      <div class="tree-row leaf" style="padding-left:${n}px" data-key="${$(e.fullKey ?? "")}">
-        <span class="tree-seg">${$(e.segment)}</span>
-        <span class="tree-val${o !== null ? " overridden" : ""}" title="${$(i)}">${$(i)}</span>
-      </div>`;
-    }
-    let r = e.children.map((o) => Bt(o, t + 1)).join("");
-    return `
-    <div class="tree-branch">
-      <div class="tree-row branch" role="button" tabindex="0" style="padding-left:${n}px" data-branch>
-        <span class="tree-caret">\u25BE</span>
-        <span class="tree-seg">${$(e.segment)}</span>
-      </div>
-      <div class="tree-children">${r}</div>
-    </div>`;
-  }
-  var K = "__se_label_target",
-    ze = "__se_label_target_style",
-    G = !1,
-    Ke = null,
-    Z = null,
-    It = null,
-    qt = [];
-  function cr() {
-    if (document.getElementById(ze)) return;
+  var ne = "__se_label_target",
+    bt = "__se_label_target_style",
+    ht = !1,
+    mt = null,
+    ue = null,
+    un = null,
+    fn = [];
+  function Jr() {
+    if (document.getElementById(bt)) return;
     let e = document.createElement("style");
-    ((e.id = ze),
+    ((e.id = bt),
       (e.textContent = `
-    .${K} {
+    .${ne} {
       outline: 2px solid #4ade80 !important;
       outline-offset: 2px !important;
       cursor: pointer !important;
@@ -2788,8 +3146,8 @@ select.se-input { cursor: pointer; }
         outline-color 0.12s !important;
       position: relative;
     }
-    .${K}:hover,
-    .${K}.__se_label_active {
+    .${ne}:hover,
+    .${ne}.__se_label_active {
       background-color: color-mix(in oklab, #4ade80 28%, transparent) !important;
       box-shadow:
         0 0 0 4px color-mix(in oklab, #4ade80 35%, transparent),
@@ -2800,126 +3158,126 @@ select.se-input { cursor: pointer; }
   `),
       document.head.appendChild(e));
   }
-  function Pt() {
-    document.getElementById(ze)?.remove();
+  function sn() {
+    document.getElementById(bt)?.remove();
   }
-  function V(e = document.body) {
+  function we(e = document.body) {
     let t = document.createTreeWalker(e, NodeFilter.SHOW_TEXT),
       n = [],
       r = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]),
-      o;
-    for (; (o = t.nextNode()); ) {
-      let a = o.nodeValue ?? "";
+      a;
+    for (; (a = t.nextNode()); ) {
+      let s = a.nodeValue ?? "";
       if (
-        !a.includes(me.LABEL_MARKER_START) ||
-        r.has(o.parentElement?.tagName ?? "") ||
-        o.parentElement?.closest?.("[data-label]")
+        !s.includes(je.LABEL_MARKER_START) ||
+        r.has(a.parentElement?.tagName ?? "") ||
+        a.parentElement?.closest?.("[data-label]")
       )
         continue;
-      let s = document.createDocumentFragment(),
-        d = 0;
-      X.lastIndex = 0;
-      let u;
-      for (; (u = X.exec(a)) !== null; ) {
-        u.index > d && s.appendChild(document.createTextNode(a.slice(d, u.index)));
-        let g = u[1],
-          h = u[2],
-          m = u[3],
-          b = document.createElement("span");
-        (b.setAttribute("data-label", g), h && b.setAttribute("data-variables", h));
-        let v = J(g),
-          p = null;
-        if (h)
+      let i = document.createDocumentFragment(),
+        c = 0;
+      pe.lastIndex = 0;
+      let f;
+      for (; (f = pe.exec(s)) !== null; ) {
+        f.index > c && i.appendChild(document.createTextNode(s.slice(c, f.index)));
+        let l = f[1],
+          u = f[2],
+          d = f[3],
+          g = document.createElement("span");
+        (g.setAttribute("data-label", l), u && g.setAttribute("data-variables", u));
+        let p = oe(l),
+          v = null;
+        if (u)
           try {
-            p = JSON.parse(h);
+            v = JSON.parse(u);
           } catch {
-            p = null;
+            v = null;
           }
-        ((b.textContent = v !== null ? ve(v, p) : m),
-          s.appendChild(b),
-          (d = u.index + u[0].length));
+        ((g.textContent = p !== null ? De(p, v) : d),
+          i.appendChild(g),
+          (c = f.index + f[0].length));
       }
-      (d < a.length && s.appendChild(document.createTextNode(a.slice(d))), n.push([o, s]));
+      (c < s.length && i.appendChild(document.createTextNode(s.slice(c))), n.push([a, i]));
     }
-    for (let [a, s] of n) a.parentNode?.replaceChild(s, a);
-    let i = window._sei18n_t;
-    for (let a of Array.from(document.querySelectorAll("[data-label]"))) {
-      let s = a.textContent ?? "",
-        d = a.getAttribute("data-label"),
-        u = J(d);
-      if (s.includes(me.LABEL_MARKER_START)) {
-        X.lastIndex = 0;
-        let g = X.exec(s);
-        if (g) {
-          g[2] && a.setAttribute("data-variables", g[2]);
-          let h = g[2] ? ur(g[2]) : null;
-          a.textContent = u !== null ? ve(u, h) : g[3];
+    for (let [s, i] of n) s.parentNode?.replaceChild(i, s);
+    let o = window._sei18n_t;
+    for (let s of Array.from(document.querySelectorAll("[data-label]"))) {
+      let i = s.textContent ?? "",
+        c = s.getAttribute("data-label"),
+        f = oe(c);
+      if (i.includes(je.LABEL_MARKER_START)) {
+        pe.lastIndex = 0;
+        let l = pe.exec(i);
+        if (l) {
+          l[2] && s.setAttribute("data-variables", l[2]);
+          let u = l[2] ? Vr(l[2]) : null;
+          s.textContent = f !== null ? De(f, u) : l[3];
         }
-      } else if (i)
+      } else if (o)
         try {
-          let g = a.dataset.variables ? JSON.parse(a.dataset.variables) : void 0,
-            h = i(d, g);
-          u !== null ? (a.textContent = ve(u, g ?? null)) : h && h !== d && (a.textContent = h);
+          let l = s.dataset.variables ? JSON.parse(s.dataset.variables) : void 0,
+            u = o(c, l);
+          f !== null ? (s.textContent = De(f, l ?? null)) : u && u !== c && (s.textContent = u);
         } catch {}
     }
-    for (let a of Array.from(document.querySelectorAll("*"))) {
-      let s = Fe(a),
-        d = new Map();
-      for (let g of s) d.set(g.attr, g);
-      let u = !1;
-      for (let g of Array.from(a.attributes)) {
-        let h = g.value;
-        if (!h.includes(me.LABEL_MARKER_START)) continue;
-        X.lastIndex = 0;
-        let m = X.exec(h);
-        if (!m) continue;
-        let b = m[1],
-          v = m[3],
-          p = J(b);
-        (a.setAttribute(g.name, p ?? v),
-          d.set(g.name, { attr: g.name, key: b, original: v }),
-          (u = !0));
+    for (let s of Array.from(document.querySelectorAll("*"))) {
+      let i = xt(s),
+        c = new Map();
+      for (let l of i) c.set(l.attr, l);
+      let f = !1;
+      for (let l of Array.from(s.attributes)) {
+        let u = l.value;
+        if (!u.includes(je.LABEL_MARKER_START)) continue;
+        pe.lastIndex = 0;
+        let d = pe.exec(u);
+        if (!d) continue;
+        let g = d[1],
+          p = d[3],
+          v = oe(g);
+        (s.setAttribute(l.name, v ?? p),
+          c.set(l.name, { attr: l.name, key: g, original: p }),
+          (f = !0));
       }
-      u && Ut(a, Array.from(d.values()));
+      f && vn(s, Array.from(c.values()));
     }
     return n.length;
   }
-  function $t(e) {
+  function ln(e) {
     let t = [],
       n = /\{\{(\w+)\}\}/g,
       r;
     for (; (r = n.exec(e)) !== null; ) t.push(r[1]);
     return t;
   }
-  function ve(e, t) {
+  function De(e, t) {
     return t
       ? e.replace(/\{\{(\w+)\}\}/g, (n, r) => {
-          let o = t[r];
-          return o != null ? String(o) : `{{${r}}}`;
+          let a = t[r];
+          return a != null ? String(a) : `{{${r}}}`;
         })
       : e;
   }
-  function ur(e) {
+  function Vr(e) {
     try {
       return JSON.parse(e);
     } catch {
       return null;
     }
   }
-  var Ct = "se-popper-host";
-  function pr() {
-    let e = document.getElementById(Ct);
+  var dn = "se-popper-host";
+  function Yr() {
+    let e = document.getElementById(dn);
     if (e?.shadowRoot) return e.shadowRoot;
-    e || ((e = document.createElement("div")), (e.id = Ct), document.body.appendChild(e));
+    e || ((e = document.createElement("div")), (e.id = dn), document.body.appendChild(e));
     let t = e.attachShadow({ mode: "open" }),
       n = document.createElement("style");
-    return ((n.textContent = de), t.appendChild(n), t);
+    return ((n.textContent = _e), t.appendChild(n), t);
   }
-  function Dt(e) {
+  function gn(e) {
     let n = window.__SE_BOOTSTRAP?.i18n?.strings?.[e];
     return typeof n == "string" ? n : null;
   }
-  function Fe(e) {
+  function xt(e) {
     let t = e.getAttribute("data-label-attrs");
     if (!t) return [];
     try {
@@ -2928,78 +3286,78 @@ select.se-input { cursor: pointer; }
     } catch {}
     return [];
   }
-  function Ut(e, t) {
+  function vn(e, t) {
     if (t.length === 0) {
       e.removeAttribute("data-label-attrs");
       return;
     }
     e.setAttribute("data-label-attrs", JSON.stringify(t));
   }
-  var fr = "[data-label], [data-label-attrs]";
-  function oe() {
-    return Array.from(document.querySelectorAll(fr));
+  var Xr = "[data-label], [data-label-attrs]";
+  function ze() {
+    return Array.from(document.querySelectorAll(Xr));
   }
-  function z() {
-    (Z?.remove(),
-      (Z = null),
-      document.querySelectorAll(`.${K}.__se_label_active`).forEach((e) => {
+  function re() {
+    (ue?.remove(),
+      (ue = null),
+      document.querySelectorAll(`.${ne}.__se_label_active`).forEach((e) => {
         e.classList.remove("__se_label_active");
       }));
   }
-  function Nt(e, t) {
+  function mn(e, t) {
     if (e.kind === "text") e.target.textContent = t;
     else if (e.attr) {
       e.target.setAttribute(e.attr, t);
-      let n = Fe(e.target),
-        r = n.findIndex((o) => o.attr === e.attr);
-      r >= 0 && ((n[r] = { ...n[r], original: t }), Ut(e.target, n));
+      let n = xt(e.target),
+        r = n.findIndex((a) => a.attr === e.attr);
+      r >= 0 && ((n[r] = { ...n[r], original: t }), vn(e.target, n));
     }
   }
-  async function gr(e, t, n) {
+  async function Zr(e, t, n) {
     let r = n.querySelector(".lp-err"),
-      o = n.querySelector('[data-action="save"]'),
-      i = J(e.key),
-      a = Dt(e.key),
-      s = $t(i ?? a ?? ""),
-      d = $t(t),
-      u = s.filter((l) => !d.includes(l)),
-      g = d.filter((l) => !s.includes(l));
-    if (u.length || g.length) {
+      a = n.querySelector('[data-action="save"]'),
+      o = oe(e.key),
+      s = gn(e.key),
+      i = ln(o ?? s ?? ""),
+      c = ln(t),
+      f = i.filter((w) => !c.includes(w)),
+      l = c.filter((w) => !i.includes(w));
+    if (f.length || l.length) {
       if (r) {
-        let l = [];
-        (u.length && l.push(`missing {{${u.join("}}, {{")}}}`),
-          g.length && l.push(`unknown {{${g.join("}}, {{")}}}`),
-          (r.textContent = `Placeholders must match exactly \u2014 ${l.join("; ")}.`));
+        let w = [];
+        (f.length && w.push(`missing {{${f.join("}}, {{")}}}`),
+          l.length && w.push(`unknown {{${l.join("}}, {{")}}}`),
+          (r.textContent = `Placeholders must match exactly \u2014 ${w.join("; ")}.`));
       }
       return;
     }
-    let h = e.variables ?? {},
-      m = ve(t, h);
-    (Nt(e, m),
-      Te(e.key, t),
+    let u = e.variables ?? {},
+      d = De(t, u);
+    (mn(e, d),
+      ve(e.key, t),
       window.dispatchEvent(new CustomEvent("se:i18n:edit", { detail: { key: e.key, value: t } })));
-    let b = _e(),
-      v = Y(),
-      p = It;
-    if (!p || (!b && !v)) {
-      z();
+    let g = Pt(),
+      p = Ce(),
+      v = un;
+    if (!v || (!g && !p)) {
+      re();
       return;
     }
-    ((o.disabled = !0), (o.textContent = "Saving\u2026"), r && (r.textContent = ""));
+    ((a.disabled = !0), (a.textContent = "Saving\u2026"), r && (r.textContent = ""));
     try {
-      if (b) await p.upsertDraftKey(b, e.key, t);
-      else if (v) {
-        let l = qt.find((y) => y.key === e.key && y.profileId === v);
-        l && (await p.updateKeyById(l.id, t));
+      if (g) await v.upsertDraftKey(g, e.key, t);
+      else if (p) {
+        let w = fn.find((R) => R.key === e.key && R.profileId === p);
+        w && (await v.updateKeyById(w.id, t));
       }
-      z();
-    } catch (l) {
-      ((o.disabled = !1),
-        (o.textContent = "Save"),
-        r && (r.textContent = l instanceof Error ? l.message : String(l)));
+      re();
+    } catch (w) {
+      ((a.disabled = !1),
+        (a.textContent = "Save"),
+        r && (r.textContent = w instanceof Error ? w.message : String(w)));
     }
   }
-  function mr(e) {
+  function Qr(e) {
     let t = e.dataset.variables;
     if (!t) return null;
     try {
@@ -3008,7 +3366,7 @@ select.se-input { cursor: pointer; }
       return null;
     }
   }
-  function vr(e) {
+  function ea(e) {
     let t = [];
     if (
       (e.hasAttribute("data-label") &&
@@ -3016,168 +3374,168 @@ select.se-input { cursor: pointer; }
           kind: "text",
           key: e.dataset.label ?? "",
           target: e,
-          variables: mr(e),
+          variables: Qr(e),
           desc: e.dataset.labelDesc ?? "",
         }),
       e.hasAttribute("data-label-attrs"))
     )
-      for (let n of Fe(e)) t.push({ kind: "attr", key: n.key, target: e, attr: n.attr });
+      for (let n of xt(e)) t.push({ kind: "attr", key: n.key, target: e, attr: n.attr });
     return t;
   }
-  function Ot(e) {
+  function cn(e) {
     return e.kind === "text"
       ? (e.target.textContent ?? "")
       : e.attr
         ? (e.target.getAttribute(e.attr) ?? "")
         : "";
   }
-  function hr(e, t) {
+  function ta(e, t) {
     if (e.kind === "attr") return e.attr ?? "attr";
     let n = e.key.split(".").pop() || e.key;
-    return t.filter((o) => o.kind === "text" && (o.key.split(".").pop() || o.key) === n).length > 1
+    return t.filter((a) => a.kind === "text" && (a.key.split(".").pop() || a.key) === n).length > 1
       ? e.key
       : n;
   }
-  function br(e, t) {
-    (z(), e.classList.add("__se_label_active"));
-    let n = vr(e);
+  function na(e, t) {
+    (re(), e.classList.add("__se_label_active"));
+    let n = ea(e);
     if (n.length === 0) return;
-    let o = Y() ?? "default",
-      i = new Map(),
-      a = 0,
-      s = document.createElement("div");
-    s.className = "label-popper";
-    let d = `<div class="lp-tabs">${n
-      .map((S, R) => {
-        let E = hr(S, n),
-          _ = R === 0 ? "lp-tab active" : "lp-tab",
-          c = S.kind === "attr" ? `@<span class="lp-tab-attr">${$(S.attr ?? "")}</span>` : $(E);
-        return `<button class="${_}" data-surface-idx="${R}">${c}</button>`;
+    let a = Ce() ?? "default",
+      o = new Map(),
+      s = 0,
+      i = document.createElement("div");
+    i.className = "label-popper";
+    let c = `<div class="lp-tabs">${n
+      .map((T, C) => {
+        let W = ta(T, n),
+          G = C === 0 ? "lp-tab active" : "lp-tab",
+          b = T.kind === "attr" ? `@<span class="lp-tab-attr">${z(T.attr ?? "")}</span>` : z(W);
+        return `<button class="${G}" data-surface-idx="${C}">${b}</button>`;
       })
       .join("")}</div>`;
-    ((s.innerHTML = `
+    ((i.innerHTML = `
     <div class="lp-head">
       <span class="lp-key mono"></span>
       <button class="lp-close" aria-label="Close">\u2715</button>
     </div>
-    ${d}
+    ${c}
     <div class="lp-body"></div>
     <div class="lp-actions">
       <button class="ibtn" data-action="reset">Reset</button>
       <button class="ibtn pri" data-action="save">Save</button>
     </div>
     <div class="lp-err"></div>`),
-      pr().appendChild(s));
-    let g = s.querySelector(".lp-key"),
-      h = s.querySelector(".lp-body"),
-      m = s.querySelector(".lp-err"),
-      b = s.querySelector('[data-action="save"]'),
-      v = s.querySelector('[data-action="reset"]');
-    function p() {
-      return n[a];
+      Yr().appendChild(i));
+    let l = i.querySelector(".lp-key"),
+      u = i.querySelector(".lp-body"),
+      d = i.querySelector(".lp-err"),
+      g = i.querySelector('[data-action="save"]'),
+      p = i.querySelector('[data-action="reset"]');
+    function v() {
+      return n[s];
     }
-    function l() {
-      let S = p();
-      (i.has(a) || i.set(a, Ot(S)), (g.textContent = S.key));
-      let R = Dt(S.key),
-        _ = J(S.key) ?? R ?? Ot(S),
-        c = S.variables ?? {},
-        f = Object.entries(c),
-        x = f.length
+    function w() {
+      let T = v();
+      (o.has(s) || o.set(s, cn(T)), (l.textContent = T.key));
+      let C = gn(T.key),
+        G = oe(T.key) ?? C ?? cn(T),
+        b = T.variables ?? {},
+        y = Object.entries(b),
+        _ = y.length
           ? `<div class="lp-field">
           <label>Variables (read-only)</label>
-          <div class="lp-vars">${f.map(([I, q]) => `<div class="lp-var"><span class="lp-var-k mono">${$(`{{${I}}}`)}</span><span class="lp-var-v">${$(String(q))}</span></div>`).join("")}</div>
+          <div class="lp-vars">${y.map(([P, q]) => `<div class="lp-var"><span class="lp-var-k mono">${z(`{{${P}}}`)}</span><span class="lp-var-v">${z(String(q))}</span></div>`).join("")}</div>
         </div>`
           : "",
-        k = S.desc ?? "",
-        B = S.kind === "attr" ? `attribute \xB7 ${$(S.attr ?? "")}` : "text content";
-      ((h.innerHTML = `
+        h = T.desc ?? "",
+        k = T.kind === "attr" ? `attribute \xB7 ${z(T.attr ?? "")}` : "text content";
+      ((u.innerHTML = `
       <div class="lp-field">
         <label>Value</label>
-        <textarea class="lp-input" spellcheck="false">${$(_)}</textarea>
+        <textarea class="lp-input" spellcheck="false">${z(G)}</textarea>
       </div>
-      ${x}
+      ${_}
       <div class="lp-field">
         <label>Current profile</label>
-        <span>${$(o)}</span>
+        <span>${z(a)}</span>
       </div>
       <div class="lp-field">
         <label>Surface</label>
-        <span class="mono">${B}</span>
+        <span class="mono">${k}</span>
       </div>
       <div class="lp-field">
         <label>Description</label>
-        <span class="${k ? "" : "empty"}">${k ? $(k) : "No description"}</span>
+        <span class="${h ? "" : "empty"}">${h ? z(h) : "No description"}</span>
       </div>`),
-        (m.textContent = ""),
-        (b.disabled = !1),
-        (b.textContent = "Save"));
-      let H = h.querySelector(".lp-input");
-      (H.focus(), H.select());
+        (d.textContent = ""),
+        (g.disabled = !1),
+        (g.textContent = "Save"));
+      let B = u.querySelector(".lp-input");
+      (B.focus(), B.select());
     }
-    (s.querySelectorAll(".lp-tab").forEach((S) => {
-      S.addEventListener("click", () => {
-        let R = Number(S.dataset.surfaceIdx);
-        R !== a &&
-          ((a = R),
-          s.querySelectorAll(".lp-tab").forEach((E, _) => {
-            E.classList.toggle("active", _ === a);
+    (i.querySelectorAll(".lp-tab").forEach((T) => {
+      T.addEventListener("click", () => {
+        let C = Number(T.dataset.surfaceIdx);
+        C !== s &&
+          ((s = C),
+          i.querySelectorAll(".lp-tab").forEach((W, G) => {
+            W.classList.toggle("active", G === s);
           }),
-          l());
+          w());
       });
     }),
-      l());
-    let y = e.getBoundingClientRect(),
-      w = s.offsetHeight,
-      M = s.offsetWidth,
-      C = 8,
-      L = y.bottom + C;
-    L + w > window.innerHeight - 8 && (L = Math.max(8, y.top - w - C));
-    let A = y.left;
-    (A + M > window.innerWidth - 8 && (A = Math.max(8, window.innerWidth - M - 8)),
-      (s.style.top = `${L}px`),
-      (s.style.left = `${A}px`),
-      s.querySelector(".lp-close").addEventListener("click", z),
-      b.addEventListener("click", () => {
-        let S = h.querySelector(".lp-input");
-        gr(p(), S.value, s);
+      w());
+    let R = e.getBoundingClientRect(),
+      m = i.offsetHeight,
+      $ = i.offsetWidth,
+      A = 8,
+      O = R.bottom + A;
+    O + m > window.innerHeight - 8 && (O = Math.max(8, R.top - m - A));
+    let M = R.left;
+    (M + $ > window.innerWidth - 8 && (M = Math.max(8, window.innerWidth - $ - 8)),
+      (i.style.top = `${O}px`),
+      (i.style.left = `${M}px`),
+      i.querySelector(".lp-close").addEventListener("click", re),
+      g.addEventListener("click", () => {
+        let T = u.querySelector(".lp-input");
+        Zr(v(), T.value, i);
       }),
-      v.addEventListener("click", () => {
-        let S = p(),
-          R = i.get(a) ?? "";
-        (Nt(S, R),
-          Te(S.key, null),
+      p.addEventListener("click", () => {
+        let T = v(),
+          C = o.get(s) ?? "";
+        (mn(T, C),
+          ve(T.key, null),
           window.dispatchEvent(
-            new CustomEvent("se:i18n:edit", { detail: { key: S.key, value: null } }),
+            new CustomEvent("se:i18n:edit", { detail: { key: T.key, value: null } }),
           ),
-          z());
+          re());
       }),
-      s.addEventListener("click", (S) => S.stopPropagation()),
-      s.addEventListener("mousedown", (S) => S.stopPropagation()),
-      (Z = s));
+      i.addEventListener("click", (T) => T.stopPropagation()),
+      i.addEventListener("mousedown", (T) => T.stopPropagation()),
+      (ue = i));
   }
-  function Q(e, t, n) {
-    if (((G = e), Ke?.(), (Ke = null), !e)) {
-      z();
-      for (let m of oe()) m.classList.remove(K);
-      Pt();
+  function ke(e, t, n) {
+    if (((ht = e), mt?.(), (mt = null), !e)) {
+      re();
+      for (let d of ze()) d.classList.remove(ne);
+      sn();
       return;
     }
-    cr();
-    for (let m of oe()) m.classList.add(K);
-    function r(m) {
-      return Z !== null && m.composedPath().includes(Z);
+    Jr();
+    for (let d of ze()) d.classList.add(ne);
+    function r(d) {
+      return ue !== null && d.composedPath().includes(ue);
     }
-    function o(m) {
-      for (let b of m.composedPath())
+    function a(d) {
+      for (let g of d.composedPath())
         if (
-          b instanceof HTMLElement &&
-          (b.hasAttribute("data-label") || b.hasAttribute("data-label-attrs"))
+          g instanceof HTMLElement &&
+          (g.hasAttribute("data-label") || g.hasAttribute("data-label-attrs"))
         )
-          return b;
+          return g;
       return null;
     }
-    let i = [
+    let o = [
       "mousedown",
       "mouseup",
       "mouseover",
@@ -3193,211 +3551,243 @@ select.se-input { cursor: pointer; }
       "submit",
       "auxclick",
     ];
-    function a(m) {
-      return "altKey" in m && typeof m.altKey == "boolean" && m.altKey;
+    function s(d) {
+      return "altKey" in d && typeof d.altKey == "boolean" && d.altKey;
     }
-    function s(m) {
-      r(m) ||
-        (o(m) && (a(m) || (m.preventDefault(), m.stopPropagation(), m.stopImmediatePropagation())));
+    function i(d) {
+      r(d) ||
+        (a(d) && (s(d) || (d.preventDefault(), d.stopPropagation(), d.stopImmediatePropagation())));
     }
-    function d(m) {
-      if (r(m)) return;
-      let b = o(m);
-      b &&
-        (a(m) || (m.preventDefault(), m.stopPropagation(), m.stopImmediatePropagation(), br(b, t)));
+    function c(d) {
+      if (r(d)) return;
+      let g = a(d);
+      g &&
+        (s(d) || (d.preventDefault(), d.stopPropagation(), d.stopImmediatePropagation(), na(g, t)));
     }
-    function u(m) {
-      Z && (r(m) || o(m) || z());
+    function f(d) {
+      ue && (r(d) || a(d) || re());
     }
-    function g(m) {
-      m.key === "Escape" && z();
+    function l(d) {
+      d.key === "Escape" && re();
     }
-    let h = new MutationObserver(() => {
-      if (G) {
-        for (let m of oe()) m.classList.add(K);
+    let u = new MutationObserver(() => {
+      if (ht) {
+        for (let d of ze()) d.classList.add(ne);
         n();
       }
     });
-    h.observe(document.body, {
+    u.observe(document.body, {
       childList: !0,
       subtree: !0,
       attributeFilter: ["data-label", "data-label-attrs"],
     });
-    for (let m of i) document.addEventListener(m, s, !0);
-    (document.addEventListener("click", d, !0),
-      document.addEventListener("mousedown", u, !0),
-      document.addEventListener("keydown", g),
-      (Ke = () => {
-        for (let m of i) document.removeEventListener(m, s, !0);
-        (document.removeEventListener("click", d, !0),
-          document.removeEventListener("mousedown", u, !0),
-          document.removeEventListener("keydown", g),
-          h.disconnect());
-        for (let m of oe()) m.classList.remove(K);
-        Pt();
+    for (let d of o) document.addEventListener(d, i, !0);
+    (document.addEventListener("click", c, !0),
+      document.addEventListener("mousedown", f, !0),
+      document.addEventListener("keydown", l),
+      (mt = () => {
+        for (let d of o) document.removeEventListener(d, i, !0);
+        (document.removeEventListener("click", c, !0),
+          document.removeEventListener("mousedown", f, !0),
+          document.removeEventListener("keydown", l),
+          u.disconnect());
+        for (let d of ze()) d.classList.remove(ne);
+        sn();
       }));
   }
-  async function jt(e, t, n, r) {
-    ((e.innerHTML = '<div class="loading">Loading i18n data\u2026</div>'),
-      (n.innerHTML = ""),
-      (It = t));
-    let o, i, a;
+  function ra(e) {
+    let t = { name: "", path: "", children: new Map(), leaves: [] };
+    for (let n of e) {
+      if (!n.key) continue;
+      let r = n.key.split(".").filter((o) => o !== "");
+      if (r.length === 0) continue;
+      let a = t;
+      for (let o = 0; o < r.length - 1; o++) {
+        let s = r[o],
+          i = a.children.get(s);
+        (i ||
+          ((i = { name: s, path: a.path ? `${a.path}.${s}` : s, children: new Map(), leaves: [] }),
+          a.children.set(s, i)),
+          (a = i));
+      }
+      a.leaves.push(n);
+    }
+    return t;
+  }
+  function bn(e) {
+    let t = e.leaves.length;
+    for (let n of e.children.values()) t += bn(n);
+    return t;
+  }
+  function aa(e, t) {
+    let n = t.split("-")[0].toLowerCase();
+    return (
+      e.find((r) => r.name.toLowerCase().startsWith(`${n}:`)) ??
+      e.find((r) => r.name.toLowerCase().startsWith(`${n}-`)) ??
+      e.find((r) => r.name.toLowerCase() === n) ??
+      null
+    );
+  }
+  function oa(e) {
+    let t = new Set(),
+      n = [];
+    for (let r of e) {
+      let a = r.name.split(/[:_-]/)[0]?.toLowerCase() ?? "";
+      !a ||
+        t.has(a) ||
+        (t.add(a), n.push({ code: a, flag: a.toUpperCase().slice(0, 2), name: r.name }));
+    }
+    return n.length > 0 ? n : [{ code: "en", flag: "EN", name: "English" }];
+  }
+  async function hn(e, t, n, r, a) {
+    ((e.innerHTML = '<div class="dtf-load"><div class="topstrip"></div></div>'), (un = t));
+    let o, s, i;
     try {
-      [o, i] = await Promise.all([t.profiles(), t.drafts()]);
-      let p = Y() ?? je(o);
-      a = await t.keys(p ?? void 0);
-    } catch (v) {
-      e.innerHTML = `<div class="err">Failed to load i18n data: ${String(v)}</div>`;
+      [o, s] = await Promise.all([t.profiles(), t.drafts()]);
+      let $ = Ce() ?? aa(o, a.locale)?.id ?? Wr(o);
+      i = await t.keys($ ?? void 0);
+    } catch (m) {
+      e.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed to load labels: ${z(String(m))}</div>`;
       return;
     }
-    qt = a;
-    let s = dr(a),
-      d = Array.from(s.keys()),
-      u = { activeChunk: d[0] ?? null };
-    function g() {
-      let p = Y() ?? je(o);
-      return o.find((l) => l.id === p)?.name ?? "(none)";
+    if (((fn = i), i.length === 0)) {
+      e.innerHTML = `
+      <div class="dtf-empty">
+        <div class="vis"><div class="ring r2"></div><div class="ring"></div><div class="core">A</div></div>
+        <h3>No <em>translation keys</em> yet</h3>
+        <p>Add keys in the admin and group them by namespace (e.g. checkout.title).</p>
+      </div>`;
+      return;
     }
-    function h() {
-      let v = `<div class="i18n-profile-header" style="padding:6px 8px;border-bottom:1px solid var(--border,#222);font:500 12px system-ui;color:var(--muted,#9aa)">Profile: <span style="color:var(--fg,#ddd);font-weight:600">${$(g())}</span></div>`;
-      if (d.length === 0) {
-        e.innerHTML =
-          v +
-          U({
-            icon: "\u{1F310}",
-            title: "No translation keys yet",
-            message: "Add keys in the admin and group them by namespace (e.g. checkout.title).",
-            ctaLabel: "Create new key",
-            ctaHref: `${t.adminUrl}/dashboard/i18n/keys`,
-          });
-        return;
-      }
-      let p = d
-          .map(
-            (w) =>
-              `<button class="tab${w === u.activeChunk ? " active" : ""}" data-chunk="${$(w)}">${$(w)}</button>`,
-          )
-          .join(""),
-        l = u.activeChunk ? s.get(u.activeChunk) : null,
-        y = l ? l.children.map((w) => Bt(w, 0)).join("") : "";
-      ((e.innerHTML = `
-      ${v}
-      <div class="tabs scroll" id="chunk-tabs">${p}</div>
-      <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${y}</div>`),
-        e.querySelectorAll(".tab[data-chunk]").forEach((w) => {
-          w.addEventListener("click", () => {
-            ((u.activeChunk = w.dataset.chunk), h());
+    let c = e.getRootNode().querySelector("select[data-locale]"),
+      f = oa(o);
+    c &&
+      ((c.innerHTML = f
+        .map(
+          (m) =>
+            `<option value="${z(m.code)}"${m.code === a.locale.split("-")[0] ? " selected" : ""}>${z(m.flag)} \xB7 ${z(m.name)}</option>`,
+        )
+        .join("")),
+      (c.onchange = () => a.setLocale(c.value)));
+    let l = n.search.trim().toLowerCase(),
+      u = l ? i.filter((m) => m.key.toLowerCase().includes(l)) : i,
+      d = ra(u),
+      g = new Map(),
+      p = null;
+    function v() {
+      let m = u.length;
+      ((e.innerHTML =
+        `<div class="dtf-group">All keys
+        <span class="cov-mini" title="${z(a.locale)} coverage">${m}/${i.length}</span>
+        <span class="pulse"><span class="d"></span>${m} ${n.view === "page" ? "rendered" : "total"}</span>
+      </div>` + w(d, 0)),
+        e.querySelectorAll(".dtf-tree-node[data-tree]").forEach(($) => {
+          $.addEventListener("click", () => {
+            let A = $.dataset.tree;
+            (g.set(A, !(g.get(A) ?? !0)), v());
           });
         }),
-        e.querySelectorAll(".tree-row.branch[data-branch]").forEach((w) => {
-          let M = () => {
-            let C = w.parentElement;
-            if (!C) return;
-            let L = C.classList.toggle("collapsed"),
-              A = w.querySelector(".tree-caret");
-            A && (A.textContent = L ? "\u25B8" : "\u25BE");
-          };
-          (w.addEventListener("click", M),
-            w.addEventListener("keydown", (C) => {
-              (C.key === "Enter" || C.key === " ") && (C.preventDefault(), M());
+        e.querySelectorAll(".dtf-lbl-row[data-key]").forEach(($) => {
+          $.addEventListener("click", (A) => {
+            if (
+              A.target.closest(".dtf-copy") ||
+              A.target.closest("textarea") ||
+              A.target.closest("button")
+            )
+              return;
+            let O = $.dataset.key;
+            ((p = p === O ? null : O), v());
+          });
+        }),
+        e.querySelectorAll("textarea[data-edit-key]").forEach(($) => {
+          ($.addEventListener("input", () => {}),
+            $.addEventListener("blur", () => {
+              let A = $.dataset.editKey,
+                O = u.find((M) => M.key === A)?.value ?? "";
+              $.value === O ? ve(A, null) : ve(A, $.value);
             }));
         }));
     }
-    function m() {
-      let v = Y() ?? je(o) ?? "",
-        p = _e() ?? "";
-      V();
-      let l = oe().length,
-        y = G
-          ? `Editing ${l} label${l === 1 ? "" : "s"}`
-          : l > 0
-            ? `Edit labels (${l})`
-            : "Edit labels",
-        w = G
-          ? "Disable in-page label editing"
-          : l === 0
-            ? "Enable in-page label editing \u2014 reloads page with ?se_edit_labels=1 to scan all translation strings"
-            : "Toggle in-page label editing (reloads page)",
-        M = o
-          .map(
-            (L) =>
-              `<option value="${$(L.id)}" ${v === L.id ? "selected" : ""}>${$(L.name)}</option>`,
-          )
-          .join(""),
-        C = [
-          '<option value="">No draft</option>',
-          ...i.map(
-            (L) =>
-              `<option value="${$(L.id)}" ${p === L.id ? "selected" : ""}>${$(L.name)}</option>`,
-          ),
-        ].join("");
-      ((n.innerHTML = `
-      <button class="subfoot-btn${G ? " on" : ""}" id="se-edit-toggle" title="${$(w)}">
-        <span class="dot"></span>
-        ${$(y)}
-      </button>
-      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${M}</select>
-      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${C}</select>`),
-        n.querySelector("#se-edit-toggle").addEventListener("click", () => {
-          W() ? Ee(!1) : G ? (Q(!1, r, () => m()), m()) : Ee(!0);
-        }),
-        n.querySelector("#se-profile-sel").addEventListener("change", (L) => {
-          let A = L.target.value || null;
-          st(A);
-        }),
-        n.querySelector("#se-draft-sel").addEventListener("change", (L) => {
-          let A = L.target.value || null;
-          at(A);
-        }));
+    function w(m, $) {
+      let A = "",
+        O = Array.from(m.children.values()).sort((M, T) => M.name.localeCompare(T.name));
+      for (let M of O) {
+        let T = g.get(M.path) ?? !0,
+          C = bn(M);
+        if (
+          ((A += `
+        <div class="dtf-tree-node" style="padding-left:${12 + $ * 14}px" data-tree="${z(M.path)}">
+          <span class="caret">${T ? "\u25BE" : "\u25B8"}</span>
+          <span class="seg">${z(M.name)}</span>
+          <span class="dotpath">${z(M.path)}</span>
+          <span class="counts"><span class="t">${C}</span></span>
+        </div>`),
+          T)
+        ) {
+          A += w(M, $ + 1);
+          for (let W of M.leaves) A += R(W, $ + 1);
+        }
+      }
+      if ($ === 0) for (let M of m.leaves) A += R(M, 0);
+      return A;
     }
-    (W() && (V(), G || Q(!0, r, () => m())),
-      h(),
-      m(),
-      window.i18n?.on?.("update", () => {
-        (V(), m());
-      }));
+    function R(m, $) {
+      let A = p === m.key,
+        O = oe(m.key),
+        M = O ?? m.value,
+        T = !M,
+        C = m.key.split(".").pop() ?? m.key,
+        W = T ? "missing" : O !== null ? "edited" : "ok",
+        G = T ? "\u2298" : O !== null ? "\u270E" : "\u25CF";
+      return `
+      <div class="dtf-lbl-row${A ? " expanded" : ""}${T ? " missing" : ""}" style="padding-left:${12 + $ * 14}px" data-key="${z(m.key)}" title="${z(m.key)}">
+        <span class="lbl-pill ${W}" title="${W}">${G}</span>
+        <div class="meta">
+          <div class="src">
+            ${z(C)}
+            <button class="dtf-copy" data-copy-leaf="${z(m.key)}" title="Copy value">${pn}</button>
+          </div>
+          <div class="sub">
+            <span class="k" title="${z(M)}">${T ? '<em style="color:var(--warn)">\u2014 not translated \u2014</em>' : z(M)}</span>
+          </div>
+        </div>
+        <span style="width:5px"></span>
+      </div>
+      <div class="dtf-detail${A ? " open" : ""}">
+        <div class="inner"><div class="pad lbl-pad">
+          <div class="lbl-edit">
+            <div class="hd"><span>${z(a.locale)}</span></div>
+            <textarea data-edit-key="${z(m.key)}" placeholder="Translate to ${z(a.locale)}\u2026">${z(M)}</textarea>
+          </div>
+          <div class="actions">
+            ${t.hideAdminLinks ? "" : `<a target="_blank" rel="noopener" href="${t.adminUrl}/dashboard/i18n/keys">\u2197 Open in dashboard</a>`}
+          </div>
+        </div></div>
+      </div>`;
+    }
+    (v(),
+      e.querySelectorAll("[data-copy-leaf]").forEach((m) => {
+        m.addEventListener("click", async ($) => {
+          $.stopPropagation();
+          let A = m.getAttribute("data-copy-leaf"),
+            O = u.find((M) => M.key === A)?.value ?? "";
+          try {
+            await navigator.clipboard.writeText(O);
+          } catch {}
+          (m.classList.add("done"),
+            (m.innerHTML = ia),
+            setTimeout(() => {
+              (m.classList.remove("done"), (m.innerHTML = pn));
+            }, 900));
+        });
+      }),
+      se() && (we(), ht || ke(!0, r, () => v())));
   }
-  function se(e, t) {
-    let n = document.createElement("div");
-    n.className = "se-modal-overlay";
-    let r = document.createElement("div");
-    ((r.className = `se-modal se-modal-${t.size ?? "md"}`), n.appendChild(r));
-    let o = document.createElement("div");
-    o.className = "se-modal-head";
-    let i = document.createElement("div");
-    ((i.className = "se-modal-title"), (i.textContent = t.title));
-    let a = document.createElement("button");
-    ((a.className = "se-modal-close"),
-      (a.type = "button"),
-      a.setAttribute("aria-label", "Close"),
-      (a.innerHTML =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>'),
-      o.appendChild(i),
-      o.appendChild(a),
-      r.appendChild(o));
-    let s = document.createElement("div");
-    ((s.className = "se-modal-body"), r.appendChild(s));
-    function d() {
-      (n.removeEventListener("click", u),
-        document.removeEventListener("keydown", g),
-        n.remove(),
-        t.onClose?.());
-    }
-    function u(h) {
-      h.target === n && d();
-    }
-    function g(h) {
-      h.key === "Escape" && d();
-    }
-    return (
-      n.addEventListener("click", u),
-      document.addEventListener("keydown", g),
-      a.addEventListener("click", d),
-      e.appendChild(n),
-      { body: s, root: r, close: d }
-    );
-  }
-  function Kt(e) {
+  var pn =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
+    ia =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  function xn(e) {
     if (!e) return () => {};
     let t = e.style.visibility;
     return (
@@ -3407,756 +3797,1084 @@ select.se-input { cursor: pointer; }
       }
     );
   }
-  async function zt(e) {
+  async function yn(e) {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let t = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !1 }),
-      n = Kt(e);
+      n = xn(e);
     try {
       let r = document.createElement("video");
       ((r.srcObject = t),
         (r.muted = !0),
         (r.playsInline = !0),
-        await new Promise((u, g) => {
-          let h = setTimeout(() => g(new Error("Capture stream timed out")), 5e3);
+        await new Promise((f, l) => {
+          let u = setTimeout(() => l(new Error("Capture stream timed out")), 5e3);
           ((r.onloadedmetadata = () => {
-            (clearTimeout(h), u());
+            (clearTimeout(u), f());
           }),
             (r.onerror = () => {
-              (clearTimeout(h), g(new Error("Capture stream errored")));
+              (clearTimeout(u), l(new Error("Capture stream errored")));
             }));
         }),
         await r.play(),
-        await new Promise((u) => requestAnimationFrame(() => u(null))),
-        await new Promise((u) => requestAnimationFrame(() => u(null))));
-      let o = r.videoWidth,
-        i = r.videoHeight;
-      if (!o || !i) throw new Error("Capture stream returned no frames.");
-      let a = document.createElement("canvas");
-      ((a.width = o), (a.height = i));
-      let s = a.getContext("2d");
-      if (!s) throw new Error("Canvas 2d context unavailable");
+        await new Promise((f) => requestAnimationFrame(() => f(null))),
+        await new Promise((f) => requestAnimationFrame(() => f(null))));
+      let a = r.videoWidth,
+        o = r.videoHeight;
+      if (!a || !o) throw new Error("Capture stream returned no frames.");
+      let s = document.createElement("canvas");
+      ((s.width = a), (s.height = o));
+      let i = s.getContext("2d");
+      if (!i) throw new Error("Canvas 2d context unavailable");
       return (
-        s.drawImage(r, 0, 0, o, i),
-        await new Promise((u, g) => {
-          a.toBlob((h) => (h ? u(h) : g(new Error("toBlob failed"))), "image/png");
+        i.drawImage(r, 0, 0, a, o),
+        await new Promise((f, l) => {
+          s.toBlob((u) => (u ? f(u) : l(new Error("toBlob failed"))), "image/png");
         })
       );
     } finally {
       (t.getTracks().forEach((r) => r.stop()), n());
     }
   }
-  async function Ft(e) {
+  async function wn(e) {
     if (!navigator.mediaDevices?.getDisplayMedia)
       throw new Error("Screen capture is not supported in this browser.");
     let t = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !0 }),
-      n = Kt(e);
-    await new Promise((d) => requestAnimationFrame(() => d(null)));
-    let o =
-        ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((d) =>
-          MediaRecorder.isTypeSupported(d),
+      n = xn(e);
+    await new Promise((c) => requestAnimationFrame(() => c(null)));
+    let a =
+        ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((c) =>
+          MediaRecorder.isTypeSupported(c),
         ) ?? "",
-      i = o ? new MediaRecorder(t, { mimeType: o }) : new MediaRecorder(t),
-      a = [];
-    (i.addEventListener("dataavailable", (d) => {
-      d.data && d.data.size > 0 && a.push(d.data);
+      o = a ? new MediaRecorder(t, { mimeType: a }) : new MediaRecorder(t),
+      s = [];
+    (o.addEventListener("dataavailable", (c) => {
+      c.data && c.data.size > 0 && s.push(c.data);
     }),
-      i.start(500),
+      o.start(500),
       t.getVideoTracks()[0]?.addEventListener("ended", () => {
-        (n(), i.state !== "inactive" && i.stop());
+        (n(), o.state !== "inactive" && o.stop());
       }));
-    function s() {
-      (t.getTracks().forEach((d) => d.stop()), n());
+    function i() {
+      (t.getTracks().forEach((c) => c.stop()), n());
     }
     return {
       stop() {
-        return new Promise((d, u) => {
-          if (i.state === "inactive") {
-            if ((s(), a.length === 0)) {
-              u(new Error("No recording data."));
+        return new Promise((c, f) => {
+          if (o.state === "inactive") {
+            if ((i(), s.length === 0)) {
+              f(new Error("No recording data."));
               return;
             }
-            d(new Blob(a, { type: o || "video/webm" }));
+            c(new Blob(s, { type: a || "video/webm" }));
             return;
           }
-          (i.addEventListener(
+          (o.addEventListener(
             "stop",
             () => {
-              (s(), d(new Blob(a, { type: o || "video/webm" })));
+              (i(), c(new Blob(s, { type: a || "video/webm" })));
             },
             { once: !0 },
           ),
-            i.addEventListener("error", (g) => u(g), { once: !0 }),
-            i.stop());
+            o.addEventListener("error", (l) => f(l), { once: !0 }),
+            o.stop());
         });
       },
       cancel() {
-        (i.state !== "inactive" && i.stop(), s());
+        (o.state !== "inactive" && o.stop(), i());
       },
     };
   }
-  var Wt = ["#f87171", "#fbbf24", "#4ade80", "#60a5fa"];
-  async function Jt(e) {
+  var kn = ["#f87171", "#fbbf24", "#4ade80", "#60a5fa"];
+  async function En(e) {
     let t = URL.createObjectURL(e),
-      n = await new Promise((c, f) => {
-        let x = new Image();
-        ((x.onload = () => c(x)),
-          (x.onerror = () => f(new Error("Failed to load screenshot for annotation."))),
-          (x.src = t));
+      n = await new Promise((b, y) => {
+        let _ = new Image();
+        ((_.onload = () => b(_)),
+          (_.onerror = () => y(new Error("Failed to load screenshot for annotation."))),
+          (_.src = t));
       }),
       r = document.createElement("div");
     r.className = "se-annot";
-    let o = document.createElement("div");
-    ((o.className = "se-annot-toolbar"), r.appendChild(o));
-    let i = "pen",
-      a = Wt[0],
-      s = [];
-    function d(c) {
-      ((i = c),
-        o
+    let a = document.createElement("div");
+    ((a.className = "se-annot-toolbar"), r.appendChild(a));
+    let o = "pen",
+      s = kn[0],
+      i = [];
+    function c(b) {
+      ((o = b),
+        a
           .querySelectorAll("[data-tool]")
-          .forEach((f) => f.classList.toggle("on", f.dataset.tool === c)));
+          .forEach((y) => y.classList.toggle("on", y.dataset.tool === b)));
     }
-    function u(c, f, x) {
-      let k = document.createElement("button");
+    function f(b, y, _) {
+      let h = document.createElement("button");
       return (
-        (k.type = "button"),
-        (k.className = "se-annot-btn"),
-        (k.dataset.tool = c),
-        (k.textContent = f),
-        (k.title = x),
-        k.addEventListener("click", () => d(c)),
-        k
+        (h.type = "button"),
+        (h.className = "se-annot-btn"),
+        (h.dataset.tool = b),
+        (h.textContent = y),
+        (h.title = _),
+        h.addEventListener("click", () => c(b)),
+        h
       );
     }
-    (o.appendChild(u("pen", "\u270E draw", "Freehand draw (P)")),
-      o.appendChild(u("arrow", "\u2197 arrow", "Arrow (A)")),
-      o.appendChild(u("rect", "\u25AD rect", "Rectangle (R)")),
-      o.appendChild(u("text", "T text", "Text (T)")),
-      d("pen"));
-    let g = document.createElement("span");
-    ((g.className = "se-annot-sep"), o.appendChild(g));
-    for (let c of Wt) {
-      let f = document.createElement("button");
-      ((f.type = "button"),
-        (f.className = "se-annot-swatch"),
-        (f.dataset.color = c),
-        (f.style.background = c),
-        c === a && f.classList.add("on"),
-        f.addEventListener("click", () => {
-          ((a = c),
-            o
+    (a.appendChild(f("pen", "\u270E draw", "Freehand draw (P)")),
+      a.appendChild(f("arrow", "\u2197 arrow", "Arrow (A)")),
+      a.appendChild(f("rect", "\u25AD rect", "Rectangle (R)")),
+      a.appendChild(f("text", "T text", "Text (T)")),
+      c("pen"));
+    let l = document.createElement("span");
+    ((l.className = "se-annot-sep"), a.appendChild(l));
+    for (let b of kn) {
+      let y = document.createElement("button");
+      ((y.type = "button"),
+        (y.className = "se-annot-swatch"),
+        (y.dataset.color = b),
+        (y.style.background = b),
+        b === s && y.classList.add("on"),
+        y.addEventListener("click", () => {
+          ((s = b),
+            a
               .querySelectorAll("[data-color]")
-              .forEach((x) => x.classList.toggle("on", x.dataset.color === c)));
+              .forEach((_) => _.classList.toggle("on", _.dataset.color === b)));
         }),
-        o.appendChild(f));
+        a.appendChild(y));
     }
-    let h = document.createElement("button");
-    ((h.type = "button"),
-      (h.className = "se-annot-btn"),
-      (h.textContent = "\u21B6 undo"),
-      (h.title = "Undo (Ctrl/Cmd+Z)"),
-      h.addEventListener("click", () => {
-        (s.pop(), L());
+    let u = document.createElement("button");
+    ((u.type = "button"),
+      (u.className = "se-annot-btn"),
+      (u.textContent = "\u21B6 undo"),
+      (u.title = "Undo (Ctrl/Cmd+Z)"),
+      u.addEventListener("click", () => {
+        (i.pop(), O());
       }),
-      o.appendChild(h));
-    let m = document.createElement("button");
-    ((m.type = "button"),
-      (m.className = "se-annot-btn"),
-      (m.textContent = "clear"),
-      m.addEventListener("click", () => {
-        ((s.length = 0), L());
+      a.appendChild(u));
+    let d = document.createElement("button");
+    ((d.type = "button"),
+      (d.className = "se-annot-btn"),
+      (d.textContent = "clear"),
+      d.addEventListener("click", () => {
+        ((i.length = 0), O());
       }),
-      o.appendChild(m));
-    let b = document.createElement("div");
-    ((b.className = "se-annot-stage"), r.appendChild(b));
-    let v = document.createElement("canvas");
-    ((v.width = n.naturalWidth),
-      (v.height = n.naturalHeight),
-      (v.className = "se-annot-canvas"),
-      (v.style.cursor = "crosshair"),
-      (v.style.touchAction = "none"),
-      b.appendChild(v));
-    let p = v.getContext("2d"),
-      l = null;
-    function y(c) {
-      let f = v.getBoundingClientRect(),
-        x = v.width / f.width,
-        k = v.height / f.height;
-      return { x: (c.clientX - f.left) * x, y: (c.clientY - f.top) * k };
+      a.appendChild(d));
+    let g = document.createElement("div");
+    ((g.className = "se-annot-stage"), r.appendChild(g));
+    let p = document.createElement("canvas");
+    ((p.width = n.naturalWidth),
+      (p.height = n.naturalHeight),
+      (p.className = "se-annot-canvas"),
+      (p.style.cursor = "crosshair"),
+      (p.style.touchAction = "none"),
+      g.appendChild(p));
+    let v = p.getContext("2d"),
+      w = null;
+    function R(b) {
+      let y = p.getBoundingClientRect(),
+        _ = p.width / y.width,
+        h = p.height / y.height;
+      return { x: (b.clientX - y.left) * _, y: (b.clientY - y.top) * h };
     }
-    function w() {
+    function m() {
       return Math.max(2, Math.round(n.naturalWidth / 400));
     }
-    function M() {
+    function $() {
       return Math.max(14, Math.round(n.naturalWidth / 60));
     }
-    function C(c) {
+    function A(b) {
       if (
-        (p.save(),
-        (p.strokeStyle = c.color),
-        (p.fillStyle = c.color),
-        (p.lineWidth = w()),
-        (p.lineCap = "round"),
-        (p.lineJoin = "round"),
-        c.tool === "rect")
+        (v.save(),
+        (v.strokeStyle = b.color),
+        (v.fillStyle = b.color),
+        (v.lineWidth = m()),
+        (v.lineCap = "round"),
+        (v.lineJoin = "round"),
+        b.tool === "rect")
       ) {
-        let f = Math.min(c.x1, c.x2),
-          x = Math.min(c.y1, c.y2),
-          k = Math.abs(c.x2 - c.x1),
-          B = Math.abs(c.y2 - c.y1);
-        p.strokeRect(f, x, k, B);
-      } else if (c.tool === "arrow") {
-        (p.beginPath(), p.moveTo(c.x1, c.y1), p.lineTo(c.x2, c.y2), p.stroke());
-        let f = Math.atan2(c.y2 - c.y1, c.x2 - c.x1),
-          x = w() * 5;
-        (p.beginPath(),
-          p.moveTo(c.x2, c.y2),
-          p.lineTo(c.x2 - x * Math.cos(f - Math.PI / 6), c.y2 - x * Math.sin(f - Math.PI / 6)),
-          p.lineTo(c.x2 - x * Math.cos(f + Math.PI / 6), c.y2 - x * Math.sin(f + Math.PI / 6)),
-          p.closePath(),
-          p.fill());
-      } else if (c.tool === "pen")
-        if (c.points.length < 2) {
-          if (c.points.length === 1) {
-            let f = c.points[0];
-            (p.beginPath(), p.arc(f.x, f.y, w() / 2, 0, Math.PI * 2), p.fill());
+        let y = Math.min(b.x1, b.x2),
+          _ = Math.min(b.y1, b.y2),
+          h = Math.abs(b.x2 - b.x1),
+          k = Math.abs(b.y2 - b.y1);
+        v.strokeRect(y, _, h, k);
+      } else if (b.tool === "arrow") {
+        (v.beginPath(), v.moveTo(b.x1, b.y1), v.lineTo(b.x2, b.y2), v.stroke());
+        let y = Math.atan2(b.y2 - b.y1, b.x2 - b.x1),
+          _ = m() * 5;
+        (v.beginPath(),
+          v.moveTo(b.x2, b.y2),
+          v.lineTo(b.x2 - _ * Math.cos(y - Math.PI / 6), b.y2 - _ * Math.sin(y - Math.PI / 6)),
+          v.lineTo(b.x2 - _ * Math.cos(y + Math.PI / 6), b.y2 - _ * Math.sin(y + Math.PI / 6)),
+          v.closePath(),
+          v.fill());
+      } else if (b.tool === "pen")
+        if (b.points.length < 2) {
+          if (b.points.length === 1) {
+            let y = b.points[0];
+            (v.beginPath(), v.arc(y.x, y.y, m() / 2, 0, Math.PI * 2), v.fill());
           }
         } else {
-          (p.beginPath(), p.moveTo(c.points[0].x, c.points[0].y));
-          for (let f = 1; f < c.points.length; f++) p.lineTo(c.points[f].x, c.points[f].y);
-          p.stroke();
+          (v.beginPath(), v.moveTo(b.points[0].x, b.points[0].y));
+          for (let y = 1; y < b.points.length; y++) v.lineTo(b.points[y].x, b.points[y].y);
+          v.stroke();
         }
-      else if (c.tool === "text" && c.text) {
-        let f = M();
-        ((p.font = `600 ${f}px ui-sans-serif, system-ui, sans-serif`), (p.textBaseline = "top"));
-        let x = f * 0.3,
-          B = p.measureText(c.text).width + x * 2,
-          H = f + x * 2;
-        ((p.fillStyle = "rgba(0,0,0,0.55)"),
-          p.fillRect(c.x1, c.y1, B, H),
-          (p.fillStyle = c.color),
-          p.fillText(c.text, c.x1 + x, c.y1 + x));
+      else if (b.tool === "text" && b.text) {
+        let y = $();
+        ((v.font = `600 ${y}px ui-sans-serif, system-ui, sans-serif`), (v.textBaseline = "top"));
+        let _ = y * 0.3,
+          k = v.measureText(b.text).width + _ * 2,
+          B = y + _ * 2;
+        ((v.fillStyle = "rgba(0,0,0,0.55)"),
+          v.fillRect(b.x1, b.y1, k, B),
+          (v.fillStyle = b.color),
+          v.fillText(b.text, b.x1 + _, b.y1 + _));
       }
-      p.restore();
+      v.restore();
     }
-    function L(c) {
-      (p.clearRect(0, 0, v.width, v.height), p.drawImage(n, 0, 0));
-      for (let f of s) C(f);
-      c && C(c);
+    function O(b) {
+      (v.clearRect(0, 0, p.width, p.height), v.drawImage(n, 0, 0));
+      for (let y of i) A(y);
+      b && A(b);
     }
-    L();
-    let A = null;
-    function S(c, f) {
-      A && A.blur();
-      let x = v.getBoundingClientRect(),
-        k = b.getBoundingClientRect(),
-        B = x.width / v.width,
-        H = x.height / v.height,
-        I = M() * B,
-        q = I * 0.3,
-        T = document.createElement("input");
-      ((T.type = "text"),
-        (T.className = "se-annot-text-input"),
-        (T.style.position = "absolute"),
-        (T.style.left = `${x.left - k.left + c * B}px`),
-        (T.style.top = `${x.top - k.top + f * H}px`),
-        (T.style.color = a),
-        (T.style.background = "rgba(0,0,0,0.55)"),
-        (T.style.border = `1px dashed ${a}`),
-        (T.style.outline = "none"),
-        (T.style.padding = `${q}px`),
-        (T.style.font = `600 ${I}px ui-sans-serif, system-ui, sans-serif`),
-        (T.style.minWidth = `${I * 4}px`),
-        (T.style.lineHeight = "1"),
-        (T.placeholder = "type\u2026"));
-      let D = !1;
-      function Xe() {
-        if (D) return;
-        D = !0;
-        let N = T.value.trim();
-        (T.remove(),
-          (A = null),
-          N && (s.push({ tool: "text", color: a, x1: c, y1: f, text: N }), L()));
+    O();
+    let M = null;
+    function T(b, y) {
+      M && M.blur();
+      let _ = p.getBoundingClientRect(),
+        h = g.getBoundingClientRect(),
+        k = _.width / p.width,
+        B = _.height / p.height,
+        P = $() * k,
+        q = P * 0.3,
+        L = document.createElement("input");
+      ((L.type = "text"),
+        (L.className = "se-annot-text-input"),
+        (L.style.position = "absolute"),
+        (L.style.left = `${_.left - h.left + b * k}px`),
+        (L.style.top = `${_.top - h.top + y * B}px`),
+        (L.style.color = s),
+        (L.style.background = "rgba(0,0,0,0.55)"),
+        (L.style.border = `1px dashed ${s}`),
+        (L.style.outline = "none"),
+        (L.style.padding = `${q}px`),
+        (L.style.font = `600 ${P}px ui-sans-serif, system-ui, sans-serif`),
+        (L.style.minWidth = `${P * 4}px`),
+        (L.style.lineHeight = "1"),
+        (L.placeholder = "type\u2026"));
+      let S = !1;
+      function I() {
+        if (S) return;
+        S = !0;
+        let K = L.value.trim();
+        (L.remove(),
+          (M = null),
+          K && (i.push({ tool: "text", color: s, x1: b, y1: y, text: K }), O()));
       }
-      function an() {
-        D || ((D = !0), T.remove(), (A = null));
+      function U() {
+        S || ((S = !0), L.remove(), (M = null));
       }
-      (T.addEventListener("keydown", (N) => {
-        (N.key === "Enter"
-          ? (N.preventDefault(), Xe())
-          : N.key === "Escape" && (N.preventDefault(), an()),
-          N.stopPropagation());
+      (L.addEventListener("keydown", (K) => {
+        (K.key === "Enter"
+          ? (K.preventDefault(), I())
+          : K.key === "Escape" && (K.preventDefault(), U()),
+          K.stopPropagation());
       }),
-        T.addEventListener("blur", Xe),
-        b.appendChild(T),
-        (A = T),
-        setTimeout(() => T.focus(), 0));
+        L.addEventListener("blur", I),
+        g.appendChild(L),
+        (M = L),
+        setTimeout(() => L.focus(), 0));
     }
-    let R = null;
-    (v.addEventListener("pointermove", (c) => {
-      ((l = y(c)),
-        R &&
-          (R.kind === "pen"
-            ? (R.shape.points.push(l), L())
-            : L({
-                tool: i === "text" ? "rect" : i,
-                color: a,
-                x1: R.x1,
-                y1: R.y1,
-                x2: l.x,
-                y2: l.y,
+    let C = null;
+    (p.addEventListener("pointermove", (b) => {
+      ((w = R(b)),
+        C &&
+          (C.kind === "pen"
+            ? (C.shape.points.push(w), O())
+            : O({
+                tool: o === "text" ? "rect" : o,
+                color: s,
+                x1: C.x1,
+                y1: C.y1,
+                x2: w.x,
+                y2: w.y,
               })));
     }),
-      v.addEventListener("pointerdown", (c) => {
-        c.preventDefault();
-        let f = y(c);
-        if (((l = f), i === "text")) {
-          S(f.x, f.y);
+      p.addEventListener("pointerdown", (b) => {
+        b.preventDefault();
+        let y = R(b);
+        if (((w = y), o === "text")) {
+          T(y.x, y.y);
           return;
         }
-        if (i === "pen") {
-          let x = { tool: "pen", color: a, points: [f] };
-          (s.push(x), (R = { kind: "pen", shape: x }), v.setPointerCapture(c.pointerId), L());
+        if (o === "pen") {
+          let _ = { tool: "pen", color: s, points: [y] };
+          (i.push(_), (C = { kind: "pen", shape: _ }), p.setPointerCapture(b.pointerId), O());
           return;
         }
-        ((R = { kind: "shape", x1: f.x, y1: f.y }), v.setPointerCapture(c.pointerId));
+        ((C = { kind: "shape", x1: y.x, y1: y.y }), p.setPointerCapture(b.pointerId));
       }),
-      v.addEventListener("pointerup", (c) => {
-        if (!R) return;
-        let f = y(c);
-        if (R.kind === "shape") {
-          let x = Math.abs(f.x - R.x1),
-            k = Math.abs(f.y - R.y1);
-          (x > 4 || k > 4) &&
-            (i === "arrow" || i === "rect") &&
-            s.push({ tool: i, color: a, x1: R.x1, y1: R.y1, x2: f.x, y2: f.y });
+      p.addEventListener("pointerup", (b) => {
+        if (!C) return;
+        let y = R(b);
+        if (C.kind === "shape") {
+          let _ = Math.abs(y.x - C.x1),
+            h = Math.abs(y.y - C.y1);
+          (_ > 4 || h > 4) &&
+            (o === "arrow" || o === "rect") &&
+            i.push({ tool: o, color: s, x1: C.x1, y1: C.y1, x2: y.x, y2: y.y });
         }
-        ((R = null), L());
+        ((C = null), O());
       }));
-    function E(c) {
-      if (!(c instanceof HTMLElement)) return !1;
-      let f = c.tagName;
-      return f === "INPUT" || f === "TEXTAREA" || c.isContentEditable;
+    function W(b) {
+      if (!(b instanceof HTMLElement)) return !1;
+      let y = b.tagName;
+      return y === "INPUT" || y === "TEXTAREA" || b.isContentEditable;
     }
-    function _(c) {
+    function G(b) {
       if (!r.isConnected) {
-        document.removeEventListener("keydown", _, !0);
+        document.removeEventListener("keydown", G, !0);
         return;
       }
-      if (E(c.target)) return;
-      let f = c.key.toLowerCase();
-      if ((c.ctrlKey || c.metaKey) && f === "z") {
-        (c.preventDefault(), s.pop(), L());
+      if (W(b.target)) return;
+      let y = b.key.toLowerCase();
+      if ((b.ctrlKey || b.metaKey) && y === "z") {
+        (b.preventDefault(), i.pop(), O());
         return;
       }
-      if (!(c.ctrlKey || c.metaKey || c.altKey))
-        if (f === "t") {
-          (c.preventDefault(), d("text"));
-          let x = l ?? { x: v.width / 2, y: v.height / 2 };
-          S(x.x, x.y);
-        } else f === "p" ? d("pen") : f === "a" ? d("arrow") : f === "r" && d("rect");
+      if (!(b.ctrlKey || b.metaKey || b.altKey))
+        if (y === "t") {
+          (b.preventDefault(), c("text"));
+          let _ = w ?? { x: p.width / 2, y: p.height / 2 };
+          T(_.x, _.y);
+        } else y === "p" ? c("pen") : y === "a" ? c("arrow") : y === "r" && c("rect");
     }
     return (
-      document.addEventListener("keydown", _, !0),
+      document.addEventListener("keydown", G, !0),
       {
         root: r,
         async export() {
-          (A && A.blur(), await new Promise((f) => requestAnimationFrame(() => f(null))));
-          let c = await new Promise((f, x) => {
-            v.toBlob((k) => (k ? f(k) : x(new Error("toBlob failed"))), "image/png");
+          (M && M.blur(), await new Promise((y) => requestAnimationFrame(() => y(null))));
+          let b = await new Promise((y, _) => {
+            p.toBlob((h) => (h ? y(h) : _(new Error("toBlob failed"))), "image/png");
           });
-          return (URL.revokeObjectURL(t), document.removeEventListener("keydown", _, !0), c);
+          return (URL.revokeObjectURL(t), document.removeEventListener("keydown", G, !0), b);
         },
       }
     );
   }
-  function ae(e) {
-    return e.replace(
-      /[&<>"']/g,
-      (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
-    );
+  var sa = {
+      open: "badge-run",
+      triaged: "badge-run",
+      in_progress: "badge-run",
+      resolved: "badge-on",
+      wont_fix: "badge-off",
+    },
+    la = {
+      open: "badge-run",
+      considering: "badge-run",
+      planned: "badge-draft",
+      shipped: "badge-on",
+      declined: "badge-off",
+    },
+    da = { critical: "badge-warn", important: "badge-run", nice_to_have: "badge-draft" };
+  function yt(e, t) {
+    return `<span class="badge ${t}">${x(e.replace(/_/g, " "))}</span>`;
   }
-  function yr(e) {
-    return `<span class="badge ${e === "open" ? "badge-run" : e === "resolved" ? "badge-on" : e === "wont_fix" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
-  }
-  function xr(e) {
-    let t = Date.now() - Date.parse(e),
-      n = Math.floor(t / 6e4);
-    if (n < 1) return "just now";
-    if (n < 60) return `${n}m ago`;
-    let r = Math.floor(n / 60);
-    return r < 24 ? `${r}h ago` : `${Math.floor(r / 24)}d ago`;
-  }
-  async function Gt(e, t, n) {
-    async function r() {
-      e.innerHTML = '<div class="loading">Loading bugs\u2026</div>';
-      let i;
-      try {
-        i = await t.bugs();
-      } catch (s) {
-        ((e.innerHTML = `<div class="err">Failed to load bugs: ${ae(String(s))}</div>`), o());
+  async function Ln(e, t, n, r) {
+    let a = e.getRootNode(),
+      o = null;
+    async function s() {
+      if (o === "bug") {
+        fa(e, t, n, a, () => {
+          ((o = null), s());
+        });
         return;
       }
-      e.innerHTML = `
-      <div class="se-feedback-head">
-        <button class="ibtn pri" id="se-file-bug">+ File a bug</button>
-        <a class="ibtn" target="_blank" rel="noopener" href="${t.adminUrl}/dashboard/bugs">Open dashboard \u2197</a>
+      if (o === "feature") {
+        va(e, t, () => {
+          ((o = null), s());
+        });
+        return;
+      }
+      await i();
+    }
+    async function i() {
+      ((e.innerHTML = `
+      <div class="se-fb-subtabs">
+        <button class="${r.sub === "bugs" ? "active" : ""}" data-sub="bugs">${E.bug} Bugs <span class="c">\u2026</span></button>
+        <button class="${r.sub === "features" ? "active" : ""}" data-sub="features">${E.sparkles} Feature requests <span class="c">\u2026</span></button>
       </div>
-      <div class="se-feedback-list" id="se-bugs-list"></div>
-    `;
-      let a = e.querySelector("#se-bugs-list");
-      (i.length === 0
-        ? (a.innerHTML =
-            '<div class="empty">No bugs filed yet. Spotted one? Hit \u201CFile a bug\u201D.</div>')
-        : (a.innerHTML = i
+      <div class="se-feedback-head">
+        <button class="ibtn pri" data-action="file">+ ${r.sub === "bugs" ? "File a bug" : "Request a feature"}</button>
+        <span class="grow"></span>
+        ${t.hideAdminLinks ? "" : `<a class="ibtn" target="_blank" rel="noopener" href="${x(t.adminUrl)}/dashboard/${r.sub === "bugs" ? "bugs" : "feature-requests"}">${E.external} Open dashboard</a>`}
+      </div>
+      <div class="se-feedback-list" data-list></div>`),
+        e.querySelectorAll("[data-sub]").forEach((u) => {
+          u.addEventListener("click", () => r.setSub(u.dataset.sub));
+        }),
+        e.querySelector('[data-action="file"]').addEventListener("click", () => {
+          ((o = r.sub === "bugs" ? "bug" : "feature"), s());
+        }));
+      let l = e.querySelector("[data-list]");
+      if (((l.innerHTML = ee()), r.sub === "bugs")) {
+        let u;
+        try {
+          u = await t.bugs();
+        } catch (p) {
+          l.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed: ${x(String(p))}</div>`;
+          return;
+        }
+        let d = e.querySelector('[data-sub="bugs"] .c');
+        d.textContent = String(u.length);
+        let g = e.querySelector('[data-sub="features"] .c');
+        try {
+          let p = await t.featureRequests();
+          g.textContent = String(p.length);
+        } catch {
+          g.textContent = "?";
+        }
+        c(l, u);
+      } else {
+        let u;
+        try {
+          u = await t.featureRequests();
+        } catch (p) {
+          l.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed: ${x(String(p))}</div>`;
+          return;
+        }
+        let d = e.querySelector('[data-sub="features"] .c');
+        d.textContent = String(u.length);
+        let g = e.querySelector('[data-sub="bugs"] .c');
+        try {
+          let p = await t.bugs();
+          g.textContent = String(p.length);
+        } catch {
+          g.textContent = "?";
+        }
+        f(l, u);
+      }
+    }
+    function c(l, u) {
+      if (u.length === 0) {
+        let { html: p, wire: v } = V({
+          title: "No <em>bugs</em> filed yet",
+          message: "Spotted something off on this page? File a bug with a screenshot or recording.",
+          actions: [
+            {
+              icon: "+",
+              label: "File a bug",
+              onClick: () => {
+                ((o = "bug"), s());
+              },
+            },
+            ...(t.hideAdminLinks
+              ? []
+              : [{ label: "Open dashboard", href: `${t.adminUrl}/dashboard/bugs` }]),
+          ],
+        });
+        ((l.innerHTML = p), v(l));
+        return;
+      }
+      let d = new Set(),
+        g = () => {
+          ((l.innerHTML = u
             .map(
-              (s) => `
-            <a class="row se-feedback-row" target="_blank" rel="noopener"
-               href="${t.adminUrl}/dashboard/bugs/${s.id}">
-              <div style="flex:1;min-width:0">
-                <div class="row-name">${ae(s.title)}</div>
-                <div class="row-sub">${xr(s.createdAt)}${s.reporterEmail ? ` \xB7 ${ae(s.reporterEmail)}` : ""}</div>
+              (p) => `
+          <div class="se-feedback-row${d.has(p.id) ? " expanded" : ""}" data-id="${x(p.id)}">
+            <span class="chev">\u25B8</span>
+            <div class="grow">
+              <div class="row-name">${x(p.title)}</div>
+              <div class="row-sub">${x(J(p.createdAt))}${p.reporterEmail ? " \xB7 " + x(p.reporterEmail) : ""}</div>
+            </div>
+            ${yt(p.status, sa[p.status])}
+          </div>
+          <div class="se-feedback-detail${d.has(p.id) ? " open" : ""}">
+            <div class="inner"><div class="pad">
+              <div class="se-fb-meta">
+                <span class="k">page</span><span>${x(p.pageUrl ?? "\u2014")}</span>
+                <span class="k">filed</span><span>${x(J(p.createdAt))}${p.reporterEmail ? " \xB7 " + x(p.reporterEmail) : ""}</span>
               </div>
-              ${yr(s.status)}
-            </a>`,
+              <div class="se-fb-actions">
+                ${t.hideAdminLinks ? "" : `<a class="ibtn pri" target="_blank" rel="noopener" href="${x(t.adminUrl)}/dashboard/bugs/${x(p.id)}">${E.external} Open in dashboard</a>`}
+              </div>
+            </div></div>
+          </div>`,
             )
             .join("")),
-        o());
+            l.querySelectorAll("[data-id]").forEach((p) => {
+              p.addEventListener("click", () => {
+                let v = p.dataset.id;
+                (d.has(v) ? d.delete(v) : d.add(v), g());
+              });
+            }));
+        };
+      g();
     }
-    function o() {
-      e.querySelector("#se-file-bug")?.addEventListener("click", () => wr(t, n, r));
+    function f(l, u) {
+      if (u.length === 0) {
+        let { html: p, wire: v } = V({
+          title: "No <em>feature requests</em> yet",
+          message: "Capture asks from the field with importance, status, and a clean trail.",
+          actions: [
+            {
+              icon: "+",
+              label: "Request a feature",
+              onClick: () => {
+                ((o = "feature"), s());
+              },
+            },
+            ...(t.hideAdminLinks
+              ? []
+              : [{ label: "Open dashboard", href: `${t.adminUrl}/dashboard/feature-requests` }]),
+          ],
+        });
+        ((l.innerHTML = p), v(l));
+        return;
+      }
+      let d = new Set(),
+        g = () => {
+          ((l.innerHTML = u
+            .map(
+              (p) => `
+          <div class="se-feedback-row${d.has(p.id) ? " expanded" : ""}" data-id="${x(p.id)}">
+            <span class="chev">\u25B8</span>
+            <div class="grow">
+              <div class="row-name">${x(p.title)}</div>
+              <div class="row-sub">${x(J(p.createdAt))}${p.reporterEmail ? " \xB7 " + x(p.reporterEmail) : ""}</div>
+            </div>
+            ${yt(p.importance, da[p.importance])}
+            ${yt(p.status, la[p.status])}
+          </div>
+          <div class="se-feedback-detail${d.has(p.id) ? " open" : ""}">
+            <div class="inner"><div class="pad">
+              <div class="se-fb-meta">
+                <span class="k">importance</span><span>${x(p.importance.replace(/_/g, " "))}</span>
+                <span class="k">filed</span><span>${x(J(p.createdAt))}${p.reporterEmail ? " \xB7 " + x(p.reporterEmail) : ""}</span>
+              </div>
+              <div class="se-fb-actions">
+                ${t.hideAdminLinks ? "" : `<a class="ibtn pri" target="_blank" rel="noopener" href="${x(t.adminUrl)}/dashboard/feature-requests/${x(p.id)}">${E.external} Open in dashboard</a>`}
+              </div>
+            </div></div>
+          </div>`,
+            )
+            .join("")),
+            l.querySelectorAll("[data-id]").forEach((p) => {
+              p.addEventListener("click", () => {
+                let v = p.dataset.id;
+                (d.has(v) ? d.delete(v) : d.add(v), g());
+              });
+            }));
+        };
+      g();
     }
-    await r();
+    await s();
   }
-  function wr(e, t, n) {
-    let r = se(t, { title: "File a bug", size: "lg" }),
-      o = [],
-      i = null;
-    r.body.innerHTML = `
+  function Sn(e, t) {
+    e.innerHTML = `
+    <div class="dtf-inline-form">
+      <div class="hd">
+        <button class="back" data-action="cancel">${E.arrowLeft} Back</button>
+        <span class="k" style="margin-left:8px">${x(t.title)}</span>
+      </div>
+      <div class="bd">${t.bodyHtml}</div>
+      <div class="ft">
+        <span class="sp"></span>
+        <button data-action="cancel">Cancel</button>
+        <button class="primary" data-action="submit">Submit</button>
+      </div>
+    </div>`;
+    let n = e.querySelector(".dtf-inline-form"),
+      r = !1,
+      a = () => {
+        if (!t.isDirty() || r) return o();
+        r = !0;
+        let i = document.createElement("div");
+        ((i.className = "dtf-discard"),
+          (i.innerHTML = `${E.alert}<span>Discard your changes?</span><span style="flex:1"></span>
+      <button class="ibtn" data-action="keep">Keep editing</button>
+      <button class="ibtn danger" data-action="discard">Discard</button>`),
+          n.querySelector(".hd").after(i),
+          i.querySelector('[data-action="keep"]').addEventListener("click", () => {
+            (i.remove(), (r = !1));
+          }),
+          i.querySelector('[data-action="discard"]').addEventListener("click", () => o()));
+      },
+      o = () => {
+        (document.removeEventListener("keydown", s), t.onCancel());
+      },
+      s = (i) => {
+        i.key === "Escape" && a();
+      };
+    return (
+      document.addEventListener("keydown", s),
+      n.querySelectorAll('[data-action="cancel"]').forEach((i) => {
+        i.addEventListener("click", () => a());
+      }),
+      n.querySelector('[data-action="submit"]').addEventListener("click", async () => {
+        await t.onSubmit();
+      }),
+      { host: n, close: o }
+    );
+  }
+  function ca(e) {
+    let t =
+        e.kind === "screenshot"
+          ? '<div class="preview screenshot"></div>'
+          : e.kind === "recording"
+            ? `<div class="preview recording">
+             <div class="play">${E.playFilled}</div>
+             ${e.duration ? `<span class="dur">${ua(e.duration)}</span>` : ""}
+           </div>`
+            : `<div class="preview file">${E.file}<span class="ext">.${x(pa(e.filename))}</span></div>`,
+      n =
+        e.progress != null && e.progress < 100
+          ? `<div class="progress"><div class="fill" style="width:${e.progress}%"></div></div>`
+          : "",
+      r = e.kind === "screenshot" ? E.camera : e.kind === "recording" ? E.record : E.file;
+    return `
+    <div class="se-attach-card" data-attach="${x(e.id)}">
+      ${t}
+      ${n}
+      <button class="rm" data-remove="${x(e.id)}" title="Remove">${E.x}</button>
+      <div class="meta">
+        <span class="ic">${r}</span>
+        <span class="name" title="${x(e.filename)}">${x(e.filename)}</span>
+        <span class="size">${x(It(e.blob.size))}</span>
+      </div>
+    </div>`;
+  }
+  function pa(e) {
+    let t = e.lastIndexOf(".");
+    return t > 0 ? e.slice(t + 1) : "file";
+  }
+  function ua(e) {
+    let t = Math.round(e / 1e3);
+    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+  }
+  function fa(e, t, n, r, a) {
+    let o = [],
+      s = null,
+      i = `
     <div class="se-form">
       <label class="se-field">
         <span class="se-label">Title</span>
-        <input class="se-input" id="se-b-title" placeholder="Short summary of the bug" />
+        <input class="se-input" data-field="title" placeholder="Short summary of the bug" />
       </label>
       <label class="se-field">
         <span class="se-label">Steps to reproduce</span>
-        <textarea class="se-input se-textarea" id="se-b-steps" rows="4" placeholder="1. Go to\u2026&#10;2. Click\u2026"></textarea>
+        <textarea class="se-input se-textarea" data-field="steps" rows="4"
+          placeholder="1. Go to\u2026&#10;2. Click\u2026"></textarea>
       </label>
       <div class="se-field-row">
         <label class="se-field">
           <span class="se-label">Actual result</span>
-          <textarea class="se-input se-textarea" id="se-b-actual" rows="3"></textarea>
+          <textarea class="se-input se-textarea" data-field="actual" rows="3"></textarea>
         </label>
         <label class="se-field">
           <span class="se-label">Expected result</span>
-          <textarea class="se-input se-textarea" id="se-b-expected" rows="3"></textarea>
+          <textarea class="se-input se-textarea" data-field="expected" rows="3"></textarea>
         </label>
       </div>
       <div class="se-field">
         <span class="se-label">Attachments</span>
         <div class="se-actions">
-          <button type="button" class="ibtn" id="se-b-screenshot">\u{1F4F7} Screenshot</button>
-          <button type="button" class="ibtn" id="se-b-record">\u23FA Record screen</button>
-          <button type="button" class="ibtn" id="se-b-upload">\u{1F4CE} Upload file</button>
-          <input type="file" id="se-b-file" hidden />
+          <button type="button" class="ibtn" data-action="screenshot">${E.camera} Screenshot</button>
+          <button type="button" class="ibtn" data-action="record">${E.record} Record screen</button>
+          <button type="button" class="ibtn" data-action="upload">${E.upload} Upload file</button>
+          <input type="file" hidden data-action="file-input"/>
         </div>
-        <div class="se-attach-list" id="se-b-attach"></div>
-        <div class="se-status" id="se-b-status"></div>
+        <div class="se-attach-grid" data-attach-grid></div>
+        <div class="se-status" data-status></div>
       </div>
-    </div>
-    <div class="se-modal-footer">
-      <button type="button" class="ibtn" id="se-b-cancel">Cancel</button>
-      <button type="button" class="ibtn pri" id="se-b-submit">Submit</button>
-    </div>
-  `;
-    let a = r.body.querySelector("#se-b-title"),
-      s = r.body.querySelector("#se-b-steps"),
-      d = r.body.querySelector("#se-b-actual"),
-      u = r.body.querySelector("#se-b-expected"),
-      g = r.body.querySelector("#se-b-attach"),
-      h = r.body.querySelector("#se-b-status"),
-      m = r.body.querySelector("#se-b-file"),
-      b = r.body.querySelector("#se-b-record");
-    function v() {
-      if (o.length === 0) {
-        g.innerHTML = "";
-        return;
-      }
-      ((g.innerHTML = o
-        .map(
-          (l, y) => `
-          <div class="se-attach-item">
-            <span>${ae(l.filename)} <span class="dim">(${(l.blob.size / 1024).toFixed(0)} KB)</span></span>
-            <button type="button" class="ibtn danger" data-idx="${y}">remove</button>
-          </div>`,
-        )
-        .join("")),
-        g.querySelectorAll("button[data-idx]").forEach((l) => {
-          l.addEventListener("click", () => {
-            (o.splice(Number(l.dataset.idx), 1), v());
-          });
-        }));
-    }
-    function p(l, y = !1) {
-      ((h.textContent = l), (h.style.color = y ? "var(--se-danger)" : "var(--se-fg-3)"));
-    }
-    (r.body.querySelector("#se-b-screenshot").addEventListener("click", async () => {
-      p("Pick a screen/tab to capture\u2026");
-      try {
-        let l = await zt(t.host);
-        (p(""),
-          Er(t, l, (y) => {
-            (o.push({ kind: "screenshot", filename: `screenshot-${Date.now()}.png`, blob: y }),
-              v());
+    </div>`,
+      c = { title: "", steps: "", actual: "", expected: "" },
+      f = Sn(e, {
+        title: "File a bug",
+        bodyHtml: i,
+        isDirty: () => !!(c.title || c.steps || c.actual || c.expected || o.length),
+        onSubmit: R,
+        onCancel: a,
+      }),
+      l = f.host,
+      u = l.querySelector("[data-status]"),
+      d = (m, $ = !1) => {
+        ((u.textContent = m), u.classList.toggle("err", $));
+      },
+      g = l.querySelector("[data-attach-grid]"),
+      p = () => {
+        ((g.innerHTML = o.map(ca).join("")),
+          g.querySelectorAll("[data-remove]").forEach((m) => {
+            m.addEventListener("click", ($) => {
+              $.stopPropagation();
+              let A = o.findIndex((O) => O.id === m.dataset.remove);
+              (A >= 0 && o.splice(A, 1), p());
+            });
           }));
-      } catch (l) {
-        p(String(l instanceof Error ? l.message : l), !0);
-      }
+      };
+    (l.querySelectorAll("[data-field]").forEach((m) => {
+      m.addEventListener("input", () => {
+        c[m.dataset.field] = m.value;
+      });
     }),
-      b.addEventListener("click", async () => {
-        if (i) {
-          try {
-            ((b.disabled = !0), p("Finalizing recording\u2026"));
-            let l = await i.stop();
-            ((i = null),
-              (b.textContent = "\u23FA Record screen"),
-              b.classList.remove("danger"),
-              o.push({ kind: "recording", filename: `recording-${Date.now()}.webm`, blob: l }),
-              v(),
-              p(""));
-          } catch (l) {
-            p(String(l instanceof Error ? l.message : l), !0);
-          } finally {
-            b.disabled = !1;
-          }
-          return;
-        }
-        p("Pick a screen/tab to record\u2026");
+      l.querySelector('[data-action="screenshot"]').addEventListener("click", async () => {
+        d("Pick a screen/tab to capture\u2026");
         try {
-          ((i = await Ft(t.host)),
-            (b.textContent = "\u25A0 Stop recording"),
-            b.classList.add("danger"),
-            p("Recording\u2026 click stop when done."));
-        } catch (l) {
-          (p(String(l instanceof Error ? l.message : l), !0), (i = null));
-        }
-      }),
-      r.body.querySelector("#se-b-upload").addEventListener("click", () => m.click()),
-      m.addEventListener("change", () => {
-        let l = m.files?.[0];
-        l && (o.push({ kind: "file", filename: l.name, blob: l }), (m.value = ""), v());
-      }),
-      r.body.querySelector("#se-b-cancel").addEventListener("click", () => {
-        (i && i.cancel(), r.close());
-      }),
-      r.body.querySelector("#se-b-submit").addEventListener("click", async () => {
-        let l = r.body.querySelector("#se-b-submit"),
-          y = a.value.trim();
-        if (!y) {
-          (p("Title is required", !0), a.focus());
-          return;
-        }
-        ((l.disabled = !0), p("Submitting\u2026"));
-        try {
-          let w = await e.createBug({
-            title: y,
-            stepsToReproduce: s.value,
-            actualResult: d.value,
-            expectedResult: u.value,
-            pageUrl: window.location.href,
-            userAgent: navigator.userAgent,
-            viewport: `${window.innerWidth}x${window.innerHeight}`,
-          });
-          for (let M = 0; M < o.length; M++) {
-            let C = o[M];
-            (p(`Uploading attachment ${M + 1}/${o.length}\u2026`),
-              await e.uploadAttachment({
-                reportKind: "bug",
-                reportId: w.id,
-                kind: C.kind,
-                filename: C.filename,
-                blob: C.blob,
-              }));
-          }
-          (r.close(), n());
-        } catch (w) {
-          (p(String(w instanceof Error ? w.message : w), !0), (l.disabled = !1));
+          let m = await yn(r.host);
+          (d(""),
+            ga(n, r, m, ($) => {
+              (o.push({
+                id: "at_" + Math.random().toString(36).slice(2, 7),
+                kind: "screenshot",
+                filename: `screenshot-${Date.now()}.png`,
+                blob: $,
+              }),
+                p());
+            }));
+        } catch (m) {
+          d(m instanceof Error ? m.message : String(m), !0);
         }
       }));
-  }
-  function Er(e, t, n) {
-    let r = se(e, { title: "Annotate screenshot", size: "lg" });
-    r.body.innerHTML = `<div class="se-annot-host" id="se-annot-host"></div>
-    <div class="se-modal-footer">
-      <button type="button" class="ibtn" id="se-a-cancel">Cancel</button>
-      <button type="button" class="ibtn pri" id="se-a-save">Use screenshot</button>
-    </div>`;
-    let o = r.body.querySelector("#se-annot-host");
-    ((o.innerHTML = '<div class="loading">Preparing annotator\u2026</div>'),
-      Jt(t)
-        .then((i) => {
-          ((o.innerHTML = ""),
-            o.appendChild(i.root),
-            r.body.querySelector("#se-a-cancel").addEventListener("click", () => r.close()),
-            r.body.querySelector("#se-a-save").addEventListener("click", async () => {
-              let a = await i.export();
-              (r.close(), n(a));
-            }));
-        })
-        .catch((i) => {
-          o.innerHTML = `<div class="err">${ae(String(i))}</div>`;
-        }));
-  }
-  function We(e) {
-    return e.replace(
-      /[&<>"']/g,
-      (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
-    );
-  }
-  function kr(e) {
-    return `<span class="badge ${e === "open" ? "badge-run" : e === "shipped" ? "badge-on" : e === "declined" ? "badge-off" : "badge-draft"}">${e.replace("_", " ")}</span>`;
-  }
-  function Sr(e) {
-    let t = e.replace("_", " ");
-    return `<span class="badge ${e === "critical" ? "badge-off" : e === "important" ? "badge-run" : "badge-draft"}">${t}</span>`;
-  }
-  function Lr(e) {
-    let t = Date.now() - Date.parse(e),
-      n = Math.floor(t / 6e4);
-    if (n < 1) return "just now";
-    if (n < 60) return `${n}m ago`;
-    let r = Math.floor(n / 60);
-    return r < 24 ? `${r}h ago` : `${Math.floor(r / 24)}d ago`;
-  }
-  async function Vt(e, t, n) {
-    async function r() {
-      e.innerHTML = '<div class="loading">Loading feature requests\u2026</div>';
-      let o;
-      try {
-        o = await t.featureRequests();
-      } catch (a) {
-        e.innerHTML = `<div class="err">Failed to load feature requests: ${We(String(a))}</div>`;
+    let v = l.querySelector('[data-action="record"]');
+    v.addEventListener("click", async () => {
+      if (s) {
+        try {
+          ((v.disabled = !0), d("Finalizing recording\u2026"));
+          let m = await s.stop();
+          ((s = null),
+            v.classList.remove("recording"),
+            (v.innerHTML = `${E.record} Record screen`),
+            o.push({
+              id: "at_" + Math.random().toString(36).slice(2, 7),
+              kind: "recording",
+              filename: `recording-${Date.now()}.webm`,
+              blob: m,
+            }),
+            p(),
+            d(""));
+        } catch (m) {
+          d(m instanceof Error ? m.message : String(m), !0);
+        } finally {
+          v.disabled = !1;
+        }
         return;
       }
-      e.innerHTML = `
-      <div class="se-feedback-head">
-        <button class="ibtn pri" id="se-file-fr">+ Request a feature</button>
-        <a class="ibtn" target="_blank" rel="noopener" href="${t.adminUrl}/dashboard/feature-requests">Open dashboard \u2197</a>
-      </div>
-      <div class="se-feedback-list" id="se-fr-list"></div>
-    `;
-      let i = e.querySelector("#se-fr-list");
-      (o.length === 0
-        ? (i.innerHTML = '<div class="empty">No feature requests yet.</div>')
-        : (i.innerHTML = o
-            .map(
-              (a) => `
-            <a class="row se-feedback-row" target="_blank" rel="noopener"
-               href="${t.adminUrl}/dashboard/feature-requests/${a.id}">
-              <div style="flex:1;min-width:0">
-                <div class="row-name">${We(a.title)}</div>
-                <div class="row-sub">${Lr(a.createdAt)}${a.reporterEmail ? ` \xB7 ${We(a.reporterEmail)}` : ""}</div>
-              </div>
-              ${Sr(a.importance)}
-              ${kr(a.status)}
-            </a>`,
-            )
-            .join("")),
-        e.querySelector("#se-file-fr").addEventListener("click", () => _r(t, n, r)));
+      d("Pick a screen/tab to record\u2026");
+      try {
+        ((s = await wn(r.host)),
+          v.classList.add("recording"),
+          (v.innerHTML = `${E.record} Stop recording`),
+          d("Recording\u2026"));
+      } catch (m) {
+        (d(m instanceof Error ? m.message : String(m), !0), (s = null));
+      }
+    });
+    let w = l.querySelector('[data-action="file-input"]');
+    (l.querySelector('[data-action="upload"]').addEventListener("click", () => w.click()),
+      w.addEventListener("change", () => {
+        let m = w.files?.[0];
+        m &&
+          (o.push({
+            id: "at_" + Math.random().toString(36).slice(2, 7),
+            kind: "file",
+            filename: m.name,
+            blob: m,
+          }),
+          (w.value = ""),
+          p());
+      }));
+    async function R() {
+      if (!c.title.trim()) {
+        d("Title is required", !0);
+        return;
+      }
+      d("Submitting\u2026");
+      try {
+        let m = await t.createBug({
+          title: c.title.trim(),
+          stepsToReproduce: c.steps,
+          actualResult: c.actual,
+          expectedResult: c.expected,
+          pageUrl: window.location.href,
+          userAgent: navigator.userAgent,
+          viewport: `${window.innerWidth}x${window.innerHeight}`,
+        });
+        for (let $ = 0; $ < o.length; $++) {
+          let A = o[$];
+          (d(`Uploading ${$ + 1}/${o.length}\u2026`),
+            await t.uploadAttachment({
+              reportKind: "bug",
+              reportId: m.id,
+              kind: A.kind,
+              filename: A.filename,
+              blob: A.blob,
+            }));
+        }
+        f.close();
+      } catch (m) {
+        d(m instanceof Error ? m.message : String(m), !0);
+      }
     }
-    await r();
   }
-  function _r(e, t, n) {
-    let r = se(t, { title: "Request a feature", size: "lg" });
-    r.body.innerHTML = `
+  function ga(e, t, n, r) {
+    let a = document.createElement("div");
+    ((a.className = "dtf-modal-bg"),
+      (a.innerHTML = `
+    <div class="dtf-modal lg">
+      <div class="hd">
+        <span class="k">Annotate screenshot</span>
+        <button class="x" data-action="close">${E.x}</button>
+      </div>
+      <div class="bd" data-host>Preparing annotator\u2026</div>
+      <div class="ft">
+        <span class="sp"></span>
+        <button data-action="close">Cancel</button>
+        <button class="primary" data-action="save">Use screenshot</button>
+      </div>
+    </div>`),
+      e.appendChild(a));
+    let o = () => a.remove();
+    (a.querySelectorAll('[data-action="close"]').forEach((i) => i.addEventListener("click", o)),
+      a.addEventListener("click", (i) => {
+        i.target === a && o();
+      }));
+    let s = a.querySelector("[data-host]");
+    En(n)
+      .then((i) => {
+        ((s.innerHTML = ""),
+          s.appendChild(i.root),
+          a.querySelector('[data-action="save"]').addEventListener("click", async () => {
+            let c = await i.export();
+            (o(), r(c));
+          }));
+      })
+      .catch((i) => {
+        s.innerHTML = `<div class="err">${x(String(i))}</div>`;
+      });
+  }
+  function va(e, t, n) {
+    let r = { title: "", description: "", useCase: "", importance: "nice_to_have" },
+      o = Sn(e, {
+        title: "Request a feature",
+        bodyHtml: `
     <div class="se-form">
       <label class="se-field">
         <span class="se-label">Title</span>
-        <input class="se-input" id="se-f-title" placeholder="One-line summary of the feature" />
+        <input class="se-input" data-field="title" placeholder="One-line summary of the feature" />
       </label>
       <label class="se-field">
         <span class="se-label">What would it do?</span>
-        <textarea class="se-input se-textarea" id="se-f-desc" rows="4" placeholder="Describe the feature you'd like to see."></textarea>
+        <textarea class="se-input se-textarea" data-field="description" rows="4"
+          placeholder="Describe the feature you'd like to see."></textarea>
       </label>
       <label class="se-field">
         <span class="se-label">Use case / why does it matter?</span>
-        <textarea class="se-input se-textarea" id="se-f-use" rows="3" placeholder="Who needs this? What does it unlock?"></textarea>
+        <textarea class="se-input se-textarea" data-field="useCase" rows="3"
+          placeholder="Who needs this? What does it unlock?"></textarea>
       </label>
       <label class="se-field">
         <span class="se-label">Importance</span>
-        <select class="se-input" id="se-f-imp">
+        <select class="se-input" data-field="importance">
           <option value="nice_to_have">Nice to have</option>
           <option value="important">Important</option>
           <option value="critical">Critical</option>
         </select>
       </label>
-      <div class="se-status" id="se-f-status"></div>
-    </div>
-    <div class="se-modal-footer">
-      <button type="button" class="ibtn" id="se-f-cancel">Cancel</button>
-      <button type="button" class="ibtn pri" id="se-f-submit">Submit</button>
-    </div>
-  `;
-    let o = r.body.querySelector("#se-f-title"),
-      i = r.body.querySelector("#se-f-desc"),
-      a = r.body.querySelector("#se-f-use"),
-      s = r.body.querySelector("#se-f-imp"),
-      d = r.body.querySelector("#se-f-status");
-    (r.body.querySelector("#se-f-cancel").addEventListener("click", () => r.close()),
-      r.body.querySelector("#se-f-submit").addEventListener("click", async () => {
-        let u = o.value.trim();
-        if (!u) {
-          ((d.textContent = "Title is required"), (d.style.color = "var(--se-danger)"), o.focus());
-          return;
-        }
-        let g = r.body.querySelector("#se-f-submit");
-        ((g.disabled = !0),
-          (d.textContent = "Submitting\u2026"),
-          (d.style.color = "var(--se-fg-3)"));
+      <div class="se-status" data-status></div>
+    </div>`,
+        isDirty: () => !!(r.title || r.description || r.useCase || r.importance !== "nice_to_have"),
+        onSubmit: f,
+        onCancel: n,
+      }),
+      s = o.host,
+      i = s.querySelector("[data-status]"),
+      c = (l, u = !1) => {
+        ((i.textContent = l), i.classList.toggle("err", u));
+      };
+    s.querySelectorAll("[data-field]").forEach((l) => {
+      (l.addEventListener("input", () => {
+        r[l.dataset.field] = l.value;
+      }),
+        l.addEventListener("change", () => {
+          r[l.dataset.field] = l.value;
+        }));
+    });
+    async function f() {
+      if (!r.title.trim()) {
+        c("Title is required", !0);
+        return;
+      }
+      c("Submitting\u2026");
+      try {
+        (await t.createFeatureRequest({
+          title: r.title.trim(),
+          description: r.description,
+          useCase: r.useCase,
+          importance: r.importance,
+          pageUrl: window.location.href,
+          userAgent: navigator.userAgent,
+        }),
+          o.close());
+      } catch (l) {
+        c(l instanceof Error ? l.message : String(l), !0);
+      }
+    }
+  }
+  var ma = 200,
+    Ee = [];
+  function ba(e, t) {
+    (Ee.push({ ts: Date.now(), level: e, message: t }), Ee.length > ma && Ee.shift());
+  }
+  typeof window < "u" &&
+    window.addEventListener("se:state:update", (e) => {
+      let t = e.detail,
+        n = "state update";
+      if (t && typeof t == "object")
         try {
-          (await e.createFeatureRequest({
-            title: u,
-            description: i.value,
-            useCase: a.value,
-            importance: s.value,
-            pageUrl: window.location.href,
-            userAgent: navigator.userAgent,
-          }),
-            r.close(),
-            n());
-        } catch (h) {
-          ((d.textContent = String(h instanceof Error ? h.message : h)),
-            (d.style.color = "var(--se-danger)"),
-            (g.disabled = !1));
-        }
-      }));
+          n = JSON.stringify(t).slice(0, 200);
+        } catch {}
+      ba("log", n);
+    });
+  function ha(e, t) {
+    let n = e - t;
+    return n < 1e3 ? `${n}ms` : n < 6e4 ? `${(n / 1e3).toFixed(1)}s` : `${Math.floor(n / 6e4)}m`;
   }
-  function Yt(e, t) {
-    return t ? (t.startsWith("*.") ? e.endsWith(t.slice(1)) : e === t || e === `www.${t}`) : !1;
+  function $n(e) {
+    if (Ee.length === 0) {
+      let { html: r, wire: a } = V({
+        title: "No <em>events</em> yet",
+        message:
+          "SDK evaluations and overrides will stream here as the page interacts with ShipEasy.",
+      });
+      ((e.innerHTML = r), a(e));
+      return;
+    }
+    let t = Date.now(),
+      n = Ee.slice().reverse();
+    e.innerHTML =
+      `<div class="dtf-group">Live event stream<span class="pulse"><span class="d"></span>${n.length}/buf</span></div>` +
+      n
+        .map(
+          (r) => `
+      <div class="dtf-event">
+        <span class="ts">${ha(t, r.ts)} ago</span>
+        <span class="lvl${r.level === "warn" ? " warn" : r.level === "err" ? " err" : ""}">${r.level === "warn" ? "!" : r.level === "err" ? "\xD7" : "\u203A"}</span>
+        <span class="msg">${x(r.message)}</span>
+        <span class="ms"></span>
+      </div>`,
+        )
+        .join("");
   }
-  var Tr = {
+  var _n = "shipeasy_hide_admin_links";
+  function Tn(e, t) {
+    return t
+      ? t === "*"
+        ? !0
+        : t.startsWith("*.")
+          ? e.endsWith(t.slice(1))
+          : e === t || e === `www.${t}`
+      : !1;
+  }
+  var Mn = "sdk_client_6cecf6208cb443faa86b9ce6c007aee4",
+    xa = "https://cdn.shipeasy.ai",
+    ya = { hideAdminLinks: !1 },
+    wt = { ...ya },
+    Le = null,
+    kt = new Set();
+  function Rn() {
+    return wt;
+  }
+  function An(e) {
+    return (kt.add(e), () => kt.delete(e));
+  }
+  function Pn() {
+    return Mn
+      ? Le ||
+          ((Le = (async () => {
+            try {
+              let e = await fetch(`${xa}/sdk/evaluate`, {
+                method: "POST",
+                headers: { "X-SDK-Key": Mn, "Content-Type": "application/json" },
+                body: JSON.stringify({ user: {} }),
+              });
+              if (!e.ok) return;
+              let r = { hideAdminLinks: !!((await e.json()).flags ?? {})[_n] },
+                a = r.hideAdminLinks !== wt.hideAdminLinks;
+              if (((wt = r), a)) for (let o of kt) o();
+            } catch {
+            } finally {
+              Le = null;
+            }
+          })()),
+          Le)
+      : Promise.resolve();
+  }
+  var wa = {
       gates: "gates",
       configs: "configs",
       experiments: "experiments",
-      i18n: "translations",
-      bugs: "feedback",
-      features: "feedback",
+      labels: "translations",
+      feedback: "feedback",
+      user: "user",
+      events: "events",
     },
-    Je = "se_dt_project";
-  function Rr() {
+    fe = [
+      { k: "user", label: "User", icon: E.users, description: "props \xB7 impersonate" },
+      { k: "gates", label: "Gates", icon: E.shield, description: "flags & killswitches" },
+      { k: "experiments", label: "Experiments", icon: E.flask, description: "A/B variants" },
+      { k: "configs", label: "Configs", icon: E.sliders, description: "remote values" },
+      { k: "labels", label: "Translations", icon: E.book, description: "i18n strings" },
+      { k: "feedback", label: "Feedback", icon: E.bug, description: "bugs + requests" },
+      { k: "events", label: "Events", icon: E.activity, description: "live stream" },
+    ],
+    Et = "se_dt_project",
+    In = "se_l_overlay",
+    Lt = "se_l_active_panel",
+    ka = 24,
+    Ea = 56,
+    Cn = { edge: "right", offsetPct: 50, railIconSize: 32, collapsed: !1 };
+  function La() {
     try {
-      let e = sessionStorage.getItem(Je);
+      let e = sessionStorage.getItem(Et);
       if (e) return JSON.parse(e);
     } catch {}
     return null;
   }
-  function he(e) {
+  function Ue(e) {
     try {
-      e === null ? sessionStorage.removeItem(Je) : sessionStorage.setItem(Je, JSON.stringify(e));
+      e === null ? sessionStorage.removeItem(Et) : sessionStorage.setItem(Et, JSON.stringify(e));
     } catch {}
   }
-  function Mr(e, t) {
+  function Sa() {
+    try {
+      let e = localStorage.getItem(In);
+      if (e) return { ...Cn, ...JSON.parse(e) };
+    } catch {}
+    return { ...Cn };
+  }
+  function ae(e) {
+    try {
+      localStorage.setItem(In, JSON.stringify(e));
+    } catch {}
+  }
+  var $a = new Set(["user", "gates", "experiments", "configs", "labels", "feedback", "events"]);
+  function Hn() {
+    try {
+      let e = sessionStorage.getItem(Lt);
+      if (e && $a.has(e)) return e;
+    } catch {}
+    return null;
+  }
+  function Se(e) {
+    try {
+      e === null ? sessionStorage.removeItem(Lt) : sessionStorage.setItem(Lt, e);
+    } catch {}
+  }
+  function _a() {
+    if (typeof window > "u") return null;
+    let e = window.__SE_BOOTSTRAP;
+    return typeof e?.apiKey == "string" && e.apiKey ? e.apiKey : null;
+  }
+  function Ta(e, t) {
     return (
       e.translations === t.translations &&
       e.configs === t.configs &&
@@ -4165,513 +4883,619 @@ select.se-input { cursor: pointer; }
       e.feedback === t.feedback
     );
   }
-  var Ar =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>',
-    Pr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>',
-    $r =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>',
-    Cr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>',
-    Or =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>',
-    Hr =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>',
-    Br =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
-    Ir =
-      '<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>',
-    le = {
-      gates: { icon: Ar, label: "Gates" },
-      configs: { icon: Pr, label: "Configs" },
-      experiments: { icon: $r, label: "Experiments" },
-      i18n: { icon: Cr, label: "Translations" },
-      bugs: { icon: Or, label: "Bugs" },
-      features: { icon: Hr, label: "Feature requests" },
-    },
-    nn = "se_l_overlay",
-    Ge = "se_l_active_panel";
-  function qr() {
-    try {
-      let e = sessionStorage.getItem(Ge);
-      if (e && e in le) return e;
-    } catch {}
-    return null;
+  function On(e) {
+    return !!(e.hideAdminLinks || Rn().hideAdminLinks);
   }
-  function Xt(e) {
-    try {
-      e === null ? sessionStorage.removeItem(Ge) : sessionStorage.setItem(Ge, e);
-    } catch {}
-  }
-  var Ve = 240,
-    Zt = 580,
-    Ye = 180,
-    Qt = 700,
-    en = { edge: "right", offsetPct: 50, panelWidth: 440, panelHeight: 460 };
-  function Dr() {
-    try {
-      let e = localStorage.getItem(nn);
-      if (e) return { ...en, ...JSON.parse(e) };
-    } catch {}
-    return { ...en };
-  }
-  function tn(e) {
-    try {
-      localStorage.setItem(nn, JSON.stringify(e));
-    } catch {}
-  }
-  function Ur(e, t) {
-    let n = window.innerWidth,
-      r = window.innerHeight,
-      o = [
-        [n - e, "right"],
-        [e, "left"],
-        [t, "top"],
-        [r - t, "bottom"],
-      ];
-    o.sort((d, u) => d[0] - u[0]);
-    let i = o[0][1],
-      s = Math.max(5, Math.min(95, i === "left" || i === "right" ? (t / r) * 100 : (e / n) * 100));
-    return { edge: i, offsetPct: s };
-  }
-  function ie(e, t, n, r) {
-    let { edge: o, offsetPct: i, panelWidth: a, panelHeight: s } = r,
-      d = window.innerWidth,
-      u = window.innerHeight,
-      g = o === "left" || o === "right",
-      h = Math.max(Ve, Math.min(a, d - 80)),
-      m = Math.max(Ye, Math.min(s, u - 40)),
-      b = (i / 100) * (g ? u : d),
-      v = e.getBoundingClientRect(),
-      p = g ? v.width || 52 : v.height || 52,
-      l = e.style;
-    ((l.top = l.bottom = l.left = l.right = l.transform = ""),
-      (l.borderTop = l.borderBottom = l.borderLeft = l.borderRight = ""),
-      (l.flexDirection = g ? "column" : "row"),
-      (l.padding = g ? "8px 6px" : "6px 8px"),
-      o === "right"
-        ? ((l.right = "0"),
-          (l.top = `${i}%`),
-          (l.transform = "translateY(-50%)"),
-          (l.borderRadius = "10px 0 0 10px"),
-          (l.borderRight = "none"),
-          (l.boxShadow = "-3px 0 16px rgba(0,0,0,0.45)"))
-        : o === "left"
-          ? ((l.left = "0"),
-            (l.top = `${i}%`),
-            (l.transform = "translateY(-50%)"),
-            (l.borderRadius = "0 10px 10px 0"),
-            (l.borderLeft = "none"),
-            (l.boxShadow = "3px 0 16px rgba(0,0,0,0.45)"))
-          : o === "top"
-            ? ((l.top = "0"),
-              (l.left = `${i}%`),
-              (l.transform = "translateX(-50%)"),
-              (l.borderRadius = "0 0 10px 10px"),
-              (l.borderTop = "none"),
-              (l.boxShadow = "0 3px 16px rgba(0,0,0,0.45)"))
-            : ((l.bottom = "0"),
-              (l.left = `${i}%`),
-              (l.transform = "translateX(-50%)"),
-              (l.borderRadius = "10px 10px 0 0"),
-              (l.borderBottom = "none"),
-              (l.boxShadow = "0 -3px 16px rgba(0,0,0,0.45)")));
-    let y = t.style;
-    if (
-      ((y.top = y.bottom = y.left = y.right = y.transform = ""),
-      (y.borderTop = y.borderBottom = y.borderLeft = y.borderRight = ""),
-      (y.width = h + "px"),
-      (y.height = m + "px"),
-      (t.dataset.edge = o),
-      o === "right")
-    ) {
-      let M = Math.max(10, Math.min(u - m - 10, b - m / 2));
-      ((y.right = p + "px"),
-        (y.top = M + "px"),
-        (y.borderRadius = "10px 0 0 10px"),
-        (y.borderRight = "none"),
-        (y.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)"));
-    } else if (o === "left") {
-      let M = Math.max(10, Math.min(u - m - 10, b - m / 2));
-      ((y.left = p + "px"),
-        (y.top = M + "px"),
-        (y.borderRadius = "0 10px 10px 0"),
-        (y.borderLeft = "none"),
-        (y.boxShadow = "6px 0 24px rgba(0,0,0,0.4)"));
-    } else if (o === "top") {
-      let M = Math.max(10, Math.min(d - h - 10, b - h / 2));
-      ((y.top = p + "px"),
-        (y.left = M + "px"),
-        (y.borderRadius = "0 0 10px 10px"),
-        (y.borderTop = "none"),
-        (y.boxShadow = "0 6px 24px rgba(0,0,0,0.4)"));
-    } else {
-      let M = Math.max(10, Math.min(d - h - 10, b - h / 2));
-      ((y.bottom = p + "px"),
-        (y.left = M + "px"),
-        (y.borderRadius = "10px 10px 0 0"),
-        (y.borderBottom = "none"),
-        (y.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)"));
-    }
-    let w = n.style;
-    ((w.top = w.bottom = w.left = w.right = w.width = w.height = ""),
-      (n.dataset.dir = g ? "ew" : "ns"),
-      g
-        ? ((w.width = "10px"),
-          (w.top = "0"),
-          (w.bottom = "0"),
-          (n.style.cursor = "ew-resize"),
-          o === "right" ? (w.left = "0") : (w.right = "0"))
-        : ((w.height = "10px"),
-          (w.left = "0"),
-          (w.right = "0"),
-          (n.style.cursor = "ns-resize"),
-          o === "top" ? (w.bottom = "0") : (w.top = "0")));
-  }
-  function rn(e) {
+  function qn(e) {
     let t = document.createElement("div");
     t.setAttribute("id", "shipeasy-devtools");
-    let n = t.attachShadow({ mode: "open" });
-    n.innerHTML = `<style>${de}</style><div id="toolbar"></div><div id="panel"></div>`;
-    let r = n.getElementById("toolbar"),
-      o = n.getElementById("panel");
-    ((r.className = "toolbar"), (o.className = "panel"));
-    let i = document.createElement("div");
-    ((i.className = "resize-handle"), o.appendChild(i));
+    let n = t.attachShadow({ mode: "open" }),
+      r = document.createElement("style");
+    ((r.textContent = _e), n.appendChild(r));
     let a = document.createElement("div");
-    ((a.className = "panel-inner"), o.appendChild(a));
-    let s = Dr(),
-      d = null,
-      u = Ze(),
-      g = Rr();
-    g && u && g.id !== u.projectId && ((g = null), he(null));
-    let h = qr();
-    requestAnimationFrame(() => ie(r, o, i, s));
-    let m = document.createElement("div");
-    ((m.className = "drag-handle"),
-      (m.title = "ShipEasy DevTools \u2014 drag to reposition"),
-      (m.innerHTML = Ir),
-      r.appendChild(m),
-      m.addEventListener("mousedown", (E) => {
-        (E.preventDefault(), m.classList.add("dragging"));
-        let _ = (f) => {
-            let { edge: x, offsetPct: k } = Ur(f.clientX, f.clientY);
-            ((s = { ...s, edge: x, offsetPct: k }), ie(r, o, i, s));
-          },
-          c = () => {
-            (m.classList.remove("dragging"),
-              document.removeEventListener("mousemove", _),
-              document.removeEventListener("mouseup", c),
-              tn(s));
-          };
-        (document.addEventListener("mousemove", _), document.addEventListener("mouseup", c));
-      }));
-    let b = new Map();
-    function v(E) {
-      return g ? g.modules[Tr[E]] : !u;
-    }
+    n.appendChild(a);
+    let o = Sa(),
+      s = Hn(),
+      i = St(),
+      c = La();
+    c && i && c.id !== i.projectId && ((c = null), Ue(null));
+    let f = {
+        user: { view: "all", search: "" },
+        gates: { view: "page", search: "" },
+        experiments: { view: "page", search: "" },
+        configs: { view: "page", search: "" },
+        labels: { view: "page", search: "" },
+        feedback: { view: "all", search: "" },
+        events: { view: "all", search: "" },
+      },
+      l = "en-US",
+      u = "bugs",
+      d = { props: {}, dirty: {} },
+      g = { user: 0, gates: 0, experiments: 0, configs: 0, labels: 0, feedback: 0, events: 0 };
     function p() {
-      for (let E of b.values()) E.remove();
-      b.clear();
-      for (let [E, { icon: _, label: c }] of Object.entries(le)) {
-        if (!v(E)) continue;
-        let f = document.createElement("button");
-        ((f.className = "btn"),
-          (f.title = c),
-          (f.innerHTML = _),
-          f.addEventListener("click", () => M(E)),
-          r.appendChild(f),
-          b.set(E, f));
+      return Object.values(g).reduce((h, k) => h + k, 0);
+    }
+    function v(h) {
+      let k = wa[h];
+      return k ? (c ? c.modules[k] : !i) : !0;
+    }
+    function w(h) {
+      let k = window.innerWidth,
+        B = window.innerHeight,
+        { edge: P, offsetPct: q, collapsed: L } = o,
+        S = h.style;
+      if (((S.top = S.bottom = S.left = S.right = S.transform = ""), (h.dataset.edge = P), L))
+        P === "right"
+          ? ((S.right = "10px"), (S.top = `${q}%`), (S.transform = "translateY(-50%)"))
+          : P === "left"
+            ? ((S.left = "10px"), (S.top = `${q}%`), (S.transform = "translateY(-50%)"))
+            : P === "top"
+              ? ((S.top = "10px"), (S.left = `${q}%`), (S.transform = "translateX(-50%)"))
+              : ((S.bottom = "10px"), (S.left = `${q}%`), (S.transform = "translateX(-50%)"));
+      else {
+        let U = B - 36;
+        P === "right"
+          ? ((S.right = "12px"), (S.top = "18px"))
+          : P === "left"
+            ? ((S.left = "12px"), (S.top = "18px"))
+            : P === "top"
+              ? ((S.top = "12px"), (S.right = "18px"))
+              : ((S.bottom = "12px"), (S.right = "18px"));
       }
-      d && !v(d) && w();
     }
-    (p(),
-      i.addEventListener("mousedown", (E) => {
-        (E.preventDefault(), E.stopPropagation(), i.classList.add("dragging"));
-        let _ = E.clientX,
-          c = E.clientY,
-          f = s.panelWidth,
-          x = s.panelHeight,
-          { edge: k } = s,
-          B = (I) => {
-            let q = I.clientX - _,
-              T = I.clientY - c,
-              D = { ...s };
-            (k === "right" && (D.panelWidth = Math.max(Ve, Math.min(Zt, f - q))),
-              k === "left" && (D.panelWidth = Math.max(Ve, Math.min(Zt, f + q))),
-              k === "top" && (D.panelHeight = Math.max(Ye, Math.min(Qt, x + T))),
-              k === "bottom" && (D.panelHeight = Math.max(Ye, Math.min(Qt, x - T))),
-              (s = D),
-              ie(r, o, i, s));
+    function R(h, k) {
+      let B = window.innerWidth,
+        P = window.innerHeight,
+        q = [
+          [B - h, "right"],
+          [h, "left"],
+          [k, "top"],
+          [P - k, "bottom"],
+        ];
+      q.sort((U, K) => U[0] - K[0]);
+      let L = q[0][1],
+        I = Math.max(
+          5,
+          Math.min(95, L === "left" || L === "right" ? (k / P) * 100 : (h / B) * 100),
+        );
+      return { edge: L, offsetPct: I };
+    }
+    function m() {
+      let h = document.createElement("div");
+      for (
+        h.className = o.collapsed ? "dtf-panel collapsed" : "dtf-panel",
+          h.setAttribute("data-edge", o.edge);
+        a.firstChild;
+      )
+        a.removeChild(a.firstChild);
+      (a.appendChild(h), w(h), o.collapsed ? $(h) : O(h));
+    }
+    function $(h) {
+      let k = o.railIconSize,
+        B = i
+          ? fe
+              .filter((I) => v(I.k))
+              .map((I) => {
+                let U = g[I.k] > 0;
+                return (
+                  `<button class="ri" data-tab="${I.k}" style="width:${k}px;height:${k}px">` +
+                  I.icon.replace(
+                    "<svg ",
+                    `<svg width="${Math.round(k * 0.5)}" height="${Math.round(k * 0.5)}" `,
+                  ) +
+                  (U ? '<span class="dotw"></span>' : "") +
+                  `<span class="tip">${I.label}</span></button>`
+                );
+              })
+              .join("")
+          : `<button class="ri lock-only" data-tab="__lock__" style="width:${k}px;height:${k}px" title="">` +
+            E.lock.replace(
+              "<svg ",
+              `<svg width="${Math.round(k * 0.5)}" height="${Math.round(k * 0.5)}" `,
+            ) +
+            '<span class="tip tip-multi"><b>Devtools locked</b>Sign in to ShipEasy to inspect and override gates, configs, experiments, and translations on this page.<span class="hint">Click to connect \u2192</span></span></button>',
+        P =
+          `<div class="dtf-panel-rail"><div class="mk" title="Drag to reposition \xB7 click to expand" style="width:${k * 0.7}px;height:${k * 0.7}px"></div>` +
+          B +
+          `<div class="dtf-rail-resize" style="width:${o.edge === "right" || o.edge === "left" ? k : 12}px;height:${o.edge === "right" || o.edge === "left" ? 12 : k}px" title="Drag to resize"></div></div>`;
+      h.innerHTML = P;
+      let q = h.querySelector(".mk"),
+        L = !1;
+      (q.addEventListener("mousedown", (I) => {
+        (I.preventDefault(), (L = !1));
+        let U = I.clientX,
+          K = I.clientY;
+        q.classList.add("dragging");
+        let Z = (H) => {
+            Math.hypot(H.clientX - U, H.clientY - K) > 4 && (L = !0);
+            let { edge: F, offsetPct: Y } = R(H.clientX, H.clientY);
+            ((o = { ...o, edge: F, offsetPct: Y }), w(h), h.setAttribute("data-edge", F));
           },
-          H = () => {
-            (i.classList.remove("dragging"),
-              document.removeEventListener("mousemove", B),
-              document.removeEventListener("mouseup", H),
-              tn(s));
+          X = () => {
+            (q.classList.remove("dragging"),
+              document.removeEventListener("mousemove", Z),
+              document.removeEventListener("mouseup", X),
+              ae(o));
           };
-        (document.addEventListener("mousemove", B), document.addEventListener("mouseup", H));
-      }));
-    let l = () => ie(r, o, i, s);
-    window.addEventListener("resize", l);
-    function y(E) {
-      ((d = E),
-        Xt(E),
-        b.forEach((_, c) => _.classList.toggle("active", c === E)),
-        o.classList.add("open"),
-        ie(r, o, i, s),
-        A(E));
+        (document.addEventListener("mousemove", Z), document.addEventListener("mouseup", X));
+      }),
+        q.addEventListener("click", () => {
+          L || ((o = { ...o, collapsed: !1 }), ae(o), m());
+        }),
+        h.querySelectorAll(".ri").forEach((I) => {
+          I.addEventListener("click", () => {
+            let U = I.dataset.tab;
+            (U !== "__lock__" && ((s = U), Se(s)), (o = { ...o, collapsed: !1 }), ae(o), m());
+          });
+        }));
+      let S = h.querySelector(".dtf-rail-resize");
+      S.addEventListener("mousedown", (I) => {
+        (I.preventDefault(), I.stopPropagation());
+        let U = o.edge === "right" || o.edge === "left",
+          K = I.clientX,
+          Z = I.clientY,
+          X = o.railIconSize;
+        S.classList.add("dragging");
+        let H = (Y) => {
+            let $e = U ? Y.clientY - Z : Y.clientX - K,
+              Fe = Math.max(ka, Math.min(Ea, Math.round(X + $e)));
+            ((o = { ...o, railIconSize: Fe }), m());
+          },
+          F = () => {
+            (S.classList.remove("dragging"),
+              document.removeEventListener("mousemove", H),
+              document.removeEventListener("mouseup", F),
+              ae(o));
+          };
+        (document.addEventListener("mousemove", H), document.addEventListener("mouseup", F));
+      });
     }
-    function w() {
-      (o.classList.remove("open"),
-        b.forEach((E) => E.classList.remove("active")),
-        (d = null),
-        Xt(null));
-    }
-    function M(E) {
-      v(E) && (d === E ? w() : y(E));
-    }
-    async function C(E) {
-      try {
-        let _ = await E.project(),
-          c = window.location.host;
-        if (_.domain && !Yt(c, _.domain)) {
-          (xe(), he(null), (u = null), (g = null), p(), d && S(d));
-          return;
-        }
-        let f = g;
-        ((g = _), he(_), (!f || !Mr(f.modules, _.modules)) && p(), d && !v(d) && w());
-      } catch {}
-    }
-    function L(E, _) {
-      let c = typeof window < "u" && window.location ? window.location.host : "",
-        f = g?.name ?? "",
-        x = f ? `${f}` : c,
-        k = x ? `<span class="sub">${x}</span>` : "";
-      return `
-      <div class="panel-head">
-        <span class="mk"></span>
-        <span class="panel-title">
-          <span class="panel-title-icon">${E}</span>
-          <span class="panel-title-label">${_}</span>
-          ${k}
-        </span>
-        <span class="live"><span class="dot"></span>LIVE</span>
-        <button class="close" id="se-close" aria-label="Close">${Br}</button>
+    function A(h) {
+      let k = window.location.host;
+      h.innerHTML = `
+      <div class="dtf-head">
+        <div class="mk" title="Drag to reposition"></div>
+        <div class="ti">
+          <span class="title">Locked</span>
+          <span class="sub">${Ne(k)}</span>
+        </div>
+        <div class="actions">
+          <button class="ib" data-action="collapse" title="Collapse">${E.x}</button>
+        </div>
+      </div>
+      <div class="dtf-split">
+        <div class="dtf-rail">
+          <button class="t lock-only active" title="">
+            ${E.lock}
+            <span class="tip tip-multi">
+              <b>Devtools locked</b>
+              Sign in to ShipEasy to inspect and override flags, configs, experiments, and translations on this page.
+              <span class="hint">Click <em>Connect</em> to start \u2192</span>
+            </span>
+          </button>
+        </div>
+        <div class="dtf-pane" style="position:relative">
+          <div class="dtf-body" id="dtf-body" aria-hidden="true" inert></div>
+          <div class="auth-locked" role="dialog" aria-modal="true">
+            <div class="auth-locked-card">
+              <div class="ic-big">${E.lock}</div>
+              <h2>Connect to <em>ShipEasy</em></h2>
+              <p>Sign in to inspect and override flags, configs, experiments, and translations live on this page.</p>
+              <div class="features">
+                <div class="row"><span class="ic">${E.shield}</span><span class="k">Toggle gates &amp; killswitches</span></div>
+                <div class="row"><span class="ic">${E.flask}</span><span class="k">Force experiment variants</span></div>
+                <div class="row"><span class="ic">${E.sliders}</span><span class="k">Override config values</span></div>
+                <div class="row"><span class="ic">${E.book}</span><span class="k">Edit translations in-place</span></div>
+              </div>
+              <button class="cta" data-action="connect" autofocus>Connect \u2192</button>
+              <div class="meta">A new tab will open for you to approve this device.</div>
+              <div class="status" data-status></div>
+              <div class="err" data-err style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dtf-foot">
+        <div class="stat-line">
+          <span style="width:5px;height:5px;border-radius:50%;background:var(--fg-4);display:inline-block"></span>
+          <span class="stat" style="color:var(--fg-3)">Not connected</span>
+        </div>
       </div>`;
+      let B = h.querySelector(".dtf-head .mk");
+      (B.addEventListener("mousedown", (S) => {
+        (S.preventDefault(), B.classList.add("dragging"));
+        let I = (K) => {
+            let { edge: Z, offsetPct: X } = R(K.clientX, K.clientY);
+            ((o = { ...o, edge: Z, offsetPct: X }), w(h));
+          },
+          U = () => {
+            (B.classList.remove("dragging"),
+              document.removeEventListener("mousemove", I),
+              document.removeEventListener("mouseup", U),
+              ae(o));
+          };
+        (document.addEventListener("mousemove", I), document.addEventListener("mouseup", U));
+      }),
+        h.querySelector('[data-action="collapse"]').addEventListener("click", () => {
+          ((o = { ...o, collapsed: !0 }), ae(o), m());
+        }));
+      let P = h.querySelector('[data-action="connect"]'),
+        q = h.querySelector("[data-status]"),
+        L = h.querySelector("[data-err]");
+      P.addEventListener("click", async () => {
+        ((P.disabled = !0),
+          (P.innerHTML = '<span class="spin"></span> Opening\u2026'),
+          (q.textContent = ""),
+          (L.style.display = "none"),
+          (L.textContent = ""));
+        try {
+          ((i = await $t(e, () => {
+            ((q.textContent = "Waiting for approval in the opened tab\u2026"),
+              (P.innerHTML = '<span class="spin"></span> Waiting for approval'));
+          })),
+            (s = fe.find((S) => v(S.k))?.k ?? "gates"),
+            Se(s),
+            m());
+        } catch (S) {
+          ((L.textContent = S instanceof Error ? S.message : String(S)),
+            (L.style.display = "block"),
+            (q.textContent = ""),
+            (P.disabled = !1),
+            (P.textContent = "Retry connect \u2192"));
+        }
+      });
     }
-    function A(E) {
-      let { icon: _, label: c } = le[E];
-      if (!u) {
-        S(E);
+    function O(h) {
+      if (!i) {
+        A(h);
         return;
       }
-      let f = new te(e.adminUrl, u.token, u.projectId);
-      (C(f).then(() => {
-        if (d && !v(d)) {
-          w();
-          return;
-        }
-        let H = a.querySelector(".panel-head");
-        if (H && d) {
-          let { icon: I, label: q } = le[d],
-            T = document.createElement("div");
-          ((T.innerHTML = L(I, q)),
-            H.replaceWith(T.firstElementChild),
-            a.querySelector("#se-close")?.addEventListener("click", w));
-        }
+      let k = s && s !== "__lock__" ? s : (fe.find((H) => v(H.k))?.k ?? "gates");
+      s !== k && ((s = k), Se(k));
+      let B = fe.find((H) => H.k === k),
+        P = c?.name ?? "",
+        q = window.location.host,
+        L = P || q,
+        S = fe
+          .filter((H) => v(H.k))
+          .map((H) => {
+            let F = H.k === k,
+              Y = g[H.k] > 0;
+            return (
+              `<button class="t${F ? " active" : ""}" data-tab="${H.k}" title="${H.label}">` +
+              H.icon +
+              (Y ? '<span class="dotw"></span>' : "") +
+              `<span class="tip">${H.label}</span></button>`
+            );
+          })
+          .join(""),
+        I = ["gates", "experiments", "configs", "labels"].includes(k),
+        U = f[k],
+        K =
+          p() > 0
+            ? '<div class="dtf-overbar">' +
+              E.alert +
+              `<span><b>${p()} session override${p() > 1 ? "s" : ""}</b> \xB7 cleared on refresh</span><button data-action="clear-overrides">Clear all</button></div>`
+            : "",
+        Z = I
+          ? `<div class="dtf-search">
+          <div class="input">
+            ${E.search}
+            <input placeholder="Filter ${k}\u2026" value="${Ma(U.search)}" />
+            ${U.search ? '<span class="kbd" data-action="clear-search">esc</span>' : '<span class="kbd">\u2318K</span>'}
+          </div>
+          <div class="seg">
+            <button class="${U.view === "page" ? "active" : ""}" data-view="page">page</button>
+            <button class="${U.view === "all" ? "active" : ""}" data-view="all">all</button>
+          </div>
+          ${k === "labels" ? '<select class="dtf-locale-sel" data-locale></select>' : ""}
+        </div>`
+          : "";
+      h.innerHTML = `
+      <div class="dtf-head">
+        <div class="mk" title="Drag to reposition"></div>
+        <div class="ti">
+          <span class="title">${Ne(B.label)}</span>
+          <span class="sub">${Ne(L)}</span>
+        </div>
+        <div class="actions">
+          <button class="ib" data-action="refresh" title="Refresh">${E.refresh}</button>
+          <button class="ib" data-action="collapse" title="Collapse">${E.x}</button>
+        </div>
+      </div>
+      <div class="dtf-split">
+        <div class="dtf-rail">${S}</div>
+        <div class="dtf-pane">
+          ${K}
+          ${Z}
+          <div class="dtf-body" id="dtf-body"></div>
+        </div>
+      </div>
+      <div class="dtf-foot">
+        <div class="stat-line">
+          <span class="ok"></span>
+          <span class="stat">SDK <b>connected</b></span>
+          ${i ? "" : '<span class="sk">unauthed</span>'}
+        </div>
+        <div class="actions">
+          <button class="ibtn" data-action="share" title="Build a URL that applies the current overrides">Copy share URL</button>
+          <button class="ibtn" data-action="apply-url" title="Persist current overrides to the URL and reload">Pin to URL</button>
+          <span class="grow"></span>
+          ${p() > 0 ? '<button class="ibtn danger" data-action="clear-overrides" title="Drop all session overrides">Clear overrides</button>' : ""}
+          ${i ? '<button class="ibtn" data-action="signout" title="Sign out of this project">Sign out</button>' : ""}
+        </div>
+      </div>
+    `;
+      let X = h.querySelector(".dtf-head .mk");
+      if (
+        (X.addEventListener("mousedown", (H) => {
+          (H.preventDefault(), X.classList.add("dragging"));
+          let F = ($e) => {
+              let { edge: Fe, offsetPct: Dn } = R($e.clientX, $e.clientY);
+              ((o = { ...o, edge: Fe, offsetPct: Dn }), w(h));
+            },
+            Y = () => {
+              (X.classList.remove("dragging"),
+                document.removeEventListener("mousemove", F),
+                document.removeEventListener("mouseup", Y),
+                ae(o));
+            };
+          (document.addEventListener("mousemove", F), document.addEventListener("mouseup", Y));
+        }),
+        h.querySelector('[data-action="refresh"]').addEventListener("click", () => m()),
+        h.querySelector('[data-action="collapse"]').addEventListener("click", () => {
+          ((o = { ...o, collapsed: !0 }), ae(o), m());
+        }),
+        h.querySelectorAll(".dtf-rail .t").forEach((H) => {
+          H.addEventListener("click", () => {
+            ((s = H.dataset.tab), Se(s), m());
+          });
+        }),
+        I)
+      ) {
+        let H = h.querySelector(".dtf-search input");
+        (H.addEventListener("input", () => {
+          ((f[k].search = H.value), M());
+        }),
+          h.querySelectorAll(".dtf-search .seg button").forEach((F) => {
+            F.addEventListener("click", () => {
+              ((f[k].view = F.dataset.view), m());
+            });
+          }),
+          h.querySelector('[data-action="clear-search"]')?.addEventListener("click", () => {
+            ((f[k].search = ""), m());
+          }));
+      }
+      (h.querySelector('[data-action="clear-overrides"]')?.addEventListener("click", () => {
+        Ct();
       }),
-        (a.innerHTML = `
-      ${L(_, c)}
-      <div class="panel-body" id="se-body"></div>
-      <div class="panel-subfoot" id="se-subfoot"></div>
-      <div class="panel-footer">
-        <span class="foot-status"><span class="dot"></span><span>SDK <b>connected</b></span></span>
-        <button class="ibtn" id="se-share" title="Build a URL that applies the current overrides for any visitor">Share URL</button>
-        <button class="ibtn" id="se-apply-url" title="Persist current overrides to the address bar and reload">Apply via URL</button>
-        <button class="ibtn danger" id="se-signout">Sign out</button>
-        <button class="ibtn danger" id="se-clearall">Clear overrides</button>
-      </div>`),
-        a.querySelector("#se-close").addEventListener("click", w),
-        a.querySelector("#se-signout").addEventListener("click", () => {
-          (xe(), he(null), (u = null), (g = null), p(), S(E));
+        h.querySelector('[data-action="apply-url"]')?.addEventListener("click", () => {
+          Ht();
         }),
-        a.querySelector("#se-clearall").addEventListener("click", () => {
-          (it(), A(E));
-        }),
-        a.querySelector("#se-apply-url").addEventListener("click", () => {
-          lt();
-        }),
-        a.querySelector("#se-share").addEventListener("click", async () => {
-          let H = Re({ ...Me(), openDevtools: !0 });
+        h.querySelector('[data-action="share"]')?.addEventListener("click", async () => {
+          let H = Qe({ ...et(), openDevtools: !0 }),
+            F = h.querySelector('[data-action="share"]');
           try {
             await navigator.clipboard.writeText(H);
-            let I = a.querySelector("#se-share"),
-              q = I.textContent;
-            ((I.textContent = "Copied \u2713"), setTimeout(() => (I.textContent = q), 1500));
+            let Y = F.textContent;
+            ((F.textContent = "Copied \u2713"), setTimeout(() => (F.textContent = Y), 1500));
           } catch {
             prompt("Copy this URL:", H);
           }
-        }));
-      let x = a.querySelector("#se-body"),
-        k = a.querySelector("#se-subfoot");
-      ({
-        gates: () => dt(x, f),
-        configs: () => ut(x, f),
-        experiments: () => gt(x, f),
-        i18n: () => jt(x, f, k, n),
-        bugs: () => Gt(x, f, n),
-        features: () => Vt(x, f, n),
-      })
-        [E]()
-        .catch((H) => {
-          x.innerHTML = `<div class="err">${String(H)}</div>`;
-        });
+        }),
+        h.querySelector('[data-action="signout"]')?.addEventListener("click", () => {
+          (Je(), Ue(null), (i = null), (c = null), m());
+        }),
+        M());
     }
-    function S(E) {
-      let { icon: _, label: c } = le[E];
-      ((a.innerHTML = `
-      ${L(_, c)}
-      <div class="panel-body auth-mode">
-        <div class="auth-box">
-          <div class="auth-icon">\u{1F510}</div>
-          <div class="auth-title">Connect to ShipEasy</div>
-          <div class="auth-desc">Sign in to inspect and override flags, configs, experiments, and translations.</div>
-          <button class="ibtn pri" id="se-connect">Connect \u2192</button>
-          <div class="auth-status" id="se-auth-status"></div>
-          <div class="auth-err" id="se-auth-err"></div>
-        </div>
-      </div>`),
-        a.querySelector("#se-close").addEventListener("click", w),
-        a.querySelector("#se-connect").addEventListener("click", async () => {
-          let f = a.querySelector("#se-connect"),
-            x = a.querySelector("#se-auth-status"),
-            k = a.querySelector("#se-auth-err");
-          ((f.disabled = !0),
-            (f.textContent = "Opening\u2026"),
-            (x.textContent = ""),
-            (k.textContent = ""));
-          try {
-            ((u = await Qe(e, () => {
-              ((x.textContent = "Waiting for approval in the opened tab\u2026"),
-                (f.textContent = "Waiting\u2026"));
-            })),
-              A(E));
-          } catch (B) {
-            ((k.textContent = B instanceof Error ? B.message : String(B)),
-              (x.textContent = ""),
-              (f.disabled = !1),
-              (f.textContent = "Retry"));
-          }
-        }));
+    function M() {
+      let h = a.querySelector("#dtf-body");
+      if (!h || !i) return;
+      let k = new me(e.adminUrl, i.token, i.projectId, On(e));
+      C(k);
+      let B = s,
+        P = f[B],
+        q = (L) => {
+          let S = g[B];
+          ((g[B] = L), ((S === 0) != (L === 0) || S !== L) && T());
+        };
+      switch (B) {
+        case "user":
+          qt(h, k, d, () => m());
+          break;
+        case "gates":
+          Bt(h, k, P, q);
+          break;
+        case "experiments":
+          zt(h, k, P, q);
+          break;
+        case "configs":
+          jt(h, k, P, q, a);
+          break;
+        case "labels":
+          hn(h, k, P, n, {
+            locale: l,
+            setLocale: (L) => {
+              ((l = L), M());
+            },
+          });
+          break;
+        case "feedback":
+          Ln(h, k, a, {
+            sub: u,
+            setSub: (L) => {
+              ((u = L), M());
+            },
+          });
+          break;
+        case "events":
+          $n(h);
+          break;
+      }
+    }
+    function T() {
+      m();
+    }
+    async function C(h) {
+      try {
+        let k = await h.project(),
+          B = window.location.host;
+        if (!(_a() !== null) && k.domain && !Tn(B, k.domain)) {
+          (Je(), Ue(null), (i = null), (c = null), m());
+          return;
+        }
+        let q = c;
+        if (((c = k), Ue(k), s && !v(s))) {
+          let L = fe.find((S) => v(S.k))?.k ?? null;
+          ((s = L), Se(L), m());
+          return;
+        }
+        (!q || !Ta(q.modules, k.modules)) && m();
+      } catch {}
     }
     document.documentElement.appendChild(t);
-    let R = () => {
-      document.getElementById("shipeasy-devtools") || document.documentElement.appendChild(t);
-    };
+    let W = () => {
+        document.getElementById("shipeasy-devtools") || document.documentElement.appendChild(t);
+      },
+      G = new MutationObserver(W);
     if (
-      (new MutationObserver(R).observe(document.documentElement, { childList: !0 }),
-      W() && (V(), Q(!0, n, () => {})),
-      u)
+      (G.observe(document.documentElement, { childList: !0 }),
+      se() && (we(), ke(!0, n, () => {})),
+      Hn() || (o = { ...o, collapsed: !0 }),
+      m(),
+      i)
     ) {
-      let E = new te(e.adminUrl, u.token, u.projectId);
-      C(E);
+      let h = new me(e.adminUrl, i.token, i.projectId, On(e));
+      C(h);
     }
+    Pn();
+    let b = An(() => m()),
+      y = () => {
+        let h = a.querySelector(".dtf-panel");
+        h && w(h);
+      };
+    window.addEventListener("resize", y);
+    let _ = () => M();
     return (
-      h && requestAnimationFrame(() => y(h)),
+      window.addEventListener("se:state:update", _),
       {
         destroy() {
-          (window.removeEventListener("resize", l), t.remove());
+          (window.removeEventListener("resize", y),
+            window.removeEventListener("se:state:update", _),
+            b(),
+            G.disconnect(),
+            t.remove());
         },
       }
     );
   }
-  function Nr() {
+  function Ne(e) {
+    return e.replace(
+      /[&<>"']/g,
+      (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t],
+    );
+  }
+  function Ma(e) {
+    return Ne(e);
+  }
+  var Ra = "https://shipeasy.ai";
+  function Bn(e) {
+    return (
+      /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:|$)/i.test(e) ||
+      e === "file://" ||
+      e === "null"
+    );
+  }
+  function Aa() {
     if (typeof document < "u") {
       let e = document.currentScript;
       if (e?.src)
         try {
-          return new URL(e.src).origin;
+          let n = new URL(e.src).origin;
+          if (!Bn(n)) return n;
         } catch {}
       let t = document.querySelectorAll("script[src]");
       for (let n of Array.from(t))
         if (n.src.includes("se-devtools.js"))
           try {
-            return new URL(n.src).origin;
+            let r = new URL(n.src).origin;
+            if (!Bn(r)) return r;
           } catch {}
     }
-    return typeof window < "u" ? window.location.origin : "";
+    return Ra;
   }
-  var ee = null;
-  function on(e = {}) {
+  var ge = null,
+    Ke = null;
+  function zn(e = {}) {
     if (typeof window > "u" || typeof document > "u") return;
-    if (ee) {
+    if (ge) {
       if (document.getElementById("shipeasy-devtools")) return;
-      ee = null;
+      ge = null;
     }
-    let t = { adminUrl: e.adminUrl ?? Nr() },
-      { destroy: n } = rn(t);
-    ee = n;
+    Ke || (Ke = Ot());
+    let t = { adminUrl: e.adminUrl ?? Aa(), hideAdminLinks: e.hideAdminLinks ?? !1 },
+      { destroy: n } = qn(t);
+    ge = n;
   }
-  function jr() {
-    (ee?.(), (ee = null));
+  function Pa() {
+    (ge?.(), (ge = null), Ke?.(), (Ke = null));
   }
-  function sn(e = {}, t = "Shift+Alt+S") {
+  function jn(e = {}, t = "Shift+Alt+S") {
     if (typeof window > "u") return () => {};
-    pe() && on(e);
+    Ae() && zn(e);
     let n = t.split("+"),
       r = n[n.length - 1],
-      o = n.includes("Shift"),
-      i = n.includes("Alt") || n.includes("Option"),
-      a = n.includes("Ctrl") || n.includes("Control"),
-      s = n.includes("Meta") || n.includes("Cmd"),
-      d = /^[a-zA-Z]$/.test(r) ? `Key${r.toUpperCase()}` : null;
-    function u(g) {
-      (d ? g.code === d : g.key.toLowerCase() === r.toLowerCase()) &&
-        g.shiftKey === o &&
-        g.altKey === i &&
-        g.ctrlKey === a &&
-        g.metaKey === s &&
-        (ee ? jr() : on(e));
+      a = n.includes("Shift"),
+      o = n.includes("Alt") || n.includes("Option"),
+      s = n.includes("Ctrl") || n.includes("Control"),
+      i = n.includes("Meta") || n.includes("Cmd"),
+      c = /^[a-zA-Z]$/.test(r) ? `Key${r.toUpperCase()}` : null;
+    function f(l) {
+      (c ? l.code === c : l.key.toLowerCase() === r.toLowerCase()) &&
+        l.shiftKey === a &&
+        l.altKey === o &&
+        l.ctrlKey === s &&
+        l.metaKey === i &&
+        (ge ? Pa() : zn(e));
     }
-    return (window.addEventListener("keydown", u), () => window.removeEventListener("keydown", u));
+    return (window.addEventListener("keydown", f), () => window.removeEventListener("keydown", f));
   }
   if (typeof window < "u") {
     let e = window.__se_devtools_config ?? {},
       t = () => {
-        requestAnimationFrame(() => requestAnimationFrame(() => sn(e)));
+        requestAnimationFrame(() => requestAnimationFrame(() => jn(e)));
       };
     if (
       (document.readyState === "complete" ? t() : window.addEventListener("load", t, { once: !0 }),
-      W())
+      se())
     ) {
       let n = !1,
-        r = new MutationObserver(() => o()),
-        o = () => {
+        r = new MutationObserver(() => a()),
+        a = () => {
           n ||
             ((n = !0),
             requestAnimationFrame(() => {
               ((n = !1),
                 r.disconnect(),
-                V(),
+                we(),
                 r.observe(document.body, { childList: !0, subtree: !0, attributes: !0 }));
             }));
         },
-        i = () => {
-          requestAnimationFrame(() => requestAnimationFrame(() => o()));
+        o = () => {
+          requestAnimationFrame(() => requestAnimationFrame(() => a()));
         };
-      document.readyState === "complete" ? i() : window.addEventListener("load", i, { once: !0 });
-      let a = () => {
-        let d = document.getElementById("shipeasy-devtools");
-        if (!d?.shadowRoot) {
-          setTimeout(a, 100);
+      document.readyState === "complete" ? o() : window.addEventListener("load", o, { once: !0 });
+      let s = () => {
+        let c = document.getElementById("shipeasy-devtools");
+        if (!c?.shadowRoot) {
+          setTimeout(s, 100);
           return;
         }
-        Q(!0, d.shadowRoot, () => o());
+        ke(!0, c.shadowRoot, () => a());
       };
-      (a(), window.addEventListener("se:i18n:ready", () => o(), { once: !0 }));
-      let s = window;
-      s.i18n?.on && s.i18n.on("update", () => o());
+      (s(), window.addEventListener("se:i18n:ready", () => a(), { once: !0 }));
+      let i = window;
+      i.i18n?.on && i.i18n.on("update", () => a());
     }
     window.__se_devtools_ready = !0;
   }

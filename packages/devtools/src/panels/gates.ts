@@ -1,90 +1,248 @@
-import { DevtoolsApi } from "../api";
-import { getGateOverride, setGateOverride, clearAllOverrides } from "../overrides";
+import type { DevtoolsApi } from "../api";
+import { getGateOverride, setGateOverride } from "../overrides";
 import type { GateRecord, ShipeasySdkBridge } from "../types";
-import { emptyState } from "./empty";
+import { I } from "../icons";
+import {
+  emptyState,
+  escapeHtml,
+  loadingState,
+  searchEmptyState,
+  copyButton,
+  wireCopyButtons,
+  timeAgo,
+} from "./common";
+
+interface ViewOpts {
+  view: "page" | "all";
+  search: string;
+}
 
 function bridge(): ShipeasySdkBridge | null {
   return (window as unknown as { __shipeasy?: ShipeasySdkBridge }).__shipeasy ?? null;
 }
 
-function badge(gate: GateRecord): string {
-  const override = getGateOverride(gate.name);
-  const live = bridge()?.getFlag(gate.name);
-  const effective = override !== null ? override : (live ?? gate.enabled);
-  return effective
-    ? `<span class="badge badge-on">ON</span>`
-    : `<span class="badge badge-off">OFF</span>`;
+interface RenderRow {
+  name: string;
+  killswitch: boolean;
+  enabled: boolean;
+  rolloutPct: number;
+  override: boolean | null; // null = no override
+  effective: boolean;
+  live: boolean | null; // bridge value (null = bridge unavailable)
+  updatedAt: string;
 }
 
-function togGroup(name: string, current: boolean | null): string {
-  const sel = (v: string) =>
-    current === (v === "on" ? true : v === "off" ? false : null) ? " sel" : "";
+function buildRow(g: GateRecord): RenderRow {
+  const ov = getGateOverride(g.name);
+  const liveVal = bridge()?.getFlag(g.name);
+  const live = typeof liveVal === "boolean" ? liveVal : null;
+  const effective = ov !== null ? ov : (live ?? g.enabled);
+  return {
+    name: g.name,
+    killswitch: g.killswitch,
+    enabled: g.enabled,
+    rolloutPct: g.rolloutPct,
+    override: ov,
+    effective,
+    live,
+    updatedAt: g.updatedAt,
+  };
+}
+
+function renderRow(r: RenderRow, expandedKey: string | null): string {
+  const isOpen = expandedKey === r.name;
+  const overridden = r.override !== null;
+  const muted = r.killswitch ? r.effective : !r.effective;
+  const ic = r.killswitch ? I.power : I.shield;
+  const iconColor = r.killswitch
+    ? r.effective
+      ? "var(--danger)"
+      : "var(--accent)"
+    : r.effective
+      ? "var(--accent)"
+      : "var(--fg-3)";
+
+  let val = "";
+  if (r.killswitch) {
+    val = `<span class="val ${r.effective ? "killed" : "kill-live"}">${r.effective ? "KILLED" : "LIVE"}</span>`;
+  } else {
+    const cls = overridden ? "over" : r.effective ? "on" : "off";
+    val = `<span class="val ${cls}">${r.effective ? "true" : "false"}</span>`;
+  }
+  const tog = `<div class="dtf-toggle${
+    r.effective ? (overridden ? " over" : " on") : ""
+  }" data-toggle="${escapeAttr(r.name)}"></div>`;
+
+  const desc = r.killswitch
+    ? r.effective
+      ? `killswitch · KILLED (override: ${overridden ? "yes" : "no"})`
+      : `killswitch · live · ${(r.rolloutPct / 100).toFixed(0)}% rollout`
+    : `gate · ${(r.rolloutPct / 100).toFixed(0)}% rollout · updated ${timeAgo(r.updatedAt)}`;
+
+  const detail = r.killswitch
+    ? `
+      <div class="crumbs">
+        <div><span class="${r.effective ? "deny" : "pass"}">${r.effective ? "✗" : "✓"}</span> killswitch
+          <span style="color:var(--fg-4)">→</span>
+          <span class="${r.effective ? "deny" : "pass"}">${r.effective ? "KILLED" : "live"}</span>
+        </div>
+        <div class="indent meta">propagation: &lt;1s to 60+ regions</div>
+      </div>
+      <div class="actions">
+        <button class="${r.effective ? "primary" : ""}" data-toggle-detail="${escapeAttr(r.name)}">${
+          r.effective ? "✓ Restore" : "⚠ Pull the switch"
+        }</button>
+      </div>`
+    : `
+      <div class="crumbs">
+        <div><span class="${overridden ? "skip" : r.effective ? "pass" : "deny"}">${
+          overridden ? "↦" : r.effective ? "✓" : "✗"
+        }</span> ${escapeHtml(r.name)}
+          <span style="color:var(--fg-4)">→</span>
+          <span class="${overridden ? "skip" : r.effective ? "pass" : "deny"}">
+            ${overridden ? `forced ${r.effective ? "true" : "false"} (real: ${r.live === null ? "unknown" : r.live ? "true" : "false"})` : r.effective ? "true" : "false"}
+          </span>
+        </div>
+        <div class="indent">rollout <span style="color:var(--fg-4)">=</span> ${(r.rolloutPct / 100).toFixed(0)}%</div>
+      </div>
+      <div class="mini">
+        <span class="lbl">live</span><span class="v">${r.live === null ? "—" : r.live ? "true" : "false"}</span>
+        <span class="lbl">override</span><span class="v">${overridden ? (r.override ? "true" : "false") : "none"}</span>
+        <span class="lbl">updated</span><span class="v">${timeAgo(r.updatedAt)}</span>
+      </div>
+      <div class="actions">
+        <button class="primary" data-toggle-detail="${escapeAttr(r.name)}">⤢ Force ${r.effective ? "false" : "true"}</button>
+        ${overridden ? `<button data-clear-detail="${escapeAttr(r.name)}">↺ Clear override</button>` : ""}
+      </div>`;
+
   return `
-    <div class="tog" data-gate="${name}">
-      <button class="tog-btn${sel("default")}" data-v="default">default</button>
-      <button class="tog-btn${sel("on")}" data-v="on">ON</button>
-      <button class="tog-btn${sel("off")}" data-v="off">OFF</button>
+    <div class="dtf-row${isOpen ? " expanded" : ""}${muted ? " muted" : ""}" data-row="${escapeAttr(r.name)}">
+      <div class="ic"><span style="color:${iconColor}">${ic}</span></div>
+      <div class="meta">
+        <div class="k">
+          <span class="name">${escapeHtml(r.name)}</span>
+          ${copyButton("g:" + r.name, "Copy gate name")}
+          ${overridden ? `<span class="override-tag">forced</span>` : ""}
+          ${r.live ? `<span class="live-dot" title="firing on this page"></span>` : ""}
+        </div>
+        <div class="v">${escapeHtml(desc)}</div>
+      </div>
+      ${val}${tog}
+    </div>
+    <div class="dtf-detail${isOpen ? " open" : ""}">
+      <div class="inner"><div class="pad">${detail}</div></div>
     </div>`;
 }
 
-export async function renderGatesPanel(container: Element, api: DevtoolsApi): Promise<void> {
-  container.innerHTML = `<div class="loading">Loading gates…</div>`;
-
+export async function renderGatesPanel(
+  container: HTMLElement,
+  api: DevtoolsApi,
+  view: ViewOpts,
+  setOverrideCount: (n: number) => void,
+): Promise<void> {
+  container.innerHTML = loadingState();
   let gates: GateRecord[];
   try {
     gates = await api.gates();
   } catch (err) {
-    container.innerHTML = `<div class="err">Failed to load gates: ${String(err)}</div>`;
+    container.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed to load gates: ${escapeHtml(String(err))}</div>`;
     return;
   }
 
   if (gates.length === 0) {
-    container.innerHTML = emptyState({
-      icon: "⛳",
-      title: "No gates yet",
+    const { html, wire } = emptyState({
+      title: "No <em>gates</em> yet",
       message: "Feature flags let you gate releases and ramp rollouts safely.",
-      ctaLabel: "Create new gate",
-      ctaHref: `${api.adminUrl}/dashboard/gates/new`,
+      actions: api.hideAdminLinks
+        ? []
+        : [
+            {
+              icon: "+",
+              label: "Create new gate",
+              href: `${api.adminUrl}/dashboard/gates/new`,
+            },
+          ],
     });
+    container.innerHTML = html;
+    wire(container);
+    setOverrideCount(0);
     return;
   }
 
-  function render() {
-    const rows = gates
-      .map(
-        (g) => `
-        <tr>
-          <td class="col-name">${g.name}</td>
-          <td class="col-sub">${(g.rolloutPct / 100).toFixed(g.rolloutPct % 100 === 0 ? 0 : 2)}%</td>
-          <td class="col-badge">${badge(g)}</td>
-          <td class="col-control">${togGroup(g.name, getGateOverride(g.name))}</td>
-        </tr>`,
-      )
-      .join("");
-    container.innerHTML = `
-      <div class="dt-scroll">
-        <table class="dt-table">
-          <thead><tr>
-            <th>Name</th><th style="text-align:right">Rollout</th><th>Live</th><th style="text-align:right">Override</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
+  let expanded: string | null = null;
 
-    container.querySelectorAll<HTMLButtonElement>(".tog-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const gateName = (btn.closest("[data-gate]") as HTMLElement).dataset.gate!;
-        const v = btn.dataset.v!;
-        setGateOverride(gateName, v === "default" ? null : v === "on");
-        render();
+  function paint(): void {
+    const q = view.search.trim().toLowerCase();
+    const filtered = q ? gates.filter((g) => g.name.toLowerCase().includes(q)) : gates;
+    const rows = filtered.map(buildRow);
+    setOverrideCount(rows.filter((r) => r.override !== null).length);
+
+    if (rows.length === 0) {
+      container.innerHTML = searchEmptyState(view.search);
+      return;
+    }
+
+    if (view.view === "page") {
+      const active = rows.filter((r) => r.live === true || r.killswitch);
+      const inactive = rows.filter((r) => !active.includes(r));
+      container.innerHTML =
+        `<div class="dtf-group">Active on this page<span class="pulse"><span class="d"></span>${active.length} firing</span></div>` +
+        active.map((r) => renderRow(r, expanded)).join("") +
+        (inactive.length
+          ? `<div class="dtf-group">Inactive<span class="c">${inactive.length} more</span></div>` +
+            inactive.map((r) => renderRow(r, expanded)).join("")
+          : "");
+    } else {
+      container.innerHTML =
+        `<div class="dtf-group">All flags<span class="c">${rows.length}</span></div>` +
+        rows.map((r) => renderRow(r, expanded)).join("");
+    }
+
+    // Wire row click → expand
+    container.querySelectorAll<HTMLElement>(".dtf-row").forEach((rowEl) => {
+      rowEl.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest(".dtf-toggle") || target.closest(".dtf-copy")) return;
+        const name = rowEl.dataset.row!;
+        expanded = expanded === name ? null : name;
+        paint();
       });
     });
+
+    // Toggles (row + detail)
+    container.querySelectorAll<HTMLElement>("[data-toggle]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const name = el.getAttribute("data-toggle")!;
+        const r = rows.find((x) => x.name === name);
+        if (!r) return;
+        // Force the *opposite* of effective. setGateOverride reloads the page.
+        setGateOverride(name, !r.effective);
+      });
+    });
+    container.querySelectorAll<HTMLElement>("[data-toggle-detail]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const name = el.getAttribute("data-toggle-detail")!;
+        const r = rows.find((x) => x.name === name);
+        if (!r) return;
+        setGateOverride(name, !r.effective);
+      });
+    });
+    container.querySelectorAll<HTMLElement>("[data-clear-detail]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const name = el.getAttribute("data-clear-detail")!;
+        setGateOverride(name, null);
+      });
+    });
+
+    wireCopyButtons(container, Object.fromEntries(rows.map((r) => ["g:" + r.name, () => r.name])));
   }
 
-  render();
+  paint();
+}
 
-  // Re-render when SDK state updates
-  const handler = () => render();
-  window.addEventListener("se:state:update", handler);
-  // Cleanup is handled by panel replacement — acceptable for devtools
+function escapeAttr(s: string): string {
+  return escapeHtml(s);
 }

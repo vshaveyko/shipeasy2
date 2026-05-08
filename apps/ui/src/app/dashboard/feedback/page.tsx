@@ -5,8 +5,10 @@ import { Bug, Lightbulb } from "lucide-react";
 import { auth } from "@/auth";
 import { listBugs } from "@/lib/handlers/bugs";
 import { listFeatureRequests } from "@/lib/handlers/feature-requests";
+import { listConnectors } from "@/lib/handlers/connectors";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { cn } from "@/lib/utils";
+import { ConnectorsModal, type ConnectorListItem } from "./_components/connectors-modal";
 
 export const metadata: Metadata = { title: "Feedback" };
 
@@ -97,9 +99,26 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ tab?
 
   let bugs: Awaited<ReturnType<typeof listBugs>> = [];
   let requests: Awaited<ReturnType<typeof listFeatureRequests>> = [];
+  let connectors: ConnectorListItem[] = [];
   if (identity) {
     try {
-      [bugs, requests] = await Promise.all([listBugs(identity), listFeatureRequests(identity)]);
+      const [b, r, c] = await Promise.all([
+        listBugs(identity),
+        listFeatureRequests(identity),
+        listConnectors(identity),
+      ]);
+      bugs = b;
+      requests = r;
+      connectors = c.map((row) => ({
+        id: row.id,
+        provider: row.provider,
+        name: row.name,
+        enabled: row.enabled,
+        events: row.events,
+        accountLabel: row.accountLabel,
+        hasCredentials: !!row.credentialsCipher,
+        config: (row.config ?? {}) as ConnectorListItem["config"],
+      }));
     } catch {
       // DB not available in dev — fall through
     }
@@ -128,12 +147,7 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ tab?
           label="Feature requests"
           count={requests.length}
         />
-        <Link
-          href="/dashboard/feedback/connectors"
-          className="ml-auto -mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          Connectors
-        </Link>
+        <ConnectorsModal connectors={connectors} />
       </div>
 
       {tab === "bugs" ? (

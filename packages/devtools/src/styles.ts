@@ -827,8 +827,111 @@ button { font-family: inherit; }
   height:2px; background:rgba(255,255,255,0.06); overflow:hidden; }
 .se-attach-card .progress .fill { height:100%; background:var(--pri);
   box-shadow:0 0 6px var(--pri); transition:width .15s linear; }
+.se-attach-card .preview { cursor:zoom-in; }
+.se-attach-card .preview.screenshot.has-image,
+.se-attach-card .preview.recording.has-image {
+  background-color:var(--bg-3);
+  background-position:center; background-size:cover; background-repeat:no-repeat; }
+.se-attach-card .preview.recording .play { z-index:1; }
+.se-attach-card .preview.recording.has-image::after {
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%); }
+.se-attach-card .preview .scrim {
+  position:absolute; inset:0; opacity:0; transition:opacity .12s;
+  background:rgba(0,0,0,0.45); display:grid; place-items:center;
+  color:var(--fg); font-family:var(--mono); font-size:10px;
+  letter-spacing:.06em; text-transform:uppercase; pointer-events:none; z-index:2; }
+.se-attach-card .preview:hover .scrim { opacity:1; }
 .se-status { font-family:var(--mono); font-size:10px; color:var(--fg-3);
   min-height:14px; }
+
+/* Annotator (screenshot markup tool) */
+.dtf-modal .bd.annot-bd { padding:0; gap:0; overflow:hidden; }
+.se-annot { display:flex; flex-direction:column; flex:1; min-height:0;
+  background:var(--bg-1); }
+.se-annot-toolbar { display:flex; align-items:center; gap:6px;
+  padding:8px 10px; background:var(--bg-2);
+  border-bottom:1px solid var(--line); flex-wrap:wrap; flex-shrink:0; }
+.se-annot-btn { display:inline-flex; align-items:center; gap:5px;
+  background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+  font-family:var(--mono); font-size:10.5px; padding:4px 9px;
+  border-radius:4px; cursor:pointer; line-height:1.4;
+  transition:color .12s, border-color .12s, background .12s; }
+.se-annot-btn:hover { color:var(--fg); border-color:var(--fg-4); }
+.se-annot-btn.on { color:var(--accent);
+  background:color-mix(in oklab, var(--accent) 18%, var(--bg-3));
+  border-color:color-mix(in oklab, var(--accent) 35%, var(--line)); }
+.se-annot-sep { width:1px; align-self:stretch;
+  background:var(--line); margin:2px 4px; }
+.se-annot-swatch { width:20px; height:20px; padding:0;
+  border:2px solid transparent; border-radius:50%; cursor:pointer;
+  box-shadow:0 0 0 1px rgba(0,0,0,0.5);
+  transition:transform .12s, border-color .12s; }
+.se-annot-swatch:hover { transform:scale(1.08); }
+.se-annot-swatch.on { border-color:var(--fg); transform:scale(1.12); }
+.se-annot-stage { position:relative; flex:1; min-height:0; min-width:0;
+  display:grid; place-items:center; padding:12px; overflow:hidden;
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%) 0 0/14px 14px,
+    linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%) 0 0/14px 14px,
+    var(--bg-0); }
+.se-annot-canvas { display:block; max-width:100%; max-height:100%;
+  width:auto; height:auto; object-fit:contain;
+  border:1px solid var(--line); border-radius:4px;
+  box-shadow:0 8px 24px -8px rgba(0,0,0,0.6); background:#fff; }
+.se-annot-text-input { font-family:ui-sans-serif, system-ui, sans-serif; }
+
+/* Lightbox modal — full-size preview of an attached screenshot or recording */
+.dtf-lightbox { position:absolute; inset:0; z-index:60;
+  background:rgba(0,0,0,0.78); backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  display:grid; place-items:center; padding:24px;
+  animation:dtf-modal-bg-in .14s ease-out; }
+.dtf-lightbox .frame { position:relative; max-width:100%; max-height:100%;
+  display:flex; flex-direction:column; gap:8px; align-items:center; min-height:0; }
+.dtf-lightbox img, .dtf-lightbox video { max-width:100%;
+  max-height:calc(100% - 28px); object-fit:contain;
+  border-radius:6px; border:1px solid var(--line);
+  box-shadow:0 24px 60px -16px rgba(0,0,0,0.8); background:#000; }
+.dtf-lightbox .cap { font-family:var(--mono); font-size:10.5px;
+  color:var(--fg-2); display:flex; gap:10px; align-items:center; }
+.dtf-lightbox .x { position:absolute; top:-2px; right:-2px;
+  width:28px; height:28px; border-radius:50%; border:0;
+  background:var(--bg-2); color:var(--fg);
+  display:grid; place-items:center; cursor:pointer;
+  box-shadow:0 4px 10px rgba(0,0,0,0.5); }
+.dtf-lightbox .x:hover { background:var(--bg-3); }
+.dtf-lightbox .x svg { width:13px; height:13px; }
+
+/* Quick-actions hovercard on the feedback rail icon */
+.se-qa { position:absolute; z-index:20;
+  background:var(--bg-2); border:1px solid var(--line); border-radius:6px;
+  padding:5px; display:flex; flex-direction:column; gap:2px;
+  min-width:170px;
+  box-shadow:0 14px 30px -10px rgba(0,0,0,0.7);
+  opacity:0; pointer-events:none; transition:opacity .12s ease;
+  font-family:var(--mono); font-size:11px; color:var(--fg-2); }
+.se-qa.show { opacity:1; pointer-events:auto; }
+.se-qa::before {
+  content:""; position:absolute;
+  /* invisible bridge to keep hover alive while moving cursor */ }
+.se-qa .qa-hd { display:block; padding:5px 8px 4px;
+  font-size:9.5px; color:var(--fg-4); letter-spacing:.06em;
+  text-transform:uppercase; }
+.se-qa button { display:flex; align-items:center; gap:8px;
+  background:transparent; border:0; color:var(--fg-2);
+  font-family:var(--mono); font-size:11px; text-align:left;
+  padding:7px 8px; border-radius:4px; cursor:pointer; }
+.se-qa button:hover { background:var(--bg-3); color:var(--fg); }
+.se-qa button svg { width:12px; height:12px; flex-shrink:0; color:var(--fg-3); }
+.se-qa button:hover svg { color:var(--accent); }
+/* Position the card by edge — placed by JS on .dtf-panel-rail .ri.feedback or
+   .dtf-rail .t.feedback. */
+.dtf-panel.collapsed[data-edge="right"]  .se-qa.qa-rail-collapsed { right:calc(100% + 8px); }
+.dtf-panel.collapsed[data-edge="left"]   .se-qa.qa-rail-collapsed { left:calc(100% + 8px); }
+.dtf-panel.collapsed[data-edge="top"]    .se-qa.qa-rail-collapsed { top:calc(100% + 8px); }
+.dtf-panel.collapsed[data-edge="bottom"] .se-qa.qa-rail-collapsed { bottom:calc(100% + 8px); }
+.se-qa.qa-rail-expanded { left:calc(100% + 6px); top:50%; transform:translateY(-50%); }
 .se-status.err { color:var(--danger); }
 
 .ibtn { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);

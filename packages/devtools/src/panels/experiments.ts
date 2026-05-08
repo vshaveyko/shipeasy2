@@ -1,158 +1,227 @@
-import { DevtoolsApi } from "../api";
+import type { DevtoolsApi } from "../api";
 import { getExpOverride, setExpOverride } from "../overrides";
-import type { ExperimentRecord, UniverseRecord, ShipeasySdkBridge } from "../types";
-import { emptyState } from "./empty";
+import type { ExperimentRecord, ShipeasySdkBridge } from "../types";
+import { I } from "../icons";
+import {
+  emptyState,
+  escapeHtml,
+  loadingState,
+  searchEmptyState,
+  copyButton,
+  wireCopyButtons,
+  timeAgo,
+} from "./common";
+
+interface ViewOpts {
+  view: "page" | "all";
+  search: string;
+}
 
 function bridge(): ShipeasySdkBridge | null {
   return (window as unknown as { __shipeasy?: ShipeasySdkBridge }).__shipeasy ?? null;
 }
 
-function statusBadge(status: ExperimentRecord["status"]): string {
-  const map: Record<ExperimentRecord["status"], string> = {
-    running: "badge-run",
-    draft: "badge-draft",
-    stopped: "badge-stop",
-    archived: "badge-stop",
+interface RenderRow {
+  name: string;
+  status: ExperimentRecord["status"];
+  groups: Array<{ name: string; weight: number }>;
+  override: string | null;
+  liveGroup: string | null;
+  liveEnrolled: boolean;
+  effective: string;
+  updatedAt: string;
+}
+
+function buildRow(e: ExperimentRecord): RenderRow {
+  const ov = getExpOverride(e.name);
+  const live = bridge()?.getExperiment(e.name);
+  const liveGroup = live?.inExperiment ? live.group : null;
+  const groupNames = ["control", ...e.groups.map((g) => g.name)];
+  const effective = ov ?? liveGroup ?? "control";
+  return {
+    name: e.name,
+    status: e.status,
+    groups: [{ name: "control", weight: 0 }, ...e.groups]
+      .map((g, i) => ({
+        name: i === 0 ? "control" : g.name,
+        weight: g.weight,
+      }))
+      .filter((g, i, arr) => arr.findIndex((x) => x.name === g.name) === i),
+    override: ov,
+    liveGroup,
+    liveEnrolled: live?.inExperiment ?? false,
+    effective,
+    updatedAt: e.updatedAt,
   };
-  return `<span class="badge ${map[status]}">${status}</span>`;
+  void groupNames;
 }
 
-function variantSelect(exp: ExperimentRecord): string {
-  const current = getExpOverride(exp.name);
-  const groups = ["control", ...exp.groups.map((g) => g.name)];
-  const opts = [
-    `<option value="" ${current === null ? "selected" : ""}>default</option>`,
-    ...groups.map((g) => `<option value="${g}" ${current === g ? "selected" : ""}>${g}</option>`),
-  ].join("");
-  return `<select class="sel-input exp-sel" data-name="${exp.name}">${opts}</select>`;
-}
+function renderRow(r: RenderRow, expandedKey: string | null): string {
+  const isOpen = expandedKey === r.name;
+  const overridden = r.override !== null;
+  const optHtml = r.groups
+    .map(
+      (g) =>
+        `<option value="${escapeAttr(g.name)}"${g.name === r.effective ? " selected" : ""}>${escapeHtml(g.name)}</option>`,
+    )
+    .join("");
+  const sel = `<select class="sel${overridden ? " over" : ""}" data-exp="${escapeAttr(r.name)}" style="grid-column:3 / span 2; justify-self:end">
+    ${optHtml}
+  </select>`;
 
-function liveVariant(name: string): string {
-  const exp = bridge()?.getExperiment(name);
-  if (!exp) return "";
-  return exp.inExperiment
-    ? `<span class="badge badge-run">${exp.group}</span>`
-    : `<span class="badge badge-draft">not enrolled</span>`;
-}
+  const desc = `experiment · ${r.status} · ${r.groups.length} variants${
+    r.liveGroup ? ` · live: ${r.liveGroup}` : ""
+  }`;
 
-function renderExperimentRow(e: ExperimentRecord): string {
-  const isRunning = e.status === "running";
+  const variantsHtml = r.groups
+    .map((g, i) => {
+      const assigned = g.name === r.effective;
+      const swatch =
+        ["var(--info)", "var(--accent)", "var(--warn)", "var(--danger)", "var(--pri)"][i] ??
+        "var(--fg-3)";
+      return `<div class="var-row${assigned ? " assigned" : ""}">
+        <span class="sw" style="background:${swatch}"></span>
+        <span>${escapeHtml(g.name)}</span>
+        <span class="pct">${g.weight}%</span>
+        <span style="font-size:9.5px;color:var(--fg-4)">${
+          g.name === r.liveGroup ? "real" : g.name === r.override ? "forced" : ""
+        }</span>
+      </div>`;
+    })
+    .join("");
+
+  const detail = `
+    <div class="crumbs">
+      <div><span class="${overridden ? "skip" : "pass"}">●</span> ${
+        overridden
+          ? "forced via URL override"
+          : r.liveGroup
+            ? "assigned via SDK"
+            : "no live assignment"
+      }</div>
+    </div>
+    ${variantsHtml}
+    <div class="mini">
+      <span class="lbl">status</span><span class="v">${r.status}</span>
+      <span class="lbl">updated</span><span class="v">${timeAgo(r.updatedAt)}</span>
+    </div>
+    <div class="actions">
+      ${overridden ? `<button data-clear="${escapeAttr(r.name)}">↺ Clear override</button>` : ""}
+    </div>`;
+
   return `
-    <tr>
-      <td class="col-name">${e.name}</td>
-      <td class="col-badge">${statusBadge(e.status)}</td>
-      <td class="col-badge">${isRunning ? liveVariant(e.name) : ""}</td>
-      <td class="col-control">${isRunning ? variantSelect(e) : ""}</td>
-    </tr>`;
-}
-
-function renderExperimentTable(items: ExperimentRecord[], label: string): string {
-  if (items.length === 0) return "";
-  return `
-    <div class="sec-head">${label}</div>
-    <div class="dt-scroll">
-      <table class="dt-table">
-        <thead><tr>
-          <th>Name</th><th>Status</th><th>Live</th><th style="text-align:right">Override</th>
-        </tr></thead>
-        <tbody>${items.map(renderExperimentRow).join("")}</tbody>
-      </table>
+    <div class="dtf-row${isOpen ? " expanded" : ""}${r.status !== "running" ? " muted" : ""}" data-row="${escapeAttr(r.name)}">
+      <div class="ic"><span style="color:${r.liveEnrolled ? "var(--accent)" : "var(--fg-3)"}">${I.flask}</span></div>
+      <div class="meta">
+        <div class="k">
+          <span class="name">${escapeHtml(r.name)}</span>
+          ${copyButton("e:" + r.name, "Copy experiment name")}
+          ${overridden ? `<span class="override-tag">forced</span>` : ""}
+          ${r.liveEnrolled ? `<span class="live-dot" title="enrolled on this page"></span>` : ""}
+        </div>
+        <div class="v">${escapeHtml(desc)}</div>
+      </div>
+      ${sel}
+    </div>
+    <div class="dtf-detail${isOpen ? " open" : ""}">
+      <div class="inner"><div class="pad">${detail}</div></div>
     </div>`;
 }
 
-function renderUniverseTab(
+export async function renderExperimentsPanel(
   container: HTMLElement,
-  universe: UniverseRecord,
-  experiments: ExperimentRecord[],
-  adminUrl: string,
-): void {
-  // Experiments bound to this universe (matched by name, since that's the FK).
-  const bucket = experiments.filter((e) => e.universe === universe.name);
-
-  if (bucket.length === 0) {
-    container.innerHTML = emptyState({
-      icon: "🧪",
-      title: `No experiments in “${universe.name}” yet`,
-      message: "Launch an experiment in this universe to start measuring impact.",
-      ctaLabel: "Create new experiment",
-      ctaHref: `${adminUrl}/dashboard/experiments/new`,
-    });
-    return;
-  }
-
-  const running = bucket.filter((e) => e.status === "running");
-  const other = bucket.filter((e) => e.status !== "running");
-
-  container.innerHTML =
-    renderExperimentTable(running, "Running") + renderExperimentTable(other, "Other");
-
-  container.querySelectorAll<HTMLSelectElement>(".exp-sel").forEach((sel) => {
-    sel.addEventListener("change", () => {
-      const name = sel.dataset.name!;
-      setExpOverride(name, sel.value || null);
-    });
-  });
-}
-
-export async function renderExperimentsPanel(container: Element, api: DevtoolsApi): Promise<void> {
-  container.innerHTML = `<div class="loading">Loading…</div>`;
-
+  api: DevtoolsApi,
+  view: ViewOpts,
+  setOverrideCount: (n: number) => void,
+): Promise<void> {
+  container.innerHTML = loadingState();
   let experiments: ExperimentRecord[];
-  let universes: UniverseRecord[];
   try {
-    [experiments, universes] = await Promise.all([api.experiments(), api.universes()]);
+    experiments = await api.experiments();
   } catch (err) {
-    container.innerHTML = `<div class="err">Failed to load: ${String(err)}</div>`;
+    container.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed to load experiments: ${escapeHtml(String(err))}</div>`;
     return;
   }
-
-  // No universes = nothing to bucket experiments under. Prompt the user to
-  // create one (experiments cannot exist without a universe).
-  if (universes.length === 0) {
-    container.innerHTML = emptyState({
-      icon: "🌌",
-      title: "No universes yet",
+  if (experiments.length === 0) {
+    const { html, wire } = emptyState({
+      title: "No <em>experiments</em> yet",
       message:
-        "Experiments live inside a universe — a named traffic segment with holdout control. Create one to get started.",
-      ctaLabel: "Create a universe",
-      ctaHref: `${api.adminUrl}/dashboard/experiments/universes`,
+        "Run A/B tests with traffic-bucketed variants. Launch one to start measuring impact.",
+      actions: api.hideAdminLinks
+        ? []
+        : [
+            {
+              icon: "+",
+              label: "Create new experiment",
+              href: `${api.adminUrl}/dashboard/experiments/new`,
+            },
+          ],
     });
+    container.innerHTML = html;
+    wire(container);
+    setOverrideCount(0);
     return;
   }
 
-  const state = { activeUniverse: universes[0].name };
+  let expanded: string | null = null;
 
-  function renderTabs() {
-    const tabs = universes
-      .map(
-        (u) => `
-          <button class="tab${u.name === state.activeUniverse ? " active" : ""}"
-                  data-universe="${u.name}">${u.name}</button>`,
-      )
-      .join("");
-    container.innerHTML = `
-      <div class="tabs scroll">${tabs}</div>
-      <div class="tab-body" style="overflow-y:auto;flex:1"></div>`;
+  function paint(): void {
+    const q = view.search.trim().toLowerCase();
+    const filtered = q ? experiments.filter((e) => e.name.toLowerCase().includes(q)) : experiments;
+    const rows = filtered.map(buildRow);
+    setOverrideCount(rows.filter((r) => r.override !== null).length);
 
-    container.querySelectorAll<HTMLButtonElement>(".tab[data-universe]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        state.activeUniverse = btn.dataset.universe!;
-        renderTabs();
+    if (rows.length === 0) {
+      container.innerHTML = searchEmptyState(view.search);
+      return;
+    }
+
+    if (view.view === "page") {
+      const active = rows.filter((r) => r.liveEnrolled);
+      const inactive = rows.filter((r) => !r.liveEnrolled);
+      container.innerHTML =
+        `<div class="dtf-group">Active on this page<span class="pulse"><span class="d"></span>${active.length} enrolled</span></div>` +
+        (active.length
+          ? active.map((r) => renderRow(r, expanded)).join("")
+          : `<div class="se-empty">No experiments enrolled yet on this page.</div>`) +
+        (inactive.length
+          ? `<div class="dtf-group">Other<span class="c">${inactive.length}</span></div>` +
+            inactive.map((r) => renderRow(r, expanded)).join("")
+          : "");
+    } else {
+      container.innerHTML =
+        `<div class="dtf-group">All experiments<span class="c">${rows.length}</span></div>` +
+        rows.map((r) => renderRow(r, expanded)).join("");
+    }
+
+    container.querySelectorAll<HTMLElement>(".dtf-row").forEach((rowEl) => {
+      rowEl.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("select") || target.closest(".dtf-copy")) return;
+        const name = rowEl.dataset.row!;
+        expanded = expanded === name ? null : name;
+        paint();
       });
     });
 
-    const body = container.querySelector<HTMLElement>(".tab-body")!;
-    const activeUniverse = universes.find((u) => u.name === state.activeUniverse)!;
-    renderUniverseTab(body, activeUniverse, experiments, api.adminUrl);
+    container.querySelectorAll<HTMLSelectElement>("select[data-exp]").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        setExpOverride(sel.dataset.exp!, sel.value || null);
+      });
+    });
+    container.querySelectorAll<HTMLElement>("[data-clear]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setExpOverride(el.getAttribute("data-clear")!, null);
+      });
+    });
+
+    wireCopyButtons(container, Object.fromEntries(rows.map((r) => ["e:" + r.name, () => r.name])));
   }
 
-  renderTabs();
+  paint();
+}
 
-  // React provider re-publishes bridge state on identify/overrides — rerender
-  // the active tab so live-variant badges stay correct.
-  window.addEventListener("se:state:update", () => {
-    const body = container.querySelector<HTMLElement>(".tab-body");
-    const active = universes.find((u) => u.name === state.activeUniverse);
-    if (body && active) renderUniverseTab(body, active, experiments, api.adminUrl);
-  });
+function escapeAttr(s: string): string {
+  return escapeHtml(s);
 }

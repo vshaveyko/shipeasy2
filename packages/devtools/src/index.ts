@@ -1,5 +1,5 @@
 import { createOverlay } from "./overlay";
-import { initFromUrl, isDevtoolsRequested } from "./overrides";
+import { initFromUrl, installNavGuard, isDevtoolsRequested } from "./overrides";
 import type { DevtoolsOptions } from "./types";
 
 export type { DevtoolsOptions } from "./types";
@@ -21,18 +21,40 @@ export {
 } from "./overrides";
 export type { OverrideUrlInput } from "./overrides";
 
+/** Production admin endpoint. Used as the default when no adminUrl is passed
+ * and when the script tag origin would resolve to localhost / 127.0.0.1 /
+ * file: — devs running the customer app locally still need a real ShipEasy
+ * endpoint to authenticate against, so we always fall back to prod.
+ */
+const PROD_ADMIN_URL = "https://shipeasy.ai";
+
+function isLocalOrigin(origin: string): boolean {
+  return (
+    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:|$)/i.test(origin) ||
+    origin === "file://" ||
+    origin === "null"
+  );
+}
+
 /**
- * Origin of the <script src="…/se-devtools.js"> tag that bootstrapped this
- * bundle. Used to default adminUrl when the script is embedded cross-origin
- * (e.g. a customer app pulls se-devtools.js from app.shipeasy.dev). Falls
- * back to window.location.origin when it cannot be determined.
+ * Resolve the default admin URL.
+ *
+ * Order:
+ *   1. The <script src="…/se-devtools.js"> tag origin, when it points at a
+ *      non-local host (i.e. the customer is loading from shipeasy.ai or some
+ *      other production deployment).
+ *   2. Otherwise — including when the bundle is loaded from localhost or as
+ *      `<script src="/se-devtools.js">` on a dev server — fall through to the
+ *      hardcoded production endpoint so device-auth + admin API calls always
+ *      hit a real ShipEasy backend.
  */
 function scriptTagOrigin(): string {
   if (typeof document !== "undefined") {
     const cur = document.currentScript as HTMLScriptElement | null;
     if (cur?.src) {
       try {
-        return new URL(cur.src).origin;
+        const o = new URL(cur.src).origin;
+        if (!isLocalOrigin(o)) return o;
       } catch {
         /* fall through */
       }
@@ -41,17 +63,19 @@ function scriptTagOrigin(): string {
     for (const s of Array.from(scripts)) {
       if (s.src.includes("se-devtools.js")) {
         try {
-          return new URL(s.src).origin;
+          const o = new URL(s.src).origin;
+          if (!isLocalOrigin(o)) return o;
         } catch {
           /* fall through */
         }
       }
     }
   }
-  return typeof window !== "undefined" ? window.location.origin : "";
+  return PROD_ADMIN_URL;
 }
 
 let destroyFn: (() => void) | null = null;
+let navGuardCleanup: (() => void) | null = null;
 
 /** Mount the devtools overlay. Safe to call multiple times — idempotent. */
 export function init(opts: DevtoolsOptions = {}): void {
@@ -65,9 +89,11 @@ export function init(opts: DevtoolsOptions = {}): void {
   }
 
   initFromUrl();
+  if (!navGuardCleanup) navGuardCleanup = installNavGuard();
 
   const resolved: Required<DevtoolsOptions> = {
     adminUrl: opts.adminUrl ?? scriptTagOrigin(),
+    hideAdminLinks: opts.hideAdminLinks ?? false,
   };
 
   const { destroy } = createOverlay(resolved);
@@ -78,6 +104,8 @@ export function init(opts: DevtoolsOptions = {}): void {
 export function destroy(): void {
   destroyFn?.();
   destroyFn = null;
+  navGuardCleanup?.();
+  navGuardCleanup = null;
 }
 
 /**

@@ -15,6 +15,10 @@ interface PendingAttachment {
   kind: "screenshot" | "recording" | "file";
   filename: string;
   blob: Blob;
+  /** Object URL for screenshots/recordings, used both for the card thumb and
+   * the lightbox preview. Created on attach, revoked when the user removes
+   * the attachment or submits the form. */
+  previewUrl?: string;
   duration?: number;
   progress?: number; // 0-100; undefined = uploaded
   error?: string;
@@ -422,13 +426,19 @@ function openFormModal(
 }
 
 function attachmentCardHtml(a: PendingAttachment): string {
+  const bg = a.previewUrl ? ` style="background-image:url('${a.previewUrl}')"` : "";
+  const hasImg = a.previewUrl && (a.kind === "screenshot" || a.kind === "recording");
+  const clickable = a.kind === "screenshot" || a.kind === "recording";
   const previewHtml =
     a.kind === "screenshot"
-      ? `<div class="preview screenshot"></div>`
+      ? `<div class="preview screenshot${hasImg ? " has-image" : ""}" data-preview="${escapeHtml(a.id)}"${bg}>
+           ${clickable ? `<span class="scrim">click to preview</span>` : ""}
+         </div>`
       : a.kind === "recording"
-        ? `<div class="preview recording">
+        ? `<div class="preview recording${hasImg ? " has-image" : ""}" data-preview="${escapeHtml(a.id)}"${bg}>
              <div class="play">${I.playFilled}</div>
              ${a.duration ? `<span class="dur">${fmtDuration(a.duration)}</span>` : ""}
+             ${clickable ? `<span class="scrim">click to play</span>` : ""}
            </div>`
         : `<div class="preview file">${I.file}<span class="ext">.${escapeHtml(fileExt(a.filename))}</span></div>`;
   const progress =
@@ -447,6 +457,48 @@ function attachmentCardHtml(a: PendingAttachment): string {
         <span class="size">${escapeHtml(fmtBytes(a.blob.size))}</span>
       </div>
     </div>`;
+}
+
+function openLightbox(
+  modalRoot: ParentNode & { appendChild: (n: Node) => Node },
+  a: PendingAttachment,
+): void {
+  if (!a.previewUrl) return;
+  const wrap = document.createElement("div");
+  wrap.className = "dtf-lightbox";
+  const isVideo = a.kind === "recording";
+  wrap.innerHTML = `
+    <div class="frame">
+      <button class="x" data-action="close" title="Close (Esc)">${I.x}</button>
+      ${
+        isVideo
+          ? `<video src="${a.previewUrl}" controls autoplay playsinline></video>`
+          : `<img src="${a.previewUrl}" alt="${escapeHtml(a.filename)}" />`
+      }
+      <div class="cap">
+        <span>${escapeHtml(a.filename)}</span>
+        <span style="color:var(--fg-4)">·</span>
+        <span style="color:var(--fg-4)">${escapeHtml(fmtBytes(a.blob.size))}</span>
+      </div>
+    </div>`;
+  modalRoot.appendChild(wrap);
+  const close = () => {
+    document.removeEventListener("keydown", onKey, true);
+    wrap.remove();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    }
+  };
+  document.addEventListener("keydown", onKey, true);
+  wrap.addEventListener("click", (e) => {
+    if (e.target === wrap || (e.target as HTMLElement).closest('[data-action="close"]')) {
+      close();
+    }
+  });
 }
 
 function fileExt(name: string): string {
@@ -469,6 +521,11 @@ function mountBugForm(
 ): void {
   const attachments: PendingAttachment[] = [];
   let recording: RecordingHandle | null = null;
+  const revokeAllPreviews = () => {
+    for (const a of attachments) {
+      if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+    }
+  };
 
   const bodyHtml = `
     <div class="se-form">
@@ -518,7 +575,10 @@ function mountBugForm(
         attachments.length
       ),
     onSubmit: submit,
-    onCancel: onClose,
+    onCancel: () => {
+      revokeAllPreviews();
+      onClose();
+    },
   });
 
   const modal = handle.host;
@@ -534,10 +594,27 @@ function mountBugForm(
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const i = attachments.findIndex((a) => a.id === btn.dataset.remove);
-        if (i >= 0) attachments.splice(i, 1);
+        if (i >= 0) {
+          const [removed] = attachments.splice(i, 1);
+          if (removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+        }
         repaintGrid();
       });
     });
+    grid.querySelectorAll<HTMLElement>("[data-preview]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const a = attachments.find((x) => x.id === el.dataset.preview);
+        if (a) openLightbox(modalRoot, a);
+      });
+    });
+  };
+  const addAttachment = (a: PendingAttachment) => {
+    if (!a.previewUrl && (a.kind === "screenshot" || a.kind === "recording")) {
+      a.previewUrl = URL.createObjectURL(a.blob);
+    }
+    attachments.push(a);
+    repaintGrid();
   };
 
   modal.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-field]").forEach((el) => {
@@ -551,13 +628,12 @@ function mountBugForm(
       const blob = await captureScreenshot(shadow.host as HTMLElement);
       setStatus("");
       openAnnotateModal(modalRoot, shadow, blob, (annotated) => {
-        attachments.push({
+        addAttachment({
           id: "at_" + Math.random().toString(36).slice(2, 7),
           kind: "screenshot",
           filename: `screenshot-${Date.now()}.png`,
           blob: annotated,
         });
-        repaintGrid();
       });
     } catch (err) {
       setStatus(err instanceof Error ? err.message : String(err), true);
@@ -573,13 +649,12 @@ function mountBugForm(
         recording = null;
         recordBtn.classList.remove("recording");
         recordBtn.innerHTML = `${I.record} Record screen`;
-        attachments.push({
+        addAttachment({
           id: "at_" + Math.random().toString(36).slice(2, 7),
           kind: "recording",
           filename: `recording-${Date.now()}.webm`,
           blob,
         });
-        repaintGrid();
         setStatus("");
       } catch (err) {
         setStatus(err instanceof Error ? err.message : String(err), true);
@@ -604,14 +679,15 @@ function mountBugForm(
   fileInput.addEventListener("change", () => {
     const f = fileInput.files?.[0];
     if (!f) return;
-    attachments.push({
+    const isImage = f.type.startsWith("image/");
+    const isVideo = f.type.startsWith("video/");
+    addAttachment({
       id: "at_" + Math.random().toString(36).slice(2, 7),
-      kind: "file",
+      kind: isImage ? "screenshot" : isVideo ? "recording" : "file",
       filename: f.name,
       blob: f,
     });
     fileInput.value = "";
-    repaintGrid();
   });
 
   async function submit(): Promise<void> {
@@ -641,6 +717,7 @@ function mountBugForm(
           blob: a.blob,
         });
       }
+      revokeAllPreviews();
       handle.close();
     } catch (err) {
       setStatus(err instanceof Error ? err.message : String(err), true);
@@ -663,7 +740,7 @@ function openAnnotateModal(
         <span class="k">Annotate screenshot</span>
         <button class="x" data-action="close">${I.x}</button>
       </div>
-      <div class="bd" data-host>Preparing annotator…</div>
+      <div class="bd annot-bd" data-host>Preparing annotator…</div>
       <div class="ft">
         <span class="sp"></span>
         <button data-action="close">Cancel</button>

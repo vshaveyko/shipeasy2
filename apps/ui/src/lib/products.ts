@@ -194,7 +194,7 @@ export const PRODUCTS: Product[] = [
             exact: true,
           },
           {
-            href: "/dashboard/feedback/connectors",
+            href: "/dashboard/feedback?connectors=open",
             label: "Connectors",
             icon: Radio,
           },

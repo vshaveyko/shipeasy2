@@ -22,17 +22,18 @@ export async function GET(req: Request) {
     .find((c) => c.startsWith("se_connector_oauth="))
     ?.slice("se_connector_oauth=".length);
 
-  // Whatever happens we want to bounce back to the connector page.
-  const back = (qs: string) =>
-    NextResponse.redirect(new URL(`/dashboard/feedback/connectors?${qs}`, req.url));
+  // Whatever happens we want to bounce back to the feedback page (which
+  // hosts the connectors modal). The modal auto-opens when ?connector=<id>
+  // or ?connectors=open is present.
+  const back = (qs: string) => NextResponse.redirect(new URL(`/dashboard/feedback?${qs}`, req.url));
 
-  if (error) return back(`error=${encodeURIComponent(error)}`);
+  if (error) return back(`connectors=open&error=${encodeURIComponent(error)}`);
   if (!code || !state || !cookieState || cookieState !== state) {
-    return back("error=invalid_state");
+    return back("connectors=open&error=invalid_state");
   }
 
   const [connectorId, projectId] = state.split(".");
-  if (!connectorId || !projectId) return back("error=bad_state");
+  if (!connectorId || !projectId) return back("connectors=open&error=bad_state");
 
   try {
     const env = await getEnvAsync();
@@ -55,10 +56,10 @@ export async function GET(req: Request) {
       accountLabel: creds.account_email ?? null,
       enabled: false, // user must still pick a sheet/tab
     });
-    const res = back(`connected=${encodeURIComponent(connectorId)}`);
+    const res = back(`connector=${encodeURIComponent(connectorId)}&connected=1`);
     res.cookies.delete("se_connector_oauth");
     return res;
   } catch (e) {
-    return back(`error=${encodeURIComponent((e as Error).message)}`);
+    return back(`connectors=open&error=${encodeURIComponent((e as Error).message)}`);
   }
 }

@@ -29,6 +29,20 @@ export function clearSession(): void {
 }
 
 /**
+ * Read the customer SDK client key from the page's `__SE_BOOTSTRAP` payload
+ * (injected by the server-side `getBootstrapHtml()` in @shipeasy/sdk). The
+ * key uniquely identifies the customer's project, so the auth flow can
+ * resolve the project directly instead of matching by origin — which lets a
+ * developer running on `localhost:3000` authorize their real production
+ * project without first allow-listing localhost in dashboard settings.
+ */
+function readBootstrapApiKey(): string | null {
+  if (typeof window === "undefined") return null;
+  const bs = (window as unknown as { __SE_BOOTSTRAP?: { apiKey?: string } }).__SE_BOOTSTRAP;
+  return typeof bs?.apiKey === "string" && bs.apiKey ? bs.apiKey : null;
+}
+
+/**
  * Open the admin app's /devtools-auth page in a popup. The user signs in if
  * needed, approves access, and the page postMessages an admin SDK key back
  * to this window. Works on any domain — no worker, no polling, no PKCE.
@@ -50,11 +64,11 @@ export async function startDeviceAuth(
   // navigation against our `popup.closed` poll and reject before the new
   // page has a chance to load.
   const targetName = `shipeasy-devtools-auth-${Date.now()}`;
-  const popup = window.open(
-    `${opts.adminUrl}/devtools-auth?origin=${encodeURIComponent(ourOrigin)}`,
-    targetName,
-    "width=460,height=640,noopener=no",
-  );
+  const popupUrl = new URL(`${opts.adminUrl}/devtools-auth`);
+  popupUrl.searchParams.set("origin", ourOrigin);
+  const sdkKey = readBootstrapApiKey();
+  if (sdkKey) popupUrl.searchParams.set("sdkKey", sdkKey);
+  const popup = window.open(popupUrl.toString(), targetName, "width=460,height=640,noopener=no");
   if (!popup) {
     throw new Error("Popup blocked. Allow popups for this site and try again.");
   }

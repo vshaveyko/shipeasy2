@@ -1,0 +1,2876 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=1440"/>
+  <title>Shipeasy · DevTool preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+  <style>
+    /* === Tokens — aligned with packages/devtools/src/styles.ts === */
+    :root {
+      --bg-0:#050507;
+      --bg-1:#0a0a0c;
+      --bg-2:#101012;
+      --bg-3:#16161a;
+      --line:rgba(255,255,255,0.10);
+      --line-2:rgba(255,255,255,0.06);
+      --fg:#ededed;
+      --fg-2:#b6b6bc;       /* primary secondary — bumped from #9a9aa3 to ~7:1 on bg-1 */
+      --fg-3:#8a8a92;       /* tertiary text — bumped from #62626a; ~5:1 on bg-1 */
+      --fg-4:#5d5d65;       /* lowest text tier — bumped from #3d3d44; ~3.2:1 (UI/icons OK) */
+      --fg-faint:#3d3d44;   /* dividers / ornament only — never text */
+      --accent:#4ade80;     /* runtime truth: firing, on, true, assigned */
+      --pri:#7ab8ff;        /* primary actions / focus / active tab indicator */
+      --warn:#f59e0b;
+      --info:#7ab8ff;       /* legacy alias of --pri */
+      --danger:#f87171;
+      /* unified warn surfaces — use these instead of bespoke color-mix calls */
+      --warn-bg-soft:color-mix(in oklab, var(--warn) 14%, var(--bg-3));
+      --warn-bg-strong:color-mix(in oklab, var(--warn) 22%, var(--bg-3));
+      --warn-border:color-mix(in oklab, var(--warn) 32%, var(--line));
+      --warn-bg-overbar:color-mix(in oklab, var(--warn) 10%, var(--bg-1));
+      --mono:'Geist Mono', ui-monospace, monospace;
+      --sans:'Geist', ui-sans-serif, system-ui, sans-serif;
+      --serif:'Instrument Serif', serif;
+    }
+    /* Global focus ring — applies to everything keyboard-reachable */
+    :focus { outline:none; }
+    :focus-visible { outline:2px solid var(--pri); outline-offset:2px;
+      border-radius:3px; }
+    /* Sub-rings for inputs that already have their own border */
+    input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline:2px solid var(--pri); outline-offset:0; border-color:transparent !important; }
+    *,*::before,*::after { box-sizing:border-box; }
+    html, body { background:#000; color:var(--fg); margin:0;
+      font-family:var(--sans); font-size:13px; -webkit-font-smoothing:antialiased; }
+    button { font-family:inherit; }
+
+    .dtf-doc { min-height:100vh; padding:18px 22px 64px; }
+
+    .dtf-topbar { display:flex; align-items:center; gap:24px; padding:0 4px 18px;
+      border-bottom:1px solid var(--line-2); margin-bottom:18px; }
+    .dtf-topbar .crumb { display:flex; align-items:center; gap:8px;
+      font-family:var(--mono); font-size:10.5px; color:var(--fg-3); letter-spacing:.04em; text-transform:uppercase; }
+    .dtf-topbar .crumb b { color:var(--fg); font-weight:500; }
+    .dtf-topbar .crumb .sep { color:var(--fg-4); }
+    .dtf-topbar h1 { margin:0; font-size:18px; font-weight:500; letter-spacing:-0.01em; }
+    .dtf-topbar h1 em { font-family:var(--serif); font-style:italic; color:var(--accent); font-weight:400; }
+
+    .dtf-stagewrap { display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; }
+
+    /* stage with the fake site + docked panel */
+    .dtf-stage { position:relative; height:840px; border:1px solid var(--line);
+      border-radius:8px; overflow:hidden; background:var(--bg-0);
+      background-image:
+        linear-gradient(to right, var(--line-2) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--line-2) 1px, transparent 1px);
+      background-size:48px 48px; background-position:-1px -1px; }
+
+    .dtf-stage .corner { position:absolute; top:10px; left:12px; z-index:2;
+      display:flex; align-items:center; gap:6px;
+      font-family:var(--mono); font-size:10px; color:var(--fg-3); letter-spacing:.06em; text-transform:uppercase; }
+    .dtf-stage .corner .d { width:6px; height:6px; border-radius:50%;
+      background:var(--accent); box-shadow:0 0 6px var(--accent); animation:dtf-pulse 2s infinite; }
+    @keyframes dtf-pulse { 50% { opacity:.4; } }
+
+    /* customer site mock (faded) */
+    .dtf-cust { position:absolute; inset:0; padding:36px 36px 0;
+      font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color:rgba(235,235,235,0.55); opacity:.95; pointer-events:none; }
+    .dtf-cust .nav { display:flex; align-items:center; gap:24px; padding-bottom:20px;
+      border-bottom:1px solid rgba(255,255,255,0.06); font-size:11.5px; }
+    .dtf-cust .nav .logo { font-weight:600; color:rgba(255,255,255,0.8); letter-spacing:.04em; }
+    .dtf-cust .nav .l { color:rgba(255,255,255,0.4); }
+    .dtf-cust .nav .l.active { color:rgba(255,255,255,0.85); }
+    .dtf-cust .nav .right { margin-left:auto; display:flex; align-items:center; gap:14px; }
+    .dtf-cust .nav .av { width:22px; height:22px; border-radius:50%;
+      background:rgba(255,255,255,0.1); display:grid; place-items:center; font-size:9.5px; }
+
+    .dtf-cust .body { padding:48px 8px 0; max-width:780px; }
+    .dtf-cust .kicker { font-family:var(--mono); font-size:9.5px; letter-spacing:.18em;
+      color:rgba(255,255,255,0.45); text-transform:uppercase; margin-bottom:14px; }
+    .dtf-cust h1 { font-size:62px; line-height:1; letter-spacing:-0.02em;
+      font-weight:500; margin:0 0 18px; color:rgba(255,255,255,0.78); }
+    .dtf-cust h1 em { font-family:var(--serif); font-style:italic; font-weight:400;
+      color:rgba(255,255,255,0.55); }
+    .dtf-cust .sub { font-size:14px; line-height:1.5; max-width:480px;
+      color:rgba(255,255,255,0.45); margin:0 0 22px; }
+    .dtf-cust .ctas { display:flex; gap:14px; margin-bottom:36px; }
+    .dtf-cust .cta { padding:9px 16px; border-radius:2px; background:rgba(255,255,255,0.85);
+      color:#111; font-size:11.5px; font-weight:500; letter-spacing:.01em; }
+    .dtf-cust .cta.g { background:transparent; color:rgba(255,255,255,0.7);
+      border:1px solid rgba(255,255,255,0.15); }
+    .dtf-cust .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; max-width:680px; }
+    .dtf-cust .card { padding:0; }
+    .dtf-cust .card .ph { aspect-ratio:4/5; background:rgba(255,255,255,0.045);
+      border:1px solid rgba(255,255,255,0.05); margin-bottom:8px; position:relative; overflow:hidden; }
+    .dtf-cust .card .ph::after { content:''; position:absolute; inset:0;
+      background-image:repeating-linear-gradient(135deg,transparent 0 12px,rgba(255,255,255,0.025) 12px 13px); }
+    .dtf-cust .card.c2 .ph { background:rgba(220,200,170,0.06); }
+    .dtf-cust .card.c3 .ph { background:rgba(160,180,200,0.06); }
+    .dtf-cust .card.flagged .ph { outline:1px solid color-mix(in oklab, var(--accent) 60%, transparent);
+      outline-offset:-1px; }
+    .dtf-cust .card.flagged .ph::before { content:'gate.beta_drop = true'; position:absolute;
+      top:8px; left:8px; padding:2px 6px; border-radius:2px;
+      background:color-mix(in oklab, var(--accent) 18%, #000 50%); color:var(--accent);
+      font-family:var(--mono); font-size:9px; letter-spacing:.05em; z-index:2; }
+    .dtf-cust .card h3 { font-size:11px; font-weight:500; margin:0 0 2px;
+      color:rgba(255,255,255,0.75); }
+    .dtf-cust .card .pr { font-size:10.5px; color:rgba(255,255,255,0.4); }
+    .dtf-cust .footer { display:flex; gap:24px; padding:28px 0 0;
+      font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:.04em; text-transform:uppercase; }
+
+    /* DevTool panel (docked right) — sizes to content, scrolls when over max */
+    .dtf-panel { position:absolute; right:18px; top:18px; width:420px;
+      max-height:calc(100% - 36px);
+      background:linear-gradient(180deg, var(--bg-1), var(--bg-0));
+      border:1px solid var(--line); border-radius:6px;
+      display:flex; flex-direction:column; overflow:hidden;
+      box-shadow:0 30px 60px -20px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.04) inset;
+      animation:dtf-panel-in .18s cubic-bezier(.2,.8,.3,1); }
+    @keyframes dtf-panel-in {
+      from { opacity:0; transform:translateX(8px) scale(.985); }
+      to   { opacity:1; transform:translateX(0) scale(1); }
+    }
+
+    /* collapsed = floating rail anchored to one edge of the stage */
+    .dtf-panel.collapsed { background:rgba(8,8,10,0.72);
+      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      border:1px solid var(--line); box-shadow:0 6px 20px -8px rgba(0,0,0,0.55);
+      border-radius:8px; overflow:visible; width:auto; height:auto; max-height:none; padding:0;
+      /* fade only — rail uses inline transform for positioning, can't clobber it */
+      animation:dtf-fade-in .14s ease-out; }
+    @keyframes dtf-fade-in { from { opacity:0; } to { opacity:1; } }
+    .dtf-panel.collapsed .dtf-panel-rail {
+      display:flex; align-items:center; gap:4px;
+      padding:6px; }
+    .dtf-panel.collapsed[data-edge="right"]  .dtf-panel-rail,
+    .dtf-panel.collapsed[data-edge="left"]   .dtf-panel-rail { flex-direction:column; }
+    .dtf-panel.collapsed[data-edge="top"]    .dtf-panel-rail,
+    .dtf-panel.collapsed[data-edge="bottom"] .dtf-panel-rail { flex-direction:row; }
+    .dtf-panel-rail .mk { border-radius:5px;
+      background:conic-gradient(from 140deg, var(--accent), #0a0a0b 40%, var(--accent) 80%);
+      box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 0 10px color-mix(in oklab, var(--accent) 35%, transparent);
+      flex-shrink:0; cursor:grab; user-select:none; touch-action:none; }
+    .dtf-panel-rail .mk:active, .dtf-panel-rail .mk.dragging { cursor:grabbing;
+      box-shadow:0 0 0 2px color-mix(in oklab, var(--accent) 40%, transparent); }
+    .dtf-panel-rail .ri { position:relative; display:grid; place-items:center;
+      border:0; background:transparent; color:var(--fg-2);
+      border-radius:6px; cursor:pointer;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6))
+             drop-shadow(0 0 1px rgba(0,0,0,0.9)); }
+    .dtf-panel-rail .ri:hover { color:var(--accent);
+      background:color-mix(in oklab, var(--bg-1) 88%, transparent); }
+    .dtf-panel-rail .ri .c { position:absolute; top:-1px; right:-1px;
+      font-family:var(--mono); font-size:8.5px; line-height:1; color:var(--fg);
+      background:var(--bg-3); border:1px solid var(--line);
+      padding:1px 3px; border-radius:6px; min-width:13px; text-align:center; }
+    .dtf-panel-rail .ri .dotw { position:absolute; top:1px; left:1px;
+      width:5px; height:5px; border-radius:50%;
+      background:var(--warn); box-shadow:0 0 4px var(--warn); }
+    .dtf-panel-rail .ri .tip { position:absolute; background:var(--bg-3); color:var(--fg);
+      font-family:var(--mono); font-size:10px; padding:3px 7px; border-radius:3px;
+      white-space:nowrap; border:1px solid var(--line);
+      opacity:0; pointer-events:none; transition:opacity .12s; z-index:10; }
+    .dtf-panel-rail .ri:hover .tip { opacity:1; }
+    /* tip placement varies by edge so it never escapes the stage */
+    .dtf-panel.collapsed[data-edge="right"]  .ri .tip { right:calc(100% + 8px); top:50%; transform:translateY(-50%); }
+    .dtf-panel.collapsed[data-edge="left"]   .ri .tip { left:calc(100% + 8px); top:50%; transform:translateY(-50%); }
+    .dtf-panel.collapsed[data-edge="top"]    .ri .tip { top:calc(100% + 8px); left:50%; transform:translateX(-50%); }
+    .dtf-panel.collapsed[data-edge="bottom"] .ri .tip { bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); }
+
+    /* resize handle at the rail's outer end — drag along the rail's long axis to scale icons */
+    .dtf-rail-resize { position:relative; display:grid; place-items:center;
+      cursor:ns-resize; opacity:.7; transition:opacity .12s, background .12s; flex-shrink:0;
+      border-radius:4px; margin-top:4px; }
+    .dtf-rail-resize:hover { opacity:1; background:var(--bg-3); }
+    .dtf-rail-resize::before { content:''; background:var(--fg-3);
+      border-radius:999px; box-shadow:0 0 0 1px rgba(0,0,0,0.35);
+      transition:background .12s; }
+    .dtf-panel.collapsed[data-edge="right"]  .dtf-rail-resize,
+    .dtf-panel.collapsed[data-edge="left"]   .dtf-rail-resize { cursor:ns-resize; }
+    .dtf-panel.collapsed[data-edge="top"]    .dtf-rail-resize,
+    .dtf-panel.collapsed[data-edge="bottom"] .dtf-rail-resize { cursor:ew-resize; }
+    /* Visible grip — wide enough to grab; runs across the rail at its outer end */
+    .dtf-panel.collapsed[data-edge="right"]  .dtf-rail-resize::before,
+    .dtf-panel.collapsed[data-edge="left"]   .dtf-rail-resize::before { width:18px; height:4px; }
+    .dtf-panel.collapsed[data-edge="top"]    .dtf-rail-resize::before,
+    .dtf-panel.collapsed[data-edge="bottom"] .dtf-rail-resize::before { width:4px; height:18px; }
+    .dtf-rail-resize:hover::before, .dtf-rail-resize.dragging::before {
+      background:var(--pri); transform:scale(1.15); }
+
+    .dtf-head { display:flex; align-items:center; gap:10px; padding:11px 12px 10px;
+      border-bottom:1px solid var(--line); }
+    .dtf-head .mk { width:14px; height:14px; border-radius:3px;
+      background:conic-gradient(from 140deg, var(--accent), #0a0a0b 40%, var(--accent) 80%);
+      box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 0 8px color-mix(in oklab, var(--accent) 30%, transparent); }
+    .dtf-head .ti { font-size:12px; font-weight:600; letter-spacing:.01em; flex:1;
+      display:flex; align-items:baseline; gap:8px; min-width:0; }
+    .dtf-head .ti .title { color:var(--fg); font-weight:600; font-size:12px;
+      white-space:nowrap; }
+    .dtf-head .ti .sub { font-family:var(--mono); font-size:10px; font-weight:400; color:var(--fg-3);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+    .dtf-head .actions { display:flex; gap:2px; }
+    .dtf-head .ib { width:26px; height:26px; border-radius:4px; border:0;
+      background:transparent; color:var(--fg-3); cursor:pointer;
+      display:grid; place-items:center; }
+    .dtf-head .ib:hover { background:var(--bg-3); color:var(--fg); }
+
+    /* horizontal split below the head: vertical icon rail + content column */
+    .dtf-split { display:flex; flex:1; min-height:0; }
+    .dtf-rail { width:40px; flex:0 0 40px; display:flex; flex-direction:column;
+      gap:2px; padding:6px 4px; background:var(--bg-1);
+      border-right:1px solid var(--line); }
+    .dtf-rail .t { position:relative; display:grid; place-items:center;
+      width:32px; height:32px; border:0; background:transparent; color:var(--fg-3);
+      border-radius:4px; cursor:pointer; }
+    .dtf-rail .t:hover { color:var(--fg); background:var(--bg-2); }
+    .dtf-rail .t.active { color:var(--fg); background:var(--bg-3);
+      box-shadow:inset 2px 0 0 var(--pri); }
+    .dtf-rail .t { overflow:visible; }
+    .dtf-rail .t .c { position:absolute; top:-3px; right:-3px;
+      font-family:var(--mono); font-size:9.5px; line-height:1;
+      color:var(--fg-2); background:var(--bg-3);
+      padding:1px 4px; border-radius:6px; min-width:13px; text-align:center;
+      border:1px solid var(--line); }
+    .dtf-rail .t.active .c { color:var(--fg);
+      background:color-mix(in oklab, var(--pri) 18%, var(--bg-3)); }
+    /* "more options" caret on icons that open a hover menu */
+    .dtf-rail .t.has-menu::after,
+    .dtf-panel-rail .ri.has-menu::after {
+      content:''; position:absolute; bottom:2px; right:2px;
+      width:0; height:0; border-left:3px solid transparent;
+      border-right:3px solid transparent; border-top:3px solid var(--fg-3); }
+    .dtf-rail .t.has-menu:hover::after,
+    .dtf-panel-rail .ri.has-menu:hover::after { border-top-color:var(--accent); }
+    .dtf-rail .t .dotw { position:absolute; top:-2px; left:-2px;
+      width:6px; height:6px; border-radius:50%;
+      background:var(--warn); box-shadow:0 0 4px var(--warn),
+        0 0 0 1.5px var(--bg-1); }
+    /* tooltip on hover — shows label without taking up rail width */
+    .dtf-rail .t .tip { position:absolute; left:calc(100% + 6px); top:50%;
+      transform:translateY(-50%); background:var(--bg-3); color:var(--fg);
+      font-family:var(--mono); font-size:10px; letter-spacing:.02em;
+      padding:3px 7px; border-radius:3px; white-space:nowrap;
+      border:1px solid var(--line);
+      opacity:0; pointer-events:none; transition:opacity .12s;
+      z-index:10; }
+    .dtf-rail .t:hover .tip { opacity:1; }
+
+    /* Quick-action hover menu (feedback icon) */
+    .dtf-hover-menu { position:absolute; z-index:30;
+      background:var(--bg-2); border:1px solid var(--line);
+      border-radius:5px; padding:4px;
+      display:flex; flex-direction:column; gap:1px; min-width:170px;
+      box-shadow:0 12px 28px -10px rgba(0,0,0,0.7);
+      opacity:0; pointer-events:none; transform:translateY(2px);
+      transition:opacity .12s, transform .12s; }
+    /* Bridge the visible gap to the trigger so the menu doesn't dismiss on traverse */
+    .dtf-hover-menu::before { content:''; position:absolute; }
+    /* Open-panel rail: menu pops to the right */
+    .dtf-rail .t .dtf-hover-menu { left:calc(100% + 6px); top:0; }
+    .dtf-rail .t .dtf-hover-menu::before { left:-10px; top:0; bottom:0; width:10px; }
+    /* Closed rail: position depends on which edge it's docked to */
+    .dtf-panel.collapsed[data-edge="right"]  .dtf-hover-menu { right:calc(100% + 6px); top:0; }
+    .dtf-panel.collapsed[data-edge="right"]  .dtf-hover-menu::before { right:-10px; top:0; bottom:0; width:10px; }
+    .dtf-panel.collapsed[data-edge="left"]   .dtf-hover-menu { left:calc(100% + 6px); top:0; }
+    .dtf-panel.collapsed[data-edge="left"]   .dtf-hover-menu::before { left:-10px; top:0; bottom:0; width:10px; }
+    .dtf-panel.collapsed[data-edge="top"]    .dtf-hover-menu { top:calc(100% + 6px); left:0; }
+    .dtf-panel.collapsed[data-edge="top"]    .dtf-hover-menu::before { top:-10px; left:0; right:0; height:10px; }
+    .dtf-panel.collapsed[data-edge="bottom"] .dtf-hover-menu { bottom:calc(100% + 6px); left:0; }
+    .dtf-panel.collapsed[data-edge="bottom"] .dtf-hover-menu::before { bottom:-10px; left:0; right:0; height:10px; }
+    /* Show on hover of icon OR menu, or when explicitly opened (click/keyboard) */
+    .dtf-rail .t:hover .dtf-hover-menu,
+    .dtf-rail .t .dtf-hover-menu:hover,
+    .dtf-rail .t.menu-open .dtf-hover-menu,
+    .dtf-panel-rail .ri:hover .dtf-hover-menu,
+    .dtf-panel-rail .ri .dtf-hover-menu:hover,
+    .dtf-panel-rail .ri.menu-open .dtf-hover-menu {
+      opacity:1; pointer-events:auto; transform:translateY(0); }
+    /* Suppress the simple tooltip when the menu is present, otherwise both stack */
+    .dtf-rail .t.has-menu:hover .tip,
+    .dtf-panel-rail .ri.has-menu:hover .tip { opacity:0; }
+    .dtf-hover-menu button { display:flex; align-items:center; gap:8px;
+      background:transparent; border:0; color:var(--fg-2);
+      font-family:var(--mono); font-size:11px; padding:7px 10px;
+      border-radius:3px; cursor:pointer; text-align:left; white-space:nowrap;
+      width:100%; }
+    .dtf-hover-menu button:hover { background:var(--bg-3); color:var(--fg); }
+    .dtf-hover-menu button .ic { color:var(--accent); display:grid; place-items:center;
+      width:14px; }
+    .dtf-hover-menu .hd { font-family:var(--mono); font-size:9px; color:var(--fg-4);
+      letter-spacing:.08em; text-transform:uppercase;
+      padding:4px 10px 2px; }
+    .dtf-pane { display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; }
+
+    .dtf-overbar { display:flex; align-items:center; gap:8px; padding:8px 12px;
+      background:var(--warn-bg-overbar);
+      border-bottom:1px solid var(--warn-border);
+      color:var(--fg); font-size:10.5px; font-family:var(--mono); }
+    .dtf-overbar b { font-weight:600; color:var(--warn); }
+    .dtf-overbar > span { flex:1; }
+    .dtf-overbar button { background:transparent; border:1px solid var(--warn-border);
+      color:var(--warn); font-family:var(--mono); font-size:10px;
+      padding:2px 7px; border-radius:3px; cursor:pointer; }
+    .dtf-overbar button:hover { background:var(--warn-bg-soft); }
+
+    .dtf-search { display:flex; gap:8px; padding:8px 10px; border-bottom:1px solid var(--line); }
+    .dtf-search .input { flex:1; display:flex; align-items:center; gap:7px;
+      padding:5px 8px; background:var(--bg-2); border:1px solid var(--line);
+      border-radius:4px; }
+    .dtf-search .input input { flex:1; background:transparent; border:0; outline:0;
+      color:var(--fg); font-family:var(--mono); font-size:11px; }
+    .dtf-search .input input::placeholder { color:var(--fg-4); }
+    .dtf-search .seg { display:flex; padding:2px; background:var(--bg-2);
+      border:1px solid var(--line); border-radius:4px; }
+    .dtf-search .seg button { background:transparent; border:0; color:var(--fg-3);
+      font-family:var(--mono); font-size:10.5px; padding:3px 8px; border-radius:2px;
+      cursor:pointer; }
+    .dtf-search .seg button.active { background:color-mix(in oklab, var(--pri) 16%, var(--bg-3));
+      color:var(--pri); }
+    .dtf-locale-sel { background:var(--bg-2); border:1px solid var(--line);
+      border-radius:4px; color:var(--fg); font-family:var(--mono); font-size:11px;
+      padding:4px 6px; cursor:pointer; outline:none; max-width:140px; }
+    .dtf-locale-sel:hover { border-color:var(--fg-4); }
+    .dtf-locale-sel:focus-visible { border-color:transparent; }
+
+    .dtf-body { flex:1; overflow-y:auto;
+      scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+    .dtf-body::-webkit-scrollbar { width:6px; }
+    .dtf-body::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
+    .dtf-body::-webkit-scrollbar-thumb:hover { background:var(--fg-4); }
+    .json-tree, .dtf-modal .bd { scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+
+    .dtf-group { display:flex; align-items:center; gap:8px; padding:8px 12px 5px;
+      font-family:var(--mono); font-size:9.5px; color:var(--fg-3);
+      letter-spacing:.12em; text-transform:uppercase; }
+    .dtf-group .c { color:var(--fg-4); }
+    .dtf-group .pulse { display:flex; align-items:center; gap:5px; color:var(--accent);
+      margin-left:auto; }
+    .dtf-group .pulse .d { width:5px; height:5px; border-radius:50%;
+      background:var(--accent); box-shadow:0 0 6px var(--accent); animation:dtf-pulse 1.6s infinite; }
+
+    .dtf-row { display:grid; grid-template-columns:18px minmax(0,1fr) auto 36px;
+      align-items:center; gap:10px; padding:8px 12px;
+      border-bottom:1px solid var(--line-2); cursor:pointer; position:relative; }
+    .dtf-row:hover { background:var(--bg-2); }
+    .dtf-row.expanded { background:var(--bg-2); }
+    .dtf-row.muted .meta .k { color:var(--fg-3); }
+    .dtf-row .ic { display:grid; place-items:center; color:var(--accent); }
+    .dtf-row .meta .k { font-family:var(--mono); font-size:11px; color:var(--fg);
+      display:flex; align-items:center; gap:7px; }
+    .dtf-row .meta .v { font-family:var(--mono); font-size:9.5px;
+      color:var(--fg-3); margin-top:1px; }
+    .dtf-row .override-tag { font-family:var(--mono); font-size:9px;
+      background:var(--warn-bg-soft);
+      color:var(--warn); padding:1px 5px; border-radius:3px; letter-spacing:.05em; }
+    .dtf-row .live-dot { width:5px; height:5px; border-radius:50%;
+      background:var(--accent); box-shadow:0 0 5px var(--accent);
+      animation:dtf-pulse 1.4s infinite; }
+    .dtf-row .val { font-family:var(--mono); font-size:11px;
+      padding:2px 7px; border-radius:3px; background:var(--bg-3); color:var(--fg-2);
+      letter-spacing:.02em; }
+    .dtf-row .val.on { color:var(--accent); background:color-mix(in oklab, var(--accent) 12%, var(--bg-3)); }
+    .dtf-row .val.off { color:var(--fg-3); }
+    .dtf-row .val.over { color:var(--warn); background:var(--warn-bg-soft); }
+    /* Killswitch — distinct outline-only "LIVE" / filled red "KILLED" so they don't
+       blend into the gate true/false column visually. */
+    .dtf-row .val.kill-live { color:var(--pri); background:transparent;
+      border:1px solid color-mix(in oklab, var(--pri) 50%, var(--line));
+      padding:1px 7px; text-transform:uppercase; font-size:10px; font-weight:600; letter-spacing:.06em; }
+    .dtf-row .val.killed { color:#fff; background:var(--danger);
+      border:1px solid var(--danger); padding:1px 7px;
+      text-transform:uppercase; font-size:10px; font-weight:700; letter-spacing:.08em;
+      box-shadow:0 0 0 1px color-mix(in oklab, var(--danger) 25%, transparent); }
+    .dtf-row .sel { font-family:var(--mono); font-size:10.5px;
+      background:var(--bg-3); color:var(--fg); border:1px solid var(--line);
+      border-radius:3px; padding:1px 4px; cursor:pointer; outline:none; }
+    .dtf-row .sel.over { color:var(--warn); border-color:var(--warn-border); }
+
+    .dtf-toggle { width:32px; height:18px; border-radius:9px; background:var(--bg-3);
+      border:1px solid var(--line); position:relative; cursor:pointer;
+      transition:all .15s; justify-self:end; flex-shrink:0; }
+    .dtf-toggle::after { content:''; position:absolute; left:2px; top:2px;
+      width:12px; height:12px; border-radius:50%; background:var(--fg-3);
+      transition:all .15s; }
+    .dtf-toggle.on { background:color-mix(in oklab, var(--accent) 22%, var(--bg-3));
+      border-color:color-mix(in oklab, var(--accent) 30%, var(--line)); }
+    .dtf-toggle.on::after { left:16px; background:var(--accent); box-shadow:0 0 5px var(--accent); }
+    .dtf-toggle.over { background:var(--warn-bg-strong);
+      border-color:var(--warn-border); }
+    .dtf-toggle.over::after { left:16px; background:var(--warn); box-shadow:0 0 5px var(--warn); }
+
+    .dtf-detail { display:grid; grid-template-rows:0fr; transition:grid-template-rows .25s ease;
+      background:var(--bg-2); border-bottom:1px solid var(--line-2); }
+    .dtf-detail.open { grid-template-rows:1fr; }
+    .dtf-detail .inner { overflow:hidden; }
+    /* fallback for browsers that don't animate grid-template-rows (older Safari etc.) */
+    @supports not (grid-template-rows: 1fr) {
+      .dtf-detail { display:block; max-height:0; overflow:hidden;
+        transition:max-height .25s ease; }
+      .dtf-detail.open { max-height:600px; }
+    }
+    .dtf-detail .pad { padding:8px 12px 12px 38px; }
+    .dtf-detail .crumbs { font-family:var(--mono); font-size:10.5px; color:var(--fg-2); line-height:1.7; }
+    .dtf-detail .crumbs .pass { color:var(--accent); }
+    .dtf-detail .crumbs .deny { color:var(--danger); }
+    .dtf-detail .crumbs .skip { color:var(--warn); }
+    .dtf-detail .crumbs .meta { color:var(--fg-3); }
+    .dtf-detail .indent { padding-left:14px; color:var(--fg-3); position:relative; }
+    .dtf-detail .indent::before { content:'├'; position:absolute; left:2px; color:var(--fg-4); }
+    .dtf-detail .indent:last-child::before { content:'└'; }
+
+    .dtf-detail .var-row { display:flex; align-items:center; gap:8px; padding:4px 0;
+      font-family:var(--mono); font-size:10.5px; color:var(--fg-3);
+      border-top:1px dashed var(--line-2); }
+    .dtf-detail .var-row.assigned { color:var(--accent); }
+    .dtf-detail .var-row .sw { width:8px; height:8px; border-radius:2px; }
+    .dtf-detail .var-row .pct { color:var(--fg-3); margin-left:auto; }
+
+    .dtf-detail .mini { display:grid; grid-template-columns:auto 1fr; gap:4px 12px;
+      margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2);
+      font-family:var(--mono); font-size:10px; }
+    .dtf-detail .mini .lbl { color:var(--fg-3); letter-spacing:.04em; text-transform:uppercase; font-size:10px; }
+    .dtf-detail .mini .v { color:var(--fg-2); }
+
+    .dtf-detail .actions { display:flex; gap:5px; margin-top:10px; flex-wrap:wrap; }
+    .dtf-detail .actions button { background:var(--bg-3); border:1px solid var(--line);
+      color:var(--fg-2); font-family:var(--mono); font-size:10px;
+      padding:3px 7px; border-radius:3px; cursor:pointer; }
+    .dtf-detail .actions button:hover { background:var(--bg-1); color:var(--fg); border-color:var(--fg-4); }
+    .dtf-detail .actions button.primary { background:var(--warn-bg-soft);
+      color:var(--warn); border-color:var(--warn-border); }
+
+    /* user tab */
+    .dtf-user { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .dtf-user .who { display:flex; align-items:center; gap:10px; padding:10px 12px;
+      border-bottom:1px solid var(--line); }
+    .dtf-user .who .av { width:30px; height:30px; border-radius:50%;
+      background:linear-gradient(135deg, color-mix(in oklab, var(--accent) 50%, var(--bg-3)), var(--bg-3));
+      color:var(--bg-0); display:grid; place-items:center; font-weight:600; font-size:13px; }
+    .dtf-user .who .info { flex:1; }
+    .dtf-user .who .e { font-size:12px; font-weight:500; }
+    .dtf-user .who .id { font-family:var(--mono); font-size:9.5px; color:var(--fg-3); margin-top:1px; }
+    .dtf-user .who .swap { background:var(--bg-3); border:1px solid var(--line);
+      color:var(--fg-2); font-family:var(--mono); font-size:10px;
+      padding:3px 7px; border-radius:3px; cursor:pointer;
+      display:flex; align-items:center; gap:4px; }
+    .dtf-user .who .swap:hover { color:var(--fg); border-color:var(--fg-4); }
+
+    .dtf-prop { display:grid; grid-template-columns:120px 1fr 6px;
+      align-items:center; gap:10px; padding:6px 12px;
+      font-family:var(--mono); font-size:11px; border-bottom:1px solid var(--line-2); }
+    .dtf-prop .k { color:var(--fg-3); font-size:10.5px; }
+    .dtf-prop .v { display:flex; align-items:center; }
+    .dtf-prop .v input { background:transparent; border:0; outline:none;
+      color:var(--fg); font-family:var(--mono); font-size:11px; width:100%;
+      padding:1px 4px; border-radius:2px; }
+    .dtf-prop .v input:focus { background:var(--bg-3); }
+    .dtf-prop .v.muted { color:var(--fg-3); }
+    .dtf-prop .changed { width:5px; height:5px; border-radius:50%; background:var(--warn);
+      box-shadow:0 0 4px var(--warn); }
+
+    .dtf-evalbar { display:flex; gap:6px; padding:8px 10px;
+      border-top:1px solid var(--line); background:var(--bg-1); }
+    .dtf-evalbar .b { flex:1; background:color-mix(in oklab, var(--accent) 14%, var(--bg-3));
+      color:var(--accent); border:1px solid color-mix(in oklab, var(--accent) 32%, var(--line));
+      font-family:var(--mono); font-size:11px; padding:7px 9px; min-height:28px;
+      border-radius:3px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+    .dtf-evalbar .b:hover { background:color-mix(in oklab, var(--accent) 24%, var(--bg-3)); }
+    .dtf-evalbar .b.g { flex:0; background:transparent; color:var(--fg-3);
+      border-color:var(--line); padding:7px 12px; }
+    .dtf-evalbar .b.g:hover { color:var(--fg); }
+
+    /* events tab */
+    .dtf-event { display:grid; grid-template-columns:52px 14px 1fr auto;
+      align-items:center; gap:8px; padding:6px 12px;
+      font-family:var(--mono); font-size:11px;
+      border-bottom:1px solid var(--line-2); }
+    .dtf-event .ts { color:var(--fg-3); font-size:10.5px; }
+    .dtf-event .lvl { color:var(--accent); }
+    .dtf-event .lvl.warn { color:var(--warn); }
+    .dtf-event .lvl.err { color:var(--danger); }
+    .dtf-event .msg { color:var(--fg-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dtf-event .msg .k { color:var(--fg); }
+    .dtf-event .msg .s { color:var(--accent); }
+    .dtf-event .ms { color:var(--fg-3); font-size:10.5px; }
+
+    /* empty states */
+    .dtf-empty { padding:32px 20px; text-align:center; color:var(--fg-2);
+      display:flex; flex-direction:column; align-items:center; }
+    .dtf-empty .vis { width:96px; height:96px; position:relative; margin-bottom:18px;
+      display:grid; place-items:center; }
+    .dtf-empty .vis .ring { position:absolute; inset:18px; border:1px solid var(--line);
+      border-radius:50%; }
+    .dtf-empty .vis .ring.r2 { inset:0; border-color:var(--line-2); border-style:dashed; animation:dtf-rot 30s linear infinite; }
+    .dtf-empty .vis .core { width:42px; height:42px; border-radius:50%;
+      background:radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--accent) 26%, var(--bg-2)), var(--bg-1));
+      border:1px solid color-mix(in oklab, var(--accent) 22%, var(--line));
+      display:grid; place-items:center; color:var(--accent);
+      font-family:var(--mono); font-size:14px; }
+    @keyframes dtf-rot { to { transform:rotate(360deg); } }
+
+    .dtf-empty h3 { margin:0 0 8px; font-size:18px; font-weight:500; letter-spacing:-0.01em;
+      color:var(--fg); line-height:1.2; }
+    .dtf-empty h3 em { font-family:var(--serif); font-style:italic; color:var(--accent); font-weight:400; }
+    .dtf-empty p { margin:0 0 16px; font-size:11.5px; color:var(--fg-3); max-width:280px; line-height:1.5; }
+    .dtf-empty .actions { display:flex; flex-direction:column; gap:5px; width:100%; max-width:240px; }
+    .dtf-empty .actions .a { display:flex; align-items:center; gap:8px;
+      padding:7px 9px; background:var(--bg-2); border:1px solid var(--line);
+      border-radius:4px; cursor:pointer; color:var(--fg-2); }
+    .dtf-empty .actions .a:hover { color:var(--fg); border-color:var(--fg-4);
+      background:var(--bg-3); }
+    .dtf-empty .actions .a .ic { width:18px; height:18px; border-radius:3px;
+      background:var(--bg-3); display:grid; place-items:center;
+      color:var(--accent); font-family:var(--mono); font-size:11px; }
+    .dtf-empty .actions .a .k { font-size:11px; flex:1; text-align:left; }
+    .dtf-empty .actions .a .kbd { font-family:var(--mono); font-size:10.5px;
+      color:var(--fg-3); border:1px solid var(--line); padding:1px 5px; border-radius:3px; }
+
+    .dtf-empty.search .glyph { font-family:var(--mono); font-size:38px;
+      color:var(--fg-3); display:flex; align-items:center; gap:4px; margin-bottom:12px; }
+    .dtf-empty.search .glyph .core { width:14px; height:14px; border-radius:50%;
+      background:radial-gradient(circle, var(--warn), transparent 70%); animation:dtf-pulse 1.6s infinite; }
+    .dtf-empty .suggest { width:100%; max-width:260px; text-align:left;
+      border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+    .dtf-empty .suggest .head { font-family:var(--mono); font-size:9.5px;
+      color:var(--fg-4); letter-spacing:.12em; padding:6px 10px;
+      background:var(--bg-2); border-bottom:1px solid var(--line-2); }
+    .dtf-empty .suggest .row { display:flex; align-items:center; gap:8px;
+      padding:6px 10px; cursor:pointer; border-bottom:1px solid var(--line-2);
+      font-size:10.5px; }
+    .dtf-empty .suggest .row:last-child { border-bottom:0; }
+    .dtf-empty .suggest .row:hover { background:var(--bg-2); }
+    .dtf-empty .suggest .row .ic { width:16px; height:16px; border-radius:3px;
+      background:var(--bg-3); color:var(--fg-3); font-family:var(--mono); font-size:9.5px;
+      display:grid; place-items:center; }
+    .dtf-empty .suggest .row .ic.acc { color:var(--accent); }
+    .dtf-empty .suggest .row .ic.warn { color:var(--warn); }
+    .dtf-empty .suggest .row .k { font-family:var(--mono); flex:1; color:var(--fg); }
+    .dtf-empty .suggest .row .meta { font-family:var(--mono); font-size:9.5px; color:var(--fg-4); }
+
+    /* loading */
+    .dtf-load { padding:8px 0 0; position:relative; }
+    .dtf-load .topstrip { position:absolute; top:0; left:0; right:0; height:1.5px;
+      background:linear-gradient(90deg, transparent, var(--accent), transparent);
+      background-size:200% 100%; animation:dtf-strip 1.4s linear infinite; }
+    @keyframes dtf-strip { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
+    .skel-row { display:grid; grid-template-columns:18px minmax(0,1fr) auto 36px;
+      align-items:center; gap:10px; padding:9px 12px;
+      border-bottom:1px solid var(--line-2); }
+    .skel-row .ic { width:11px; height:11px; border-radius:2px; background:var(--bg-3); }
+    .skel-row .body { display:flex; flex-direction:column; gap:5px; }
+    .skel-row .togsk { width:32px; height:18px; border-radius:9px; background:var(--bg-3);
+      border:1px solid var(--line); justify-self:end; }
+    .skel { background:linear-gradient(90deg, var(--bg-3), var(--bg-2), var(--bg-3));
+      background-size:200% 100%; animation:dtf-shim 1.5s ease-in-out infinite; border-radius:2px; }
+    @keyframes dtf-shim { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+    .skel-row.live .ic { background:color-mix(in oklab, var(--accent) 30%, var(--bg-3)); }
+
+    /* footer (mirrors packages/devtools/src/styles.ts panel-footer) */
+    .dtf-foot { display:flex; flex-direction:column; gap:6px; padding:8px 10px;
+      border-top:1px solid var(--line); background:var(--bg-1);
+      font-family:var(--mono); font-size:10.5px; color:var(--fg-3); }
+    .dtf-foot .stat-line { display:flex; align-items:center; gap:6px; }
+    .dtf-foot .ok { width:5px; height:5px; border-radius:50%; background:var(--accent);
+      box-shadow:0 0 5px var(--accent); }
+    .dtf-foot .stat { color:var(--fg-2); }
+    .dtf-foot .stat b { color:var(--fg); font-weight:500; }
+    .dtf-foot .sk { margin-left:auto; color:var(--fg-3); }
+    .dtf-foot .actions { display:flex; gap:4px; flex-wrap:wrap; }
+    .dtf-foot .ibtn { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+      font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:3px;
+      cursor:pointer; line-height:1.4; }
+    .dtf-foot .ibtn:hover { color:var(--fg); border-color:var(--fg-4); background:var(--bg-2); }
+    .dtf-foot .ibtn.danger { color:var(--danger);
+      border-color:color-mix(in oklab, var(--danger) 28%, var(--line));
+      background:color-mix(in oklab, var(--danger) 8%, var(--bg-3)); }
+    .dtf-foot .ibtn.danger:hover { color:var(--fg);
+      background:color-mix(in oklab, var(--danger) 18%, var(--bg-3)); }
+    .dtf-foot .ibtn.pri { color:var(--accent);
+      border-color:color-mix(in oklab, var(--accent) 30%, var(--line));
+      background:color-mix(in oklab, var(--accent) 12%, var(--bg-3)); }
+    .dtf-foot .ibtn.pri:hover { background:color-mix(in oklab, var(--accent) 22%, var(--bg-3)); }
+    .dtf-foot .grow { flex:1; }
+    @keyframes dtf-spin { to { transform:rotate(360deg); } }
+
+    /* right control panel */
+    .dtf-controls { background:var(--bg-1); border:1px solid var(--line);
+      border-radius:6px; padding:14px; align-self:stretch; min-height:840px; }
+    .dtf-controls .h { display:flex; align-items:center; gap:8px; padding-bottom:12px;
+      border-bottom:1px solid var(--line); margin-bottom:14px; }
+    .dtf-controls .h .d { width:6px; height:6px; border-radius:50%; background:var(--accent);
+      box-shadow:0 0 6px var(--accent); }
+    .dtf-controls .h h3 { margin:0; font-size:13px; font-weight:600; }
+    .dtf-controls .h .sub { font-family:var(--mono); font-size:9.5px; color:var(--fg-3);
+      margin-left:auto; }
+    .dtf-controls .sec { margin-bottom:18px; }
+    .dtf-controls .lbl { font-family:var(--mono); font-size:9.5px; color:var(--fg-3);
+      letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px; }
+    .dtf-controls .opts { display:flex; flex-direction:column; gap:3px; }
+    .dtf-controls .opts button { display:flex; align-items:center; gap:9px;
+      text-align:left; padding:7px 9px; background:var(--bg-2);
+      border:1px solid var(--line); border-radius:4px; color:var(--fg-2);
+      font-family:var(--sans); font-size:11.5px; cursor:pointer; }
+    .dtf-controls .opts button:hover { color:var(--fg); border-color:var(--fg-4);
+      background:var(--bg-3); }
+    .dtf-controls .opts button.active { color:var(--fg);
+      background:color-mix(in oklab, var(--accent) 8%, var(--bg-2));
+      border-color:color-mix(in oklab, var(--accent) 30%, var(--line));
+      box-shadow:inset 2px 0 0 var(--accent); }
+    .dtf-controls .opts button .ic { width:18px; height:18px; border-radius:3px;
+      background:var(--bg-3); display:grid; place-items:center;
+      color:var(--accent); font-family:var(--mono); font-size:11px; flex-shrink:0; }
+    .dtf-controls .opts button .desc { display:block; font-family:var(--mono);
+      font-size:9.5px; color:var(--fg-4); margin-top:2px; font-weight:400; }
+    .dtf-controls .opts button.active .desc { color:var(--fg-3); }
+    .dtf-controls .kbd-list { display:grid; grid-template-columns:1fr auto;
+      gap:6px 14px; font-family:var(--mono); font-size:10.5px; color:var(--fg-3); }
+    .dtf-controls .kbd-list .key { color:var(--fg-2); font-size:10px;
+      background:var(--bg-3); border:1px solid var(--line); padding:1px 5px; border-radius:3px; }
+
+    /* Labels tab — coverage indicator inside the dtf-group */
+    .dtf-group .cov-mini { font-family:var(--mono); font-size:10px; color:var(--fg-3);
+      background:var(--bg-3); padding:1px 6px; border-radius:3px;
+      letter-spacing:.02em; cursor:help; }
+    .dtf-lbl-row { display:grid; grid-template-columns:auto 1fr 8px;
+      align-items:center; gap:10px; padding:7px 12px;
+      border-bottom:1px solid var(--line-2); cursor:pointer; }
+    .dtf-lbl-row:hover, .dtf-lbl-row.expanded { background:var(--bg-2); }
+    .dtf-lbl-row .meta .src { font-size:11.5px; color:var(--fg);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:280px; }
+    .dtf-lbl-row.missing .meta .src { color:var(--warn); font-style:italic; }
+    .dtf-lbl-row .meta .sub { display:flex; align-items:center; gap:5px;
+      font-family:var(--mono); font-size:9.5px; color:var(--fg-4); margin-top:1px; }
+    .dtf-lbl-row .meta .sub .k { color:var(--fg-3); }
+    .dtf-lbl-row .meta .sub .dot { color:var(--fg-4); }
+    .dtf-lbl-row .meta .sub .var { color:var(--info); }
+    .lbl-pill { font-family:var(--mono); font-size:11px; line-height:1;
+      width:18px; height:18px; display:inline-grid; place-items:center;
+      border-radius:3px; flex-shrink:0; cursor:help; }
+    .lbl-pill.ok { background:color-mix(in oklab, var(--accent) 14%, var(--bg-3));
+      color:var(--accent); }
+    .lbl-pill.missing { background:color-mix(in oklab, var(--warn) 18%, var(--bg-3)); color:var(--warn); }
+    .lbl-pill.review { background:color-mix(in oklab, var(--danger) 18%, var(--bg-3));
+      color:var(--danger); font-weight:700; }
+    .lbl-pill.partial { background:color-mix(in oklab, var(--warn) 14%, var(--bg-3)); color:var(--warn); }
+    .lbl-pill.edited { background:color-mix(in oklab, var(--info) 14%, var(--bg-3)); color:var(--info); }
+    .lbl-pad { padding-left:14px !important; }
+    /* labels tree (key segments) */
+    .dtf-tree-node { display:flex; align-items:center; gap:6px;
+      padding:5px 12px;
+      font-family:var(--mono); font-size:11px; color:var(--fg-2);
+      background:var(--bg-1); cursor:pointer;
+      border-bottom:1px solid var(--line-2); }
+    .dtf-tree-node:hover { background:var(--bg-2); color:var(--fg); }
+    .dtf-tree-node .caret { color:var(--fg-3); width:10px;
+      display:inline-block; text-align:center; flex-shrink:0; }
+    .dtf-tree-node .seg { color:var(--fg); font-weight:500; }
+    .dtf-tree-node .dotpath { color:var(--fg-3); font-size:10px; margin-left:4px; }
+    .dtf-tree-node .counts { margin-left:auto; display:flex; gap:6px; align-items:center; }
+    .dtf-tree-node .counts .m { color:var(--warn); font-size:10.5px;
+      background:color-mix(in oklab, var(--warn) 14%, var(--bg-3));
+      padding:1px 5px; border-radius:3px; }
+    .dtf-tree-node .counts .t { color:var(--fg-2); background:var(--bg-3);
+      padding:1px 5px; border-radius:3px; font-size:10.5px; }
+    .lbl-locales { display:grid; grid-template-columns:auto 1fr auto; gap:4px 10px;
+      margin-bottom:10px; padding:6px 0; border-top:1px dashed var(--line-2);
+      border-bottom:1px dashed var(--line-2); font-family:var(--mono); font-size:10.5px; }
+    .lbl-locale { display:contents; cursor:pointer; }
+    .lbl-locale .fl { color:var(--fg-3); font-weight:600; padding:2px 5px;
+      background:var(--bg-3); border-radius:2px; font-size:10px;
+      align-self:center; justify-self:start;
+      transition:background .12s, color .12s; }
+    .lbl-locale .nm { color:var(--fg-3); align-self:center;
+      transition:color .12s; }
+    .lbl-locale .nm .base { color:var(--fg-3); }
+    .lbl-locale .tv { color:var(--fg-2); white-space:nowrap; overflow:hidden;
+      text-overflow:ellipsis; max-width:170px; align-self:center; justify-self:end;
+      transition:color .12s; }
+    .lbl-locale:hover .fl { background:color-mix(in oklab, var(--fg-2) 18%, var(--bg-3)); color:var(--fg); }
+    .lbl-locale:hover .nm,
+    .lbl-locale:hover .tv { color:var(--fg); }
+    .lbl-locale.miss .tv { color:var(--warn); }
+    .lbl-locale.miss .fl { color:var(--warn); background:color-mix(in oklab, var(--warn) 14%, var(--bg-3)); }
+    .lbl-locale.sel .fl { color:var(--accent); background:color-mix(in oklab, var(--accent) 18%, var(--bg-3)); }
+    .lbl-locale.sel .nm, .lbl-locale.sel .tv { color:var(--fg); }
+    .lbl-edit { background:var(--bg-1); border:1px solid var(--line); border-radius:4px;
+      margin-bottom:10px; }
+    .lbl-edit .hd { display:flex; align-items:center; padding:6px 8px;
+      border-bottom:1px solid var(--line-2); font-family:var(--mono); font-size:10px;
+      color:var(--fg-2); }
+    .lbl-edit .hd button { margin-left:auto; background:transparent; border:0;
+      color:var(--info); font-family:var(--mono); font-size:10px; cursor:pointer; }
+    .lbl-edit textarea { width:100%; box-sizing:border-box; min-height:54px; resize:vertical;
+      background:transparent; border:0; outline:none; padding:8px;
+      color:var(--fg); font-family:var(--mono); font-size:11.5px; line-height:1.5; }
+    .lbl-edit textarea::placeholder { color:var(--fg-4); }
+    .lbl-vars { display:flex; align-items:center; gap:5px; padding:5px 8px;
+      border-top:1px dashed var(--line-2); font-family:var(--mono); font-size:9.5px;
+      color:var(--fg-4); letter-spacing:.05em; text-transform:uppercase; }
+    .lbl-vars .var { color:var(--info); background:color-mix(in oklab, var(--info) 12%, var(--bg-3));
+      padding:1px 4px; border-radius:2px; text-transform:none; letter-spacing:0;
+      font-size:10px; }
+    .lbl-note { padding:5px 8px; border-top:1px dashed var(--line-2);
+      font-family:var(--mono); font-size:10px; color:var(--warn); }
+
+    .preview-banner { font-family:var(--mono); font-size:10.5px; color:var(--fg-3);
+      letter-spacing:.04em; padding:4px 8px; border:1px dashed var(--line);
+      border-radius:3px; margin-left:12px; }
+    .preview-banner b { color:var(--accent); font-weight:500; }
+
+    .dtf-copy { background:transparent; border:0; padding:2px 4px; border-radius:3px;
+      color:var(--fg-4); cursor:pointer; line-height:0; display:inline-grid; place-items:center;
+      transition:color .12s, background .12s, opacity .12s; opacity:.55; }
+    .dtf-copy:hover { color:var(--fg); background:var(--bg-3); opacity:1; }
+    .dtf-copy.done { color:var(--accent); opacity:1; }
+    /* row-level inline copy: only show on hover/focus to avoid noise */
+    .dtf-row .dtf-copy,
+    .dtf-lbl-row .dtf-copy { opacity:0; }
+    .dtf-row:hover .dtf-copy, .dtf-row.expanded .dtf-copy,
+    .dtf-lbl-row:hover .dtf-copy, .dtf-lbl-row.expanded .dtf-copy { opacity:.7; }
+    .dtf-row .dtf-copy:hover,
+    .dtf-lbl-row .dtf-copy:hover { opacity:1; }
+    .dtf-row .dtf-copy.done,
+    .dtf-lbl-row .dtf-copy.done { opacity:1; }
+
+    /* override-value modal — sized to the panel (so its backdrop covers only the tool) */
+    .dtf-modal-bg { position:absolute; inset:0; z-index:50;
+      background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px);
+      display:grid; place-items:stretch; padding:10px;
+      animation:dtf-modal-bg-in .14s ease-out; }
+    @keyframes dtf-modal-bg-in { from { opacity:0; } to { opacity:1; } }
+    .dtf-modal { width:100%; max-width:100%;
+      max-height:100%; align-self:center; justify-self:stretch;
+      background:var(--bg-1); border:1px solid var(--line); border-radius:8px;
+      overflow:hidden; display:flex; flex-direction:column;
+      box-shadow:0 24px 60px -16px rgba(0,0,0,0.7);
+      animation:dtf-modal-in .16s cubic-bezier(.2,.8,.3,1); }
+    @keyframes dtf-modal-in {
+      from { opacity:0; transform:scale(.96) translateY(6px); }
+      to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .dtf-modal .hd { display:flex; align-items:center; gap:8px;
+      padding:10px 12px; border-bottom:1px solid var(--line);
+      font-family:var(--mono); font-size:11px; color:var(--fg-2); }
+    .dtf-modal .hd .k { color:var(--fg); flex:1; }
+    .dtf-modal .hd .x { background:transparent; border:0; color:var(--fg-3);
+      cursor:pointer; padding:4px; line-height:0; border-radius:3px;
+      width:26px; height:26px; display:grid; place-items:center; }
+    .dtf-modal .hd .x:hover { color:var(--fg); background:var(--bg-3); }
+    .dtf-modal .hd .back { display:inline-flex; align-items:center; gap:4px;
+      background:var(--bg-3); border:1px solid var(--line);
+      color:var(--fg-2); font-family:var(--mono); font-size:10px;
+      padding:4px 8px 4px 6px; border-radius:3px; cursor:pointer; }
+    .dtf-modal .hd .back:hover { color:var(--fg); border-color:var(--fg-3); }
+    .dtf-modal .bd { padding:12px; display:flex; flex-direction:column; gap:10px; }
+    .dtf-modal .row { display:grid; grid-template-columns:80px 1fr; gap:8px; align-items:start;
+      font-family:var(--mono); font-size:10.5px; color:var(--fg-3); }
+    .dtf-modal .row .lbl { padding-top:6px; letter-spacing:.04em; text-transform:uppercase; font-size:9.5px; }
+    .dtf-modal .row .real { padding:6px 8px; background:var(--bg-2); border:1px solid var(--line-2);
+      border-radius:3px; color:var(--fg-2); font-family:var(--mono); font-size:11px;
+      white-space:pre-wrap; word-break:break-all; }
+    .dtf-modal textarea { width:100%; min-height:80px; box-sizing:border-box;
+      padding:6px 8px; background:var(--bg-2); border:1px solid var(--line);
+      border-radius:3px; outline:none; resize:vertical;
+      color:var(--fg); font-family:var(--mono); font-size:11.5px; line-height:1.45; }
+    .dtf-modal textarea:focus { border-color:color-mix(in oklab, var(--pri) 45%, var(--line)); }
+    .dtf-modal .ft { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--line);
+      background:var(--bg-2); }
+    .dtf-modal .ft .sp { flex:1; }
+    .dtf-modal .ft button { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+      font-family:var(--mono); font-size:10.5px; padding:5px 10px; border-radius:3px; cursor:pointer; }
+    .dtf-modal .ft button:hover { color:var(--fg); border-color:var(--fg-4); }
+    .dtf-modal .ft button.primary { background:var(--warn-bg-strong);
+      color:var(--warn); border-color:var(--warn-border); }
+    .dtf-modal .ft button.primary:hover { background:color-mix(in oklab, var(--warn) 30%, var(--bg-3)); }
+    .dtf-modal .ft button.ghost { background:transparent; }
+    .dtf-modal .err { color:var(--danger); font-family:var(--mono); font-size:10px;
+      padding:4px 8px; border:1px solid color-mix(in oklab, var(--danger) 30%, var(--line));
+      background:color-mix(in oklab, var(--danger) 10%, var(--bg-2)); border-radius:3px; }
+    .dtf-discard { display:flex; align-items:center; gap:8px;
+      padding:8px 12px; border-bottom:1px solid var(--warn-border);
+      background:var(--warn-bg-overbar);
+      color:var(--fg); font-family:var(--mono); font-size:11px; }
+    .dtf-discard svg { color:var(--warn); flex-shrink:0; }
+
+    /* JSON tree editor */
+    .json-tree { font-family:var(--mono); font-size:11px; max-height:340px; overflow:auto;
+      padding:2px; background:var(--bg-2); border:1px solid var(--line); border-radius:4px; }
+    .json-row { display:flex; align-items:center; gap:8px; padding:3px 6px;
+      border-radius:3px; min-height:24px; }
+    .json-row:hover { background:var(--bg-3); }
+    .json-row.branch { color:var(--fg-2); cursor:pointer; }
+    .json-row .caret { color:var(--fg-4); width:10px; display:inline-block; text-align:center; flex-shrink:0; }
+    .json-row .key { color:var(--fg); flex-shrink:0; }
+    .json-row .key.branch-key { color:var(--info); }
+    .json-row .type { font-size:9px; padding:1px 4px; border-radius:2px;
+      letter-spacing:.04em; text-transform:uppercase; flex-shrink:0; }
+    .json-row .type.t-number  { color:var(--info);   background:color-mix(in oklab, var(--info)   16%, var(--bg-3)); }
+    .json-row .type.t-string  { color:var(--accent); background:color-mix(in oklab, var(--accent) 14%, var(--bg-3)); }
+    .json-row .type.t-boolean { color:var(--warn);   background:color-mix(in oklab, var(--warn)   16%, var(--bg-3)); }
+    .json-row .type.t-null    { color:var(--fg-3);   background:var(--bg-3); }
+    .json-row .type.t-object,
+    .json-row .type.t-array   { color:var(--fg-2);   background:var(--bg-3); }
+    /* Larger type tag used in modal header */
+    .type-tag { font-family:var(--mono); font-size:10px; font-weight:600;
+      padding:2px 7px; border-radius:3px;
+      letter-spacing:.05em; text-transform:uppercase; flex-shrink:0;
+      margin-left:6px; }
+    .type-tag.t-number  { color:var(--info);   background:color-mix(in oklab, var(--info)   16%, var(--bg-3)); }
+    .type-tag.t-string  { color:var(--accent); background:color-mix(in oklab, var(--accent) 14%, var(--bg-3)); }
+    .type-tag.t-boolean { color:var(--warn);   background:color-mix(in oklab, var(--warn)   16%, var(--bg-3)); }
+    .type-tag.t-null    { color:var(--fg-3);   background:var(--bg-3); }
+    .type-tag.t-object,
+    .type-tag.t-array   { color:var(--fg-2);   background:var(--bg-3); }
+    .json-row .summary { color:var(--fg-3); font-size:10.5px; margin-left:auto; }
+    .json-row .ctl { margin-left:auto; display:flex; align-items:center; gap:6px; }
+    .json-row .ctl input[type=text],
+    .json-row .ctl input[type=number] {
+      background:var(--bg-1); border:1px solid var(--line); color:var(--fg);
+      font-family:var(--mono); font-size:11px; padding:2px 6px; border-radius:3px;
+      outline:none; min-width:60px; width:140px; }
+    .json-row .ctl input:focus { border-color:color-mix(in oklab, var(--accent) 40%, var(--line)); }
+    .json-row .ctl.changed input { border-color:color-mix(in oklab, var(--warn) 50%, var(--line));
+      background:color-mix(in oklab, var(--warn) 7%, var(--bg-1)); }
+    .json-row .ctl .bool { display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
+    .json-row .ctl .bool button { background:var(--bg-1); border:0; color:var(--fg-3);
+      font-family:var(--mono); font-size:10.5px; padding:2px 8px; cursor:pointer; }
+    .json-row .ctl .bool button.on { color:var(--accent); background:color-mix(in oklab, var(--accent) 14%, var(--bg-1)); }
+    .json-row .ctl .bool button.on.f { color:var(--danger); background:color-mix(in oklab, var(--danger) 14%, var(--bg-1)); }
+    .json-row .reset { background:transparent; border:0; color:var(--fg-4); cursor:pointer;
+      font-family:var(--mono); font-size:10px; padding:2px 4px; border-radius:2px;
+      visibility:hidden; }
+    .json-row.dirty .reset { visibility:visible; color:var(--warn); }
+    .json-row .reset:hover { color:var(--fg); background:var(--bg-1); }
+    .json-children { margin-left:6px; border-left:1px dashed var(--line); padding-left:8px; }
+    .json-tree > .json-children { margin-left:0; padding-left:0; border-left:0; }
+    .json-prim { padding:0; }
+
+    /* feedback (bugs / feature requests) */
+    .se-fb-subtabs { display:flex; gap:0; padding:0 10px;
+      border-bottom:1px solid var(--line); background:var(--bg-1); }
+    .se-fb-subtabs button { display:inline-flex; align-items:center; gap:6px;
+      background:transparent; border:0; color:var(--fg-3);
+      font-family:var(--mono); font-size:11px; padding:8px 10px;
+      cursor:pointer; border-bottom:1.5px solid transparent;
+      margin-bottom:-1px; }
+    .se-fb-subtabs button:hover { color:var(--fg); }
+    .se-fb-subtabs button.active { color:var(--fg); border-bottom-color:var(--accent); }
+    .se-fb-subtabs button .c { font-family:var(--mono); font-size:10.5px;
+      color:var(--fg-2); background:var(--bg-3);
+      padding:1px 6px; border-radius:3px; }
+    .se-fb-subtabs button.active .c { color:var(--accent);
+      background:color-mix(in oklab, var(--accent) 10%, var(--bg-3)); }
+
+    .se-feedback-head { display:flex; align-items:center; gap:6px;
+      padding:8px 10px; border-bottom:1px solid var(--line-2); }
+    .se-feedback-head .grow { flex:1; }
+    .se-feedback-list { display:flex; flex-direction:column; gap:1px; }
+    .se-feedback-row { display:flex; align-items:center; gap:8px;
+      padding:8px 12px; border-bottom:1px solid var(--line-2);
+      color:var(--fg-2); cursor:pointer; text-decoration:none; }
+    .se-feedback-row:hover { background:var(--bg-2); }
+    .se-feedback-row .row-name { font-size:11.5px; color:var(--fg);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .se-feedback-row .row-sub { font-family:var(--mono); font-size:9.5px;
+      color:var(--fg-4); margin-top:2px; }
+    .se-feedback-row .grow { flex:1; min-width:0; }
+
+    /* badges (mirrors packages/devtools/src/styles.ts) */
+    .badge { font-family:var(--mono); font-size:9px; font-weight:600;
+      letter-spacing:0.04em; padding:2px 7px; border-radius:999px;
+      white-space:nowrap; flex-shrink:0; border:1px solid transparent;
+      text-transform:uppercase; }
+    .badge-on  { background:color-mix(in oklab, var(--accent) 14%, transparent);
+      color:var(--accent); border-color:color-mix(in oklab, var(--accent) 30%, transparent); }
+    .badge-off { background:color-mix(in oklab, var(--danger) 14%, transparent);
+      color:var(--danger); border-color:color-mix(in oklab, var(--danger) 30%, transparent); }
+    .badge-run { background:color-mix(in oklab, var(--pri) 14%, transparent);
+      color:var(--pri); border-color:color-mix(in oklab, var(--pri) 30%, transparent); }
+    /* "critical" must read as urgent without reusing the danger/red of "declined" */
+    .badge-warn { background:color-mix(in oklab, var(--warn) 14%, transparent);
+      color:var(--warn); border-color:color-mix(in oklab, var(--warn) 30%, transparent); }
+    .badge-draft { background:var(--bg-2); color:var(--fg-3); border-color:var(--line-2); }
+
+    /* form (used by bug + feature modals) — fills the panel inside its 10px backdrop padding */
+    .dtf-modal.lg { width:100%; max-width:100%; }
+    .dtf-modal .bd { flex:1; overflow-y:auto; min-height:0; }
+    .se-form { display:flex; flex-direction:column; gap:10px; padding:12px; }
+    .se-field { display:flex; flex-direction:column; gap:4px; }
+    .se-field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .se-label { font-family:var(--mono); font-size:9.5px; color:var(--fg-3);
+      letter-spacing:.04em; text-transform:uppercase; }
+    .se-input { background:var(--bg-2); border:1px solid var(--line);
+      border-radius:4px; padding:6px 8px; color:var(--fg);
+      font-family:var(--sans); font-size:12px; line-height:1.4;
+      outline:none; box-sizing:border-box; }
+    .se-input:focus { border-color:color-mix(in oklab, var(--accent) 45%, var(--line)); }
+    .se-textarea { resize:vertical; min-height:54px; font-family:var(--sans); }
+    .se-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .se-actions .ibtn { display:inline-flex; align-items:center; gap:5px; }
+    /* Attachment grid — 2-column thumbnail cards. Each card has a 110px-tall
+       preview region (image / video frame / file glyph) and a tight meta row. */
+    .se-attach-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:8px; }
+    .se-attach-card { position:relative; background:var(--bg-2);
+      border:1px solid var(--line); border-radius:5px; overflow:hidden;
+      display:flex; flex-direction:column;
+      animation:dtf-attach-in .18s cubic-bezier(.2,.8,.3,1); }
+    @keyframes dtf-attach-in {
+      from { opacity:0; transform:scale(.94) translateY(2px); }
+      to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .se-attach-card .preview { position:relative; height:96px; overflow:hidden;
+      background:var(--bg-3); }
+    /* Faux screenshot — a couple of bars that read as "a webpage" */
+    .se-attach-card .preview.screenshot {
+      background:
+        linear-gradient(180deg, color-mix(in oklab, var(--pri) 14%, var(--bg-3)) 0 12%, transparent 12%),
+        linear-gradient(180deg, transparent 30%, color-mix(in oklab, var(--accent) 10%, transparent) 30% 32%, transparent 32%),
+        linear-gradient(180deg, transparent 44%, color-mix(in oklab, var(--fg) 8%, transparent) 44% 46%, transparent 46% 56%, color-mix(in oklab, var(--fg) 6%, transparent) 56% 58%, transparent 58%),
+        linear-gradient(180deg, transparent 70%, color-mix(in oklab, var(--warn) 14%, transparent) 70% 76%, transparent 76%),
+        linear-gradient(135deg, var(--bg-2), var(--bg-3));
+    }
+    .se-attach-card .preview.recording {
+      background:
+        radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--bg-1) 60%, transparent), transparent 70%),
+        repeating-linear-gradient(90deg, transparent 0 28px, rgba(255,255,255,0.025) 28px 29px),
+        linear-gradient(135deg, var(--bg-3), var(--bg-1));
+      display:grid; place-items:center; }
+    .se-attach-card .preview.recording .play { width:32px; height:32px; border-radius:50%;
+      background:rgba(255,255,255,0.08); backdrop-filter:blur(2px);
+      display:grid; place-items:center; color:var(--fg);
+      box-shadow:0 0 0 1px rgba(255,255,255,0.12); }
+    .se-attach-card .preview.recording .dur { position:absolute; right:6px; bottom:6px;
+      font-family:var(--mono); font-size:9.5px; color:var(--fg);
+      background:rgba(0,0,0,0.6); padding:1px 5px; border-radius:2px;
+      letter-spacing:.04em; }
+    .se-attach-card .preview.file { display:grid; place-items:center;
+      background:linear-gradient(135deg, var(--bg-3), var(--bg-2)); color:var(--fg-3); }
+    .se-attach-card .preview.file .ext { font-family:var(--mono); font-size:11px;
+      font-weight:600; color:var(--fg-2); padding:3px 8px;
+      background:var(--bg-1); border:1px solid var(--line); border-radius:3px;
+      margin-top:6px; letter-spacing:.06em; text-transform:uppercase; }
+    .se-attach-card .meta { display:flex; align-items:center; gap:6px;
+      padding:6px 8px; border-top:1px solid var(--line-2);
+      font-family:var(--mono); font-size:10px; }
+    .se-attach-card .meta .ic { color:var(--fg-3); display:grid; place-items:center; flex-shrink:0; }
+    .se-attach-card .meta .name { color:var(--fg); flex:1; min-width:0;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .se-attach-card .meta .size { color:var(--fg-3); flex-shrink:0; }
+    .se-attach-card .rm { position:absolute; top:5px; right:5px;
+      width:22px; height:22px; border-radius:4px; border:0;
+      background:rgba(0,0,0,0.7); color:var(--fg);
+      display:grid; place-items:center; cursor:pointer;
+      opacity:.7; transition:opacity .12s, background .12s; }
+    .se-attach-card:hover .rm,
+    .se-attach-card:focus-within .rm { opacity:1; }
+    .se-attach-card .rm:hover { background:var(--danger); opacity:1; }
+
+    /* Upload state overlay */
+    .se-attach-card.uploading .preview { filter:brightness(.55) saturate(.6); }
+    .se-attach-card .upload-veil { position:absolute; inset:0; height:96px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:8px; pointer-events:none; }
+    .se-attach-card .ring { width:28px; height:28px; }
+    .se-attach-card .ring circle { fill:none; stroke-width:2.5; }
+    .se-attach-card .ring .track { stroke:rgba(255,255,255,0.12); }
+    .se-attach-card .ring .bar   { stroke:var(--pri); stroke-linecap:round;
+      transform:rotate(-90deg); transform-origin:50% 50%;
+      transition:stroke-dashoffset .15s linear; }
+    .se-attach-card .pct { font-family:var(--mono); font-size:9.5px;
+      color:var(--fg); background:rgba(0,0,0,0.6);
+      padding:1px 5px; border-radius:2px; letter-spacing:.04em; }
+    /* Bottom progress bar — appears at the very edge of the preview */
+    .se-attach-card .progress { position:absolute; left:0; right:0; bottom:0;
+      height:2px; background:rgba(255,255,255,0.06); overflow:hidden; }
+    .se-attach-card .progress .fill { height:100%; background:var(--pri);
+      box-shadow:0 0 6px var(--pri); transition:width .15s linear; }
+    /* Brief done flash */
+    .se-attach-card.just-done .preview { animation:dtf-done-flash .6s ease-out; }
+    @keyframes dtf-done-flash {
+      0%,40% { box-shadow:inset 0 0 0 2px var(--accent); }
+      100%   { box-shadow:inset 0 0 0 2px transparent; }
+    }
+    .se-attach-card.error .preview { filter:brightness(.45) saturate(.4); }
+    .se-attach-card.error .upload-veil { color:var(--danger); }
+    .se-attach-card.error .err-msg { font-family:var(--mono); font-size:10px;
+      color:var(--danger); background:rgba(0,0,0,0.6);
+      padding:2px 6px; border-radius:2px; }
+    .se-status { font-family:var(--mono); font-size:10px; color:var(--fg-3);
+      min-height:14px; }
+    .se-status.err { color:var(--danger); }
+
+    /* shared ibtn (used in modals + feedback head) */
+    .ibtn { background:var(--bg-3); border:1px solid var(--line); color:var(--fg-2);
+      font-family:var(--mono); font-size:10.5px; padding:4px 9px; border-radius:3px;
+      cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+    .ibtn:hover { color:var(--fg); border-color:var(--fg-4); background:var(--bg-2); }
+    .ibtn.pri { background:color-mix(in oklab, var(--pri) 16%, var(--bg-3));
+      color:var(--pri); border-color:color-mix(in oklab, var(--pri) 35%, var(--line)); }
+    .ibtn.pri:hover { background:color-mix(in oklab, var(--pri) 26%, var(--bg-3)); }
+    .ibtn.danger { color:var(--danger); border-color:color-mix(in oklab, var(--danger) 28%, var(--line)); }
+    .ibtn.danger:hover { background:color-mix(in oklab, var(--danger) 18%, var(--bg-3)); color:var(--fg); }
+    .ibtn.recording { background:color-mix(in oklab, var(--danger) 18%, var(--bg-3));
+      color:var(--danger); border-color:color-mix(in oklab, var(--danger) 35%, var(--line)); }
+
+    /* empty + loading shared by feedback panels */
+    .se-empty { padding:24px 16px; text-align:center; color:var(--fg-3); font-size:11.5px; }
+
+    .se-feedback-row { cursor:pointer; }
+    .se-feedback-row.expanded { background:var(--bg-2); }
+    .se-feedback-row .chev { color:var(--fg-4); font-size:10px; width:10px;
+      display:inline-block; text-align:center; flex-shrink:0;
+      transition:transform .15s ease; }
+    .se-feedback-row.expanded .chev { transform:rotate(90deg); color:var(--fg-2); }
+    /* expand panel slot — same animation pattern as gates dtf-detail */
+    .se-feedback-detail { display:grid; grid-template-rows:0fr;
+      transition:grid-template-rows .22s ease;
+      background:var(--bg-2); border-bottom:1px solid var(--line-2); }
+    .se-feedback-detail.open { grid-template-rows:1fr; }
+    .se-feedback-detail .inner { overflow:hidden; }
+    @supports not (grid-template-rows: 1fr) {
+      .se-feedback-detail { display:block; max-height:0; overflow:hidden;
+        transition:max-height .22s ease; }
+      .se-feedback-detail.open { max-height:600px; }
+    }
+    .se-feedback-detail .pad { padding:10px 14px 12px 30px;
+      display:flex; flex-direction:column; gap:8px; }
+    .se-fb-block { font-size:11.5px; color:var(--fg-2); line-height:1.45;
+      white-space:pre-wrap; }
+    .se-fb-section { display:flex; flex-direction:column; gap:3px; }
+    .se-fb-section .lbl { font-family:var(--mono); font-size:9.5px; color:var(--fg-4);
+      letter-spacing:.06em; text-transform:uppercase; }
+    .se-fb-meta { display:grid; grid-template-columns:auto 1fr; gap:3px 12px;
+      font-family:var(--mono); font-size:10px; color:var(--fg-2);
+      padding-top:6px; border-top:1px dashed var(--line-2); }
+    .se-fb-meta .k { color:var(--fg-4); letter-spacing:.04em; text-transform:uppercase; font-size:9.5px; }
+    .se-fb-attach { display:flex; flex-direction:column; gap:3px; }
+    .se-fb-attach .at { display:flex; align-items:center; gap:6px;
+      padding:4px 7px; background:var(--bg-1); border:1px solid var(--line-2);
+      border-radius:3px; font-family:var(--mono); font-size:10px; color:var(--fg-2); }
+    .se-fb-attach .at .dim { color:var(--fg-4); margin-left:auto; }
+    .se-fb-actions { display:flex; gap:5px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+  <script type="text/babel" data-presets="react">
+    /* ===== Inline icons (lucide-style) ===== */
+    const Icon = ({ children, size = 16, strokeWidth = 1.75, ...rest }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth={strokeWidth}
+        strokeLinecap="round" strokeLinejoin="round" {...rest}>{children}</svg>
+    );
+    const IconShield = (p) => <Icon {...p}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></Icon>;
+    const IconFlask = (p) => <Icon {...p}><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 0 1 3.923 10.5H6.077A6.5 6.5 0 0 1 10 9.3"/></Icon>;
+    const IconSliders = (p) => <Icon {...p}><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></Icon>;
+    const IconPower = (p) => <Icon {...p}><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></Icon>;
+    const IconBook = (p) => <Icon {...p}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></Icon>;
+    const IconUsers = (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
+    const IconActivity = (p) => <Icon {...p}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></Icon>;
+    const IconRefresh = (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></Icon>;
+    const IconSettings = (p) => <Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+    const IconAlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></Icon>;
+    const IconSearch = (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>;
+    const IconPlay = (p) => <Icon {...p}><polygon points="6 3 20 12 6 21 6 3"/></Icon>;
+    const IconX = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
+    const IconCopy = (p) => <Icon {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
+    const IconCheck = (p) => <Icon {...p}><path d="M20 6 9 17l-5-5"/></Icon>;
+    const IconBug = (p) => <Icon {...p}><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></Icon>;
+    const IconSparkles = (p) => <Icon {...p}><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></Icon>;
+    const IconCamera = (p) => <Icon {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></Icon>;
+    const IconRecord = (p) => <Icon {...p}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></Icon>;
+    const IconUpload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Icon>;
+    const IconExternalLink = (p) => <Icon {...p}><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></Icon>;
+    const IconArrowLeft = (p) => <Icon {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></Icon>;
+    const IconPlayMini = (p) => <Icon {...p} strokeWidth={0}><polygon points="6 3 20 12 6 21 6 3" fill="currentColor"/></Icon>;
+    const IconFile = (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><polyline points="14 2 14 8 20 8"/></Icon>;
+
+    /* one-click copy with ✓ feedback */
+    function CopyBtn({ value, title = 'Copy value', size = 11 }) {
+      const [done, setDone] = React.useState(false);
+      const onClick = (e) => {
+        e.stopPropagation();
+        const txt = typeof value === 'string' ? value : JSON.stringify(value);
+        try {
+          navigator.clipboard.writeText(txt);
+          setDone(true); setTimeout(() => setDone(false), 900);
+        } catch { /* clipboard unavailable */ }
+      };
+      return (
+        <button className={'dtf-copy' + (done ? ' done' : '')}
+                onClick={onClick} title={done ? 'Copied' : title}>
+          {done ? <IconCheck size={size}/> : <IconCopy size={size}/>}
+        </button>
+      );
+    }
+
+    /* ===== Stub data (mirrors design's devtool-full.jsx) ===== */
+    /* Killswitches live inside the Gates tab — a kill is a gate without conditions
+       (always-on / always-off, no rule eval). Distinguished by row icon (power vs shield). */
+    const TABS = [
+      { k:'user',     label:'User',             icon:IconUsers,    count:null },
+      { k:'gates',    label:'Gates',            icon:IconShield,   count:14   },
+      { k:'exps',     label:'Experiments',      icon:IconFlask,    count:3    },
+      { k:'configs',  label:'Configs',          icon:IconSliders,  count:8    },
+      { k:'labels',   label:'Labels',           icon:IconBook,     count:182  },
+      { k:'feedback', label:'Feedback',         icon:IconBug,      count:11   },
+      { k:'events',   label:'Events',           icon:IconActivity, count:null },
+    ];
+
+    const NOW = Date.now();
+    const ago = (mins) => new Date(NOW - mins * 60_000).toISOString();
+    const DEFAULT_BUGS = [
+      { id:'b_1d4', title:'Cart total flickers when promo is applied',
+        status:'open', reporterEmail:'maya@acme.co', createdAt: ago(8),
+        steps:'1. Add 2 items to cart\n2. Apply promo code SS26\n3. Watch the line-item totals briefly snap back to pre-discount before settling',
+        actual:'Subtotal flickers ~120ms then re-renders with the discounted value',
+        expected:'Total updates once with the discounted value applied',
+        pageUrl:'https://linear-shop.com/cart', viewport:'1440x900',
+        attachments:[{ kind:'screenshot', filename:'cart-flicker.png', size: 162_000 }] },
+      { id:'b_3a2', title:'Mobile checkout: country picker overlaps keyboard',
+        status:'open', reporterEmail:'amir@acme.co', createdAt: ago(72),
+        steps:'1. Open /checkout on iPhone Safari\n2. Tap the country dropdown',
+        actual:'Picker renders behind the keyboard; only top option visible',
+        expected:'Picker should resize or scroll into view above the keyboard',
+        pageUrl:'https://linear-shop.com/checkout', viewport:'390x844',
+        attachments:[{ kind:'recording', filename:'cc-overlap.webm', size: 2_410_000 }] },
+      { id:'b_551', title:'404 on /journal/2026-spring after slug change',
+        status:'resolved', reporterEmail:'ops@acme.co',  createdAt: ago(60 * 30),
+        steps:'1. Visit any 2026-spring journal link from social',
+        actual:'404 — page not found',
+        expected:'Redirect to /journal/2026/spring',
+        pageUrl:'https://linear-shop.com/journal/2026-spring', viewport:'1280x720',
+        attachments:[] },
+      { id:'b_900', title:'Outline mode collides with sticky header',
+        status:'wont_fix', reporterEmail:null, createdAt: ago(60 * 24 * 6),
+        steps:'Press Tab repeatedly to focus header items',
+        actual:'Focus ring clipped by sticky header z-index',
+        expected:'Focus ring fully visible',
+        pageUrl:'https://linear-shop.com/', viewport:'1440x900',
+        attachments:[] },
+    ];
+    const DEFAULT_FEATURES = [
+      { id:'f_a01', title:'Bulk-edit translations across locales',
+        status:'open', importance:'important', reporterEmail:'maya@acme.co', createdAt: ago(45),
+        description:'Allow editing the same key across all locales side-by-side in one screen, instead of opening each locale separately.',
+        useCase:'Translation reviewers fixing terminology across 6 locales currently click through ~12 panels per key.' },
+      { id:'f_a02', title:'Export experiment results as CSV',
+        status:'open', importance:'nice_to_have', reporterEmail:'amir@acme.co', createdAt: ago(60 * 4),
+        description:'A button to export the per-variant metrics + n + p-value as CSV for offline reporting.',
+        useCase:'Quarterly business reviews need to splice this data into the financial deck.' },
+      { id:'f_a03', title:'Slack alerts on killswitch trigger',
+        status:'shipped', importance:'critical', reporterEmail:'ops@acme.co',  createdAt: ago(60 * 24 * 9),
+        description:'When any killswitch flips to KILLED, post to a configured Slack channel within 5s.',
+        useCase:'Oncall needs immediate visibility — currently we discover it via customer reports.' },
+      { id:'f_a04', title:'Per-route flag overrides',
+        status:'declined', importance:'nice_to_have', reporterEmail:null, createdAt: ago(60 * 24 * 30),
+        description:'Set a flag override that only applies on a specific URL pattern.',
+        useCase:'Demo a feature on a single landing page without affecting the rest of the app.' },
+    ];
+
+    const LOCALES = [
+      { code:'en-US', flag:'EN', name:'English (US)', pct:100, base:true },
+      { code:'fr-FR', flag:'FR', name:'Français',    pct:100 },
+      { code:'de-DE', flag:'DE', name:'Deutsch',     pct:96  },
+      { code:'ja-JP', flag:'JA', name:'日本語',       pct:88  },
+      { code:'es-ES', flag:'ES', name:'Español',     pct:100 },
+      { code:'pt-BR', flag:'BR', name:'Português',   pct:74  },
+    ];
+
+    const DEFAULT_LABELS = [
+      { k:'home.hero.title', page:'/', src:'Objects made of time.',
+        val:{'en-US':'Objects made of time.','fr-FR':'Objets faits de temps.','de-DE':'Dinge aus Zeit gemacht.','ja-JP':'時間でできた物。','es-ES':'Objetos hechos de tiempo.','pt-BR':null},
+        activeOnPage:true, status:'translated' },
+      { k:'home.hero.sub', page:'/', src:'A small collection of well-considered things…',
+        val:{'en-US':'A small collection…','fr-FR':'Une petite collection…','de-DE':'Eine kleine Sammlung…','ja-JP':null,'es-ES':'Una pequeña colección…','pt-BR':null},
+        activeOnPage:true, status:'partial' },
+      { k:'home.hero.cta.primary', page:'/', src:'Shop new arrivals',
+        val:{'en-US':'Shop new arrivals','fr-FR':'Découvrir les nouveautés','de-DE':'Neuheiten ansehen','ja-JP':'新着を見る','es-ES':'Ver novedades','pt-BR':'Ver lançamentos'},
+        activeOnPage:true, status:'translated' },
+      { k:'product.price.from', page:'/', src:'from {{price}}',
+        val:{'en-US':'from {{price}}','fr-FR':'à partir de {{price}}','de-DE':'ab {{price}}','ja-JP':'{{price}}〜','es-ES':'desde {{price}}','pt-BR':'a partir de {{price}}'},
+        activeOnPage:true, status:'translated', vars:['price'] },
+      { k:'checkout.btn.pay', page:'/checkout', src:'Pay {{amount}}',
+        val:{'en-US':'Pay {{amount}}','fr-FR':'Payer {{amount}}','de-DE':'Zahlen {{amount}}','ja-JP':'{{amount}}を支払う','es-ES':'Pagar {{amount}}','pt-BR':'Pagar {{amount}}'},
+        status:'review', flagged:true, vars:['amount'], note:'de-DE: review verb conjugation' },
+      { k:'errors.network', page:'*', src:'Connection lost. Retrying…',
+        val:{'en-US':'Connection lost. Retrying…','fr-FR':'Connexion perdue. Nouvelle tentative…','de-DE':'Verbindung verloren. Neuer Versuch…','ja-JP':null,'es-ES':'Conexión perdida. Reintentando…','pt-BR':null},
+        status:'partial' },
+    ];
+
+    const DEFAULT_USER = {
+      email:'maya@acme.co', id:'usr_3b20a9f2',
+      plan:'team', status:'active', country:'US', ltv_usd:'2418', age_days:'94',
+    };
+
+    const DEFAULT_GATES = [
+      { k:'gate.premium_features', kind:'gate', desc:'rule 1 · team plan members · matched',
+        val:true, real:true, source:'custom', icon:'shield' },
+      { k:'gate.beta_drop', kind:'gate', desc:'rule 2 · ltv > $2,000 · matched',
+        val:true, real:true, source:'custom', icon:'shield', activeOnPage:true },
+      { k:'gate.eu_user', kind:'gate', desc:'built-in · ip:US · no match',
+        val:false, real:false, source:'built-in', icon:'shield' },
+      { k:'gate.is_employee', kind:'gate', desc:'built-in · email:acme.co · matched',
+        val:true, real:true, source:'built-in', icon:'shield' },
+      { k:'gate.mobile_only', kind:'gate', desc:'built-in · UA:desktop · no match',
+        val:false, real:false, source:'built-in', icon:'shield' },
+      /* killswitches — gate without conditions */
+      { k:'kill.new_checkout', kind:'kill', desc:'green · 0 incidents · 90d',
+        val:false, real:false, icon:'power', activeOnPage:true },
+      { k:'kill.legacy_uploader', kind:'kill', desc:'killed · p95 spike · 4h ago',
+        val:true, real:true, icon:'power' },
+    ];
+    const DEFAULT_EXPS = [
+      { k:'exp.checkout_v3', kind:'exp', desc:'bucketed via user_id · 50/50',
+        variant:'three_step', real:'three_step', icon:'flask',
+        variants:['control','three_step'], traffic:[50,50], activeOnPage:true },
+      { k:'exp.welcome_5min', kind:'exp', desc:'paused · winner shipped',
+        variant:'control', real:'control', icon:'flask', paused:true,
+        variants:['control','immediate','5min'], traffic:[33,33,34] },
+    ];
+    const DEFAULT_CONFIGS = [
+      { k:'config.checkout.timeout_ms', kind:'config', desc:'number · loaded',
+        val:30000, real:30000, icon:'sliders', activeOnPage:true },
+      { k:'config.ranker.weights', kind:'config', desc:'object · 5 keys · loaded',
+        val:{ recency:0.4, popularity:0.3, similarity:0.2, freshness:0.07, diversity:0.03 },
+        real:{ recency:0.4, popularity:0.3, similarity:0.2, freshness:0.07, diversity:0.03 },
+        icon:'sliders', activeOnPage:true },
+      { k:'config.embeddings.model', kind:'config', desc:'string · loaded',
+        val:'text-3-large', real:'text-3-large', icon:'sliders' },
+      { k:'config.checkout.routing', kind:'config', desc:'object · nested · loaded',
+        val:{
+          payment:{ stripe:true, paypal:false, cards:{ visa:true, amex:false, mc:true } },
+          address:{ autocomplete:true, validation:'strict' },
+          timeouts:{ connect_ms:3000, total_ms:30000 },
+          retries:3,
+        },
+        real:{
+          payment:{ stripe:true, paypal:false, cards:{ visa:true, amex:false, mc:true } },
+          address:{ autocomplete:true, validation:'strict' },
+          timeouts:{ connect_ms:3000, total_ms:30000 },
+          retries:3,
+        },
+        icon:'sliders' },
+    ];
+    const EVENTS = [
+      { t:'+12ms', l:'log', m:[['k','gate.premium_features'],[' → '],['s','true']], ms:'2.8ms' },
+      { t:'+12ms', l:'log', m:[['k','exp.checkout_v3'],[' → '],['s','three_step']], ms:'3.1ms' },
+      { t:'+14ms', l:'log', m:[['k','gate.beta_drop'],[' → '],['s','true']], ms:'1.9ms' },
+      { t:'+220ms', l:'evt', m:[['','log('],['s','"page_view"'],['',', { route: '],['s','"/"'],['',' })']], ms:'—' },
+      { t:'+340ms', l:'evt', m:[['','log('],['s','"product_view"'],['',')']], ms:'—' },
+      { t:'+1.2s', l:'warn', m:[['','config.ratelimit.api '],['','fallback used']], ms:'—' },
+      { t:'+2.0s', l:'log', m:[['k','gate.eu_user'],[' → '],['s','false']], ms:'0.4ms' },
+    ];
+    const ICON = { shield:IconShield, flask:IconFlask, sliders:IconSliders, power:IconPower };
+
+    function FakeSite() {
+      return (
+        <div className="dtf-cust">
+          <div className="nav">
+            <div className="logo">◣ Linear Shop</div>
+            <span className="l active">Catalog</span>
+            <span className="l">Sale</span>
+            <span className="l">Journal</span>
+            <div className="right"><span>Cart (2)</span><div className="av">M</div></div>
+          </div>
+          <div className="body">
+            <div className="kicker">SS26 · EDITION 04</div>
+            <h1>Objects <em>made of time.</em></h1>
+            <p className="sub">A small collection of well-considered things, photographed in morning light and made to outlast the season they launch in.</p>
+            <div className="ctas">
+              <a className="cta">Shop new arrivals →</a>
+              <a className="cta g">Browse journal</a>
+            </div>
+            <div className="grid">
+              <div className="card"><div className="ph"/><h3>Cotton field shirt</h3><div className="pr">$128 · Ecru</div></div>
+              <div className="card c2"><div className="ph"/><h3>Utility tote</h3><div className="pr">$240 · Oat</div></div>
+              <div className="card c3 flagged"><div className="ph"/><h3>Ceramic mug — Kiln 04</h3><div className="pr">$68 · Beta drop</div></div>
+            </div>
+            <div className="footer"><span>© Linear Shop</span><span>Returns</span><span>Press</span></div>
+          </div>
+        </div>
+      );
+    }
+
+    /* JSON helpers — used by configs */
+    const jsonType = (v) => v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v;
+    const valEqual = (a, b) => {
+      try { return JSON.stringify(a) === JSON.stringify(b); } catch { return a === b; }
+    };
+    const summarizeVal = (v) => {
+      const t = jsonType(v);
+      if (t === 'object') return `{${Object.keys(v).length} keys}`;
+      if (t === 'array')  return `[${v.length}]`;
+      if (t === 'string') return `"${v.length > 22 ? v.slice(0, 22) + '…' : v}"`;
+      if (t === 'null')   return 'null';
+      return String(v);
+    };
+
+    function FlagRow({ row, expanded, onToggle, onExpand, onVariant, onOverride }) {
+      const Ic = ICON[row.icon] || IconShield;
+      const overridden = row.kind === 'exp'
+        ? row.variant !== row.real
+        : row.kind === 'config'
+          ? !valEqual(row.val, row.real)
+          : row.val !== row.real;
+      const hasToggle = row.kind === 'gate' || row.kind === 'kill';
+      // No-toggle rows (exp/config) span the value across the toggle column and
+      // right-align so the value sits flush with the row's right edge.
+      const valSpanStyle = hasToggle ? null : { gridColumn: '3 / span 2', justifySelf: 'end' };
+      let valEl;
+      if (row.kind === 'exp') {
+        valEl = (<select className={'sel' + (overridden ? ' over' : '')} value={row.variant} style={valSpanStyle}
+          onClick={e => e.stopPropagation()} onChange={e => onVariant(row.k, e.target.value)}>
+          {row.variants.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>);
+      } else if (row.kind === 'config') {
+        valEl = <span className={'val' + (overridden ? ' over' : '')} style={valSpanStyle}>{summarizeVal(row.val)}</span>;
+      } else if (row.kind === 'kill') {
+        valEl = <span className={'val ' + (row.val ? 'killed' : 'kill-live')}>{row.val ? 'KILLED' : 'LIVE'}</span>;
+      } else {
+        valEl = <span className={'val ' + (overridden ? 'over' : (row.val ? 'on' : 'off'))}>{row.val ? 'true' : 'false'}</span>;
+      }
+      const togEl = hasToggle
+        ? <div className={'dtf-toggle' + (row.val ? (overridden ? ' over' : ' on') : '')}
+            onClick={e => { e.stopPropagation(); onToggle(row.k); }}/>
+        : null;
+
+      return (
+        <>
+          <div className={'dtf-row' + (expanded ? ' expanded' : '') + (
+                 row.kind === 'kill' ? (row.val ? ' muted' : '') : (row.val ? '' : ' muted')
+               )}
+               onClick={() => onExpand(row.k)}>
+            <div className="ic"><Ic size={11} style={{
+              color: row.kind === 'kill'
+                ? (row.val ? 'var(--danger)' : 'var(--accent)')
+                : (row.val ? 'var(--accent)' : 'var(--fg-3)')
+            }}/></div>
+            <div className="meta">
+              <div className="k">
+                {row.k}
+                <CopyBtn value={row.kind === 'exp' ? row.variant : row.val}
+                  title={`Copy value (${row.k})`}/>
+                {overridden ? <span className="override-tag">forced</span> : null}
+                {row.activeOnPage ? <span className="live-dot" title="firing on this page"/> : null}
+              </div>
+              <div className="v">{row.desc}</div>
+            </div>
+            {valEl}{togEl}
+          </div>
+          <div className={'dtf-detail' + (expanded ? ' open' : '')}>
+            <div className="inner"><div className="pad">
+              {row.kind === 'gate' && (
+                <>
+                  <div className="crumbs">
+                    <div><span className={overridden ? 'skip' : (row.val ? 'pass' : 'deny')}>
+                      {overridden ? '↦' : (row.val ? '✓' : '✗')}
+                    </span> {row.k} <span style={{color:'var(--fg-4)'}}>→</span>{' '}
+                    <span className={overridden ? 'skip' : (row.val ? 'pass' : 'deny')}>
+                      {overridden ? `forced ${row.val ? 'true' : 'false'} (real: ${row.real ? 'true' : 'false'})` : (row.val ? 'true' : 'false')}
+                    </span></div>
+                    {row.val && !overridden ? (<>
+                      <div className="indent">matched <span className="meta">rule 1</span></div>
+                      <div className="indent">user.plan <span style={{color:'var(--fg-4)'}}>==</span> "team"</div>
+                      <div className="indent">user.status <span style={{color:'var(--fg-4)'}}>==</span> "active"</div>
+                    </>) : null}
+                  </div>
+                  <div className="mini">
+                    <span className="lbl">eval</span><span className="v">2.8ms · cached 60s</span>
+                    <span className="lbl">source</span><span className="v">{row.source}</span>
+                  </div>
+                  <div className="actions">
+                    <button className="primary" onClick={e => { e.stopPropagation(); onToggle(row.k); }}>
+                      ⤢ Force {row.val ? 'false' : 'true'}
+                    </button>
+                    <button>↗ Open in dashboard</button>
+                  </div>
+                </>
+              )}
+              {row.kind === 'exp' && (
+                <>
+                  <div className="crumbs">
+                    <div><span className="pass">●</span> assigned <span className="meta">via user_id hash</span></div>
+                  </div>
+                  {row.variants.map((v, i) => (
+                    <div key={v} className={'var-row' + (v === row.variant ? ' assigned' : '')}>
+                      <span className="sw" style={{background: ['var(--info)','var(--accent)','var(--warn)'][i] || 'var(--fg-3)'}}/>
+                      <span>{v}</span>
+                      <span className="pct">{row.traffic[i]}%</span>
+                      <span style={{fontSize:9.5,color:'var(--fg-4)'}}>{v === row.real ? 'real' : (v === row.variant ? 'forced' : '')}</span>
+                    </div>
+                  ))}
+                  <div className="mini">
+                    <span className="lbl">primary metric</span><span className="v">revenue_per_visitor</span>
+                    <span className="lbl">runtime</span><span className="v">11d · 24,810 users</span>
+                  </div>
+                </>
+              )}
+              {row.kind === 'config' && (
+                <>
+                  <div className="crumbs">
+                    <div><span className="pass">●</span> read at <span className="meta">/products/[slug] · L42</span></div>
+                    <div className="indent">{row.k} <span style={{color:'var(--fg-4)'}}>=</span> <span style={{color:'var(--fg-2)'}}>{summarizeVal(row.val)}</span> <span style={{color:'var(--fg-4)'}}>· {jsonType(row.val)}</span></div>
+                  </div>
+                  <div className="mini">
+                    <span className="lbl">version</span><span className="v">v42 · 11h ago</span>
+                    <span className="lbl">env</span><span className="v">prod</span>
+                  </div>
+                  <div className="actions">
+                    <button className="primary" onClick={(e) => { e.stopPropagation(); onOverride(row); }}>
+                      ⤢ {overridden ? 'Edit override' : 'Override value'}
+                    </button>
+                    {overridden ? (
+                      <button onClick={(e) => { e.stopPropagation(); onOverride(row, /*reset*/ true); }}>↺ Reset</button>
+                    ) : null}
+                  </div>
+                </>
+              )}
+              {row.kind === 'kill' && (
+                <>
+                  <div className="crumbs">
+                    <div><span className={row.val ? 'deny' : 'pass'}>{row.val ? '✗' : '✓'}</span> killswitch{' '}
+                      <span style={{color:'var(--fg-4)'}}>→</span>{' '}
+                      <span className={row.val ? 'deny' : 'pass'}>{row.val ? 'KILLED' : 'live'}</span></div>
+                    <div className="indent meta">propagation: &lt;1s to 60+ regions</div>
+                  </div>
+                  <div className="actions">
+                    <button className={row.val ? 'primary' : ''} onClick={e => { e.stopPropagation(); onToggle(row.k); }}>
+                      {row.val ? '✓ Restore' : '⚠ Pull the switch'}
+                    </button>
+                    <button>↗ Audit history</button>
+                  </div>
+                </>
+              )}
+            </div></div>
+          </div>
+        </>
+      );
+    }
+
+    function GatesTab({ rows, view, expanded, setExpanded, onToggle, onVariant, onOverride }) {
+      const active   = rows.filter(r => r.activeOnPage);
+      const inactive = rows.filter(r => !r.activeOnPage);
+      const rowProps = { expanded, onToggle, onExpand:setExpanded, onVariant, onOverride };
+      return (
+        <>
+          {view === 'page' ? (
+            <>
+              <div className="dtf-group">Active on this page<span className="pulse"><span className="d"/>{active.length} firing</span></div>
+              {active.map(r => <FlagRow key={r.k} row={r} {...rowProps} expanded={expanded === r.k}/>)}
+              {inactive.length > 0 && (<>
+                <div className="dtf-group">Inactive<span className="c">{inactive.length} more</span></div>
+                {inactive.map(r => <FlagRow key={r.k} row={r} {...rowProps} expanded={expanded === r.k}/>)}
+              </>)}
+            </>
+          ) : (
+            <>
+              <div className="dtf-group">All flags<span className="c">{rows.length}</span></div>
+              {rows.map(r => <FlagRow key={r.k} row={r} {...rowProps} expanded={expanded === r.k}/>)}
+            </>
+          )}
+        </>
+      );
+    }
+
+    /* helper: get / set / reset a value at a dotted path inside a JSON object */
+    const clone = (v) => (v == null || typeof v !== 'object') ? v : JSON.parse(JSON.stringify(v));
+    const setAt = (obj, path, value) => {
+      if (path.length === 0) return value;
+      const [head, ...rest] = path;
+      const next = Array.isArray(obj) ? obj.slice() : { ...obj };
+      next[head] = setAt(obj[head], rest, value);
+      return next;
+    };
+    const getAt = (obj, path) => path.reduce((a, k) => (a == null ? a : a[k]), obj);
+
+    function ValueLeafEditor({ value, realValue, onChange, onReset }) {
+      const t = jsonType(value);
+      const dirty = !valEqual(value, realValue);
+      if (t === 'boolean') {
+        return (
+          <span className={'ctl' + (dirty ? ' changed' : '')}>
+            <span className="bool">
+              <button className={'t' + (value === true ? ' on' : '')}
+                onClick={() => onChange(true)}>true</button>
+              <button className={'f' + (value === false ? ' on' : '')}
+                onClick={() => onChange(false)}>false</button>
+            </span>
+            <button className="reset" title={`reset to ${String(realValue)}`} onClick={onReset}>↺</button>
+          </span>
+        );
+      }
+      if (t === 'number') {
+        return (
+          <span className={'ctl' + (dirty ? ' changed' : '')}>
+            <input type="number" value={value}
+              onChange={(e) => {
+                const n = e.target.value === '' ? '' : Number(e.target.value);
+                onChange(Number.isNaN(n) ? value : n);
+              }}/>
+            <button className="reset" title={`reset to ${String(realValue)}`} onClick={onReset}>↺</button>
+          </span>
+        );
+      }
+      if (t === 'string') {
+        return (
+          <span className={'ctl' + (dirty ? ' changed' : '')}>
+            <input type="text" value={value} onChange={(e) => onChange(e.target.value)}/>
+            <button className="reset" title={`reset to "${String(realValue)}"`} onClick={onReset}>↺</button>
+          </span>
+        );
+      }
+      // null / unknown: read-only summary
+      return <span className="summary">{String(value)}</span>;
+    }
+
+    function BranchRow({ keyName, value, realValue, onChange, onReset }) {
+      const [open, setOpen] = React.useState(true);
+      const t = jsonType(value);
+      const summary = t === 'array' ? `[${value.length}]` : `{${Object.keys(value).length} keys}`;
+      const dirty = !valEqual(value, realValue);
+      return (
+        <>
+          <div className={'json-row branch' + (dirty ? ' dirty' : '')}
+               onClick={() => setOpen(o => !o)}>
+            <span className="caret">{open ? '▾' : '▸'}</span>
+            <span className="key branch-key">{String(keyName)}</span>
+            <span className={'type t-' + t}>{t}</span>
+            <span className="summary">{summary}</span>
+            {dirty ? (
+              <button className="reset" title="reset subtree"
+                onClick={(e) => { e.stopPropagation(); onReset(); }}>↺</button>
+            ) : null}
+          </div>
+          {open ? (
+            <JsonChildren value={value} realValue={realValue} onChange={onChange}/>
+          ) : null}
+        </>
+      );
+    }
+
+    function JsonChildren({ value, realValue, onChange }) {
+      const t = jsonType(value);
+      const entries = t === 'array' ? value.map((v, i) => [i, v]) : Object.entries(value);
+      return (
+        <div className="json-children">
+          {entries.map(([k, v]) => {
+            const childT = jsonType(v);
+            const isBranch = childT === 'object' || childT === 'array';
+            const childReal = realValue == null ? undefined : realValue[k];
+            const onChildChange = (nv) => onChange(setAt(value, [k], nv));
+            const onChildReset = () => onChange(setAt(value, [k], clone(childReal)));
+            if (isBranch) {
+              return (
+                <BranchRow key={String(k)} keyName={k} value={v} realValue={childReal}
+                  onChange={onChildChange} onReset={onChildReset}/>
+              );
+            }
+            const dirty = !valEqual(v, childReal);
+            return (
+              <div key={String(k)} className={'json-row leaf' + (dirty ? ' dirty' : '')}>
+                <span className="caret"/>
+                <span className="key">{String(k)}</span>
+                <span className={'type t-' + childT}>{childT}</span>
+                <ValueLeafEditor value={v} realValue={childReal}
+                  onChange={onChildChange} onReset={onChildReset}/>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function OverrideModal({ row, onSave, onClose }) {
+      const [draft, setDraft] = React.useState(() => clone(row.val));
+      const dirty = !valEqual(draft, row.real);
+      const rootType = jsonType(draft);
+
+      React.useEffect(() => {
+        const onKey = (e) => {
+          if (e.key === 'Escape') onClose();
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onSave(row.k, draft);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      });
+
+      return (
+        <div className="dtf-modal-bg" onClick={onClose}>
+          <div className="dtf-modal" onClick={e => e.stopPropagation()}>
+            <div className="hd">
+              <span className="k">{row.k}</span>
+              <span className={'type-tag t-' + rootType}>{rootType}</span>
+              <button className="x" onClick={onClose} title="Close (Esc)"><IconX size={12}/></button>
+            </div>
+            <div className="bd">
+              {rootType === 'object' || rootType === 'array' ? (
+                <div className="json-tree">
+                  <JsonChildren value={draft} realValue={row.real} onChange={setDraft}/>
+                </div>
+              ) : (
+                <div className="row">
+                  <span className="lbl">{rootType}</span>
+                  <ValueLeafEditor value={draft} realValue={row.real}
+                    onChange={setDraft} onReset={() => setDraft(clone(row.real))}/>
+                </div>
+              )}
+            </div>
+            <div className="ft">
+              <button className="ghost" disabled={!dirty} style={{opacity: dirty ? 1 : 0.4}}
+                onClick={() => setDraft(clone(row.real))}>↺ Reset all</button>
+              <span className="sp"/>
+              <button onClick={onClose}>
+                Cancel <span style={{opacity:.6,marginLeft:4}}>Esc</span>
+              </button>
+              <button className="primary" onClick={() => onSave(row.k, draft)}>
+                Save override <span style={{opacity:.6,marginLeft:4}}>⌘⏎</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function UserTab({ user, setUser, dirty, onReeval }) {
+      const Field = ({ k, val, suffix }) => (
+        <div className="dtf-prop">
+          <span className="k">{k}</span>
+          <span className="v">
+            <input value={val} onChange={e => setUser(k.split('.')[1], e.target.value)}/>
+            {suffix ? <span style={{color:'var(--fg-4)',marginLeft:6}}>{suffix}</span> : null}
+          </span>
+          {dirty[k.split('.')[1]] ? <span className="changed"/> : <span style={{width:5}}/>}
+        </div>
+      );
+      return (
+        <div className="dtf-user">
+          <div className="who">
+            <div className="av">M</div>
+            <div className="info">
+              <div className="e">{user.email}</div>
+              <div className="id">{user.id} · {user.plan} plan · {user.age_days}d old</div>
+            </div>
+          </div>
+          <div className="dtf-group">User properties<span className="c">edit to simulate</span></div>
+          <div style={{flex:1, overflowY:'auto'}}>
+            <Field k="user.id" val={user.id}/>
+            <Field k="user.email" val={user.email}/>
+            <Field k="user.plan" val={user.plan}/>
+            <Field k="user.status" val={user.status}/>
+            <Field k="user.country" val={user.country}/>
+            <Field k="user.ltv_usd" val={user.ltv_usd} suffix="USD"/>
+            <Field k="user.age_days" val={user.age_days} suffix="days"/>
+            <div className="dtf-group">Request context<span className="c">read-only</span></div>
+            <div className="dtf-prop"><span className="k">ctx.route</span>
+              <span className="v" style={{color:'var(--accent)'}}>"/"</span><span style={{width:5}}/></div>
+            <div className="dtf-prop"><span className="k">ctx.ip_country</span>
+              <span className="v">"US · NY"</span><span style={{width:5}}/></div>
+            <div className="dtf-prop"><span className="k">ctx.user_agent</span>
+              <span className="v" style={{fontSize:10.5, color:'var(--fg-3)'}}>"Mozilla/5.0 (Macintosh…)"</span><span style={{width:5}}/></div>
+            <div className="dtf-prop"><span className="k">ctx.session_id</span>
+              <span className="v">"ses_8f2a"</span><span style={{width:5}}/></div>
+          </div>
+          <div className="dtf-evalbar">
+            <button className="b" onClick={onReeval}>
+              <IconPlay size={11}/> Re-evaluate {Object.values(dirty).filter(Boolean).length > 0 ? 'with changes' : '12 flags'}
+            </button>
+            <button className="b g">Reset</button>
+          </div>
+        </div>
+      );
+    }
+
+    function EventsTab() {
+      return (<>
+        <div className="dtf-group">Live event stream<span className="pulse"><span className="d"/>14/s</span></div>
+        {EVENTS.map((e, i) => (
+          <div key={i} className="dtf-event">
+            <span className="ts">{e.t}</span>
+            <span className={'lvl' + (e.l === 'warn' ? ' warn' : e.l === 'err' ? ' err' : '')}>
+              {e.l === 'warn' ? '!' : e.l === 'err' ? '×' : '›'}
+            </span>
+            <span className="msg">
+              {e.m.map(([cls,t], j) => cls ? <span key={j} className={cls}>{t}</span> : <span key={j}>{t}</span>)}
+            </span>
+            <span className="ms">{e.ms}</span>
+          </div>
+        ))}
+      </>);
+    }
+
+    /* Build a tree of label key segments: 'home.hero.title' →
+       { home: { hero: { __leaves__: [row(title)] } } } */
+    function buildLabelTree(rows) {
+      const root = { name:'', children:{}, leaves:[], path:'' };
+      for (const r of rows) {
+        const parts = r.k.split('.');
+        let node = root;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const seg = parts[i];
+          if (!node.children[seg]) {
+            node.children[seg] = { name: seg, children:{}, leaves:[],
+              path: node.path ? node.path + '.' + seg : seg };
+          }
+          node = node.children[seg];
+        }
+        node.leaves.push(r);
+      }
+      return root;
+    }
+    function countLeaves(node) {
+      let n = node.leaves.length;
+      for (const c of Object.values(node.children)) n += countLeaves(c);
+      return n;
+    }
+    function countMissing(node, locale) {
+      let n = 0;
+      for (const r of node.leaves) if (r.val[locale] == null) n++;
+      for (const c of Object.values(node.children)) n += countMissing(c, locale);
+      return n;
+    }
+
+    function LabelsTab({ rows, locale, setLocale, view, expanded, setExpanded, onEdit }) {
+      const loc = LOCALES.find(l => l.code === locale) || LOCALES[1];
+      const visible = view === 'page' ? rows.filter(r => r.activeOnPage) : rows;
+      const translated = rows.filter(r => r.val[locale] != null).length;
+      const total = rows.length;
+      const tree = React.useMemo(() => buildLabelTree(visible), [visible]);
+      // single open-map shared across the tree; default = open
+      const [openMap, setOpenMap] = React.useState({});
+      const isOpenSeg = (path) => openMap[path] !== false;
+      const toggleSeg = (path) => setOpenMap(m => ({ ...m, [path]: !(m[path] !== false) }));
+
+      const Row = ({ r, depth = 0 }) => {
+        const v = r.val[locale];
+        const missing = v == null;
+        const isOpen = expanded === r.k;
+        const last = r.k.split('.').pop();
+        const Pill = () => {
+          if (missing) return <span className="lbl-pill missing" title="Missing translation">⊘</span>;
+          if (r.status === 'review' || r.flagged) return <span className="lbl-pill review" title="Needs review">!</span>;
+          if (r.status === 'partial') return <span className="lbl-pill partial" title="Partial coverage">◐</span>;
+          if (r.edited) return <span className="lbl-pill edited" title="Edited">✎</span>;
+          return <span className="lbl-pill ok" title="Translated">●</span>;
+        };
+        return (<>
+          <div className={'dtf-lbl-row' + (isOpen ? ' expanded' : '') + (missing ? ' missing' : '')}
+               style={{ paddingLeft: 12 + depth * 14 }}
+               onClick={() => setExpanded(r.k)}
+               title={r.k}>
+            <Pill/>
+            <div className="meta">
+              <div className="src">
+                {last}
+                {missing ? null : <CopyBtn value={v} title={`Copy ${loc.code} value`}/>}
+              </div>
+              <div className="sub">
+                <span className="k" title={missing ? `Missing in ${loc.code}` : v}>{missing ? <em style={{color:'var(--warn)'}}>— not translated —</em> : v}</span>
+                <span className="dot">·</span><span>{r.page}</span>
+                {r.vars ? <><span className="dot">·</span><span className="var">{r.vars.map(x => `{{${x}}}`).join(' ')}</span></> : null}
+              </div>
+            </div>
+            {r.activeOnPage ? <span className="live-dot" title="visible on this page" style={{width:5,height:5,borderRadius:'50%',background:'var(--accent)',boxShadow:'0 0 5px var(--accent)'}}/> : <span style={{width:5}}/>}
+          </div>
+          <div className={'dtf-detail' + (isOpen ? ' open' : '')}>
+            <div className="inner"><div className="pad lbl-pad">
+              <div className="lbl-locales">
+                {LOCALES.map(l => {
+                  const tv = r.val[l.code];
+                  return (
+                    <div key={l.code} className={'lbl-locale' + (l.code === locale ? ' sel' : '') + (tv == null ? ' miss' : '')}
+                         onClick={(e) => { e.stopPropagation(); setLocale(l.code); }}>
+                      <span className="fl">{l.flag}</span>
+                      <span className="nm">{l.name}{l.base ? <span className="base"> · base</span> : null}</span>
+                      <span className="tv" title={tv == null ? `Missing translation for ${l.code}` : tv}>{tv == null ? '—' : tv}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="lbl-edit">
+                <div className="hd">
+                  <span>{loc.flag} {loc.name}</span>
+                  <button onClick={(e) => e.stopPropagation()}>↻ Auto-translate</button>
+                </div>
+                <textarea value={r.val[locale] || ''} placeholder={`Translate "${r.src}" to ${loc.name}…`}
+                  onClick={(e) => e.stopPropagation()} onChange={(e) => onEdit(r.k, e.target.value)}/>
+                {r.vars ? (<div className="lbl-vars">vars:
+                  {r.vars.map(v => <span key={v} className="var">{`{{${v}}}`}</span>)}
+                </div>) : null}
+                {r.note ? <div className="lbl-note">⚠ {r.note}</div> : null}
+              </div>
+              <div className="actions">
+                <button className="primary" onClick={(e) => e.stopPropagation()}>⤢ Save translation</button>
+                <button>↗ Open in Polylang</button>
+              </div>
+            </div></div>
+          </div>
+        </>);
+      };
+
+      const TreeBranch = ({ node, depth }) => {
+        const segs = Object.keys(node.children);
+        return (<>
+          {segs.map(seg => {
+            const child = node.children[seg];
+            const open = isOpenSeg(child.path);
+            const total = countLeaves(child);
+            const missing = countMissing(child, locale);
+            return (
+              <React.Fragment key={child.path}>
+                <div className="dtf-tree-node"
+                  style={{ paddingLeft: 12 + depth * 14 }}
+                  onClick={() => toggleSeg(child.path)}>
+                  <span className="caret">{open ? '▾' : '▸'}</span>
+                  <span className="seg">{child.name}</span>
+                  <span className="dotpath">{child.path}</span>
+                  <span className="counts">
+                    {missing > 0 ? <span className="m">{missing} missing</span> : null}
+                    <span className="t">{total}</span>
+                  </span>
+                </div>
+                {open ? (<>
+                  <TreeBranch node={child} depth={depth + 1}/>
+                  {child.leaves.map(r => <Row key={r.k} r={r} depth={depth + 1}/>)}
+                </>) : null}
+              </React.Fragment>
+            );
+          })}
+          {/* root-level leaves (keys with no segments) get rendered at depth 0 */}
+          {depth === 0 && node.leaves.map(r => <Row key={r.k} r={r} depth={0}/>)}
+        </>);
+      };
+
+      return (<>
+        <div className="dtf-group">
+          {view === 'page' ? 'Visible on this page' : 'All keys in project'}
+          <span className="cov-mini" title={`${loc.name} coverage`}>{translated}/{total}</span>
+          <span className="pulse"><span className="d"/>{visible.length} {view === 'page' ? 'rendered' : 'total'}</span>
+        </div>
+        <TreeBranch node={tree} depth={0}/>
+      </>);
+    }
+
+    /* ===== Feedback (bugs / feature requests) ===== */
+    function timeAgo(iso) {
+      const d = Date.now() - Date.parse(iso);
+      const m = Math.floor(d / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h ago`;
+      return `${Math.floor(h / 24)}d ago`;
+    }
+    const BUG_STATUS_CLS = { open:'badge-run', resolved:'badge-on', wont_fix:'badge-off', draft:'badge-draft' };
+    const FR_STATUS_CLS  = { open:'badge-run', shipped:'badge-on', declined:'badge-off', under_review:'badge-draft' };
+    const FR_IMP_CLS     = { critical:'badge-warn', important:'badge-run', nice_to_have:'badge-draft' };
+    const Badge = ({ cls, label }) =>
+      <span className={'badge ' + cls}>{label.replace(/_/g,' ')}</span>;
+
+    function FeedbackDetail({ item, kind }) {
+      if (kind === 'bug') {
+        return (
+          <div className="se-feedback-detail open">
+            <div className="inner"><div className="pad">
+              {item.steps ? (
+                <div className="se-fb-section">
+                  <span className="lbl">Steps to reproduce</span>
+                  <div className="se-fb-block">{item.steps}</div>
+                </div>
+              ) : null}
+              {item.actual ? (
+                <div className="se-fb-section">
+                  <span className="lbl">Actual</span>
+                  <div className="se-fb-block">{item.actual}</div>
+                </div>
+              ) : null}
+              {item.expected ? (
+                <div className="se-fb-section">
+                  <span className="lbl">Expected</span>
+                  <div className="se-fb-block">{item.expected}</div>
+                </div>
+              ) : null}
+              {item.attachments && item.attachments.length > 0 ? (
+                <div className="se-fb-section">
+                  <span className="lbl">Attachments</span>
+                  <div className="se-attach-grid">
+                    {item.attachments.map((a, i) => (
+                      <AttachmentCard key={i} readOnly
+                        item={{ ...a, blob: { size: a.size }, duration: a.duration }}/>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <div className="se-fb-meta">
+                <span className="k">page</span><span>{item.pageUrl}</span>
+                <span className="k">viewport</span><span>{item.viewport}</span>
+                <span className="k">filed</span><span>{timeAgo(item.createdAt)}{item.reporterEmail ? ' · ' + item.reporterEmail : ''}</span>
+              </div>
+              <div className="se-fb-actions">
+                <a className="ibtn pri" target="_blank" rel="noopener" href="#"
+                   onClick={(e) => e.stopPropagation()}>
+                  <IconExternalLink size={10}/> Open in dashboard
+                </a>
+                <CopyBtn value={item.title} title="Copy title"/>
+              </div>
+            </div></div>
+          </div>
+        );
+      }
+      return (
+        <div className="se-feedback-detail open">
+          <div className="inner"><div className="pad">
+            {item.description ? (
+              <div className="se-fb-section">
+                <span className="lbl">Description</span>
+                <div className="se-fb-block">{item.description}</div>
+              </div>
+            ) : null}
+            {item.useCase ? (
+              <div className="se-fb-section">
+                <span className="lbl">Use case</span>
+                <div className="se-fb-block">{item.useCase}</div>
+              </div>
+            ) : null}
+            <div className="se-fb-meta">
+              <span className="k">importance</span><span>{item.importance.replace('_', ' ')}</span>
+              <span className="k">filed</span><span>{timeAgo(item.createdAt)}{item.reporterEmail ? ' · ' + item.reporterEmail : ''}</span>
+            </div>
+            <div className="se-fb-actions">
+              <a className="ibtn pri" target="_blank" rel="noopener" href="#"
+                 onClick={(e) => e.stopPropagation()}>
+                <IconExternalLink size={10}/> Open in dashboard
+              </a>
+              <a className="ibtn" target="_blank" rel="noopener" href="#"
+                 onClick={(e) => e.stopPropagation()}>↑ Upvote</a>
+              <CopyBtn value={item.title} title="Copy title"/>
+            </div>
+          </div></div>
+        </div>
+      );
+    }
+
+    /* Quick-action menu rendered as child of the feedback rail icon, shown on hover */
+    function FeedbackHoverMenu({ onBug, onFeature, onOpen }) {
+      const fire = (e, fn) => { e.preventDefault(); e.stopPropagation(); fn(); };
+      return (
+        <div className="dtf-hover-menu" role="menu" aria-label="Feedback quick actions">
+          <div className="hd">Feedback</div>
+          <button role="menuitem" onClick={(e) => fire(e, onBug)}>
+            <span className="ic"><IconBug size={12}/></span>
+            File a bug
+          </button>
+          <button role="menuitem" onClick={(e) => fire(e, onFeature)}>
+            <span className="ic" style={{color:'var(--pri)'}}><IconSparkles size={12}/></span>
+            Request a feature
+          </button>
+          <div style={{height:1,background:'var(--line-2)',margin:'4px 0'}}/>
+          <button role="menuitem" onClick={(e) => fire(e, onOpen)} style={{color:'var(--fg-3)'}}>
+            <span className="ic" style={{color:'var(--fg-3)'}}><IconExternalLink size={11}/></span>
+            Open feedback list
+          </button>
+        </div>
+      );
+    }
+
+    function FeedbackList({ items, kind, dashLabel, ctaLabel, onFile }) {
+      const [openId, setOpenId] = React.useState(null);
+      return (
+        <>
+          <div className="se-feedback-head">
+            <button className="ibtn pri" onClick={onFile}>+ {ctaLabel}</button>
+            <span className="grow"/>
+            <a className="ibtn" target="_blank" rel="noopener" href="#">
+              <IconExternalLink size={10}/> {dashLabel}
+            </a>
+          </div>
+          <div className="se-feedback-list">
+            {items.length === 0 ? (
+              <div className="se-empty">
+                {kind === 'bug'
+                  ? 'No bugs filed yet. Spotted one? Hit "File a bug".'
+                  : 'No feature requests yet.'}
+              </div>
+            ) : items.map(b => {
+              const open = openId === b.id;
+              return (
+                <React.Fragment key={b.id}>
+                  <div className={'se-feedback-row' + (open ? ' expanded' : '')}
+                       onClick={() => setOpenId(open ? null : b.id)}>
+                    <span className="chev">▸</span>
+                    <div className="grow">
+                      <div className="row-name">{b.title}</div>
+                      <div className="row-sub">
+                        {timeAgo(b.createdAt)}
+                        {b.reporterEmail ? ' · ' + b.reporterEmail : ''}
+                      </div>
+                    </div>
+                    {kind === 'feature'
+                      ? <Badge cls={FR_IMP_CLS[b.importance]} label={b.importance}/>
+                      : null}
+                    <Badge cls={(kind === 'bug' ? BUG_STATUS_CLS : FR_STATUS_CLS)[b.status]} label={b.status}/>
+                  </div>
+                  {open ? <FeedbackDetail item={b} kind={kind}/> : null}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </>
+      );
+    }
+
+    /* Modal scaffold reused across forms.
+       `dirty` controls discard-guard: closing while true shows an inline confirm. */
+    function FormModal({ title, large, dirty, onClose, children }) {
+      const [askDiscard, setAskDiscard] = React.useState(false);
+      const tryClose = React.useCallback(() => {
+        if (dirty) { setAskDiscard(true); return; }
+        onClose();
+      }, [dirty, onClose]);
+      React.useEffect(() => {
+        const onKey = (e) => {
+          if (e.key !== 'Escape') return;
+          if (askDiscard) { setAskDiscard(false); return; }
+          tryClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [tryClose, askDiscard]);
+      return (
+        <div className="dtf-modal-bg" onClick={tryClose}>
+          <div className={'dtf-modal' + (large ? ' lg' : '')} onClick={e => e.stopPropagation()}>
+            <div className="hd">
+              <button className="back" onClick={tryClose} title="Back">
+                <IconArrowLeft size={12}/> Back
+              </button>
+              <span className="k" style={{marginLeft:8}}>{title}</span>
+              <span style={{flex:1}}/>
+              <button className="x" onClick={tryClose} title="Close (Esc)">
+                <IconX size={12}/>
+              </button>
+            </div>
+            {askDiscard ? (
+              <div className="dtf-discard">
+                <IconAlertTriangle size={11}/>
+                <span>Discard your changes?</span>
+                <span style={{flex:1}}/>
+                <button className="ibtn" onClick={() => setAskDiscard(false)}>Keep editing</button>
+                <button className="ibtn danger" onClick={onClose}>Discard</button>
+              </div>
+            ) : null}
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    function fmtBytes(n) {
+      if (n < 1024) return `${n} B`;
+      if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+      return `${(n / 1024 / 1024).toFixed(1)} MB`;
+    }
+    function fileExt(name) {
+      const i = name.lastIndexOf('.');
+      return i > 0 ? name.slice(i + 1) : 'file';
+    }
+    function fmtDuration(ms) {
+      const s = Math.round(ms / 1000);
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    }
+
+    /* Single attachment thumbnail card — renders a kind-aware preview, an
+       upload progress veil while `progress < 100`, and a remove ✕ on hover. */
+    function AttachmentCard({ item, onRemove, readOnly }) {
+      const isUploading = item.progress != null && item.progress < 100;
+      const isDone = item.progress === 100;
+      const isError = item.error;
+      // Progress ring math (radius 11, stroke 2.5)
+      const C = 2 * Math.PI * 11;
+      const dashOffset = C * (1 - (item.progress || 0) / 100);
+
+      let preview;
+      if (item.kind === 'screenshot') {
+        preview = <div className="preview screenshot"/>;
+      } else if (item.kind === 'recording') {
+        preview = (
+          <div className="preview recording">
+            <div className="play"><IconPlayMini size={13}/></div>
+            <span className="dur">{fmtDuration(item.duration || 12_000)}</span>
+          </div>
+        );
+      } else {
+        preview = (
+          <div className="preview file">
+            <IconFile size={22}/>
+            <span className="ext">.{fileExt(item.filename)}</span>
+          </div>
+        );
+      }
+
+      return (
+        <div className={'se-attach-card'
+            + (isUploading ? ' uploading' : '')
+            + (isDone ? ' just-done' : '')
+            + (isError ? ' error' : '')}>
+          {preview}
+          {isUploading ? (
+            <>
+              <div className="upload-veil">
+                <svg className="ring" viewBox="0 0 28 28" aria-hidden="true">
+                  <circle className="track" cx="14" cy="14" r="11"/>
+                  <circle className="bar"   cx="14" cy="14" r="11"
+                    strokeDasharray={C} strokeDashoffset={dashOffset}/>
+                </svg>
+                <span className="pct">{Math.round(item.progress)}%</span>
+              </div>
+              <div className="progress"><div className="fill" style={{width: `${item.progress}%`}}/></div>
+            </>
+          ) : null}
+          {isError ? (
+            <div className="upload-veil">
+              <span className="err-msg">Upload failed · click to retry</span>
+            </div>
+          ) : null}
+          {!readOnly ? (
+            <button className="rm" onClick={onRemove} title="Remove" aria-label="Remove attachment">
+              <IconX size={11}/>
+            </button>
+          ) : null}
+          <div className="meta">
+            <span className="ic">
+              {item.kind === 'screenshot' ? <IconCamera size={11}/>
+                : item.kind === 'recording' ? <IconRecord size={11}/>
+                : <IconFile size={11}/>}
+            </span>
+            <span className="name" title={item.filename}>{item.filename}</span>
+            <span className="size">{fmtBytes(item.blob?.size || item.size || 0)}</span>
+          </div>
+        </div>
+      );
+    }
+
+    function BugFormModal({ onSubmit, onClose }) {
+      const [title, setTitle] = React.useState('');
+      const [steps, setSteps] = React.useState('');
+      const [actual, setActual] = React.useState('');
+      const [expected, setExpected] = React.useState('');
+      const [attachments, setAttachments] = React.useState([]);
+      const [recording, setRecording] = React.useState(false);
+      const [status, setStatus] = React.useState({ msg:'', err:false });
+      const fileRef = React.useRef(null);
+
+      /* Simulated upload: each new attachment ticks 0→100 over ~1.4s, then is
+         marked "done" (briefly flashes the accent border) and finally settles. */
+      const simulateUpload = (id) => {
+        const tick = setInterval(() => {
+          setAttachments(arr => arr.map(a => {
+            if (a.id !== id) return a;
+            const next = (a.progress ?? 0) + 8 + Math.random() * 12;
+            if (next >= 100) {
+              clearInterval(tick);
+              setTimeout(() => setAttachments(arr2 => arr2.map(x =>
+                x.id === id ? { ...x, justDone: false } : x)), 700);
+              return { ...a, progress: 100, justDone: true };
+            }
+            return { ...a, progress: next };
+          }));
+        }, 110);
+      };
+
+      const addAttachment = (kind, filename, size) => {
+        const id = 'at_' + Math.random().toString(36).slice(2, 7);
+        const item = { id, kind, filename,
+          duration: kind === 'recording' ? 8_000 + Math.floor(Math.random() * 18_000) : null,
+          blob: { size }, progress: 0 };
+        setAttachments(a => [...a, item]);
+        simulateUpload(id);
+      };
+
+      const stub = (kind, name) => {
+        addAttachment(kind, name,
+          kind === 'recording' ? 2_400_000 + Math.floor(Math.random() * 800_000)
+          : 140_000 + Math.floor(Math.random() * 120_000));
+      };
+      const onFile = (e) => {
+        const f = e.target.files?.[0]; if (!f) return;
+        addAttachment('file', f.name, f.size);
+        e.target.value = '';
+      };
+      const removeAt = (id) => setAttachments(arr => arr.filter(a => a.id !== id));
+
+      const uploading = attachments.some(a => a.progress != null && a.progress < 100);
+      const dirty = !!(title || steps || actual || expected || attachments.length);
+      const submit = () => {
+        if (!title.trim()) { setStatus({ msg:'Title is required', err:true }); return; }
+        if (uploading)    { setStatus({ msg:'Wait for uploads to finish…', err:true }); return; }
+        setStatus({ msg:'Submitting…', err:false });
+        setTimeout(() => {
+          onSubmit({
+            id:'b_' + Math.random().toString(36).slice(2,6),
+            title: title.trim(),
+            status:'open',
+            reporterEmail:'maya@acme.co',
+            createdAt: new Date().toISOString(),
+          });
+          onClose();
+        }, 300);
+      };
+
+      return (
+        <FormModal title="File a bug" large dirty={dirty} onClose={onClose}>
+          <div className="se-form">
+            <label className="se-field">
+              <span className="se-label">Title</span>
+              <input className="se-input" autoFocus value={title}
+                onChange={e => setTitle(e.target.value)} placeholder="Short summary of the bug"/>
+            </label>
+            <label className="se-field">
+              <span className="se-label">Steps to reproduce</span>
+              <textarea className="se-input se-textarea" rows={4} value={steps}
+                onChange={e => setSteps(e.target.value)}
+                placeholder={'1. Go to…\n2. Click…'}/>
+            </label>
+            <div className="se-field-row">
+              <label className="se-field">
+                <span className="se-label">Actual result</span>
+                <textarea className="se-input se-textarea" rows={3} value={actual}
+                  onChange={e => setActual(e.target.value)}/>
+              </label>
+              <label className="se-field">
+                <span className="se-label">Expected result</span>
+                <textarea className="se-input se-textarea" rows={3} value={expected}
+                  onChange={e => setExpected(e.target.value)}/>
+              </label>
+            </div>
+            <div className="se-field">
+              <span className="se-label">Attachments</span>
+              <div className="se-actions">
+                <button type="button" className="ibtn"
+                  onClick={() => stub('screenshot', `screenshot-${Date.now()}.png`)}>
+                  <IconCamera size={11}/> Screenshot
+                </button>
+                <button type="button"
+                  className={'ibtn' + (recording ? ' recording' : '')}
+                  onClick={() => {
+                    if (recording) { stub('recording', `recording-${Date.now()}.webm`); setRecording(false); }
+                    else { setRecording(true); }
+                  }}>
+                  <IconRecord size={11}/> {recording ? 'Stop recording' : 'Record screen'}
+                </button>
+                <button type="button" className="ibtn" onClick={() => fileRef.current?.click()}>
+                  <IconUpload size={11}/> Upload file
+                </button>
+                <input type="file" hidden ref={fileRef} onChange={onFile}/>
+              </div>
+              {attachments.length > 0 ? (
+                <div className="se-attach-grid">
+                  {attachments.map(a => (
+                    <AttachmentCard key={a.id} item={a} onRemove={() => removeAt(a.id)}/>
+                  ))}
+                </div>
+              ) : null}
+              <div className={'se-status' + (status.err ? ' err' : '')}>{status.msg}</div>
+            </div>
+          </div>
+          <div className="ft">
+            <span className="sp"/>
+            <button className="ibtn" onClick={onClose}>Cancel</button>
+            <button className="ibtn pri" onClick={submit}>Submit</button>
+          </div>
+        </FormModal>
+      );
+    }
+
+    function FeatureFormModal({ onSubmit, onClose }) {
+      const [title, setTitle] = React.useState('');
+      const [desc, setDesc] = React.useState('');
+      const [useCase, setUseCase] = React.useState('');
+      const [importance, setImportance] = React.useState('nice_to_have');
+      const [status, setStatus] = React.useState({ msg:'', err:false });
+      const dirty = !!(title || desc || useCase || importance !== 'nice_to_have');
+      const submit = () => {
+        if (!title.trim()) { setStatus({ msg:'Title is required', err:true }); return; }
+        setStatus({ msg:'Submitting…', err:false });
+        setTimeout(() => {
+          onSubmit({
+            id:'f_' + Math.random().toString(36).slice(2,6),
+            title: title.trim(),
+            status:'open',
+            importance,
+            reporterEmail:'maya@acme.co',
+            createdAt: new Date().toISOString(),
+          });
+          onClose();
+        }, 300);
+      };
+      return (
+        <FormModal title="Request a feature" large dirty={dirty} onClose={onClose}>
+          <div className="se-form">
+            <label className="se-field">
+              <span className="se-label">Title</span>
+              <input className="se-input" autoFocus value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="One-line summary of the feature"/>
+            </label>
+            <label className="se-field">
+              <span className="se-label">What would it do?</span>
+              <textarea className="se-input se-textarea" rows={4} value={desc}
+                onChange={e => setDesc(e.target.value)}
+                placeholder="Describe the feature you'd like to see."/>
+            </label>
+            <label className="se-field">
+              <span className="se-label">Use case / why does it matter?</span>
+              <textarea className="se-input se-textarea" rows={3} value={useCase}
+                onChange={e => setUseCase(e.target.value)}
+                placeholder="Who needs this? What does it unlock?"/>
+            </label>
+            <label className="se-field">
+              <span className="se-label">Importance</span>
+              <select className="se-input" value={importance}
+                onChange={e => setImportance(e.target.value)}>
+                <option value="nice_to_have">Nice to have</option>
+                <option value="important">Important</option>
+                <option value="critical">Critical</option>
+              </select>
+            </label>
+            <div className={'se-status' + (status.err ? ' err' : '')}>{status.msg}</div>
+          </div>
+          <div className="ft">
+            <span className="sp"/>
+            <button className="ibtn" onClick={onClose}>Cancel</button>
+            <button className="ibtn pri" onClick={submit}>Submit</button>
+          </div>
+        </FormModal>
+      );
+    }
+
+    function EmptyQuiet({ onPin }) {
+      return (
+        <div className="dtf-empty">
+          <div className="vis"><div className="ring r2"/><div className="ring"/><div className="core">0</div></div>
+          <h3>Nothing fired<br/>on <em>this route.</em></h3>
+          <p>No flags evaluated on this page yet. Pin a flag to watch — or navigate to a flagged route.</p>
+          <div className="actions">
+            <button className="a" onClick={onPin}>
+              <span className="ic">+</span><span className="k">Pin a flag to watch</span><span className="kbd">P</span>
+            </button>
+            <button className="a">
+              <span className="ic">↻</span><span className="k">Re-evaluate this page</span><span className="kbd">R</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function EmptySearch({ q, onPick }) {
+      return (
+        <div className="dtf-empty search">
+          <div className="glyph"><span>{'['}</span><span className="core"/><span>{']'}</span></div>
+          <h3>No flag matches<br/><em style={{fontFamily:'var(--mono)',fontStyle:'normal',fontSize:14,color:'var(--fg-3)'}}>"{q}"</em></h3>
+          <p>Nothing in your project shares that key. Did you mean —</p>
+          <div className="suggest">
+            <div className="head">DID YOU MEAN</div>
+            <div className="row" onClick={() => onPick('checkout_v3')}>
+              <span className="ic acc">F</span>
+              <span className="k">exp.checkout_v3</span>
+              <span className="meta">running</span>
+            </div>
+            <div className="row" onClick={() => onPick('beta_drop')}>
+              <span className="ic warn">F</span>
+              <span className="k">gate.beta_drop</span>
+              <span className="meta">forced</span>
+            </div>
+            <div className="row">
+              <span className="ic">+</span>
+              <span style={{color:'var(--fg-3)',fontFamily:'var(--mono)',fontSize:11}}>Create flag "{q}"</span>
+              <span className="meta">⌘⏎</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function LoadingState() {
+      return (
+        <div className="dtf-load">
+          <div className="topstrip"/>
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className={'skel-row' + (i <= 3 ? ' live' : '')}>
+              <div className="ic"/>
+              <div className="body">
+                <div className="skel" style={{height:9, width:`${50 + (i*7)%30}%`}}/>
+                <div className="skel" style={{height:7, width:`${36 + (i*11)%24}%`}}/>
+              </div>
+              <div className="skel" style={{height:10, width:38}}/>
+              <div className="togsk"/>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const RAIL_MIN = 24, RAIL_MAX = 56;
+
+    function App() {
+      const [tab, setTab] = React.useState('gates');
+      const [view, setView] = React.useState('page');
+      const [state, setState] = React.useState('live');
+      const [collapsed, setCollapsed] = React.useState(false);
+      const [railEdge, setRailEdge] = React.useState('right');
+      const [railOffsetPct, setRailOffsetPct] = React.useState(50);
+      const [railIconSize, setRailIconSize] = React.useState(32);
+      const stageRef = React.useRef(null);
+
+      const draggedRef = React.useRef(false);
+      const startRailDrag = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const stage = stageRef.current?.getBoundingClientRect();
+        if (!stage) return;
+        // capture cursor offset from the rail's center so the rail doesn't
+        // jump under the cursor when the drag starts off-center (e.g. on the logo)
+        const railEl = e.currentTarget.closest('.dtf-panel');
+        const railRect = railEl ? railEl.getBoundingClientRect() : null;
+        const offX = railRect ? (e.clientX - (railRect.left + railRect.width  / 2)) : 0;
+        const offY = railRect ? (e.clientY - (railRect.top  + railRect.height / 2)) : 0;
+        const startX = e.clientX, startY = e.clientY;
+        draggedRef.current = false;
+        const move = (ev) => {
+          if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 4) draggedRef.current = true;
+          // virtual rail-center cursor (compensates for grab offset)
+          const cx = ev.clientX - offX;
+          const cy = ev.clientY - offY;
+          const x = cx - stage.left;
+          const y = cy - stage.top;
+          const dR = stage.width - x, dL = x, dT = y, dB = stage.height - y;
+          const min = Math.min(dR, dL, dT, dB);
+          const edge = min === dR ? 'right' : min === dL ? 'left' : min === dT ? 'top' : 'bottom';
+          const isVert = edge === 'right' || edge === 'left';
+          const pct = Math.max(5, Math.min(95, isVert ? (y/stage.height)*100 : (x/stage.width)*100));
+          setRailEdge(edge); setRailOffsetPct(pct);
+        };
+        const up = () => {
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+      };
+
+      const startRailResize = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const isVert = railEdge === 'right' || railEdge === 'left';
+        const startX = e.clientX, startY = e.clientY, startSize = railIconSize;
+        // The grip sits at the rail's outer end: dragging further outward grows
+        // the rail; dragging back toward the icons shrinks it. 1:1 with cursor
+        // movement so users hit min/max within the rail's own footprint.
+        const move = (ev) => {
+          const delta = isVert ? (ev.clientY - startY) : (ev.clientX - startX);
+          const next = Math.max(RAIL_MIN, Math.min(RAIL_MAX, Math.round(startSize + delta)));
+          setRailIconSize(next);
+        };
+        const up = () => {
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+      };
+
+      const railPosStyle = (() => {
+        const isVert = railEdge === 'right' || railEdge === 'left';
+        const s = { position:'absolute' };
+        if (railEdge === 'right')  { s.right = 0;  s.top = railOffsetPct + '%'; s.transform = 'translateY(-50%)'; }
+        if (railEdge === 'left')   { s.left  = 0;  s.top = railOffsetPct + '%'; s.transform = 'translateY(-50%)'; }
+        if (railEdge === 'top')    { s.top   = 0;  s.left = railOffsetPct + '%'; s.transform = 'translateX(-50%)'; }
+        if (railEdge === 'bottom') { s.bottom= 0;  s.left = railOffsetPct + '%'; s.transform = 'translateX(-50%)'; }
+        return s;
+      })();
+      const [search, setSearch] = React.useState('');
+      const [expanded, setExpanded] = React.useState('gate.beta_drop');
+      const [gates, setGates] = React.useState(DEFAULT_GATES);
+      const [exps, setExps] = React.useState(DEFAULT_EXPS);
+      const [configs, setConfigs] = React.useState(DEFAULT_CONFIGS);
+      const [overrideTarget, setOverrideTarget] = React.useState(null);
+      const [labels, setLabels] = React.useState(DEFAULT_LABELS);
+      const [bugs, setBugs] = React.useState(DEFAULT_BUGS);
+      const [features, setFeatures] = React.useState(DEFAULT_FEATURES);
+      const [bugFormOpen, setBugFormOpen] = React.useState(false);
+      const [featureFormOpen, setFeatureFormOpen] = React.useState(false);
+      const [feedbackSub, setFeedbackSub] = React.useState('bugs');
+      const [labelLocale, setLabelLocale] = React.useState('fr-FR');
+      const [user, setUserState] = React.useState(DEFAULT_USER);
+      const [dirty, setDirty] = React.useState({});
+
+      const setUser = (k, v) => {
+        setUserState(u => ({ ...u, [k]: v }));
+        setDirty(d => ({ ...d, [k]: v !== DEFAULT_USER[k] }));
+      };
+      const onReeval = () => {
+        setState('loading');
+        setTimeout(() => { setState('live'); setTab('gates'); }, 1300);
+      };
+      const onToggleGate = (k) => setGates(gs => gs.map(g => g.k === k ? { ...g, val: !g.val } : g));
+      const onVariant = (k, v) => setExps(es => es.map(e => e.k === k ? { ...e, variant: v } : e));
+      const onOverride = (row, reset) => {
+        if (reset) { setConfigs(cs => cs.map(c => c.k === row.k ? { ...c, val: c.real } : c)); return; }
+        setOverrideTarget(row);
+      };
+      const onSaveOverride = (k, v) => {
+        setConfigs(cs => cs.map(c => c.k === k ? { ...c, val: v } : c));
+        setOverrideTarget(null);
+      };
+
+      const tabRows = tab === 'gates' ? gates
+        : tab === 'exps' ? exps
+        : tab === 'configs' ? configs
+        : tab === 'labels' ? labels
+        : [];
+
+      const filtered = search ? tabRows.filter(r => r.k.toLowerCase().includes(search.toLowerCase())) : tabRows;
+
+      const overrides =
+        gates.filter(g => g.val !== g.real).length +
+        exps.filter(e => e.variant !== e.real).length +
+        configs.filter(c => c.val !== c.real).length;
+
+      const tabHasOverrides = (k) => {
+        if (k === 'gates') return gates.some(g => g.val !== g.real);
+        if (k === 'exps') return exps.some(e => e.variant !== e.real);
+        if (k === 'configs') return configs.some(c => c.val !== c.real);
+        return false;
+      };
+
+      let bodyContent;
+      if (state === 'loading') {
+        bodyContent = <LoadingState/>;
+      } else if (state === 'empty-route' && tab !== 'user' && tab !== 'events' && tab !== 'labels' && tab !== 'feedback') {
+        bodyContent = <EmptyQuiet onPin={() => setState('live')}/>;
+      } else if (search && filtered.length === 0 && tab !== 'user' && tab !== 'events') {
+        bodyContent = <EmptySearch q={search} onPick={(s) => setSearch(s)}/>;
+      } else if (tab === 'user') {
+        bodyContent = <UserTab user={user} setUser={setUser} dirty={dirty} onReeval={onReeval}/>;
+      } else if (tab === 'events') {
+        bodyContent = <EventsTab/>;
+      } else if (tab === 'feedback') {
+        bodyContent = (<>
+          <div className="se-fb-subtabs">
+            <button className={feedbackSub === 'bugs' ? 'active' : ''}
+              onClick={() => setFeedbackSub('bugs')}>
+              <IconBug size={11}/> Bugs <span className="c">{bugs.length}</span>
+            </button>
+            <button className={feedbackSub === 'features' ? 'active' : ''}
+              onClick={() => setFeedbackSub('features')}>
+              <IconSparkles size={11}/> Feature requests <span className="c">{features.length}</span>
+            </button>
+          </div>
+          {feedbackSub === 'bugs' ? (
+            <FeedbackList items={bugs} kind="bug" dashLabel="Open dashboard"
+              ctaLabel="File a bug" onFile={() => setBugFormOpen(true)}/>
+          ) : (
+            <FeedbackList items={features} kind="feature" dashLabel="Open dashboard"
+              ctaLabel="Request a feature" onFile={() => setFeatureFormOpen(true)}/>
+          )}
+        </>);
+      } else if (tab === 'labels') {
+        bodyContent = <LabelsTab rows={filtered} locale={labelLocale} setLocale={setLabelLocale}
+          view={view}
+          expanded={expanded} setExpanded={(k) => setExpanded(expanded === k ? null : k)}
+          onEdit={(k, v) => setLabels(ls => ls.map(l => l.k === k ? { ...l, val:{...l.val, [labelLocale]:v}, edited:true } : l))}/>;
+      } else {
+        bodyContent = (<GatesTab rows={filtered} view={view} expanded={expanded}
+          setExpanded={(k) => setExpanded(expanded === k ? null : k)}
+          onToggle={onToggleGate} onVariant={onVariant} onOverride={onOverride}/>);
+      }
+
+      return (
+        <div className="dtf-doc">
+          <div className="dtf-topbar">
+            <div className="crumb">
+              <span>Shipeasy</span><span className="sep">/</span>
+              <span>DevTool</span><span className="sep">/</span>
+              <b>Customer-side plugin</b>
+            </div>
+            <span className="preview-banner">stub preview · <b>devtool-full.html</b></span>
+            <div style={{flex:1}}/>
+            <h1>Shipeasy <em>in-page</em></h1>
+          </div>
+
+          <div className="dtf-stagewrap">
+            <div className="dtf-stage" ref={stageRef}>
+              <div className="corner"><span className="d"/>linear-shop.com · LIVE</div>
+              <FakeSite/>
+
+              {collapsed ? (
+                <div className="dtf-panel collapsed" data-edge={railEdge} style={railPosStyle}>
+                  <div className="dtf-panel-rail">
+                    <div className="mk" title="Drag to reposition · click to expand"
+                      style={{width:railIconSize*0.7, height:railIconSize*0.7}}
+                      onMouseDown={startRailDrag}
+                      onClick={() => { if (!draggedRef.current) setCollapsed(false); }}/>
+                    {TABS.map(t => {
+                      const Ic = t.icon;
+                      const isFb = t.k === 'feedback';
+                      return (
+                        <button key={t.k} className={'ri' + (isFb ? ' has-menu' : '')}
+                          style={{width:railIconSize, height:railIconSize}}
+                          onClick={() => { setTab(t.k); setExpanded(null); setCollapsed(false); }}>
+                          <Ic size={Math.round(railIconSize * 0.5)}/>
+                          {t.count != null ? <span className="c">{t.count}</span> : null}
+                          {tabHasOverrides(t.k) ? <span className="dotw"/> : null}
+                          <span className="tip">{t.label}</span>
+                          {isFb ? (
+                            <FeedbackHoverMenu
+                              onBug={() => { setBugFormOpen(true); setCollapsed(false); }}
+                              onFeature={() => { setFeatureFormOpen(true); setCollapsed(false); }}
+                              onOpen={() => { setTab('feedback'); setFeedbackSub('bugs'); setCollapsed(false); }}/>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                    <div className="dtf-rail-resize"
+                      style={{
+                        width: (railEdge === 'right' || railEdge === 'left') ? railIconSize : 12,
+                        height:(railEdge === 'right' || railEdge === 'left') ? 12 : railIconSize,
+                      }}
+                      onMouseDown={startRailResize}
+                      title="Drag to resize"/>
+                  </div>
+                </div>
+              ) : (
+                <div className="dtf-panel">
+                  <div className="dtf-head">
+                    <div className="mk"/>
+                    <div className="ti">
+                      <span className="title">{TABS.find(t => t.k === tab)?.label || 'Shipeasy'}</span>
+                      <span className="sub">linear-shop.com · prod · v0.9.3</span>
+                    </div>
+                    <div className="actions">
+                      <button className="ib" onClick={() => setState(state === 'loading' ? 'live' : 'loading')} title="Toggle loading">
+                        <IconRefresh size={11}/>
+                      </button>
+                      <button className="ib" title="Settings"><IconSettings size={11}/></button>
+                      <button className="ib" onClick={() => setCollapsed(true)} title="Collapse"><IconX size={11}/></button>
+                    </div>
+                  </div>
+
+                  <div className="dtf-split">
+                    <div className="dtf-rail">
+                      {TABS.map(t => {
+                        const Ic = t.icon;
+                        const isFb = t.k === 'feedback';
+                        return (
+                          <button key={t.k}
+                                  className={'t' + (tab === t.k ? ' active' : '') + (isFb ? ' has-menu' : '')}
+                                  onClick={() => { setTab(t.k); setExpanded(null); }}
+                                  title={t.label}>
+                            <Ic size={14}/>
+                            {t.count != null ? <span className="c">{t.count}</span> : null}
+                            {tabHasOverrides(t.k) ? <span className="dotw"/> : null}
+                            <span className="tip">{t.label}</span>
+                            {isFb ? (
+                              <FeedbackHoverMenu
+                                onBug={() => { setBugFormOpen(true); }}
+                                onFeature={() => { setFeatureFormOpen(true); }}
+                                onOpen={() => { setTab('feedback'); setFeedbackSub('bugs'); }}/>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="dtf-pane">
+                      {overrides > 0 && state !== 'loading' && (
+                        <div className="dtf-overbar">
+                          <IconAlertTriangle size={11}/>
+                          <span><b>{overrides} session override{overrides > 1 ? 's' : ''}</b> · cleared on refresh</span>
+                          <button onClick={() => { setGates(DEFAULT_GATES); setExps(DEFAULT_EXPS); setConfigs(DEFAULT_CONFIGS); }}>Clear all</button>
+                        </div>
+                      )}
+
+                      {(['gates','exps','configs','labels'].includes(tab) && state !== 'loading') && (
+                        <div className="dtf-search">
+                          <div className="input">
+                            <IconSearch size={11} style={{color:'var(--fg-3)'}}/>
+                            <input placeholder={`Filter ${tab}…`} value={search} onChange={e => setSearch(e.target.value)}/>
+                            {search ? (
+                              <span style={{fontFamily:'var(--mono)',fontSize:10.5,color:'var(--fg-3)',cursor:'pointer'}}
+                                onClick={() => setSearch('')}>esc</span>
+                            ) : (
+                              <span style={{padding:'1px 5px',border:'1px solid var(--line)',borderRadius:3,
+                                fontSize:10.5,fontFamily:'var(--mono)',color:'var(--fg-3)'}}>⌘K</span>
+                            )}
+                          </div>
+                          <div className="seg">
+                            <button className={view === 'page' ? 'active' : ''} onClick={() => setView('page')}>page</button>
+                            <button className={view === 'all' ? 'active' : ''} onClick={() => setView('all')}>all</button>
+                          </div>
+                          {tab === 'labels' && (
+                            <select className="dtf-locale-sel" value={labelLocale}
+                              onChange={e => setLabelLocale(e.target.value)} title="Locale">
+                              {LOCALES.map(l => (
+                                <option key={l.code} value={l.code}>
+                                  {l.flag} · {l.name}{l.pct < 100 ? ` (${l.pct}%)` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="dtf-body">{bodyContent}</div>
+                    </div>
+                  </div>
+
+                  <div className="dtf-foot">
+                    {state === 'loading' ? (
+                      <div className="stat-line">
+                        <span style={{width:10,height:10,display:'inline-block',borderRadius:'50%',
+                          border:'1.5px solid color-mix(in oklab, var(--accent) 22%, transparent)',
+                          borderTopColor:'var(--accent)',
+                          animation:'dtf-spin .9s linear infinite'}}/>
+                        <span style={{color:'var(--fg-2)'}}>resolving 12 flags</span>
+                      </div>
+                    ) : null}
+                    <div className="actions">
+                      <button className="ibtn"
+                        title="Build a URL that applies the current overrides for any visitor">
+                        Copy share link
+                      </button>
+                      <button className="ibtn"
+                        title="Persist current overrides to the address bar and reload">
+                        Pin to URL
+                      </button>
+                      <span className="grow"/>
+                      {overrides > 0 ? (
+                        <button className="ibtn danger"
+                          onClick={() => { setGates(DEFAULT_GATES); setExps(DEFAULT_EXPS); setConfigs(DEFAULT_CONFIGS); }}
+                          title="Drop all session overrides">
+                          Clear overrides
+                        </button>
+                      ) : null}
+                      <button className="ibtn" title="Sign out of this project">Sign out</button>
+                    </div>
+                  </div>
+
+                  {overrideTarget ? (
+                    <OverrideModal row={overrideTarget}
+                      onSave={onSaveOverride}
+                      onClose={() => setOverrideTarget(null)}/>
+                  ) : null}
+                  {bugFormOpen ? (
+                    <BugFormModal
+                      onSubmit={(b) => setBugs(arr => [b, ...arr])}
+                      onClose={() => setBugFormOpen(false)}/>
+                  ) : null}
+                  {featureFormOpen ? (
+                    <FeatureFormModal
+                      onSubmit={(f) => setFeatures(arr => [f, ...arr])}
+                      onClose={() => setFeatureFormOpen(false)}/>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            {/* Right control panel for testing */}
+            <div className="dtf-controls">
+              <div className="h">
+                <span className="d"/>
+                <h3>Test panel</h3>
+                <span className="sub">drive every state</span>
+              </div>
+
+              <div className="sec">
+                <div className="lbl">Tab</div>
+                <div className="opts">
+                  {TABS.map(t => {
+                    const Ic = t.icon;
+                    const desc = ({user:'props · impersonate',gates:'flags & killswitches',exps:'A/B variants',
+                      configs:'remote values', labels:'i18n strings',
+                      feedback:'bugs + requests', events:'live stream'})[t.k];
+                    return (
+                      <button key={t.k} className={tab === t.k ? 'active' : ''}
+                        onClick={() => { setTab(t.k); setExpanded(null); setState('live'); }}>
+                        <span className="ic"><Ic size={11} style={{color:'currentColor'}}/></span>
+                        <span style={{flex:1}}>{t.label}<span className="desc">{desc}</span></span>
+                        {t.count != null ? <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--fg-4)'}}>{t.count}</span> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="sec">
+                <div className="lbl">State</div>
+                <div className="opts">
+                  <button className={state === 'live' ? 'active' : ''} onClick={() => setState('live')}>
+                    <span className="ic"><span style={{width:6,height:6,borderRadius:'50%',background:'var(--accent)',boxShadow:'0 0 6px var(--accent)'}}/></span>
+                    <span style={{flex:1}}>Live<span className="desc">data, overrides, expand</span></span>
+                  </button>
+                  <button className={state === 'loading' ? 'active' : ''} onClick={() => setState('loading')}>
+                    <span className="ic">⟳</span>
+                    <span style={{flex:1}}>Loading<span className="desc">skeleton + topstrip</span></span>
+                  </button>
+                  <button className={state === 'empty-route' ? 'active' : ''} onClick={() => setState('empty-route')}>
+                    <span className="ic">○</span>
+                    <span style={{flex:1}}>Empty route<span className="desc">nothing fired</span></span>
+                  </button>
+                  <button onClick={() => { setSearch('checkout_v9'); setState('live'); }}>
+                    <span className="ic">⌕</span>
+                    <span style={{flex:1}}>No-match search<span className="desc">fills query "checkout_v9"</span></span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="sec">
+                <div className="lbl">Quick toggles</div>
+                <div className="opts">
+                  <button onClick={() => setCollapsed(c => !c)}>
+                    <span className="ic">↔</span>
+                    <span style={{flex:1}}>{collapsed ? 'Expand panel' : 'Collapse to rail'}<span className="desc">click rail to reopen</span></span>
+                  </button>
+                  <button onClick={() => onToggleGate('gate.beta_drop')}>
+                    <span className="ic">⤢</span>
+                    <span style={{flex:1}}>Force gate.beta_drop<span className="desc">creates an override badge</span></span>
+                  </button>
+                  <button onClick={() => onVariant('exp.checkout_v3', 'control')}>
+                    <span className="ic">A/B</span>
+                    <span style={{flex:1}}>Switch checkout_v3 → control<span className="desc">forces exp variant</span></span>
+                  </button>
+                  <button onClick={() => {
+                    setGates(DEFAULT_GATES); setExps(DEFAULT_EXPS); setConfigs(DEFAULT_CONFIGS);
+                    setUserState(DEFAULT_USER); setDirty({}); setSearch(''); setState('live');
+                  }}>
+                    <span className="ic">↺</span>
+                    <span style={{flex:1}}>Reset all<span className="desc">clear overrides + edits</span></span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="sec">
+                <div className="lbl">Shortcuts</div>
+                <div className="kbd-list">
+                  <span>Toggle DevTool</span><span className="key">⌘⇧D</span>
+                  <span>Search flags</span><span className="key">⌘K</span>
+                  <span>Pin flag</span><span className="key">P</span>
+                  <span>Re-evaluate</span><span className="key">R</span>
+                  <span>Open in dashboard</span><span className="key">↗</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+  </script>
+</body>
+</html>

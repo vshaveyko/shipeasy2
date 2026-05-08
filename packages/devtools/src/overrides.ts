@@ -352,3 +352,106 @@ export function applyOverridesToUrlAndReload(extra?: OverrideUrlInput): void {
   const next = buildOverrideUrl(merged);
   window.location.assign(next);
 }
+
+// ── Navigation guard ────────────────────────────────────────────────────────
+
+/**
+ * Read every `se_*` / `se-*` / bare `se` param from the current URL.
+ * Used by the nav guard to forward overrides into a destination URL.
+ */
+function collectSeParams(): Array<[string, string]> {
+  const out: Array<[string, string]> = [];
+  if (typeof window === "undefined") return out;
+  for (const [k, v] of new URLSearchParams(window.location.search)) {
+    if (k === "se" || SE_PARAM_RX.test(k)) out.push([k, v]);
+  }
+  return out;
+}
+
+/** Merge current `se_*` params into `target` (URL). Existing keys in target win. */
+function mergeSeParamsInto(target: URL): void {
+  for (const [k, v] of collectSeParams()) {
+    if (!target.searchParams.has(k)) target.searchParams.set(k, v);
+  }
+}
+
+/**
+ * Install a same-origin navigation guard so `se_*` overrides survive when
+ * the user clicks a link or the app calls history.pushState/replaceState.
+ * Returns a cleanup function. Idempotent: a second call without cleanup
+ * just returns a no-op cleanup.
+ */
+export function installNavGuard(): () => void {
+  if (typeof window === "undefined" || typeof document === "undefined") return () => {};
+  const w = window as Window & { __seNavGuardInstalled?: boolean };
+  if (w.__seNavGuardInstalled) return () => {};
+  w.__seNavGuardInstalled = true;
+
+  const origin = window.location.origin;
+
+  function onClick(e: MouseEvent): void {
+    if (e.defaultPrevented) return;
+    // Let the browser handle modified clicks for downloads/new-tab — but we
+    // still rewrite the href so the new tab/window receives the overrides.
+    const path = (e.composedPath?.() ?? []) as EventTarget[];
+    let anchor: HTMLAnchorElement | null = null;
+    for (const node of path) {
+      if (node instanceof HTMLAnchorElement) {
+        anchor = node;
+        break;
+      }
+    }
+    if (!anchor) return;
+    const href = anchor.getAttribute("href");
+    if (!href) return;
+    // Skip non-http schemes (mailto:, tel:, javascript:, blob:, data:, hash-only).
+    if (/^(mailto:|tel:|javascript:|blob:|data:|#)/i.test(href)) return;
+    let url: URL;
+    try {
+      url = new URL(href, window.location.href);
+    } catch {
+      return;
+    }
+    if (url.origin !== origin) return;
+    mergeSeParamsInto(url);
+    const next = url.toString();
+    if (next !== anchor.href) {
+      // Rewrite in-place so any modifier-click (cmd/ctrl/middle) opens the
+      // updated URL too. Also benefits programmatic anchor.click() calls.
+      anchor.href = next;
+    }
+  }
+
+  document.addEventListener("click", onClick, true);
+
+  const origPush = history.pushState.bind(history);
+  const origReplace = history.replaceState.bind(history);
+
+  function rewriteUrlArg(urlArg: string | URL | null | undefined): string | URL | null | undefined {
+    if (urlArg == null) return urlArg;
+    let parsed: URL;
+    try {
+      parsed = new URL(urlArg.toString(), window.location.href);
+    } catch {
+      return urlArg;
+    }
+    if (parsed.origin !== origin) return urlArg;
+    mergeSeParamsInto(parsed);
+    return parsed.toString();
+  }
+
+  history.pushState = function (data, unused, urlArg) {
+    return origPush(data, unused, rewriteUrlArg(urlArg) as string | URL | null | undefined);
+  } as History["pushState"];
+
+  history.replaceState = function (data, unused, urlArg) {
+    return origReplace(data, unused, rewriteUrlArg(urlArg) as string | URL | null | undefined);
+  } as History["replaceState"];
+
+  return () => {
+    document.removeEventListener("click", onClick, true);
+    history.pushState = origPush;
+    history.replaceState = origReplace;
+    w.__seNavGuardInstalled = false;
+  };
+}

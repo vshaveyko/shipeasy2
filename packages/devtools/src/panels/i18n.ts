@@ -18,7 +18,6 @@ import {
   setI18nProfileOverride,
 } from "../overrides";
 import type { DraftRecord, KeyRecord, ProfileRecord } from "../types";
-import { emptyState } from "./empty";
 
 // ── Tree model ────────────────────────────────────────────────────────────────
 
@@ -43,9 +42,11 @@ function buildChunks(keys: KeyRecord[]): Map<string, TreeNode> {
   const chunks = new Map<string, TreeNode>();
   for (const k of keys) {
     if (!k.key || !k.key.trim()) continue;
-    const parts = k.key.split(".");
-    const headRaw = parts.length > 1 ? parts[0] : "(root)";
-    const head = headRaw === "" ? "(root)" : headRaw;
+    // Drop empty segments from leading/trailing/consecutive dots (e.g. ".foo",
+    // "foo..bar", "..foo.bar") so they don't render as blank branch/leaf rows.
+    const parts = k.key.split(".").filter((p) => p !== "");
+    if (parts.length === 0) continue;
+    const head = parts.length > 1 ? parts[0] : "(root)";
     const rest = parts.length > 1 ? parts.slice(1) : parts;
     if (!chunks.has(head)) chunks.set(head, { segment: head, children: [] });
     let node = chunks.get(head)!;
@@ -875,17 +876,94 @@ export function toggleEditLabels(
   };
 }
 
-// ── Panel renderer ───────────────────────────────────────────────────────────
+// ── New panel renderer (devtool-preview design) ────────────────────────────
 
-export async function renderI18nPanel(
-  container: Element,
+interface LabelsViewOpts {
+  view: "page" | "all";
+  search: string;
+}
+interface LabelsLocaleHook {
+  locale: string;
+  setLocale: (l: string) => void;
+}
+
+function buildLabelTree(rows: KeyRecord[]) {
+  type Node = {
+    name: string;
+    path: string;
+    children: Map<string, Node>;
+    leaves: KeyRecord[];
+  };
+  const root: Node = { name: "", path: "", children: new Map(), leaves: [] };
+  for (const r of rows) {
+    if (!r.key) continue;
+    const parts = r.key.split(".").filter((p) => p !== "");
+    if (parts.length === 0) continue;
+    let node = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const seg = parts[i];
+      let child = node.children.get(seg);
+      if (!child) {
+        child = {
+          name: seg,
+          path: node.path ? `${node.path}.${seg}` : seg,
+          children: new Map(),
+          leaves: [],
+        };
+        node.children.set(seg, child);
+      }
+      node = child;
+    }
+    node.leaves.push(r);
+  }
+  return root;
+}
+
+function countLeavesIn(node: ReturnType<typeof buildLabelTree>): number {
+  let n = node.leaves.length;
+  for (const c of node.children.values()) n += countLeavesIn(c);
+  return n;
+}
+
+function pickProfileForLocale(profiles: ProfileRecord[], locale: string): ProfileRecord | null {
+  // A profile name like "fr:prod" maps to locale "fr-FR". We compare by the
+  // language tag prefix — anything ahead of `:` or `-` in the profile name.
+  const lang = locale.split("-")[0]!.toLowerCase();
+  return (
+    profiles.find((p) => p.name.toLowerCase().startsWith(`${lang}:`)) ??
+    profiles.find((p) => p.name.toLowerCase().startsWith(`${lang}-`)) ??
+    profiles.find((p) => p.name.toLowerCase() === lang) ??
+    null
+  );
+}
+
+function profileLocales(
+  profiles: ProfileRecord[],
+): Array<{ code: string; flag: string; name: string }> {
+  const seen = new Set<string>();
+  const out: Array<{ code: string; flag: string; name: string }> = [];
+  for (const p of profiles) {
+    const head = p.name.split(/[:_-]/)[0]?.toLowerCase() ?? "";
+    if (!head || seen.has(head)) continue;
+    seen.add(head);
+    out.push({
+      code: head,
+      flag: head.toUpperCase().slice(0, 2),
+      name: p.name,
+    });
+  }
+  return out.length > 0 ? out : [{ code: "en", flag: "EN", name: "English" }];
+}
+
+export async function renderLabelsPanel(
+  container: HTMLElement,
   api: DevtoolsApi,
-  subfoot: HTMLElement,
+  view: LabelsViewOpts,
   shadow: ShadowRoot,
+  hook: LabelsLocaleHook,
 ): Promise<void> {
-  container.innerHTML = `<div class="loading">Loading i18n data…</div>`;
-  subfoot.innerHTML = "";
-
+  // Loading shimmer.
+  container.innerHTML = `<div class="dtf-load"><div class="topstrip"></div></div>`;
   panelApi = api;
 
   let profiles: ProfileRecord[];
@@ -894,159 +972,189 @@ export async function renderI18nPanel(
   try {
     [profiles, drafts] = await Promise.all([api.profiles(), api.drafts()]);
     const override = getI18nProfileOverride();
-    const resolved = override ?? resolveDefaultProfileId(profiles);
+    const resolved =
+      override ??
+      pickProfileForLocale(profiles, hook.locale)?.id ??
+      resolveDefaultProfileId(profiles);
     keys = await api.keys(resolved ?? undefined);
   } catch (err) {
-    container.innerHTML = `<div class="err">Failed to load i18n data: ${String(err)}</div>`;
+    container.innerHTML = `<div class="se-empty" style="color:var(--danger)">Failed to load labels: ${escapeHtml(String(err))}</div>`;
+    return;
+  }
+  panelKeys = keys;
+  void drafts;
+
+  if (keys.length === 0) {
+    container.innerHTML = `
+      <div class="dtf-empty">
+        <div class="vis"><div class="ring r2"></div><div class="ring"></div><div class="core">A</div></div>
+        <h3>No <em>translation keys</em> yet</h3>
+        <p>Add keys in the admin and group them by namespace (e.g. checkout.title).</p>
+      </div>`;
     return;
   }
 
-  panelKeys = keys;
-  const chunks = buildChunks(keys);
-  const chunkNames = Array.from(chunks.keys());
-  const state = { activeChunk: chunkNames[0] ?? null };
-
-  function activeProfileName(): string {
-    const override = getI18nProfileOverride();
-    const id = override ?? resolveDefaultProfileId(profiles);
-    return profiles.find((p) => p.id === id)?.name ?? "(none)";
-  }
-
-  function renderBody() {
-    const profileHeader = `<div class="i18n-profile-header" style="padding:6px 8px;border-bottom:1px solid var(--border,#222);font:500 12px system-ui;color:var(--muted,#9aa)">Profile: <span style="color:var(--fg,#ddd);font-weight:600">${escapeHtml(activeProfileName())}</span></div>`;
-    if (chunkNames.length === 0) {
-      container.innerHTML =
-        profileHeader +
-        emptyState({
-          icon: "🌐",
-          title: "No translation keys yet",
-          message: "Add keys in the admin and group them by namespace (e.g. checkout.title).",
-          ctaLabel: "Create new key",
-          ctaHref: `${api.adminUrl}/dashboard/i18n/keys`,
-        });
-      return;
-    }
-    const tabs = chunkNames
+  // Wire the locale select that the shell rendered into the search bar.
+  const localeSel = (container.getRootNode() as ShadowRoot).querySelector<HTMLSelectElement>(
+    "select[data-locale]",
+  );
+  const locales = profileLocales(profiles);
+  if (localeSel) {
+    localeSel.innerHTML = locales
       .map(
-        (n) =>
-          `<button class="tab${n === state.activeChunk ? " active" : ""}" data-chunk="${escapeHtml(n)}">${escapeHtml(n)}</button>`,
+        (l) =>
+          `<option value="${escapeHtml(l.code)}"${l.code === hook.locale.split("-")[0] ? " selected" : ""}>${escapeHtml(l.flag)} · ${escapeHtml(l.name)}</option>`,
       )
       .join("");
-    const active = state.activeChunk ? chunks.get(state.activeChunk) : null;
-    const tree = active ? active.children.map((c) => renderTreeNode(c, 0)).join("") : "";
+    localeSel.onchange = () => hook.setLocale(localeSel.value);
+  }
 
-    container.innerHTML = `
-      ${profileHeader}
-      <div class="tabs scroll" id="chunk-tabs">${tabs}</div>
-      <div class="tree-body" style="flex:1;overflow-y:auto;padding:6px 4px">${tree}</div>`;
+  const q = view.search.trim().toLowerCase();
+  const filtered = q ? keys.filter((k) => k.key.toLowerCase().includes(q)) : keys;
+  const tree = buildLabelTree(filtered);
 
-    container.querySelectorAll<HTMLButtonElement>(".tab[data-chunk]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        state.activeChunk = btn.dataset.chunk!;
-        renderBody();
+  // open-state map for branches: default open
+  const openMap = new Map<string, boolean>();
+  let expandedKey: string | null = null;
+
+  function paint(): void {
+    const total = filtered.length;
+    container.innerHTML =
+      `<div class="dtf-group">All keys
+        <span class="cov-mini" title="${escapeHtml(hook.locale)} coverage">${total}/${keys.length}</span>
+        <span class="pulse"><span class="d"></span>${total} ${view.view === "page" ? "rendered" : "total"}</span>
+      </div>` + renderTreeBranch(tree, 0);
+
+    container.querySelectorAll<HTMLElement>(".dtf-tree-node[data-tree]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const path = el.dataset.tree!;
+        openMap.set(path, !(openMap.get(path) ?? true));
+        paint();
       });
     });
-
-    container.querySelectorAll<HTMLElement>(".tree-row.branch[data-branch]").forEach((row) => {
-      const toggle = () => {
-        const branch = row.parentElement;
-        if (!branch) return;
-        const collapsed = branch.classList.toggle("collapsed");
-        const caret = row.querySelector<HTMLElement>(".tree-caret");
-        if (caret) caret.textContent = collapsed ? "▸" : "▾";
-      };
-      row.addEventListener("click", toggle);
-      row.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          toggle();
+    container.querySelectorAll<HTMLElement>(".dtf-lbl-row[data-key]").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (
+          (e.target as HTMLElement).closest(".dtf-copy") ||
+          (e.target as HTMLElement).closest("textarea") ||
+          (e.target as HTMLElement).closest("button")
+        )
+          return;
+        const k = row.dataset.key!;
+        expandedKey = expandedKey === k ? null : k;
+        paint();
+      });
+    });
+    container.querySelectorAll<HTMLTextAreaElement>("textarea[data-edit-key]").forEach((ta) => {
+      ta.addEventListener("input", () => {
+        // Save as a session override on blur (don't reload on every keystroke).
+      });
+      ta.addEventListener("blur", () => {
+        const k = ta.dataset.editKey!;
+        const original = filtered.find((x) => x.key === k)?.value ?? "";
+        if (ta.value === original) {
+          // No-op: clear any prior override silently.
+          setI18nLabelOverride(k, null);
+        } else {
+          setI18nLabelOverride(k, ta.value);
         }
       });
     });
   }
 
-  function renderSubfoot() {
-    const activeProfile = getI18nProfileOverride() ?? resolveDefaultProfileId(profiles) ?? "";
-    const activeDraft = getI18nDraftOverride() ?? "";
-    // Scan first so t()/ShipEasyI18nString spans that are already in the DOM are counted.
-    scanAndReplaceMarkers();
-    const labelCount = qualifyingLabels().length;
-    const editLabel = editLabelsActive
-      ? `Editing ${labelCount} label${labelCount === 1 ? "" : "s"}`
-      : labelCount > 0
-        ? `Edit labels (${labelCount})`
-        : "Edit labels";
-    const editTitle = editLabelsActive
-      ? "Disable in-page label editing"
-      : labelCount === 0
-        ? "Enable in-page label editing — reloads page with ?se_edit_labels=1 to scan all translation strings"
-        : "Toggle in-page label editing (reloads page)";
-    const profileOpts = profiles
-      .map(
-        (p) =>
-          `<option value="${escapeHtml(p.id)}" ${activeProfile === p.id ? "selected" : ""}>${escapeHtml(p.name)}</option>`,
-      )
-      .join("");
-    const draftOpts = [
-      `<option value="">No draft</option>`,
-      ...drafts.map(
-        (d) =>
-          `<option value="${escapeHtml(d.id)}" ${activeDraft === d.id ? "selected" : ""}>${escapeHtml(d.name)}</option>`,
-      ),
-    ].join("");
-
-    subfoot.innerHTML = `
-      <button class="subfoot-btn${editLabelsActive ? " on" : ""}" id="se-edit-toggle" title="${escapeHtml(editTitle)}">
-        <span class="dot"></span>
-        ${escapeHtml(editLabel)}
-      </button>
-      <select class="subfoot-sel" id="se-profile-sel" title="Active profile">${profileOpts}</select>
-      <select class="subfoot-sel" id="se-draft-sel" title="Active draft">${draftOpts}</select>`;
-
-    subfoot.querySelector<HTMLButtonElement>("#se-edit-toggle")!.addEventListener("click", () => {
-      if (isEditLabelsModeActive()) {
-        // Turning off: remove the URL param and reload — markers disappear.
-        setEditLabelsMode(false);
-      } else if (editLabelsActive) {
-        // In-page labels (from ShipEasyI18nString / t()) are already in DOM:
-        // just toggle the highlight off without a reload.
-        toggleEditLabels(false, shadow, () => renderSubfoot());
-        renderSubfoot();
-      } else {
-        // Full marker mode: add ?se_edit_labels=1 and reload so the head
-        // script can patch window.i18n.t before the first render.
-        setEditLabelsMode(true);
+  function renderTreeBranch(node: ReturnType<typeof buildLabelTree>, depth: number): string {
+    let html = "";
+    const segs = Array.from(node.children.values()).sort((a, b) => a.name.localeCompare(b.name));
+    for (const child of segs) {
+      const open = openMap.get(child.path) ?? true;
+      const total = countLeavesIn(child);
+      html += `
+        <div class="dtf-tree-node" style="padding-left:${12 + depth * 14}px" data-tree="${escapeHtml(child.path)}">
+          <span class="caret">${open ? "▾" : "▸"}</span>
+          <span class="seg">${escapeHtml(child.name)}</span>
+          <span class="dotpath">${escapeHtml(child.path)}</span>
+          <span class="counts"><span class="t">${total}</span></span>
+        </div>`;
+      if (open) {
+        html += renderTreeBranch(child, depth + 1);
+        for (const r of child.leaves) html += renderLeaf(r, depth + 1);
       }
-    });
-    subfoot.querySelector<HTMLSelectElement>("#se-profile-sel")!.addEventListener("change", (e) => {
-      const val = (e.target as HTMLSelectElement).value || null;
-      setI18nProfileOverride(val);
-    });
-    subfoot.querySelector<HTMLSelectElement>("#se-draft-sel")!.addEventListener("change", (e) => {
-      const val = (e.target as HTMLSelectElement).value || null;
-      setI18nDraftOverride(val);
-    });
+    }
+    if (depth === 0) for (const r of node.leaves) html += renderLeaf(r, 0);
+    return html;
   }
 
-  // When the page was loaded with ?se_edit_labels=1, window.i18n.t emitted
-  // markers into the DOM.  Replace them now so qualifyingLabels() finds them
-  // and the edit-labels UI activates automatically.
+  function renderLeaf(r: KeyRecord, depth: number): string {
+    const isOpen = expandedKey === r.key;
+    const override = getI18nLabelOverride(r.key);
+    const v = override ?? r.value;
+    const missing = !v;
+    const last = r.key.split(".").pop() ?? r.key;
+    const pillClass = missing ? "missing" : override !== null ? "edited" : "ok";
+    const pillGlyph = missing ? "⊘" : override !== null ? "✎" : "●";
+    return `
+      <div class="dtf-lbl-row${isOpen ? " expanded" : ""}${missing ? " missing" : ""}" style="padding-left:${12 + depth * 14}px" data-key="${escapeHtml(r.key)}" title="${escapeHtml(r.key)}">
+        <span class="lbl-pill ${pillClass}" title="${pillClass}">${pillGlyph}</span>
+        <div class="meta">
+          <div class="src">
+            ${escapeHtml(last)}
+            <button class="dtf-copy" data-copy-leaf="${escapeHtml(r.key)}" title="Copy value">${I_COPY}</button>
+          </div>
+          <div class="sub">
+            <span class="k" title="${escapeHtml(v)}">${missing ? `<em style="color:var(--warn)">— not translated —</em>` : escapeHtml(v)}</span>
+          </div>
+        </div>
+        <span style="width:5px"></span>
+      </div>
+      <div class="dtf-detail${isOpen ? " open" : ""}">
+        <div class="inner"><div class="pad lbl-pad">
+          <div class="lbl-edit">
+            <div class="hd"><span>${escapeHtml(hook.locale)}</span></div>
+            <textarea data-edit-key="${escapeHtml(r.key)}" placeholder="Translate to ${escapeHtml(hook.locale)}…">${escapeHtml(v)}</textarea>
+          </div>
+          <div class="actions">
+            ${api.hideAdminLinks ? "" : `<a target="_blank" rel="noopener" href="${api.adminUrl}/dashboard/i18n/keys">↗ Open in dashboard</a>`}
+          </div>
+        </div></div>
+      </div>`;
+  }
+
+  paint();
+
+  // The shadow root is what we render into; install copy handlers globally
+  // (they use a different attribute to avoid colliding with row clicks).
+  container.querySelectorAll<HTMLButtonElement>("[data-copy-leaf]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const k = btn.getAttribute("data-copy-leaf")!;
+      const v = filtered.find((x) => x.key === k)?.value ?? "";
+      try {
+        await navigator.clipboard.writeText(v);
+      } catch {
+        /* ignore */
+      }
+      btn.classList.add("done");
+      btn.innerHTML = I_CHECK;
+      setTimeout(() => {
+        btn.classList.remove("done");
+        btn.innerHTML = I_COPY;
+      }, 900);
+    });
+  });
+
+  // Edit-labels mode: keep auto-activation + DOM scanning in sync.
   if (isEditLabelsModeActive()) {
     scanAndReplaceMarkers();
-    if (!editLabelsActive) {
-      toggleEditLabels(true, shadow, () => renderSubfoot());
-    }
+    if (!editLabelsActive) toggleEditLabels(true, shadow, () => paint());
   }
-
-  renderBody();
-  renderSubfoot();
-
-  // When the CDN loader fetches a new locale after the panel has already
-  // rendered, the landing-page components re-render and add [data-label] spans.
-  // Subscribe so the subfoot label count stays accurate.
-  const w = window as Window & { i18n?: { on?: (ev: string, cb: () => void) => () => void } };
-  w.i18n?.on?.("update", () => {
-    scanAndReplaceMarkers();
-    renderSubfoot();
-  });
 }
+
+// Inline icon strings used by the labels panel — duplicated here to avoid
+// circular import with ../icons (which is allowed but breaks tree-shaking
+// guarantees in some bundlers).
+const I_COPY =
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
+  `<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+const I_CHECK =
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
+  `<path d="M20 6 9 17l-5-5"/></svg>`;

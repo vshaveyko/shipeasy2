@@ -24,7 +24,7 @@ export async function deleteConnectorAction(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await deleteConnector(identity, id);
-  revalidatePath("/dashboard/feedback/connectors");
+  revalidatePath("/dashboard/feedback");
 }
 
 export async function configureConnectorAction(formData: FormData): Promise<ActionResult> {
@@ -43,8 +43,7 @@ export async function configureConnectorAction(formData: FormData): Promise<Acti
       events: eventList.length > 0 ? eventList : undefined,
       config: { spreadsheetId, spreadsheetName, sheetTitle },
     });
-    revalidatePath("/dashboard/feedback/connectors");
-    revalidatePath(`/dashboard/feedback/connectors/${id}`);
+    revalidatePath("/dashboard/feedback");
     return ok("Connector saved");
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Failed to save connector");
