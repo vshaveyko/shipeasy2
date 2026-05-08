@@ -143,7 +143,7 @@ export default async function ProjectsPage() {
             <input type="hidden" name="projectId" value={p.id} />
             <button
               type="submit"
-              className="group relative flex w-full flex-col gap-3.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-5 text-left transition-colors hover:border-[var(--se-line-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="group relative flex w-full cursor-pointer flex-col gap-3.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-5 text-left transition-colors hover:border-[var(--se-line-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span
                 aria-hidden
@@ -159,8 +159,14 @@ export default async function ProjectsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="m-0 truncate text-[15px] font-medium tracking-[-0.01em]">
-                    {p.domain ?? p.name}
+                    {p.name}
                   </h3>
+                  <div
+                    className="mt-0.5 truncate font-mono text-[12px] text-[var(--se-fg-3)]"
+                    title={p.domain ?? "no domain configured"}
+                  >
+                    {p.domain ?? <span className="dim-3 italic">no domain</span>}
+                  </div>
                   <div className="mt-0.5 t-mono-xs dim-2">
                     {p.planLabel} · updated {timeAgo(p.updatedAt)}
                   </div>

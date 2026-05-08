@@ -17,10 +17,13 @@ export function NewProjectForm() {
           <Input id="project-name" name="name" placeholder="My app" required autoFocus />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="project-domain">Domain</Label>
-          <Input id="project-domain" name="domain" placeholder="app.example.com" />
+          <Label htmlFor="project-domain">
+            Domain <span className="text-destructive">*</span>
+          </Label>
+          <Input id="project-domain" name="domain" placeholder="https://app.example.com" required />
           <p className="text-xs text-muted-foreground">
-            Client-key SDK calls from other origins will be rejected. You can set this later.
+            Full URL with <code>http://</code> or <code>https://</code>. Use <code>*</code> to allow
+            any origin. Client-key SDK calls from other origins are rejected.
           </p>
         </div>
         <div className="flex gap-2">

@@ -5,7 +5,27 @@ export interface DevtoolsOptions {
    * Override when embedding from a different admin deployment.
    */
   adminUrl?: string;
+  /**
+   * Force-hide every deep link from the overlay back into the ShipEasy
+   * admin dashboard ("Open dashboard ↗", empty-state "Create new …" CTAs,
+   * bug/feature row click-throughs). Use for white-labelled embeds where
+   * the underlying ShipEasy URLs should not be exposed to the end user.
+   *
+   * If unset, the overlay also evaluates the ShipEasy gate
+   * `HIDE_ADMIN_LINKS_GATE` against the customer's SDK bridge — so a
+   * ShipEasy gate can flip this on at runtime without a redeploy. When
+   * either source is true, links are hidden.
+   */
+  hideAdminLinks?: boolean;
 }
+
+/**
+ * Name of the ShipEasy gate (evaluated via `window.__shipeasy.getFlag()`)
+ * that, when ON, hides admin dashboard links in the devtools overlay.
+ * The customer creates and toggles this gate in their own ShipEasy
+ * project; devtools picks it up via the already-installed SDK bridge.
+ */
+export const HIDE_ADMIN_LINKS_GATE = "shipeasy_hide_admin_links";
 
 export interface DevtoolsSession {
   token: string;
@@ -30,6 +50,7 @@ export interface ProjectRecord {
 /** Mirrors `originAllowed` in packages/worker/src/lib/auth.ts. */
 export function projectOwnsHost(host: string, domain: string | null): boolean {
   if (!domain) return false;
+  if (domain === "*") return true;
   if (domain.startsWith("*.")) return host.endsWith(domain.slice(1));
   return host === domain || host === `www.${domain}`;
 }

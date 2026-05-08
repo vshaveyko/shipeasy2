@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
-import { findProjectById, insertProject, listProjectsByEmail } from "@shipeasy/core";
+import {
+  findProjectById,
+  findProjectByOwnerAndDomain,
+  insertProject,
+  listProjectsByEmail,
+} from "@shipeasy/core";
+import { projectDomainSchema } from "@shipeasy/core/schemas/keys";
 import { getEnvAsync } from "@/lib/env";
 import { ok, fail } from "@/lib/action-result";
 
@@ -14,10 +20,29 @@ export async function createProjectAction(formData: FormData) {
   if (!email) redirect("/auth/signin");
 
   const name = ((formData.get("name") as string) ?? "").trim();
-  const domain = ((formData.get("domain") as string) ?? "").trim() || undefined;
   if (!name) return fail("Name is required");
 
+  const rawDomain = (formData.get("domain") as string) ?? "";
+  const domainParsed = projectDomainSchema.safeParse(rawDomain);
+  if (!domainParsed.success) {
+    return fail(domainParsed.error.issues[0]?.message ?? "Invalid domain");
+  }
+  const domain = domainParsed.data;
+
   const env = await getEnvAsync();
+
+  // Per-owner uniqueness on domain. The DB also enforces this via a unique
+  // index, but we surface a friendly message instead of a raw constraint
+  // error. Wildcard "*" projects are allowed to coexist with FQDN ones
+  // under the same owner — the unique index treats the literal "*" as a
+  // distinct value.
+  const dup = await findProjectByOwnerAndDomain(env.DB, email, domain);
+  if (dup) {
+    return fail(
+      `A project with domain "${domain}" already exists (${dup.name}). Pick a different domain or open the existing project.`,
+    );
+  }
+
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   try {

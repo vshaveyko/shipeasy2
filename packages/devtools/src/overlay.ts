@@ -8,30 +8,59 @@ import {
   isEditLabelsModeActive,
 } from "./overrides";
 import { DevtoolsApi } from "./api";
+import { renderUserPanel, type UserPanelState } from "./panels/user";
 import { renderGatesPanel } from "./panels/gates";
-import { renderConfigsPanel } from "./panels/configs";
 import { renderExperimentsPanel } from "./panels/experiments";
-import { renderI18nPanel, toggleEditLabels, scanAndReplaceMarkers } from "./panels/i18n";
-import { renderBugsPanel } from "./panels/bugs";
-import { renderFeatureRequestsPanel } from "./panels/feature-requests";
+import { renderConfigsPanel } from "./panels/configs";
+import { renderLabelsPanel, toggleEditLabels, scanAndReplaceMarkers } from "./panels/i18n";
+import { renderFeedbackPanel } from "./panels/feedback";
+import { renderEventsPanel } from "./panels/events";
 import type { DevtoolsOptions, DevtoolsSession, ProjectRecord } from "./types";
 import { projectOwnsHost } from "./types";
+import { getControlsState, refreshControls, subscribeControls } from "./controls";
+import { I } from "./icons";
 
-type PanelKey = "gates" | "configs" | "experiments" | "i18n" | "bugs" | "features";
+type PanelKey = "user" | "gates" | "experiments" | "configs" | "labels" | "feedback" | "events";
+type Edge = "top" | "right" | "bottom" | "left";
 
-// Maps a panel key to the project module that gates it. `bugs` and `features`
-// share the single `feedback` module — they're the same admin surface split
-// into two devtools panels.
-const PANEL_MODULE: Record<PanelKey, keyof ProjectRecord["modules"]> = {
+interface OverlayState {
+  edge: Edge;
+  offsetPct: number; // 0–100
+  railIconSize: number; // collapsed rail icon px (24–56)
+  collapsed: boolean;
+}
+
+const PANEL_MODULE: Partial<Record<PanelKey, keyof ProjectRecord["modules"]>> = {
   gates: "gates",
   configs: "configs",
   experiments: "experiments",
-  i18n: "translations",
-  bugs: "feedback",
-  features: "feedback",
+  labels: "translations",
+  feedback: "feedback",
 };
 
+const TABS: Array<{ k: PanelKey; label: string; icon: string; description: string }> = [
+  { k: "user", label: "User", icon: I.users, description: "props · impersonate" },
+  { k: "gates", label: "Gates", icon: I.shield, description: "flags & killswitches" },
+  { k: "experiments", label: "Experiments", icon: I.flask, description: "A/B variants" },
+  { k: "configs", label: "Configs", icon: I.sliders, description: "remote values" },
+  { k: "labels", label: "Translations", icon: I.book, description: "i18n strings" },
+  { k: "feedback", label: "Feedback", icon: I.bug, description: "bugs + requests" },
+  { k: "events", label: "Events", icon: I.activity, description: "live stream" },
+];
+
 const PROJECT_CACHE_KEY = "se_dt_project";
+const OVERLAY_KEY = "se_l_overlay";
+const ACTIVE_PANEL_KEY = "se_l_active_panel";
+
+const RAIL_MIN = 24;
+const RAIL_MAX = 56;
+
+const DEFAULT_STATE: OverlayState = {
+  edge: "right",
+  offsetPct: 50,
+  railIconSize: 32,
+  collapsed: false,
+};
 
 function loadCachedProject(): ProjectRecord | null {
   try {
@@ -52,85 +81,6 @@ function saveCachedProject(p: ProjectRecord | null): void {
   }
 }
 
-function sameModules(a: ProjectRecord["modules"], b: ProjectRecord["modules"]): boolean {
-  return (
-    a.translations === b.translations &&
-    a.configs === b.configs &&
-    a.gates === b.gates &&
-    a.experiments === b.experiments &&
-    a.feedback === b.feedback
-  );
-}
-type Edge = "top" | "right" | "bottom" | "left";
-
-interface OverlayState {
-  edge: Edge;
-  offsetPct: number; // 0–100, position of toolbar center along the edge
-  panelWidth: number; // panel cross-axis size (px)
-  panelHeight: number; // panel main-axis size (px)
-}
-
-// Hand-rolled lucide-style icons (same `currentColor` SVGs the rest of the
-// dashboard uses) so the overlay matches the design system without pulling
-// the lucide-react runtime into the IIFE bundle.
-const ICON_GATES = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8" cy="12" r="3"/></svg>`;
-const ICON_CONFIGS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.25"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.25"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2.25"/></svg>`;
-const ICON_EXPERIMENTS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg>`;
-const ICON_I18N = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"/><path d="M8 3v2"/><path d="M5.5 11s2.5-2 4-6"/><path d="M5 11s2 4 5 4"/><path d="M11 21l3.5-9 3.5 9"/><path d="M12.5 18h4"/></svg>`;
-const ICON_BUG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6V4a4 4 0 0 1 8 0v2"/><rect x="6" y="6" width="12" height="14" rx="6"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M3 18l3-2"/><path d="M21 18l-3-2"/><path d="M3 6l3 2"/><path d="M21 6l-3 2"/></svg>`;
-const ICON_FEATURE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.6-.8z"/></svg>`;
-const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
-// Drag handle doubles as the brand mark. Same path as `apps/_shared/Logo.tsx`,
-// rendered in the devtools accent color so the toolbar reads as ShipEasy at a
-// glance.
-const ICON_DRAG = `<svg viewBox="0 0 200 200" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"/></svg>`;
-
-const PANELS: Record<PanelKey, { icon: string; label: string }> = {
-  gates: { icon: ICON_GATES, label: "Gates" },
-  configs: { icon: ICON_CONFIGS, label: "Configs" },
-  experiments: { icon: ICON_EXPERIMENTS, label: "Experiments" },
-  i18n: { icon: ICON_I18N, label: "Translations" },
-  bugs: { icon: ICON_BUG, label: "Bugs" },
-  features: { icon: ICON_FEATURE, label: "Feature requests" },
-};
-
-const OVERLAY_KEY = "se_l_overlay";
-const ACTIVE_PANEL_KEY = "se_l_active_panel";
-
-function loadActivePanel(): PanelKey | null {
-  try {
-    const raw = sessionStorage.getItem(ACTIVE_PANEL_KEY);
-    if (raw && raw in PANELS) return raw as PanelKey;
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
-function saveActivePanel(key: PanelKey | null): void {
-  try {
-    if (key === null) sessionStorage.removeItem(ACTIVE_PANEL_KEY);
-    else sessionStorage.setItem(ACTIVE_PANEL_KEY, key);
-  } catch {
-    /* ignore */
-  }
-}
-const PANEL_MIN_W = 240;
-const PANEL_MAX_W = 580;
-const PANEL_MIN_H = 180;
-const PANEL_MAX_H = 700;
-const DEFAULT_STATE: OverlayState = {
-  edge: "right",
-  offsetPct: 50,
-  // Panels render tabular data (gates, configs, experiments) where override
-  // controls live in the rightmost column. 340px cuts off the override toggle;
-  // 440px fits comfortably for typical key lengths.
-  panelWidth: 440,
-  panelHeight: 460,
-};
-
-// ── State persistence ──────────────────────────────────────────────────────────
-
 function loadOverlayState(): OverlayState {
   try {
     const raw = localStorage.getItem(OVERLAY_KEY);
@@ -149,426 +99,621 @@ function saveOverlayState(s: OverlayState): void {
   }
 }
 
-// ── Geometry helpers ───────────────────────────────────────────────────────────
+const VALID_PANEL_KEYS: ReadonlySet<string> = new Set([
+  "user",
+  "gates",
+  "experiments",
+  "configs",
+  "labels",
+  "feedback",
+  "events",
+]);
 
-function nearestEdge(x: number, y: number): Pick<OverlayState, "edge" | "offsetPct"> {
-  const W = window.innerWidth,
-    H = window.innerHeight;
-  const candidates: [number, Edge][] = [
-    [W - x, "right"],
-    [x, "left"],
-    [y, "top"],
-    [H - y, "bottom"],
-  ];
-  candidates.sort((a, b) => a[0] - b[0]);
-  const edge = candidates[0][1];
-  const isVert = edge === "left" || edge === "right";
-  const offsetPct = Math.max(5, Math.min(95, isVert ? (y / H) * 100 : (x / W) * 100));
-  return { edge, offsetPct };
+function loadActivePanel(): PanelKey | null {
+  try {
+    const raw = sessionStorage.getItem(ACTIVE_PANEL_KEY);
+    if (raw && VALID_PANEL_KEYS.has(raw)) return raw as PanelKey;
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
-// ── Layout application ─────────────────────────────────────────────────────────
-
-function applyLayout(
-  toolbar: HTMLElement,
-  panel: HTMLElement,
-  resizeHandle: HTMLElement,
-  state: OverlayState,
-): void {
-  const { edge, offsetPct, panelWidth, panelHeight } = state;
-  const W = window.innerWidth,
-    H = window.innerHeight;
-  const isVert = edge === "left" || edge === "right";
-
-  const pW = Math.max(PANEL_MIN_W, Math.min(panelWidth, W - 80));
-  const pH = Math.max(PANEL_MIN_H, Math.min(panelHeight, H - 40));
-  const centerAlong = (offsetPct / 100) * (isVert ? H : W);
-
-  // Toolbar rect (may be zero on first call before layout; fallback to 52)
-  const tbRect = toolbar.getBoundingClientRect();
-  const tbThick = isVert ? tbRect.width || 52 : tbRect.height || 52;
-
-  // ── Toolbar ────────────────────────────────────────────────────────────────
-  const ts = toolbar.style;
-  ts.top = ts.bottom = ts.left = ts.right = ts.transform = "";
-  ts.borderTop = ts.borderBottom = ts.borderLeft = ts.borderRight = "";
-  ts.flexDirection = isVert ? "column" : "row";
-  ts.padding = isVert ? "8px 6px" : "6px 8px";
-
-  if (edge === "right") {
-    ts.right = "0";
-    ts.top = `${offsetPct}%`;
-    ts.transform = "translateY(-50%)";
-    ts.borderRadius = "10px 0 0 10px";
-    ts.borderRight = "none";
-    ts.boxShadow = "-3px 0 16px rgba(0,0,0,0.45)";
-  } else if (edge === "left") {
-    ts.left = "0";
-    ts.top = `${offsetPct}%`;
-    ts.transform = "translateY(-50%)";
-    ts.borderRadius = "0 10px 10px 0";
-    ts.borderLeft = "none";
-    ts.boxShadow = "3px 0 16px rgba(0,0,0,0.45)";
-  } else if (edge === "top") {
-    ts.top = "0";
-    ts.left = `${offsetPct}%`;
-    ts.transform = "translateX(-50%)";
-    ts.borderRadius = "0 0 10px 10px";
-    ts.borderTop = "none";
-    ts.boxShadow = "0 3px 16px rgba(0,0,0,0.45)";
-  } else {
-    ts.bottom = "0";
-    ts.left = `${offsetPct}%`;
-    ts.transform = "translateX(-50%)";
-    ts.borderRadius = "10px 10px 0 0";
-    ts.borderBottom = "none";
-    ts.boxShadow = "0 -3px 16px rgba(0,0,0,0.45)";
-  }
-
-  // ── Panel ──────────────────────────────────────────────────────────────────
-  const ps = panel.style;
-  ps.top = ps.bottom = ps.left = ps.right = ps.transform = "";
-  ps.borderTop = ps.borderBottom = ps.borderLeft = ps.borderRight = "";
-  ps.width = pW + "px";
-  ps.height = pH + "px";
-  panel.dataset.edge = edge;
-
-  if (edge === "right") {
-    const top = Math.max(10, Math.min(H - pH - 10, centerAlong - pH / 2));
-    ps.right = tbThick + "px";
-    ps.top = top + "px";
-    ps.borderRadius = "10px 0 0 10px";
-    ps.borderRight = "none";
-    ps.boxShadow = "-6px 0 24px rgba(0,0,0,0.4)";
-  } else if (edge === "left") {
-    const top = Math.max(10, Math.min(H - pH - 10, centerAlong - pH / 2));
-    ps.left = tbThick + "px";
-    ps.top = top + "px";
-    ps.borderRadius = "0 10px 10px 0";
-    ps.borderLeft = "none";
-    ps.boxShadow = "6px 0 24px rgba(0,0,0,0.4)";
-  } else if (edge === "top") {
-    const left = Math.max(10, Math.min(W - pW - 10, centerAlong - pW / 2));
-    ps.top = tbThick + "px";
-    ps.left = left + "px";
-    ps.borderRadius = "0 0 10px 10px";
-    ps.borderTop = "none";
-    ps.boxShadow = "0 6px 24px rgba(0,0,0,0.4)";
-  } else {
-    const left = Math.max(10, Math.min(W - pW - 10, centerAlong - pW / 2));
-    ps.bottom = tbThick + "px";
-    ps.left = left + "px";
-    ps.borderRadius = "10px 10px 0 0";
-    ps.borderBottom = "none";
-    ps.boxShadow = "0 -6px 24px rgba(0,0,0,0.4)";
-  }
-
-  // ── Resize handle ──────────────────────────────────────────────────────────
-  const rs = resizeHandle.style;
-  rs.top = rs.bottom = rs.left = rs.right = rs.width = rs.height = "";
-  resizeHandle.dataset.dir = isVert ? "ew" : "ns";
-
-  if (isVert) {
-    rs.width = "10px";
-    rs.top = "0";
-    rs.bottom = "0";
-    resizeHandle.style.cursor = "ew-resize";
-    if (edge === "right") rs.left = "0";
-    else rs.right = "0";
-  } else {
-    rs.height = "10px";
-    rs.left = "0";
-    rs.right = "0";
-    resizeHandle.style.cursor = "ns-resize";
-    if (edge === "top") rs.bottom = "0";
-    else rs.top = "0";
+function saveActivePanel(key: PanelKey | null): void {
+  try {
+    if (key === null) sessionStorage.removeItem(ACTIVE_PANEL_KEY);
+    else sessionStorage.setItem(ACTIVE_PANEL_KEY, key);
+  } catch {
+    /* ignore */
   }
 }
 
-// ── Main export ────────────────────────────────────────────────────────────────
+/**
+ * Read the customer SDK client key that the host SDK injects into
+ * `window.__SE_BOOTSTRAP.apiKey`. Its presence is proof the page is a real
+ * ShipEasy customer page (not just any origin claiming to be one) — used
+ * to skip the origin-lock check that would otherwise sign out a localhost
+ * dev whose project's configured domain is the prod hostname.
+ */
+function readBridgeApiKey(): string | null {
+  if (typeof window === "undefined") return null;
+  const bs = (window as unknown as { __SE_BOOTSTRAP?: { apiKey?: string } }).__SE_BOOTSTRAP;
+  return typeof bs?.apiKey === "string" && bs.apiKey ? bs.apiKey : null;
+}
+
+function sameModules(a: ProjectRecord["modules"], b: ProjectRecord["modules"]): boolean {
+  return (
+    a.translations === b.translations &&
+    a.configs === b.configs &&
+    a.gates === b.gates &&
+    a.experiments === b.experiments &&
+    a.feedback === b.feedback
+  );
+}
+
+function resolveHideAdminLinks(opts: Required<DevtoolsOptions>): boolean {
+  // Caller-supplied option wins, then the ShipEasy-owned controls project
+  // (refreshed by controls.ts via the central /sdk/evaluate endpoint).
+  // We deliberately do NOT fall back to the customer's __shipeasy bridge —
+  // this is a ShipEasy-internal kill switch, not a customer-controlled flag.
+  if (opts.hideAdminLinks) return true;
+  if (getControlsState().hideAdminLinks) return true;
+  return false;
+}
+
+interface ViewState {
+  view: "page" | "all";
+  search: string;
+}
 
 export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () => void } {
-  // DOM skeleton
+  // Shadow host
   const host = document.createElement("div");
   host.setAttribute("id", "shipeasy-devtools");
   const shadow = host.attachShadow({ mode: "open" });
-  shadow.innerHTML = `<style>${STYLES}</style><div id="toolbar"></div><div id="panel"></div>`;
+  const styleEl = document.createElement("style");
+  styleEl.textContent = STYLES;
+  shadow.appendChild(styleEl);
+  const root = document.createElement("div");
+  shadow.appendChild(root);
 
-  const toolbar = shadow.getElementById("toolbar")!;
-  const panel = shadow.getElementById("panel")!;
-  toolbar.className = "toolbar";
-  panel.className = "panel";
-
-  // Resize handle lives permanently inside panel (not replaced by innerHTML)
-  const resizeHandle = document.createElement("div");
-  resizeHandle.className = "resize-handle";
-  panel.appendChild(resizeHandle);
-
-  // Panel inner — the only part replaced on each render
-  const panelInner = document.createElement("div");
-  panelInner.className = "panel-inner";
-  panel.appendChild(panelInner);
-
-  // ── State ────────────────────────────────────────────────────────────────────
+  // State
   let state: OverlayState = loadOverlayState();
-  let activeKey: PanelKey | null = null;
+  let activeKey: PanelKey | null = loadActivePanel();
   let session: DevtoolsSession | null = loadSession();
   let project: ProjectRecord | null = loadCachedProject();
-  // Drop a stale cached project from a previous session's projectId — without
-  // this, signing into a different project on the same origin would briefly
-  // reuse the old project's modules + name in the header.
   if (project && session && project.id !== session.projectId) {
     project = null;
     saveCachedProject(null);
   }
-  const initialPanel = loadActivePanel();
 
-  // ── Initial layout ────────────────────────────────────────────────────────────
-  // Defer one frame so getBoundingClientRect is accurate after first paint
-  requestAnimationFrame(() => applyLayout(toolbar, panel, resizeHandle, state));
+  // Per-tab view state (search + page/all)
+  const tabView: Record<PanelKey, ViewState> = {
+    user: { view: "all", search: "" },
+    gates: { view: "page", search: "" },
+    experiments: { view: "page", search: "" },
+    configs: { view: "page", search: "" },
+    labels: { view: "page", search: "" },
+    feedback: { view: "all", search: "" },
+    events: { view: "all", search: "" },
+  };
+  // Labels-tab locale
+  let labelLocale = "en-US";
+  // Feedback subtab
+  let feedbackSub: "bugs" | "features" = "bugs";
+  // User-tab editable state lives across re-renders
+  const userState: UserPanelState = { props: {}, dirty: {} };
 
-  // ── Drag handle ───────────────────────────────────────────────────────────────
-  const dragHandle = document.createElement("div");
-  dragHandle.className = "drag-handle";
-  dragHandle.title = "ShipEasy DevTools — drag to reposition";
-  dragHandle.innerHTML = ICON_DRAG;
-  toolbar.appendChild(dragHandle);
+  // Gates rendered into the overrides count so the overbar / footer can react.
+  // Computed by the gates panel each render and stored on `globals` for the
+  // shell to use.
+  const overridesByTab: Record<PanelKey, number> = {
+    user: 0,
+    gates: 0,
+    experiments: 0,
+    configs: 0,
+    labels: 0,
+    feedback: 0,
+    events: 0,
+  };
 
-  dragHandle.addEventListener("mousedown", (e) => {
-    e.preventDefault();
-    dragHandle.classList.add("dragging");
-
-    const move = (ev: MouseEvent) => {
-      const { edge, offsetPct } = nearestEdge(ev.clientX, ev.clientY);
-      state = { ...state, edge, offsetPct };
-      applyLayout(toolbar, panel, resizeHandle, state);
-    };
-    const up = () => {
-      dragHandle.classList.remove("dragging");
-      document.removeEventListener("mousemove", move);
-      document.removeEventListener("mouseup", up);
-      saveOverlayState(state);
-    };
-    document.addEventListener("mousemove", move);
-    document.addEventListener("mouseup", up);
-  });
-
-  // ── Toolbar buttons ───────────────────────────────────────────────────────────
-  // Buttons are (re)rendered whenever the project's enabled-modules change so
-  // a toggle in dashboard settings is reflected the next time the overlay
-  // mounts. `buttons` is the live map of currently-mounted buttons.
-  const buttons = new Map<PanelKey, HTMLButtonElement>();
+  function totalOverrides(): number {
+    return Object.values(overridesByTab).reduce((a, b) => a + b, 0);
+  }
 
   function isPanelEnabled(key: PanelKey): boolean {
-    // Authed but project not yet loaded: hide everything to avoid flashing
-    // panels that the customer disabled. The mount-time fetch will populate
-    // `project` and re-render. Unauthed (no session, no cache): show
-    // everything so the user has somewhere to click to start the auth flow.
-    if (!project) return !session;
-    return project.modules[PANEL_MODULE[key]];
+    const mod = PANEL_MODULE[key];
+    if (!mod) return true; // user / events have no module gate
+    if (!project) return !session; // unauthed: show all
+    return project.modules[mod];
   }
 
-  function renderToolbarButtons(): void {
-    for (const btn of buttons.values()) btn.remove();
-    buttons.clear();
-    for (const [key, { icon, label }] of Object.entries(PANELS) as [
-      PanelKey,
-      { icon: string; label: string },
-    ][]) {
-      if (!isPanelEnabled(key)) continue;
-      const btn = document.createElement("button");
-      btn.className = "btn";
-      btn.title = label;
-      btn.innerHTML = icon;
-      btn.addEventListener("click", () => togglePanel(key));
-      toolbar.appendChild(btn);
-      buttons.set(key, btn);
-    }
-    // If the active panel was just disabled, close it.
-    if (activeKey && !isPanelEnabled(activeKey)) closePanel();
-  }
-
-  renderToolbarButtons();
-
-  // ── Resize handle ─────────────────────────────────────────────────────────────
-  resizeHandle.addEventListener("mousedown", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    resizeHandle.classList.add("dragging");
-
-    const startX = e.clientX,
-      startY = e.clientY;
-    const startW = state.panelWidth,
-      startH = state.panelHeight;
-    const { edge } = state;
-
-    const move = (ev: MouseEvent) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      const next = { ...state };
-      if (edge === "right")
-        next.panelWidth = Math.max(PANEL_MIN_W, Math.min(PANEL_MAX_W, startW - dx));
-      if (edge === "left")
-        next.panelWidth = Math.max(PANEL_MIN_W, Math.min(PANEL_MAX_W, startW + dx));
-      if (edge === "top")
-        next.panelHeight = Math.max(PANEL_MIN_H, Math.min(PANEL_MAX_H, startH + dy));
-      if (edge === "bottom")
-        next.panelHeight = Math.max(PANEL_MIN_H, Math.min(PANEL_MAX_H, startH - dy));
-      state = next;
-      applyLayout(toolbar, panel, resizeHandle, state);
-    };
-    const up = () => {
-      resizeHandle.classList.remove("dragging");
-      document.removeEventListener("mousemove", move);
-      document.removeEventListener("mouseup", up);
-      saveOverlayState(state);
-    };
-    document.addEventListener("mousemove", move);
-    document.addEventListener("mouseup", up);
-  });
-
-  // ── Window resize ─────────────────────────────────────────────────────────────
-  const onWinResize = () => applyLayout(toolbar, panel, resizeHandle, state);
-  window.addEventListener("resize", onWinResize);
-
-  // ── Panel open/close ──────────────────────────────────────────────────────────
-  function openPanel(key: PanelKey) {
-    activeKey = key;
-    saveActivePanel(key);
-    buttons.forEach((b, k) => b.classList.toggle("active", k === key));
-    panel.classList.add("open");
-    applyLayout(toolbar, panel, resizeHandle, state);
-    renderPanelContent(key);
-  }
-
-  function closePanel() {
-    panel.classList.remove("open");
-    buttons.forEach((b) => b.classList.remove("active"));
-    activeKey = null;
-    saveActivePanel(null);
-  }
-
-  function togglePanel(key: PanelKey) {
-    if (!isPanelEnabled(key)) return;
-    if (activeKey === key) closePanel();
-    else openPanel(key);
-  }
-
-  // Always refetches. The cached project (sessionStorage) is only an instant-
-  // paint hint for the very first toolbar render; once the overlay is up we
-  // re-pull every time so module-flag toggles in the dashboard show up
-  // without forcing the user to clear storage or reopen a tab.
-  async function ensureProjectLoaded(api: DevtoolsApi): Promise<void> {
-    try {
-      const p = await api.project();
-      // Origin lock: if the loaded project's domain doesn't cover this host,
-      // the cached session belongs to a different customer (e.g. user signed
-      // into shipeasy from shouks.com). Forcibly sign out so they re-auth and
-      // pick a project that's actually configured for this domain.
-      const host = window.location.host;
-      if (p.domain && !projectOwnsHost(host, p.domain)) {
-        clearSession();
-        saveCachedProject(null);
-        session = null;
-        project = null;
-        renderToolbarButtons();
-        if (activeKey) renderAuthPrompt(activeKey);
-        return;
+  // ── Layout ──────────────────────────────────────────────────────────────
+  function applyPanelStyle(panel: HTMLElement): void {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const { edge, offsetPct, collapsed } = state;
+    const ps = panel.style;
+    ps.top = ps.bottom = ps.left = ps.right = ps.transform = "";
+    panel.dataset.edge = edge;
+    if (collapsed) {
+      // Floating rail anchored to edge, centred along it.
+      if (edge === "right") {
+        ps.right = "10px";
+        ps.top = `${offsetPct}%`;
+        ps.transform = "translateY(-50%)";
+      } else if (edge === "left") {
+        ps.left = "10px";
+        ps.top = `${offsetPct}%`;
+        ps.transform = "translateY(-50%)";
+      } else if (edge === "top") {
+        ps.top = "10px";
+        ps.left = `${offsetPct}%`;
+        ps.transform = "translateX(-50%)";
+      } else {
+        ps.bottom = "10px";
+        ps.left = `${offsetPct}%`;
+        ps.transform = "translateX(-50%)";
       }
-      const prev = project;
-      project = p;
-      saveCachedProject(p);
-      // Only re-render the toolbar when the enabled-module set actually
-      // changed; otherwise we'd churn the DOM on every panel open.
-      if (!prev || !sameModules(prev.modules, p.modules)) renderToolbarButtons();
-      // If the just-active panel was disabled by the refresh, close it.
-      if (activeKey && !isPanelEnabled(activeKey)) closePanel();
-    } catch {
-      // Fall through — leave panels visible if we can't load project meta.
+    } else {
+      // Expanded panel docked to one edge.
+      const pW = 420;
+      const maxH = H - 36;
+      void pW;
+      void maxH;
+      if (edge === "right") {
+        ps.right = "12px";
+        ps.top = "18px";
+      } else if (edge === "left") {
+        ps.left = "12px";
+        ps.top = "18px";
+      } else if (edge === "top") {
+        ps.top = "12px";
+        ps.right = "18px";
+      } else {
+        ps.bottom = "12px";
+        ps.right = "18px";
+      }
     }
   }
 
-  function panelHeader(icon: string, label: string): string {
-    const origin = typeof window !== "undefined" && window.location ? window.location.host : "";
-    const projectName = project?.name ?? "";
-    // Show the connected project's name (and its configured domain when it
-    // differs from the page origin) so the user can tell at a glance which
-    // project's data they're looking at — important when the same browser
-    // has signed into devtools for multiple projects across origins.
-    const scope = projectName ? `${projectName}` : origin;
-    const sub = scope ? `<span class="sub">${scope}</span>` : "";
-    return `
-      <div class="panel-head">
-        <span class="mk"></span>
-        <span class="panel-title">
-          <span class="panel-title-icon">${icon}</span>
-          <span class="panel-title-label">${label}</span>
-          ${sub}
-        </span>
-        <span class="live"><span class="dot"></span>LIVE</span>
-        <button class="close" id="se-close" aria-label="Close">${ICON_CLOSE}</button>
-      </div>`;
+  function nearestEdge(x: number, y: number): { edge: Edge; offsetPct: number } {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const candidates: Array<[number, Edge]> = [
+      [W - x, "right"],
+      [x, "left"],
+      [y, "top"],
+      [H - y, "bottom"],
+    ];
+    candidates.sort((a, b) => a[0] - b[0]);
+    const edge = candidates[0][1];
+    const isVert = edge === "left" || edge === "right";
+    const offsetPct = Math.max(5, Math.min(95, isVert ? (y / H) * 100 : (x / W) * 100));
+    return { edge, offsetPct };
   }
 
-  function renderPanelContent(key: PanelKey) {
-    const { icon, label } = PANELS[key];
+  // ── Render ──────────────────────────────────────────────────────────────
+  function render(): void {
+    const panel = document.createElement("div");
+    panel.className = state.collapsed ? "dtf-panel collapsed" : "dtf-panel";
+    panel.setAttribute("data-edge", state.edge);
+    // Mount before populating: renderExpanded → renderTabBody looks up
+    // `#dtf-body` via root.querySelector. Calling it on a detached panel
+    // either returns null (first render) or the previous body that's about
+    // to be torn down, so the new body never receives its loading skeleton.
+    while (root.firstChild) root.removeChild(root.firstChild);
+    root.appendChild(panel);
+    applyPanelStyle(panel);
+    if (state.collapsed) {
+      renderCollapsed(panel);
+    } else {
+      renderExpanded(panel);
+    }
+  }
 
+  function renderCollapsed(panel: HTMLElement): void {
+    const sz = state.railIconSize;
+    // Unauthed: collapse all tab icons into one lock icon. The user can't do
+    // anything until they connect, so don't tease tabs they can't open. The
+    // tooltip is a multi-line explainer instead of the usual one-word label.
+    const icons = !session
+      ? `<button class="ri lock-only" data-tab="__lock__" ` +
+        `style="width:${sz}px;height:${sz}px" title="">` +
+        I.lock.replace(
+          `<svg `,
+          `<svg width="${Math.round(sz * 0.5)}" height="${Math.round(sz * 0.5)}" `,
+        ) +
+        `<span class="tip tip-multi">` +
+        `<b>Devtools locked</b>` +
+        `Sign in to ShipEasy to inspect and override gates, configs, experiments, and translations on this page.` +
+        `<span class="hint">Click to connect →</span>` +
+        `</span>` +
+        `</button>`
+      : TABS.filter((t) => isPanelEnabled(t.k))
+          .map((t) => {
+            const ov = overridesByTab[t.k] > 0;
+            return (
+              `<button class="ri" data-tab="${t.k}" ` +
+              `style="width:${sz}px;height:${sz}px">` +
+              t.icon.replace(
+                `<svg `,
+                `<svg width="${Math.round(sz * 0.5)}" height="${Math.round(sz * 0.5)}" `,
+              ) +
+              (ov ? `<span class="dotw"></span>` : "") +
+              `<span class="tip">${t.label}</span>` +
+              `</button>`
+            );
+          })
+          .join("");
+    const railHtml =
+      `<div class="dtf-panel-rail">` +
+      `<div class="mk" title="Drag to reposition · click to expand" ` +
+      `style="width:${sz * 0.7}px;height:${sz * 0.7}px"></div>` +
+      icons +
+      `<div class="dtf-rail-resize" ` +
+      `style="width:${state.edge === "right" || state.edge === "left" ? sz : 12}px;` +
+      `height:${state.edge === "right" || state.edge === "left" ? 12 : sz}px" ` +
+      `title="Drag to resize"></div>` +
+      `</div>`;
+    panel.innerHTML = railHtml;
+
+    // Drag the brand mark to reposition; click to expand.
+    const mk = panel.querySelector<HTMLElement>(".mk")!;
+    let dragged = false;
+    mk.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      dragged = false;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      mk.classList.add("dragging");
+      const move = (ev: MouseEvent) => {
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 4) dragged = true;
+        const { edge, offsetPct } = nearestEdge(ev.clientX, ev.clientY);
+        state = { ...state, edge, offsetPct };
+        applyPanelStyle(panel);
+        panel.setAttribute("data-edge", edge);
+      };
+      const up = () => {
+        mk.classList.remove("dragging");
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+        saveOverlayState(state);
+      };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
+    });
+    mk.addEventListener("click", () => {
+      if (dragged) return;
+      state = { ...state, collapsed: false };
+      saveOverlayState(state);
+      render();
+    });
+
+    panel.querySelectorAll<HTMLButtonElement>(".ri").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const k = btn.dataset.tab!;
+        // The synthetic "__lock__" key on the unauthed rail just expands the
+        // panel into the auth modal — there is no real tab to activate.
+        if (k !== "__lock__") {
+          activeKey = k as PanelKey;
+          saveActivePanel(activeKey);
+        }
+        state = { ...state, collapsed: false };
+        saveOverlayState(state);
+        render();
+      });
+    });
+
+    const resize = panel.querySelector<HTMLElement>(".dtf-rail-resize")!;
+    resize.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isVert = state.edge === "right" || state.edge === "left";
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startSize = state.railIconSize;
+      resize.classList.add("dragging");
+      const move = (ev: MouseEvent) => {
+        const delta = isVert ? ev.clientY - startY : ev.clientX - startX;
+        const next = Math.max(RAIL_MIN, Math.min(RAIL_MAX, Math.round(startSize + delta)));
+        state = { ...state, railIconSize: next };
+        render();
+      };
+      const up = () => {
+        resize.classList.remove("dragging");
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+        saveOverlayState(state);
+      };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
+    });
+  }
+
+  function renderExpandedUnauthed(panel: HTMLElement): void {
+    const origin = window.location.host;
+    panel.innerHTML = `
+      <div class="dtf-head">
+        <div class="mk" title="Drag to reposition"></div>
+        <div class="ti">
+          <span class="title">Locked</span>
+          <span class="sub">${escapeHtml(origin)}</span>
+        </div>
+        <div class="actions">
+          <button class="ib" data-action="collapse" title="Collapse">${I.x}</button>
+        </div>
+      </div>
+      <div class="dtf-split">
+        <div class="dtf-rail">
+          <button class="t lock-only active" title="">
+            ${I.lock}
+            <span class="tip tip-multi">
+              <b>Devtools locked</b>
+              Sign in to ShipEasy to inspect and override flags, configs, experiments, and translations on this page.
+              <span class="hint">Click <em>Connect</em> to start →</span>
+            </span>
+          </button>
+        </div>
+        <div class="dtf-pane" style="position:relative">
+          <div class="dtf-body" id="dtf-body" aria-hidden="true" inert></div>
+          <div class="auth-locked" role="dialog" aria-modal="true">
+            <div class="auth-locked-card">
+              <div class="ic-big">${I.lock}</div>
+              <h2>Connect to <em>ShipEasy</em></h2>
+              <p>Sign in to inspect and override flags, configs, experiments, and translations live on this page.</p>
+              <div class="features">
+                <div class="row"><span class="ic">${I.shield}</span><span class="k">Toggle gates &amp; killswitches</span></div>
+                <div class="row"><span class="ic">${I.flask}</span><span class="k">Force experiment variants</span></div>
+                <div class="row"><span class="ic">${I.sliders}</span><span class="k">Override config values</span></div>
+                <div class="row"><span class="ic">${I.book}</span><span class="k">Edit translations in-place</span></div>
+              </div>
+              <button class="cta" data-action="connect" autofocus>Connect →</button>
+              <div class="meta">A new tab will open for you to approve this device.</div>
+              <div class="status" data-status></div>
+              <div class="err" data-err style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dtf-foot">
+        <div class="stat-line">
+          <span style="width:5px;height:5px;border-radius:50%;background:var(--fg-4);display:inline-block"></span>
+          <span class="stat" style="color:var(--fg-3)">Not connected</span>
+        </div>
+      </div>`;
+
+    // Header drag
+    const headMk = panel.querySelector<HTMLElement>(".dtf-head .mk")!;
+    headMk.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      headMk.classList.add("dragging");
+      const move = (ev: MouseEvent) => {
+        const { edge, offsetPct } = nearestEdge(ev.clientX, ev.clientY);
+        state = { ...state, edge, offsetPct };
+        applyPanelStyle(panel);
+      };
+      const up = () => {
+        headMk.classList.remove("dragging");
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+        saveOverlayState(state);
+      };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
+    });
+
+    panel.querySelector('[data-action="collapse"]')!.addEventListener("click", () => {
+      state = { ...state, collapsed: true };
+      saveOverlayState(state);
+      render();
+    });
+
+    const cta = panel.querySelector<HTMLButtonElement>('[data-action="connect"]')!;
+    const statusEl = panel.querySelector<HTMLElement>("[data-status]")!;
+    const errEl = panel.querySelector<HTMLElement>("[data-err]")!;
+    cta.addEventListener("click", async () => {
+      cta.disabled = true;
+      cta.innerHTML = `<span class="spin"></span> Opening…`;
+      statusEl.textContent = "";
+      errEl.style.display = "none";
+      errEl.textContent = "";
+      try {
+        session = await startDeviceAuth(opts, () => {
+          statusEl.textContent = "Waiting for approval in the opened tab…";
+          cta.innerHTML = `<span class="spin"></span> Waiting for approval`;
+        });
+        // Successful auth — re-render the panel with real content. Pick the
+        // first enabled tab so the user lands somewhere useful.
+        activeKey = TABS.find((t) => isPanelEnabled(t.k))?.k ?? "gates";
+        saveActivePanel(activeKey);
+        render();
+      } catch (err) {
+        errEl.textContent = err instanceof Error ? err.message : String(err);
+        errEl.style.display = "block";
+        statusEl.textContent = "";
+        cta.disabled = false;
+        cta.textContent = "Retry connect →";
+      }
+    });
+  }
+
+  function renderExpanded(panel: HTMLElement): void {
     if (!session) {
-      renderAuthPrompt(key);
+      renderExpandedUnauthed(panel);
       return;
     }
+    const tab = (
+      activeKey && activeKey !== ("__lock__" as PanelKey)
+        ? activeKey
+        : (TABS.find((t) => isPanelEnabled(t.k))?.k ?? "gates")
+    ) as PanelKey;
+    if (activeKey !== tab) {
+      activeKey = tab;
+      saveActivePanel(tab);
+    }
+    const tabDef = TABS.find((t) => t.k === tab)!;
+    const projectName = project?.name ?? "";
+    const origin = window.location.host;
+    const sub = projectName || origin;
 
-    const api = new DevtoolsApi(opts.adminUrl, session.token, session.projectId);
-    void ensureProjectLoaded(api).then(() => {
-      // After the project loads, re-render the header (so the project name
-      // appears) and bail if the just-opened panel turns out to be disabled.
-      if (activeKey && !isPanelEnabled(activeKey)) {
-        closePanel();
-        return;
-      }
-      const head = panelInner.querySelector(".panel-head");
-      if (head && activeKey) {
-        const { icon, label } = PANELS[activeKey];
-        const newHead = document.createElement("div");
-        newHead.innerHTML = panelHeader(icon, label);
-        head.replaceWith(newHead.firstElementChild!);
-        panelInner.querySelector("#se-close")?.addEventListener("click", closePanel);
-      }
+    const railIcons = TABS.filter((t) => isPanelEnabled(t.k))
+      .map((t) => {
+        const active = t.k === tab;
+        const ov = overridesByTab[t.k] > 0;
+        return (
+          `<button class="t${active ? " active" : ""}" data-tab="${t.k}" title="${t.label}">` +
+          t.icon +
+          (ov ? `<span class="dotw"></span>` : "") +
+          `<span class="tip">${t.label}</span>` +
+          `</button>`
+        );
+      })
+      .join("");
+
+    const showSearch = ["gates", "experiments", "configs", "labels"].includes(tab);
+    const view = tabView[tab];
+
+    const overbar =
+      totalOverrides() > 0
+        ? `<div class="dtf-overbar">` +
+          I.alert +
+          `<span><b>${totalOverrides()} session override${totalOverrides() > 1 ? "s" : ""}</b> · cleared on refresh</span>` +
+          `<button data-action="clear-overrides">Clear all</button>` +
+          `</div>`
+        : "";
+
+    const searchBar = showSearch
+      ? `<div class="dtf-search">
+          <div class="input">
+            ${I.search}
+            <input placeholder="Filter ${tab}…" value="${escapeAttr(view.search)}" />
+            ${view.search ? `<span class="kbd" data-action="clear-search">esc</span>` : `<span class="kbd">⌘K</span>`}
+          </div>
+          <div class="seg">
+            <button class="${view.view === "page" ? "active" : ""}" data-view="page">page</button>
+            <button class="${view.view === "all" ? "active" : ""}" data-view="all">all</button>
+          </div>
+          ${tab === "labels" ? `<select class="dtf-locale-sel" data-locale></select>` : ""}
+        </div>`
+      : "";
+
+    panel.innerHTML = `
+      <div class="dtf-head">
+        <div class="mk" title="Drag to reposition"></div>
+        <div class="ti">
+          <span class="title">${escapeHtml(tabDef.label)}</span>
+          <span class="sub">${escapeHtml(sub)}</span>
+        </div>
+        <div class="actions">
+          <button class="ib" data-action="refresh" title="Refresh">${I.refresh}</button>
+          <button class="ib" data-action="settings" title="Settings">${I.settings}</button>
+          <button class="ib" data-action="collapse" title="Collapse">${I.x}</button>
+        </div>
+      </div>
+      <div class="dtf-split">
+        <div class="dtf-rail">${railIcons}</div>
+        <div class="dtf-pane">
+          ${overbar}
+          ${searchBar}
+          <div class="dtf-body" id="dtf-body"></div>
+        </div>
+      </div>
+      <div class="dtf-foot">
+        <div class="stat-line">
+          <span class="ok"></span>
+          <span class="stat">SDK <b>connected</b></span>
+          ${session ? "" : `<span class="sk">unauthed</span>`}
+        </div>
+        <div class="actions">
+          <button class="ibtn" data-action="share" title="Build a URL that applies the current overrides">Copy share URL</button>
+          <button class="ibtn" data-action="apply-url" title="Persist current overrides to the URL and reload">Pin to URL</button>
+          <span class="grow"></span>
+          ${
+            totalOverrides() > 0
+              ? `<button class="ibtn danger" data-action="clear-overrides" title="Drop all session overrides">Clear overrides</button>`
+              : ""
+          }
+          ${
+            session
+              ? `<button class="ibtn" data-action="signout" title="Sign out of this project">Sign out</button>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+
+    // Drag handle on header mk
+    const headMk = panel.querySelector<HTMLElement>(".dtf-head .mk")!;
+    headMk.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      headMk.classList.add("dragging");
+      const move = (ev: MouseEvent) => {
+        const { edge, offsetPct } = nearestEdge(ev.clientX, ev.clientY);
+        state = { ...state, edge, offsetPct };
+        applyPanelStyle(panel);
+      };
+      const up = () => {
+        headMk.classList.remove("dragging");
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+        saveOverlayState(state);
+      };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
     });
 
-    panelInner.innerHTML = `
-      ${panelHeader(icon, label)}
-      <div class="panel-body" id="se-body"></div>
-      <div class="panel-subfoot" id="se-subfoot"></div>
-      <div class="panel-footer">
-        <span class="foot-status"><span class="dot"></span><span>SDK <b>connected</b></span></span>
-        <button class="ibtn" id="se-share" title="Build a URL that applies the current overrides for any visitor">Share URL</button>
-        <button class="ibtn" id="se-apply-url" title="Persist current overrides to the address bar and reload">Apply via URL</button>
-        <button class="ibtn danger" id="se-signout">Sign out</button>
-        <button class="ibtn danger" id="se-clearall">Clear overrides</button>
-      </div>`;
-
-    panelInner.querySelector("#se-close")!.addEventListener("click", closePanel);
-    panelInner.querySelector("#se-signout")!.addEventListener("click", () => {
-      clearSession();
-      saveCachedProject(null);
-      session = null;
-      project = null;
-      renderToolbarButtons();
-      renderAuthPrompt(key);
+    // Header actions
+    panel.querySelector('[data-action="refresh"]')!.addEventListener("click", () => render());
+    panel.querySelector('[data-action="settings"]')!.addEventListener("click", () => {
+      // Settings is a no-op for now — placeholder for future plan/locale config.
     });
-    panelInner.querySelector("#se-clearall")!.addEventListener("click", () => {
+    panel.querySelector('[data-action="collapse"]')!.addEventListener("click", () => {
+      state = { ...state, collapsed: true };
+      saveOverlayState(state);
+      render();
+    });
+
+    // Tab rail
+    panel.querySelectorAll<HTMLButtonElement>(".dtf-rail .t").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeKey = btn.dataset.tab as PanelKey;
+        saveActivePanel(activeKey);
+        render();
+      });
+    });
+
+    // Search + view
+    if (showSearch) {
+      const input = panel.querySelector<HTMLInputElement>(".dtf-search input")!;
+      input.addEventListener("input", () => {
+        tabView[tab].search = input.value;
+        renderTabBody();
+      });
+      panel.querySelectorAll<HTMLButtonElement>(".dtf-search .seg button").forEach((b) => {
+        b.addEventListener("click", () => {
+          tabView[tab].view = b.dataset.view as "page" | "all";
+          render();
+        });
+      });
+      panel.querySelector('[data-action="clear-search"]')?.addEventListener("click", () => {
+        tabView[tab].search = "";
+        render();
+      });
+    }
+
+    // Footer actions
+    panel.querySelector('[data-action="clear-overrides"]')?.addEventListener("click", () => {
       clearAllOverrides();
-      renderPanelContent(key);
     });
-    panelInner.querySelector("#se-apply-url")!.addEventListener("click", () => {
+    panel.querySelector('[data-action="apply-url"]')?.addEventListener("click", () => {
       applyOverridesToUrlAndReload();
     });
-    panelInner.querySelector("#se-share")!.addEventListener("click", async () => {
+    panel.querySelector('[data-action="share"]')?.addEventListener("click", async () => {
       const url = buildOverrideUrl({ ...snapshotOverridesFromStorage(), openDevtools: true });
+      const btn = panel.querySelector<HTMLButtonElement>('[data-action="share"]')!;
       try {
         await navigator.clipboard.writeText(url);
-        const btn = panelInner.querySelector("#se-share") as HTMLButtonElement;
         const prev = btn.textContent;
         btn.textContent = "Copied ✓";
         setTimeout(() => (btn.textContent = prev), 1500);
@@ -576,112 +721,196 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         prompt("Copy this URL:", url);
       }
     });
-
-    const body = panelInner.querySelector("#se-body")!;
-    const subfoot = panelInner.querySelector("#se-subfoot")! as HTMLElement;
-    const renderers: Record<PanelKey, () => Promise<void>> = {
-      gates: () => renderGatesPanel(body, api),
-      configs: () => renderConfigsPanel(body, api),
-      experiments: () => renderExperimentsPanel(body, api),
-      i18n: () => renderI18nPanel(body, api, subfoot, shadow),
-      bugs: () => renderBugsPanel(body, api, shadow),
-      features: () => renderFeatureRequestsPanel(body, api, shadow),
-    };
-    renderers[key]().catch((err) => {
-      body.innerHTML = `<div class="err">${String(err)}</div>`;
+    panel.querySelector('[data-action="signout"]')?.addEventListener("click", () => {
+      clearSession();
+      saveCachedProject(null);
+      session = null;
+      project = null;
+      render();
     });
+
+    renderTabBody();
   }
 
-  function renderAuthPrompt(returnTo: PanelKey) {
-    const { icon, label } = PANELS[returnTo];
-    // Centred layout, no footer — Sign out / Clear overrides are signed-in only.
-    panelInner.innerHTML = `
-      ${panelHeader(icon, label)}
-      <div class="panel-body auth-mode">
-        <div class="auth-box">
-          <div class="auth-icon">🔐</div>
-          <div class="auth-title">Connect to ShipEasy</div>
-          <div class="auth-desc">Sign in to inspect and override flags, configs, experiments, and translations.</div>
-          <button class="ibtn pri" id="se-connect">Connect →</button>
-          <div class="auth-status" id="se-auth-status"></div>
-          <div class="auth-err" id="se-auth-err"></div>
-        </div>
-      </div>`;
+  function renderTabBody(): void {
+    const body = root.querySelector<HTMLElement>("#dtf-body");
+    if (!body) return;
+    if (!session) return; // unauthed is handled at the shell level (renderExpandedUnauthed)
 
-    panelInner.querySelector("#se-close")!.addEventListener("click", closePanel);
-    panelInner.querySelector("#se-connect")!.addEventListener("click", async () => {
-      const btn = panelInner.querySelector<HTMLButtonElement>("#se-connect")!;
-      const status = panelInner.querySelector<HTMLElement>("#se-auth-status")!;
-      const errEl = panelInner.querySelector<HTMLElement>("#se-auth-err")!;
-      btn.disabled = true;
-      btn.textContent = "Opening…";
-      status.textContent = "";
-      errEl.textContent = "";
-      try {
-        session = await startDeviceAuth(opts, () => {
-          status.textContent = "Waiting for approval in the opened tab…";
-          btn.textContent = "Waiting…";
-        });
-        renderPanelContent(returnTo);
-      } catch (err) {
-        errEl.textContent = err instanceof Error ? err.message : String(err);
-        status.textContent = "";
-        btn.disabled = false;
-        btn.textContent = "Retry";
+    const api = new DevtoolsApi(
+      opts.adminUrl,
+      session.token,
+      session.projectId,
+      resolveHideAdminLinks(opts),
+    );
+
+    // Trigger a project refresh in the background so module gating reflects
+    // dashboard state without forcing the user to reopen the panel.
+    void ensureProjectLoaded(api);
+
+    const tab = activeKey!;
+    const view = tabView[tab];
+
+    // Each panel gets a callback to update overrides count for the shell
+    // to render badges + footer state.
+    const setOverrideCount = (n: number) => {
+      const prev = overridesByTab[tab];
+      overridesByTab[tab] = n;
+      // Re-render shell only when count change crosses thresholds (0 ↔ >0,
+      // or affects overbar text). Easiest: re-render header bits in place.
+      if ((prev === 0) !== (n === 0) || prev !== n) {
+        // Keep the body intact but refresh overbar/footer + tab rail dots.
+        updateOverbarFooter();
       }
-    });
+    };
+
+    switch (tab) {
+      case "user":
+        renderUserPanel(body, api, userState, () => render());
+        break;
+      case "gates":
+        void renderGatesPanel(body, api, view, setOverrideCount);
+        break;
+      case "experiments":
+        void renderExperimentsPanel(body, api, view, setOverrideCount);
+        break;
+      case "configs":
+        void renderConfigsPanel(body, api, view, setOverrideCount, root);
+        break;
+      case "labels":
+        void renderLabelsPanel(body, api, view, shadow, {
+          locale: labelLocale,
+          setLocale: (l) => {
+            labelLocale = l;
+            renderTabBody();
+          },
+        });
+        break;
+      case "feedback":
+        void renderFeedbackPanel(body, api, root, {
+          sub: feedbackSub,
+          setSub: (s) => {
+            feedbackSub = s;
+            renderTabBody();
+          },
+        });
+        break;
+      case "events":
+        renderEventsPanel(body);
+        break;
+    }
   }
 
-  // Mount on <html>, not <body>. React owns <body>'s subtree and on a
-  // hydration mismatch (React error #418) re-renders body from scratch,
-  // wiping any externally-appended children. ?se_edit_labels=1 reliably
-  // triggers that mismatch (SSR marker strings vs. CSR translated text).
-  // Nodes hung off documentElement are outside React's reconciliation root
-  // and survive.
+  function updateOverbarFooter(): void {
+    // Cheap re-render — only the shell pieces. We re-render the whole panel
+    // for now, since most of the body state is fetched-and-cached inside the
+    // panel module itself; re-running is a no-op for the user's perception.
+    render();
+  }
+
+  async function ensureProjectLoaded(api: DevtoolsApi): Promise<void> {
+    try {
+      const p = await api.project();
+      const host = window.location.host;
+      // Origin-lock: if the project's configured domain doesn't cover this
+      // host, the cached session probably belongs to a different customer
+      // and we should sign out. EXCEPT when the page exposes a valid SDK
+      // key in `__SE_BOOTSTRAP` — that key is proof the page is legitimately
+      // wired to this project (the server-side approve flow already verified
+      // it), so localhost dev pointing at a prod project is fine.
+      const hasBridgeKey = readBridgeApiKey() !== null;
+      if (!hasBridgeKey && p.domain && !projectOwnsHost(host, p.domain)) {
+        clearSession();
+        saveCachedProject(null);
+        session = null;
+        project = null;
+        render();
+        return;
+      }
+      const prev = project;
+      project = p;
+      saveCachedProject(p);
+      // If the just-active panel was disabled, fall back to the first enabled
+      // tab. Re-render only when something visibly changed.
+      if (activeKey && !isPanelEnabled(activeKey)) {
+        const next = TABS.find((t) => isPanelEnabled(t.k))?.k ?? null;
+        activeKey = next;
+        saveActivePanel(next);
+        render();
+        return;
+      }
+      if (!prev || !sameModules(prev.modules, p.modules)) render();
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  // ── Mount ───────────────────────────────────────────────────────────────
   document.documentElement.appendChild(host);
   const reattach = () => {
     if (!document.getElementById("shipeasy-devtools")) {
       document.documentElement.appendChild(host);
     }
   };
-  new MutationObserver(reattach).observe(document.documentElement, { childList: true });
+  const mo = new MutationObserver(reattach);
+  mo.observe(document.documentElement, { childList: true });
 
-  // Re-arm edit-labels handlers against THIS shadow root. auto.ts arms them
-  // once at script-load against whichever host existed then, but the user can
-  // toggle the overlay off/on (Shift+Alt+S) — destroying the host and leaving
-  // the click handler holding a stale shadow ref, so the popper would mount
-  // into a detached tree (invisible). Re-arming here points the popper at the
-  // live shadow on every mount.
   if (isEditLabelsModeActive()) {
     scanAndReplaceMarkers();
     toggleEditLabels(true, shadow, () => {
-      /* re-render hook; the i18n panel installs its own when active */
+      /* re-render hook */
     });
   }
 
-  // Refresh project meta on mount so the toolbar reflects the current set
-  // of enabled modules. Without this we'd render from sessionStorage cache
-  // forever — disabling a module in the dashboard would only take effect
-  // after the user opened a panel (or cleared storage). The cache stays as
-  // an instant-paint hint; the fetched value overwrites it when it lands.
+  // Default to collapsed unless user previously expanded a panel.
+  if (!loadActivePanel()) {
+    state = { ...state, collapsed: true };
+  }
+  render();
+
+  // Refresh project meta for module gating.
   if (session) {
-    const api = new DevtoolsApi(opts.adminUrl, session.token, session.projectId);
+    const api = new DevtoolsApi(
+      opts.adminUrl,
+      session.token,
+      session.projectId,
+      resolveHideAdminLinks(opts),
+    );
     void ensureProjectLoaded(api);
   }
 
-  // Auto-reopen the panel that was active before a value-change reload.
-  // applyAndReload (overrides.ts) reloads the page on every override edit,
-  // and the URL keeps `?se=1` so we mount again here — but without this the
-  // user lands on a closed panel and has to re-pick which feature they were
-  // editing. Defer one frame so the toolbar/panel layout is applied first.
-  if (initialPanel) {
-    requestAnimationFrame(() => openPanel(initialPanel));
-  }
+  // ShipEasy controls (kill-switch flags hosted in the controls project) —
+  // re-render to flip admin-link visibility on changes.
+  void refreshControls();
+  const unsubControls = subscribeControls(() => render());
+
+  const onWinResize = () => {
+    const panel = root.querySelector<HTMLElement>(".dtf-panel");
+    if (panel) applyPanelStyle(panel);
+  };
+  window.addEventListener("resize", onWinResize);
+
+  // Live SDK state updates → rerender the active body
+  const onStateUpdate = () => renderTabBody();
+  window.addEventListener("se:state:update", onStateUpdate);
 
   return {
     destroy() {
       window.removeEventListener("resize", onWinResize);
+      window.removeEventListener("se:state:update", onStateUpdate);
+      unsubControls();
+      mo.disconnect();
       host.remove();
     },
   };
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(
+    /[&<>"']/g,
+    (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!,
+  );
+}
+function escapeAttr(s: string): string {
+  return escapeHtml(s);
 }

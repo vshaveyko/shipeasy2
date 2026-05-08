@@ -17,7 +17,11 @@ import {
   events,
   auditLog,
 } from "@shipeasy/core/db/schema";
-import { projectUpdateSchema, projectPlanUpdateSchema } from "@shipeasy/core/schemas/keys";
+import {
+  projectDomainSchema,
+  projectUpdateSchema,
+  projectPlanUpdateSchema,
+} from "@shipeasy/core/schemas/keys";
 import { getEnv, getEnvAsync } from "../env";
 import { writeAudit } from "../audit";
 import { rebuildFlags, rebuildExperiments } from "@shipeasy/core";
@@ -65,11 +69,7 @@ export async function updateProject(identity: AdminIdentity, id: string, input: 
  * the existing row with `created: false`.
  */
 const projectUpsertSchema = z.object({
-  domain: z
-    .string()
-    .min(1)
-    .max(253)
-    .regex(/^[a-z0-9.-]+$/i, "domain must be a hostname-like string (a-z, 0-9, dot, hyphen)"),
+  domain: projectDomainSchema,
   name: z.string().min(1).max(100).optional(),
 });
 

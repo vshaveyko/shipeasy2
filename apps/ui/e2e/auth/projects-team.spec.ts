@@ -10,6 +10,14 @@ test.describe("Projects page", () => {
     // Should show ACTIVE badge for the current project
     const activeBadge = page.getByText("ACTIVE", { exact: true });
     await expect(activeBadge.first()).toBeVisible();
+
+    // Each card carries a domain line (or "no domain" placeholder) in
+    // addition to the display name. The card button must use a pointer
+    // cursor so users get a click affordance on hover.
+    const card = page.locator("form button[type=submit]").first();
+    await expect(card).toBeVisible();
+    await expect(card).toHaveCSS("cursor", "pointer");
+    await expect(card.locator("text=/no domain|^[a-z0-9.-]+\\.[a-z]+/i").first()).toBeVisible();
   });
 
   test("New project link navigates to the create form", async ({ page }) => {
@@ -29,14 +37,60 @@ test.describe("Projects page", () => {
 
     const unique = `e2e-proj-${Date.now()}`;
     await page.getByLabel(/display name/i).fill(unique);
+    await page.getByLabel(/domain/i).fill(`https://${unique}.example.com`);
     await page.getByRole("button", { name: /create project/i }).click();
 
     // Should redirect to /dashboard after creation
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    // The new project should appear in the projects list
+    // The new project should appear in the projects list, with the bare
+    // hostname under the display name (the form normalises away the scheme).
     await page.goto("/dashboard/projects");
-    await expect(page.getByText(unique)).toBeVisible();
+    await expect(page.getByText(unique).first()).toBeVisible();
+    await expect(page.getByText(`${unique}.example.com`).first()).toBeVisible();
+  });
+
+  test("new project rejects bare hostnames without scheme", async ({ page }) => {
+    await page.goto("/dashboard/projects/new");
+    await page.getByLabel(/display name/i).fill(`e2e-bare-${Date.now()}`);
+    await page.getByLabel(/domain/i).fill("app.example.com");
+    await page.getByRole("button", { name: /create project/i }).click();
+
+    // Stays on the form; surfaces the validation error.
+    await expect(page).toHaveURL(/\/dashboard\/projects\/new$/);
+    await expect(page.getByText(/http:\/\/ or https:\/\//i)).toBeVisible();
+  });
+
+  test("new project accepts '*' as a wildcard domain", async ({ page }) => {
+    await page.goto("/dashboard/projects/new");
+    const unique = `e2e-wild-${Date.now()}`;
+    await page.getByLabel(/display name/i).fill(unique);
+    await page.getByLabel(/domain/i).fill("*");
+    await page.getByRole("button", { name: /create project/i }).click();
+
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.goto("/dashboard/projects");
+    await expect(page.getByText(unique).first()).toBeVisible();
+  });
+
+  test("new project rejects duplicate domain for the same owner", async ({ page }) => {
+    const dupDomain = `e2e-dup-${Date.now()}.example.com`;
+    const unique = `e2e-dup-${Date.now()}`;
+
+    // First create succeeds.
+    await page.goto("/dashboard/projects/new");
+    await page.getByLabel(/display name/i).fill(unique);
+    await page.getByLabel(/domain/i).fill(`https://${dupDomain}`);
+    await page.getByRole("button", { name: /create project/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    // Second create with the same domain is blocked.
+    await page.goto("/dashboard/projects/new");
+    await page.getByLabel(/display name/i).fill(`${unique}-again`);
+    await page.getByLabel(/domain/i).fill(`https://${dupDomain}`);
+    await page.getByRole("button", { name: /create project/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/projects\/new$/);
+    await expect(page.getByText(/already exists/i)).toBeVisible();
   });
 
   test("sidebar Projects link navigates here", async ({ page }) => {

@@ -1,0 +1,93 @@
+// ShipEasy-owned controls fetched from a ShipEasy-internal project.
+//
+// The devtools bundle ships to every customer's app, so flags that should be
+// flipped centrally (e.g. white-label kill switches) cannot live in the
+// customer's own project. Instead we keep a tiny dedicated ShipEasy project
+// whose only job is to host these meta-flags, and call its /sdk/evaluate
+// endpoint from the overlay using the client key baked into this file.
+//
+// Setup expected in ShipEasy admin:
+//   1. Create a project (e.g. "Devtools controls").
+//   2. Generate a *client* SDK key for it. Leave the project domain blank —
+//      the key must work from any customer origin, so `allowed_origin` must
+//      be null (the auth middleware in packages/worker/src/lib/auth.ts
+//      treats null as "allow all").
+//   3. Paste the key into SHIPEASY_CONTROLS_CLIENT_KEY below.
+//   4. Create a boolean gate named after each control (see types.ts) and
+//      toggle it from the dashboard. Changes propagate via the same KV
+//      blob + CDN purge path as any other gate.
+
+import { HIDE_ADMIN_LINKS_GATE } from "./types";
+
+/**
+ * Public client SDK key for the ShipEasy central "shipeasy devtools" project
+ * (`a5975cd3-…`). The project's `domain` is `*` so this key is accepted
+ * from any customer origin (auth middleware in
+ * packages/worker/src/lib/auth.ts treats `*` as match-all).
+ * Empty string = controls fetch is disabled.
+ */
+const SHIPEASY_CONTROLS_CLIENT_KEY = "sdk_client_6cecf6208cb443faa86b9ce6c007aee4";
+
+/** Edge base URL that hosts /sdk/evaluate for the controls project. */
+const SHIPEASY_CONTROLS_BASE_URL = "https://cdn.shipeasy.ai";
+
+interface EvaluateResponse {
+  flags?: Record<string, boolean>;
+}
+
+interface ControlsState {
+  hideAdminLinks: boolean;
+}
+
+const DEFAULT_STATE: ControlsState = { hideAdminLinks: false };
+
+let state: ControlsState = { ...DEFAULT_STATE };
+let inFlight: Promise<void> | null = null;
+const subscribers = new Set<() => void>();
+
+/** Last-known value (synchronous read for panel render paths). */
+export function getControlsState(): ControlsState {
+  return state;
+}
+
+/** Re-render hook: called after the controls fetch lands with a changed value. */
+export function subscribeControls(cb: () => void): () => void {
+  subscribers.add(cb);
+  return () => subscribers.delete(cb);
+}
+
+/**
+ * Fire-and-forget fetch from the controls project. Idempotent — concurrent
+ * callers share the same in-flight promise. Failures are swallowed (the
+ * overlay must keep working when the controls endpoint is unreachable).
+ */
+export function refreshControls(): Promise<void> {
+  if (!SHIPEASY_CONTROLS_CLIENT_KEY) return Promise.resolve();
+  if (inFlight) return inFlight;
+  inFlight = (async () => {
+    try {
+      const res = await fetch(`${SHIPEASY_CONTROLS_BASE_URL}/sdk/evaluate`, {
+        method: "POST",
+        headers: {
+          "X-SDK-Key": SHIPEASY_CONTROLS_CLIENT_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user: {} }),
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as EvaluateResponse;
+      const flags = body.flags ?? {};
+      const next: ControlsState = {
+        hideAdminLinks: Boolean(flags[HIDE_ADMIN_LINKS_GATE]),
+      };
+      const changed = next.hideAdminLinks !== state.hideAdminLinks;
+      state = next;
+      if (changed) for (const cb of subscribers) cb();
+    } catch {
+      /* network/parse error — keep prior state */
+    } finally {
+      inFlight = null;
+    }
+  })();
+  return inFlight;
+}

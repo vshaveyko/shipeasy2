@@ -12,7 +12,8 @@ function originAllowed(
   requestOrigin: string | null,
   allowedOrigin: string | null | undefined,
 ): boolean {
-  if (!allowedOrigin) return true; // project hasn't configured a domain yet — allow all
+  if (!allowedOrigin) return true; // legacy null-domain rows — allow all
+  if (allowedOrigin === "*") return true; // explicit "match any origin"
   if (!requestOrigin) return false;
   try {
     const host = new URL(requestOrigin).hostname;
