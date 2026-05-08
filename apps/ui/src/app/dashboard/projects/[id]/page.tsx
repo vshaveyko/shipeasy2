@@ -23,6 +23,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { cn } from "@/lib/utils";
 import { selectAndOpenProjectAction } from "./actions";
 import { ModuleToggleCard } from "./module-toggle-card";
+import { DeleteProjectButton } from "./delete-project-button";
 import { projectLabel } from "@/lib/project-label";
 
 const TABS = [
@@ -134,6 +135,9 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
         }
         title={projectLabel(project.name, project.domain)}
         description={description}
+        actions={
+          <DeleteProjectButton id={project.id} name={project.name} domain={project.domain} />
+        }
       />
 
       <ProjectTabs projectId={id} active={activeTab} />

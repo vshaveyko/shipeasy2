@@ -8,7 +8,7 @@ import { findProjectById } from "@shipeasy/core";
 import type { ProjectModuleKey } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
 import { getIdentity } from "@/lib/server-action";
-import { updateProject } from "@/lib/handlers/projects";
+import { updateProject, deleteProject } from "@/lib/handlers/projects";
 import { ok, fail, type ActionResult } from "@/lib/action-result";
 
 const MODULE_FIELD: Record<ProjectModuleKey, string> = {
@@ -48,6 +48,29 @@ export async function selectAndOpenProjectAction(formData: FormData): Promise<vo
   });
 
   redirect(`/dashboard/projects/${projectId}`);
+}
+
+/**
+ * Hard-delete the active project. Refuses if the project still has gates,
+ * configs, experiments, or other user data — the handler returns a 409 with
+ * a human-readable list, which surfaces as the toast error.
+ */
+export async function deleteProjectAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const identity = await getIdentity();
+    const id = (formData.get("id") as string) ?? identity.projectId;
+    if (id !== identity.projectId) return fail("Switch to the project before deleting it");
+    await deleteProject(identity, id);
+
+    const cookieStore = await cookies();
+    cookieStore.delete("active_project_id");
+
+    revalidatePath("/dashboard/projects");
+    revalidatePath("/dashboard");
+    return ok("Project deleted");
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Failed to delete project");
+  }
 }
 
 /**

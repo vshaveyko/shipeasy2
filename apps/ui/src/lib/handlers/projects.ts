@@ -16,6 +16,9 @@ import {
   metrics,
   events,
   auditLog,
+  projects as projectsTable,
+  projectMembers,
+  sdkKeys,
 } from "@shipeasy/core/db/schema";
 import {
   projectDomainSchema,
@@ -139,6 +142,54 @@ export async function updateProjectPlan(identity: AdminIdentity, id: string, inp
   await rebuildExperiments(env, id);
   await writeAudit(identity, "project.plan", "project", id, parsed);
   return getProject(identity, id);
+}
+
+/**
+ * Hard-delete a project. Refuses if the project still has any user-owned
+ * data (gates, configs, experiments, universes, metrics, events) — the user
+ * must clear those first. Cleans up auxiliary rows tied to the project so
+ * the row can be removed without orphaning members or SDK keys.
+ */
+export async function deleteProject(identity: AdminIdentity, id: string) {
+  if (id !== identity.projectId) throw new ApiError("Forbidden", 403);
+  const env = await getEnvAsync();
+  const db = getDb(env.DB);
+
+  const project = await findProjectById(env.DB, id);
+  if (!project) throw new ApiError("Project not found", 404);
+
+  const [g, c, e, u, m, ev] = await Promise.all([
+    db.select({ n: count() }).from(gates).where(eq(gates.projectId, id)),
+    db.select({ n: count() }).from(configs).where(eq(configs.projectId, id)),
+    db.select({ n: count() }).from(experiments).where(eq(experiments.projectId, id)),
+    db.select({ n: count() }).from(universes).where(eq(universes.projectId, id)),
+    db.select({ n: count() }).from(metrics).where(eq(metrics.projectId, id)),
+    db.select({ n: count() }).from(events).where(eq(events.projectId, id)),
+  ]);
+
+  const counts = {
+    gates: g[0]?.n ?? 0,
+    configs: c[0]?.n ?? 0,
+    experiments: e[0]?.n ?? 0,
+    universes: u[0]?.n ?? 0,
+    metrics: m[0]?.n ?? 0,
+    events: ev[0]?.n ?? 0,
+  };
+  const total = Object.values(counts).reduce((s, n) => s + n, 0);
+  if (total > 0) {
+    const non = Object.entries(counts)
+      .filter(([, n]) => n > 0)
+      .map(([k, n]) => `${n} ${k}`)
+      .join(", ");
+    throw new ApiError(`Project still has ${non}. Delete those first.`, 409);
+  }
+
+  await db.delete(projectMembers).where(eq(projectMembers.projectId, id));
+  await db.delete(sdkKeys).where(eq(sdkKeys.projectId, id));
+  await db.delete(auditLog).where(eq(auditLog.projectId, id));
+  await db.delete(projectsTable).where(eq(projectsTable.id, id));
+
+  return { ok: true, name: project.name, domain: project.domain };
 }
 
 export async function getStorage(identity: AdminIdentity, id: string) {
