@@ -63,6 +63,8 @@ export const projectUpdateSchema = z.object({
   moduleGates: z.boolean().optional(),
   moduleExperiments: z.boolean().optional(),
   moduleFeedback: z.boolean().optional(),
+  moduleUser: z.boolean().optional(),
+  moduleEvents: z.boolean().optional(),
 });
 
 export const projectPlanUpdateSchema = z.object({

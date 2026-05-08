@@ -13,7 +13,7 @@ test.describe("Project module toggles", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("module page renders all five toggle cards with switches", async ({ page }) => {
+  test("module page renders all seven toggle cards with switches", async ({ page }) => {
     await page.goto("/dashboard/projects");
     const activeCard = page.locator("button[type=submit]").filter({ hasText: "ACTIVE" }).first();
     await activeCard.click();
@@ -25,15 +25,17 @@ test.describe("Project module toggles", () => {
       "Gatekeepers",
       "Experiments",
       "Bugs & feature requests",
+      "User",
+      "Events",
     ]) {
       await expect(page.getByText(title, { exact: true })).toBeVisible();
     }
 
     const switches = page.getByRole("switch");
-    await expect(switches).toHaveCount(5);
+    await expect(switches).toHaveCount(7);
 
     // All modules default to enabled
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       await expect(switches.nth(i)).toHaveAttribute("aria-checked", "true");
     }
   });

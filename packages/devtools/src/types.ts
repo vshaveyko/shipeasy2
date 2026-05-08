@@ -38,6 +38,8 @@ export interface ProjectModules {
   gates: boolean;
   experiments: boolean;
   feedback: boolean;
+  user: boolean;
+  events: boolean;
 }
 
 export interface ProjectRecord {

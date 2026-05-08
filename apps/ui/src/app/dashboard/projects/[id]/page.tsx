@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  Activity,
   ArrowLeft,
   Bug,
   KeyRound,
@@ -9,6 +10,7 @@ import {
   Settings2,
   ShieldCheck,
   Sparkles,
+  User,
 } from "lucide-react";
 import { auth } from "@/auth";
 import { findProjectById } from "@shipeasy/core";
@@ -73,6 +75,19 @@ const MODULES: Array<{
     title: "Bugs & feature requests",
     description: "In-app bug reports and feature requests captured via the devtools overlay.",
     icon: <Bug className="size-4" />,
+  },
+  {
+    key: "user",
+    title: "User",
+    description:
+      "Devtools tab for inspecting and overriding the current SDK user — props, locale, identifiers.",
+    icon: <User className="size-4" />,
+  },
+  {
+    key: "events",
+    title: "Events",
+    description: "Live SDK event stream (evaluations, overrides) shown in the devtools overlay.",
+    icon: <Activity className="size-4" />,
   },
 ];
 
@@ -139,6 +154,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
                   gates: project.moduleGates,
                   experiments: project.moduleExperiments,
                   feedback: project.moduleFeedback,
+                  user: project.moduleUser,
+                  events: project.moduleEvents,
                 }[m.key]
               }
             />

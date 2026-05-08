@@ -19,6 +19,7 @@ export class DevtoolsApi {
     readonly adminUrl: string,
     public readonly token: string,
     public readonly projectId: string,
+    public readonly hideAdminLinks: boolean = false,
   ) {}
 
   async project(): Promise<ProjectRecord> {
@@ -31,6 +32,8 @@ export class DevtoolsApi {
       moduleGates?: boolean | number;
       moduleExperiments?: boolean | number;
       moduleFeedback?: boolean | number;
+      moduleUser?: boolean | number;
+      moduleEvents?: boolean | number;
     }>(`/api/admin/projects/${encodeURIComponent(this.projectId)}`);
     const b = (v: boolean | number | undefined): boolean =>
       v === undefined || v === true || v === 1;
@@ -44,6 +47,8 @@ export class DevtoolsApi {
         gates: b(raw.moduleGates),
         experiments: b(raw.moduleExperiments),
         feedback: b(raw.moduleFeedback),
+        user: b(raw.moduleUser),
+        events: b(raw.moduleEvents),
       },
     };
   }

@@ -48,6 +48,8 @@ export async function updateProject(identity: AdminIdentity, id: string, input: 
   if (parsed.moduleGates !== undefined) patch.moduleGates = parsed.moduleGates;
   if (parsed.moduleExperiments !== undefined) patch.moduleExperiments = parsed.moduleExperiments;
   if (parsed.moduleFeedback !== undefined) patch.moduleFeedback = parsed.moduleFeedback;
+  if (parsed.moduleUser !== undefined) patch.moduleUser = parsed.moduleUser;
+  if (parsed.moduleEvents !== undefined) patch.moduleEvents = parsed.moduleEvents;
 
   await updateProjectRow(env.DB, id, patch);
   await writeAudit(identity, "project.update", "project", id, parsed);

@@ -68,6 +68,8 @@ export const projects = sqliteTable(
     moduleGates: integer("module_gates", { mode: "boolean" }).notNull().default(true),
     moduleExperiments: integer("module_experiments", { mode: "boolean" }).notNull().default(true),
     moduleFeedback: integer("module_feedback", { mode: "boolean" }).notNull().default(true),
+    moduleUser: integer("module_user", { mode: "boolean" }).notNull().default(true),
+    moduleEvents: integer("module_events", { mode: "boolean" }).notNull().default(true),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -88,6 +90,8 @@ export const PROJECT_MODULE_KEYS = [
   "gates",
   "experiments",
   "feedback",
+  "user",
+  "events",
 ] as const;
 export type ProjectModuleKey = (typeof PROJECT_MODULE_KEYS)[number];
 export type ProjectModules = Record<ProjectModuleKey, boolean>;

@@ -36,6 +36,8 @@ const PANEL_MODULE: Partial<Record<PanelKey, keyof ProjectRecord["modules"]>> = 
   experiments: "experiments",
   labels: "translations",
   feedback: "feedback",
+  user: "user",
+  events: "events",
 };
 
 const TABS: Array<{ k: PanelKey; label: string; icon: string; description: string }> = [
@@ -607,7 +609,6 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         </div>
         <div class="actions">
           <button class="ib" data-action="refresh" title="Refresh">${I.refresh}</button>
-          <button class="ib" data-action="settings" title="Settings">${I.settings}</button>
           <button class="ib" data-action="collapse" title="Collapse">${I.x}</button>
         </div>
       </div>
@@ -665,9 +666,6 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
 
     // Header actions
     panel.querySelector('[data-action="refresh"]')!.addEventListener("click", () => render());
-    panel.querySelector('[data-action="settings"]')!.addEventListener("click", () => {
-      // Settings is a no-op for now — placeholder for future plan/locale config.
-    });
     panel.querySelector('[data-action="collapse"]')!.addEventListener("click", () => {
       state = { ...state, collapsed: true };
       saveOverlayState(state);

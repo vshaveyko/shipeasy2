@@ -17,6 +17,8 @@ const MODULE_FIELD: Record<ProjectModuleKey, string> = {
   gates: "moduleGates",
   experiments: "moduleExperiments",
   feedback: "moduleFeedback",
+  user: "moduleUser",
+  events: "moduleEvents",
 };
 
 /**

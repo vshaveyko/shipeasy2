@@ -62,11 +62,16 @@ export default async function ProjectsPage() {
     isActive: boolean;
   };
 
-  const items: ProjectRow[] = [];
+  let items: ProjectRow[] = [];
 
   if (defaultProjectId) {
     try {
       const env = await getEnvAsync();
+      // listProjectsByEmail orders by createdAt — preserve that order in
+      // the rendered list. The previous code pushed into a shared array
+      // from inside Promise.all callbacks, so rows appeared in whichever
+      // order the per-project gate/experiment fetches happened to resolve
+      // — i.e. the list flickered into a different order on every reload.
       const allProjects = await listProjectsByEmail(env.DB, actorEmail);
 
       if (cookieProjectId) {
@@ -76,14 +81,14 @@ export default async function ProjectsPage() {
         }
       }
 
-      await Promise.all(
-        allProjects.map(async (proj) => {
+      items = await Promise.all(
+        allProjects.map(async (proj): Promise<ProjectRow> => {
           const identity = { projectId: proj.id, actorEmail, source: "jwt" as const };
           const [gates, experiments] = await Promise.all([
             listGates(identity).catch(() => []),
             listExperiments(identity).catch(() => []),
           ]);
-          items.push({
+          return {
             id: proj.id,
             name: proj.name,
             domain: proj.domain ?? null,
@@ -95,7 +100,7 @@ export default async function ProjectsPage() {
             gateCount: gates.length,
             expRunning: experiments.filter((e) => e.status === "running").length,
             isActive: proj.id === activeProjectId,
-          });
+          };
         }),
       );
     } catch {
