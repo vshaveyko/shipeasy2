@@ -41,6 +41,8 @@ The react and sdk-ruby submodules have not yet been converted from inline trees 
 
 **Cloudflare Workers Builds deploys every Worker in this repo — do NOT add a GitHub Actions workflow for CF deploys.** Build and deploy commands are configured per-Worker in the Cloudflare dashboard. See [`DEPLOY.md`](DEPLOY.md) for the exact commands, the three Workers in play (`shipeasy`, `shipeasy-worker`, `shipeasy-docs`), and the migration flow. D1 schema changes go live via `wrangler d1 migrations apply` wired into each Worker's Build command, not as a separate step.
 
+**HARD RULE: never apply schema to remote D1 with `wrangler d1 execute`.** All DDL (`CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX`, `DROP …`) against remote D1 goes through `wrangler d1 migrations apply` — never `wrangler d1 execute --remote` and never the dashboard SQL console. `apply` records the migration filename in `d1_migrations`; `execute` does not, so a column added by `execute` re-fires on the next CF Build as `duplicate column name` (SQLite has no `IF NOT EXISTS` for `ADD COLUMN`) and breaks every deploy until reconciled. `--remote` execute is fine for read-only SQL (`SELECT`, `pragma_table_info`). If a deploy fails because a migration was previously applied via `execute`, do not rewrite the migration file — reconcile by inserting the missing `d1_migrations` row by hand (see DEPLOY.md "Adding a new migration").
+
 ## Commands
 
 All workflow tasks are orchestrated by Turbo at the root:

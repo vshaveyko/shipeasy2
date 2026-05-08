@@ -142,6 +142,38 @@ applied migrations by filename in D1's `d1_migrations` table. Renaming
 or mutating a committed file makes D1 think a fresh migration is
 pending and double-applies structure changes.
 
+### HARD RULE: never apply schema to remote D1 with `wrangler d1 execute`
+
+All schema changes against remote D1 go through
+`wrangler d1 migrations apply`. Do **not** use `wrangler d1 execute
+--remote` (or the dashboard SQL console) for `CREATE TABLE`,
+`ALTER TABLE`, `CREATE INDEX`, `DROP …`, or any other DDL.
+
+Why: `migrations apply` updates the `d1_migrations` tracking table for
+every file it runs. `execute` does not. If you ALTER directly, the
+column lands on remote, but the tracking row never appears — and the
+**next** CF Workers Build replays the same file, hits SQLite's
+`duplicate column name` (no `IF NOT EXISTS` for `ADD COLUMN`), and
+fails every deploy until a human reconciles by hand. We've now hit
+this twice (migration 0011 in commit b7e975e, migration 0017).
+
+`wrangler d1 execute --remote` is allowed for **read-only** SQL only
+(`SELECT`, `pragma_table_info`, etc.) — useful for inspecting state.
+DDL is forbidden.
+
+If a migration is already broken because of a past `execute`-applied
+DDL: do **not** rewrite the migration file. Reconcile by inserting
+the missing tracking row:
+
+```bash
+wrangler d1 execute shipeasy-db --remote \
+  --command "INSERT INTO d1_migrations (name, applied_at) VALUES ('<migration-filename>', CURRENT_TIMESTAMP);"
+```
+
+This is the only sanctioned manual write to `d1_migrations`. After
+it, `wrangler d1 migrations list --remote` should report no pending
+migrations and CF Builds should pass.
+
 ## Checking state
 
 ```bash

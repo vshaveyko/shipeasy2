@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(wrangler d1 execute:*--remote*)",
+      "Bash(*wrangler d1 execute*--remote*)",
+      "Bash(*wrangler d1 execute*--env=production*)",
+      "Bash(*wrangler d1 execute*--env production*)"
+    ]
+  }
+}
