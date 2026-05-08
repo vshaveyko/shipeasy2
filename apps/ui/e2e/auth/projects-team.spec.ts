@@ -11,13 +11,12 @@ test.describe("Projects page", () => {
     const activeBadge = page.getByText("ACTIVE", { exact: true });
     await expect(activeBadge.first()).toBeVisible();
 
-    // Each card carries a domain line (or "no domain" placeholder) in
-    // addition to the display name. The card button must use a pointer
-    // cursor so users get a click affordance on hover.
+    // Card button must use a pointer cursor so users get a click affordance
+    // on hover. Heading shows the canonical "<name>:<domain>" label form.
     const card = page.locator("form button[type=submit]").first();
     await expect(card).toBeVisible();
     await expect(card).toHaveCSS("cursor", "pointer");
-    await expect(card.locator("text=/no domain|^[a-z0-9.-]+\\.[a-z]+/i").first()).toBeVisible();
+    await expect(card.getByRole("heading").first()).toHaveText(/^[^:]+(?::[^:]+)?$/);
   });
 
   test("New project link navigates to the create form", async ({ page }) => {
@@ -43,11 +42,10 @@ test.describe("Projects page", () => {
     // Should redirect to /dashboard after creation
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    // The new project should appear in the projects list, with the bare
-    // hostname under the display name (the form normalises away the scheme).
+    // The new project appears in the list with the canonical "<name>:<domain>"
+    // label (the form normalises away the scheme).
     await page.goto("/dashboard/projects");
-    await expect(page.getByText(unique).first()).toBeVisible();
-    await expect(page.getByText(`${unique}.example.com`).first()).toBeVisible();
+    await expect(page.getByText(`${unique}:${unique}.example.com`).first()).toBeVisible();
   });
 
   test("new project rejects bare hostnames without scheme", async ({ page }) => {

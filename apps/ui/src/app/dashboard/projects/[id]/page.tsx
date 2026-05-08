@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeft,
   Bug,
+  KeyRound,
   Languages,
   Lightbulb,
   Settings2,
@@ -11,15 +13,29 @@ import {
 import { auth } from "@/auth";
 import { findProjectById } from "@shipeasy/core";
 import type { ProjectModuleKey } from "@shipeasy/core";
+import { listKeys } from "@/lib/handlers/keys";
 import { getEnvAsync } from "@/lib/env";
 import { getIdentity } from "@/lib/server-action";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LinkButton } from "@/components/ui/link-button";
+import { cn } from "@/lib/utils";
 import { selectAndOpenProjectAction } from "./actions";
 import { ModuleToggleCard } from "./module-toggle-card";
+import { projectLabel } from "@/lib/project-label";
+
+const TABS = [
+  { key: "modules", label: "Modules" },
+  { key: "keys", label: "Keys" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
+function isTabKey(v: string | undefined): v is TabKey {
+  return v === "modules" || v === "keys";
+}
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
 const MODULES: Array<{
@@ -60,8 +76,11 @@ const MODULES: Array<{
   },
 ];
 
-export default async function ProjectDetailPage({ params }: Props) {
+export default async function ProjectDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const sp = await searchParams;
+  const activeTab: TabKey = isTabKey(sp.tab) ? sp.tab : "modules";
+
   const session = await auth();
   const email = session?.user?.email;
   if (!email) redirect("/auth/signin");
@@ -85,6 +104,11 @@ export default async function ProjectDetailPage({ params }: Props) {
     return <ProjectSwitchPrompt projectName={project.name} projectId={id} />;
   }
 
+  const description =
+    activeTab === "keys"
+      ? "SDK keys granted access to this project. Secrets are only shown at creation; revoke and re-mint to rotate."
+      : "Toggle which modules are exposed in this project's devtools overlay and admin tabs.";
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -93,34 +117,141 @@ export default async function ProjectDetailPage({ params }: Props) {
             <ArrowLeft className="size-3" /> All projects
           </LinkButton>
         }
-        title={project.name}
-        description={
-          project.domain
-            ? `${project.domain} · Toggle which modules are exposed in this project's devtools overlay and admin tabs.`
-            : "Toggle which modules are exposed in this project's devtools overlay and admin tabs."
-        }
+        title={projectLabel(project.name, project.domain)}
+        description={description}
       />
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {MODULES.map((m) => (
-          <ModuleToggleCard
-            key={m.key}
-            moduleKey={m.key}
-            title={m.title}
-            description={m.description}
-            icon={m.icon}
-            initialEnabled={
-              {
-                translations: project.moduleTranslations,
-                configs: project.moduleConfigs,
-                gates: project.moduleGates,
-                experiments: project.moduleExperiments,
-                feedback: project.moduleFeedback,
-              }[m.key]
-            }
-          />
-        ))}
+      <ProjectTabs projectId={id} active={activeTab} />
+
+      {activeTab === "modules" ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {MODULES.map((m) => (
+            <ModuleToggleCard
+              key={m.key}
+              moduleKey={m.key}
+              title={m.title}
+              description={m.description}
+              icon={m.icon}
+              initialEnabled={
+                {
+                  translations: project.moduleTranslations,
+                  configs: project.moduleConfigs,
+                  gates: project.moduleGates,
+                  experiments: project.moduleExperiments,
+                  feedback: project.moduleFeedback,
+                }[m.key]
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <KeysList keys={await listKeys(identity)} />
+      )}
+    </div>
+  );
+}
+
+function ProjectTabs({ projectId, active }: { projectId: string; active: TabKey }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Project sections"
+      className="flex items-center gap-1 border-b border-[var(--se-line)]"
+    >
+      {TABS.map((t) => {
+        const isActive = t.key === active;
+        return (
+          <Link
+            key={t.key}
+            role="tab"
+            aria-selected={isActive}
+            href={`/dashboard/projects/${projectId}${t.key === "modules" ? "" : `?tab=${t.key}`}`}
+            className={cn(
+              "relative -mb-px inline-flex h-9 cursor-pointer items-center px-3 text-[13px] font-medium transition-colors",
+              isActive
+                ? "border-b-2 border-foreground text-foreground"
+                : "text-[var(--se-fg-3)] hover:text-foreground",
+            )}
+          >
+            {t.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+interface KeyRow {
+  id: string;
+  type: string;
+  created_at: string;
+  revoked_at: string | null;
+  expires_at: string | null;
+}
+
+function KeysList({ keys }: { keys: KeyRow[] }) {
+  if (keys.length === 0) {
+    return (
+      <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-2)] p-8 text-center text-sm text-[var(--se-fg-3)]">
+        <KeyRound className="mx-auto mb-2 size-5 opacity-60" />
+        No SDK keys yet. Mint one from the dashboard or via the CLI device-auth flow.
       </div>
+    );
+  }
+
+  const sorted = [...keys].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return (
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)]">
+      <table className="w-full text-[13px]">
+        <thead>
+          <tr className="border-b border-[var(--se-line)] bg-[var(--se-bg-2)] text-left text-[12px] text-[var(--se-fg-3)]">
+            <th className="px-4 py-2 font-medium">Type</th>
+            <th className="px-4 py-2 font-medium">Key ID</th>
+            <th className="px-4 py-2 font-medium">Created</th>
+            <th className="px-4 py-2 font-medium">Expires</th>
+            <th className="px-4 py-2 font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((k) => {
+            const revoked = !!k.revoked_at;
+            const expired = k.expires_at ? new Date(k.expires_at) < new Date() : false;
+            const status = revoked ? "revoked" : expired ? "expired" : "active";
+            return (
+              <tr
+                key={k.id}
+                className={cn(
+                  "border-b border-[var(--se-line)] last:border-b-0",
+                  (revoked || expired) && "opacity-60",
+                )}
+              >
+                <td className="px-4 py-2.5 font-mono uppercase">{k.type}</td>
+                <td className="px-4 py-2.5 font-mono text-[12px]" title={k.id}>
+                  {k.id.slice(0, 8)}…
+                </td>
+                <td className="px-4 py-2.5 text-[var(--se-fg-3)]">
+                  {new Date(k.created_at).toLocaleDateString()}
+                </td>
+                <td className="px-4 py-2.5 text-[var(--se-fg-3)]">
+                  {k.expires_at ? new Date(k.expires_at).toLocaleDateString() : "never"}
+                </td>
+                <td className="px-4 py-2.5">
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide",
+                      status === "active" && "bg-emerald-500/10 text-emerald-600",
+                      status === "revoked" && "bg-rose-500/10 text-rose-600",
+                      status === "expired" && "bg-amber-500/10 text-amber-700",
+                    )}
+                  >
+                    {status}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

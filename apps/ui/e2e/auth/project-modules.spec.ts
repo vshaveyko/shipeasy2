@@ -38,6 +38,33 @@ test.describe("Project module toggles", () => {
     }
   });
 
+  test("project detail page exposes Modules and Keys tabs", async ({ page }) => {
+    await page.goto("/dashboard/projects");
+    const activeCard = page.locator("button[type=submit]").filter({ hasText: "ACTIVE" }).first();
+    await activeCard.click();
+    await page.waitForURL(/\/dashboard\/projects\/[\w-]+$/);
+
+    const tablist = page.getByRole("tablist", { name: /project sections/i });
+    await expect(tablist).toBeVisible();
+    await expect(tablist.getByRole("tab", { name: /^modules$/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    await tablist.getByRole("tab", { name: /^keys$/i }).click();
+    await expect(page).toHaveURL(/\?tab=keys$/);
+    // Either the empty-state copy or the table header renders — both are valid
+    // "the panel mounted" signals.
+    await expect(
+      page.getByText(/No SDK keys yet/i).or(page.getByRole("columnheader", { name: /^type$/i })),
+    ).toBeVisible();
+
+    // Switching back to Modules drops the query param.
+    await tablist.getByRole("tab", { name: /^modules$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/projects\/[\w-]+$/);
+    await expect(page.getByRole("switch").first()).toBeVisible();
+  });
+
   test("toggling a switch persists across reload", async ({ page }) => {
     await page.goto("/dashboard/projects");
     const activeCard = page.locator("button[type=submit]").filter({ hasText: "ACTIVE" }).first();

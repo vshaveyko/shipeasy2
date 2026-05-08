@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { switchProjectAction } from "@/app/dashboard/projects/actions";
+import { projectLabel } from "@/lib/project-label";
 
 interface Project {
   id: string;
@@ -41,7 +42,7 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
   const router = useRouter();
 
   const active = projects.find((p) => p.id === activeProjectId) ?? projects[0];
-  const displayName = active?.domain ?? active?.name ?? "Project";
+  const displayName = active ? projectLabel(active.name, active.domain) : "Project";
   const color = active ? colorForId(active.id) : "var(--se-accent)";
 
   useEffect(() => {
@@ -125,7 +126,7 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
                       {initials(p.name)}
                     </div>
                     <span className="min-w-0 flex-1 truncate font-medium">
-                      {p.domain ?? p.name}
+                      {projectLabel(p.name, p.domain)}
                     </span>
                     {isCurrent && <Check className="size-3 shrink-0 text-[var(--se-accent)]" />}
                   </button>

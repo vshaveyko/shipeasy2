@@ -11,6 +11,7 @@ import { listExperiments } from "@/lib/handlers/experiments";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LinkButton } from "@/components/ui/link-button";
 import { selectAndOpenProjectAction } from "./[id]/actions";
+import { projectLabel } from "@/lib/project-label";
 
 const COLORS = ["#22a06b", "#3b82f6", "#a78bfa", "#f5a623", "#ec4899", "#06b6d4"];
 
@@ -158,15 +159,12 @@ export default async function ProjectsPage() {
                   {p.mark}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="m-0 truncate text-[15px] font-medium tracking-[-0.01em]">
-                    {p.name}
-                  </h3>
-                  <div
-                    className="mt-0.5 truncate font-mono text-[12px] text-[var(--se-fg-3)]"
-                    title={p.domain ?? "no domain configured"}
+                  <h3
+                    className="m-0 truncate text-[15px] font-medium tracking-[-0.01em]"
+                    title={projectLabel(p.name, p.domain)}
                   >
-                    {p.domain ?? <span className="dim-3 italic">no domain</span>}
-                  </div>
+                    {projectLabel(p.name, p.domain)}
+                  </h3>
                   <div className="mt-0.5 t-mono-xs dim-2">
                     {p.planLabel} · updated {timeAgo(p.updatedAt)}
                   </div>
