@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 import { auth } from "@/auth";
 import { getEnvAsync } from "@/lib/env";
-import { findProjectById, listProjectsByEmail } from "@shipeasy/core";
+import { findProjectById, hasProjectAccess, listAccessibleProjects } from "@shipeasy/core";
 
 export default async function DashboardRootPage({
   searchParams,
@@ -23,7 +23,7 @@ export default async function DashboardRootPage({
   let target: string | null = null;
 
   // Prefer the cookie/session-provided projectId. Use DB only to verify
-  // ownership when the DB is reachable; if the lookup fails (DB unavailable,
+  // access when the DB is reachable; if the lookup fails (DB unavailable,
   // schema not yet migrated, etc.) fall back to trusting the session value
   // — the [projectId]/layout still enforces access on the destination.
   async function verify(id: string | undefined | null): Promise<string | null> {
@@ -32,7 +32,7 @@ export default async function DashboardRootPage({
     try {
       const proj = await findProjectById(env.DB, id);
       if (!proj) return id; // schema/data may be missing in dev — trust input
-      if (proj.ownerEmail === email) return proj.id;
+      if (await hasProjectAccess(env.DB, proj.id, email)) return proj.id;
       return null;
     } catch {
       return id;
@@ -42,7 +42,7 @@ export default async function DashboardRootPage({
   target = await verify(cookieProjectId);
   if (!target) target = await verify(sessionProjectId);
   if (!target && env) {
-    const list = await listProjectsByEmail(env.DB, email).catch(() => []);
+    const list = await listAccessibleProjects(env.DB, email).catch(() => []);
     target = list[0]?.id ?? null;
   }
 

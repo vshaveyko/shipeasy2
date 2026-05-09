@@ -1,7 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
-import { findSdkKeyByHash, getDb, sha256 } from "@shipeasy/core";
+import { eq } from "drizzle-orm";
+import {
+  findSdkKeyByHash,
+  getDb,
+  hasProjectAccess,
+  listAccessibleProjects,
+  sha256,
+} from "@shipeasy/core";
 import { projects } from "@shipeasy/core/db/schema";
 import { createKey } from "@/lib/handlers/keys";
 import type { AdminIdentity } from "@/lib/admin-auth";
@@ -35,25 +41,23 @@ export interface DevtoolsAuthResult {
 
 /**
  * Resolve a customer SDK client key (e.g. `sdk_client_…`) to the project it
- * belongs to. Returns the project only if the signed-in user owns it —
- * otherwise we'd let an unrelated user mint an admin token for a project
- * just because they happened to load a page that exposes that project's
- * client key.
+ * belongs to. Returns the project only if the signed-in user owns it OR is
+ * an active member — otherwise we'd let an unrelated user mint an admin
+ * token for a project just because they happened to load a page that
+ * exposes that project's client key.
  */
 async function resolveProjectFromSdkKey(
   sdkKey: string,
-  ownerEmail: string,
+  actorEmail: string,
 ): Promise<ProjectOption | null> {
   const env = await getEnvAsync();
   const hash = await sha256(sdkKey);
   const k = await findSdkKeyByHash(env.DB, hash);
   if (!k) return null;
+  const allowed = await hasProjectAccess(env.DB, k.projectId, actorEmail);
+  if (!allowed) return null;
   const db = getDb(env.DB);
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, k.projectId), eq(projects.ownerEmail, ownerEmail)))
-    .limit(1);
+  const [project] = await db.select().from(projects).where(eq(projects.id, k.projectId)).limit(1);
   if (!project) return null;
   return { id: project.id, name: project.name, plan: project.plan, domain: project.domain ?? null };
 }
@@ -92,8 +96,7 @@ export async function listDevtoolsProjectsAction(
   }
 
   const env = await getEnvAsync();
-  const db = getDb(env.DB);
-  const rows = await db.select().from(projects).where(eq(projects.ownerEmail, email));
+  const rows = await listAccessibleProjects(env.DB, email);
   return rows
     .filter((r) => originMatchesDomain(host, r.domain ?? null))
     .map((r) => ({ id: r.id, name: r.name, plan: r.plan, domain: r.domain ?? null }));
@@ -122,12 +125,10 @@ export async function approveDevtoolsAuthAction(
   }
 
   const env = await getEnvAsync();
+  const allowed = await hasProjectAccess(env.DB, projectId, email);
+  if (!allowed) throw new Error("Project not found or you do not have access to it");
   const db = getDb(env.DB);
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.ownerEmail, email)))
-    .limit(1);
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
   if (!project) throw new Error("Project not found or you do not have access to it");
 
   if (sdkKey) {

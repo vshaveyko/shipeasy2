@@ -1,7 +1,13 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
-import { findProjectByEmail, findProjectById, insertProject } from "@shipeasy/core";
+import {
+  acceptPendingInvitesForEmail,
+  findProjectById,
+  hasProjectAccess,
+  insertProject,
+  listAccessibleProjects,
+} from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
 
 declare module "next-auth" {
@@ -54,9 +60,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const email = (token.email as string | undefined) ?? (user?.email as string | undefined);
       if (email && !token.project_id) {
         const env = await getEnvAsync();
-        const existing = await findProjectByEmail(env.DB, email);
-        if (existing) {
-          token.project_id = existing.id;
+        // Auto-accept any pending invitations for this email so the user
+        // shows up in `listAccessibleProjects` immediately. Without this,
+        // invited team members would land here with no membership row in
+        // `active` state and we'd auto-create a brand-new empty project for
+        // them — exactly the bug being fixed.
+        await acceptPendingInvitesForEmail(env.DB, email);
+        const accessible = await listAccessibleProjects(env.DB, email);
+        if (accessible.length > 0) {
+          token.project_id = accessible[0].id;
         } else {
           const now = new Date().toISOString();
           const id = crypto.randomUUID();
@@ -91,7 +103,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (cookieProjectId && cookieProjectId !== projectId && email) {
           const env = await getEnvAsync();
           const proj = await findProjectById(env.DB, cookieProjectId);
-          if (proj && proj.ownerEmail === email) projectId = cookieProjectId;
+          // Honor the cookie if the user owns the project OR is an active
+          // member — otherwise team members would silently get bumped back
+          // to the JWT's auto-created project on every navigation.
+          if (proj && (await hasProjectAccess(env.DB, proj.id, email))) {
+            projectId = cookieProjectId;
+          }
         }
       } catch {
         // Not in a request scope (e.g., during build) — fall back to JWT.

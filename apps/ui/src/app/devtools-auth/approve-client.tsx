@@ -108,18 +108,20 @@ export function ApproveButton({ origin, email, sdkKey }: Props) {
     }
     if (sdkKey) {
       // The page exposed an SDK key but it doesn't resolve to a project this
-      // user owns. Most often: signed in with a different account.
+      // user can access (owner or active member). Most often: signed in with
+      // a different account, or the team invite hasn't been accepted yet.
       return (
         <p className="text-muted-foreground text-center text-sm">
           The SDK key on <code className="font-mono text-xs">{host}</code> belongs to a project that{" "}
-          <strong>{email}</strong> doesn&apos;t own.{" "}
-          <SwitchAccountLink origin={origin} label="Sign in with the project owner" /> to continue.
+          <strong>{email}</strong> doesn&apos;t have access to.{" "}
+          <SwitchAccountLink origin={origin} label="Sign in with a member of the project" /> to
+          continue.
         </p>
       );
     }
     return (
       <p className="text-muted-foreground text-center text-sm">
-        No project owned by <strong>{email}</strong> is configured for{" "}
+        No project accessible to <strong>{email}</strong> is configured for{" "}
         <code className="font-mono text-xs">{host}</code>. Add this domain in your project&apos;s
         dashboard settings, then try again.
       </p>

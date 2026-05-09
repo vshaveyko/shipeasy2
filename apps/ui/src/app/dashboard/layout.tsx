@@ -4,7 +4,12 @@ import { cookies } from "next/headers";
 
 import { auth } from "@/auth";
 import { loadProject } from "@/lib/project";
-import { getEffectivePlan, listProjectsByEmail, findProjectById } from "@shipeasy/core";
+import {
+  getEffectivePlan,
+  listAccessibleProjects,
+  findProjectById,
+  hasProjectAccess,
+} from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { TopBar } from "@/components/dashboard/top-bar";
@@ -34,13 +39,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       if (cookieProjectId && cookieProjectId !== defaultProjectId) {
         const cookieProj = await findProjectById(env.DB, cookieProjectId);
         const email = session.user?.email ?? "";
-        if (cookieProj && cookieProj.ownerEmail === email) {
+        if (cookieProj && (await hasProjectAccess(env.DB, cookieProj.id, email))) {
           activeProjectId = cookieProjectId;
         }
       }
 
       const [allProjects, activeProject] = await Promise.all([
-        listProjectsByEmail(env.DB, session.user?.email ?? "").catch(() => []),
+        listAccessibleProjects(env.DB, session.user?.email ?? "").catch(() => []),
         loadProject(activeProjectId),
       ]);
 
@@ -79,8 +84,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         {billingStatus && (
           <BillingBanner status={billingStatus.status} trialEndsAt={billingStatus.trialEndsAt} />
         )}
-        <main className="flex-1 overflow-y-auto bg-[var(--se-bg)]">
-          <div className="mx-auto flex h-full w-full max-w-[1280px] flex-col px-6 py-6">
+        <main className="flex flex-1 flex-col overflow-hidden bg-[var(--se-bg)]">
+          <div className="mx-auto flex w-full min-h-0 max-w-[1280px] flex-1 flex-col px-6">
             {children}
           </div>
         </main>

@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@shipeasy/shared/Logo";
-import { listProjectsByEmail } from "@shipeasy/core";
+import { listAccessibleProjects } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
 import { approveCliAuthAction } from "./actions";
 
@@ -37,13 +37,12 @@ export default async function CliAuthPage({ searchParams }: Props) {
   const email = session.user.email ?? "";
   const sessionProjectId = session.user.project_id ?? "";
 
-  // Owned-by-this-user projects, oldest first (matches `/dashboard/projects`).
-  // Member-of-but-not-owner projects intentionally excluded for now — CLI
-  // tokens are owner-scoped today; broadening to members is a separate change.
+  // Projects the user can access — owned and active-membership — oldest
+  // first (matches `/dashboard/projects`).
   let projects: Array<{ id: string; name: string; domain: string | null }> = [];
   try {
     const env = await getEnvAsync();
-    const rows = await listProjectsByEmail(env.DB, email);
+    const rows = await listAccessibleProjects(env.DB, email);
     projects = rows.map((p) => ({ id: p.id, name: p.name, domain: p.domain ?? null }));
   } catch {
     // DB unavailable in dev — fall through with empty list and show fallback.
@@ -52,7 +51,7 @@ export default async function CliAuthPage({ searchParams }: Props) {
   const hasProjects = projects.length > 0;
   // Pre-select the session's active project so the picker defaults to what
   // the previous flow auto-picked. If the session project isn't in the
-  // owner-list (edge case), default to the first project.
+  // accessible list (edge case), default to the first project.
   const defaultProjectId =
     projects.find((p) => p.id === sessionProjectId)?.id ?? projects[0]?.id ?? "";
 

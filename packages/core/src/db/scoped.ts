@@ -149,6 +149,93 @@ export async function findProjectById(d1: D1Database, id: string) {
   return rows[0] ?? null;
 }
 
+/**
+ * Returns projects the user can access — projects they own, plus projects
+ * where they have an active (accepted, non-removed) membership row.
+ */
+export async function listAccessibleProjects(d1: D1Database, email: string) {
+  const db = getDb(d1);
+  const owned = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.ownerEmail, email))
+    .orderBy(projects.createdAt)
+    .all();
+  const memberRows = await db
+    .select({ project: projects })
+    .from(projectMembers)
+    .innerJoin(projects, eq(projects.id, projectMembers.projectId))
+    .where(
+      and(
+        eq(projectMembers.email, email),
+        eq(projectMembers.status, "active"),
+        isNull(projectMembers.removedAt),
+      )!,
+    )
+    .all();
+  const seen = new Set(owned.map((p) => p.id));
+  const merged = [...owned];
+  for (const row of memberRows) {
+    if (seen.has(row.project.id)) continue;
+    seen.add(row.project.id);
+    merged.push(row.project);
+  }
+  merged.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+  return merged;
+}
+
+/**
+ * True if the user owns the project OR has an active (non-removed) membership.
+ * Use anywhere you previously gated access on `project.ownerEmail === email`.
+ */
+export async function hasProjectAccess(
+  d1: D1Database,
+  projectId: string,
+  email: string,
+): Promise<boolean> {
+  const db = getDb(d1);
+  const [owner] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(eq(projects.id, projectId), eq(projects.ownerEmail, email))!)
+    .limit(1);
+  if (owner) return true;
+  const [member] = await db
+    .select({ id: projectMembers.id })
+    .from(projectMembers)
+    .where(
+      and(
+        eq(projectMembers.projectId, projectId),
+        eq(projectMembers.email, email),
+        eq(projectMembers.status, "active"),
+        isNull(projectMembers.removedAt),
+      )!,
+    )
+    .limit(1);
+  return !!member;
+}
+
+/**
+ * Marks all `pending` invitations addressed to this email as `active`. Called
+ * on sign-in so users actually become members of the projects they were
+ * invited to without needing a separate accept-invite UI.
+ */
+export async function acceptPendingInvitesForEmail(d1: D1Database, email: string): Promise<number> {
+  const db = getDb(d1);
+  const now = new Date().toISOString();
+  const pending = await db
+    .select({ id: projectMembers.id })
+    .from(projectMembers)
+    .where(and(eq(projectMembers.email, email), eq(projectMembers.status, "pending"))!)
+    .all();
+  if (pending.length === 0) return 0;
+  await db
+    .update(projectMembers)
+    .set({ status: "active", acceptedAt: now })
+    .where(and(eq(projectMembers.email, email), eq(projectMembers.status, "pending"))!);
+  return pending.length;
+}
+
 export async function findProjectByOwnerAndDomain(
   d1: D1Database,
   ownerEmail: string,

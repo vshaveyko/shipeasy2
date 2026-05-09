@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { findProjectById } from "@shipeasy/core";
+import { findProjectById, hasProjectAccess } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
 
 export async function approveCliAuthAction(formData: FormData) {
@@ -19,14 +19,13 @@ export async function approveCliAuthAction(formData: FormData) {
   const env = await getEnvAsync();
   const userEmail = session.user.email;
 
-  // Verify the caller actually owns the project they picked. We don't trust
-  // the form value blindly — a malicious POST could swap in a project_id the
-  // user has no relationship with, and the CLI would happily bind to it.
-  // Membership-based access (user is admin of project but not owner) is out
-  // of scope for now; the picker only renders owner-projects to match.
+  // Verify the caller actually has access to the project they picked. We
+  // don't trust the form value blindly — a malicious POST could swap in a
+  // project_id the user has no relationship with, and the CLI would happily
+  // bind to it. Owners and active members both qualify.
   const project = await findProjectById(env.DB, projectId);
-  if (!project || project.ownerEmail.toLowerCase() !== userEmail.toLowerCase()) {
-    throw new Error("You don't own that project.");
+  if (!project || !(await hasProjectAccess(env.DB, project.id, userEmail))) {
+    throw new Error("You don't have access to that project.");
   }
 
   const workerUrl = env.WORKER_URL;
