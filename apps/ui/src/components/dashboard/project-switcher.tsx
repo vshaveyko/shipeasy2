@@ -106,11 +106,13 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
             </span>
           )}
         </div>
-        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+        <ChevronDown
+          className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-1 w-full min-w-[200px] overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)] shadow-lg">
+        <div className="absolute top-full left-0 z-50 mt-1 w-full min-w-[220px] origin-top overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)] shadow-lg duration-150 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
           <div className="px-2.5 pb-1 pt-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--se-fg-4)]">
             Projects
           </div>
