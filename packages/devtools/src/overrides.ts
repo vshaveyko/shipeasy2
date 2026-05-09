@@ -234,6 +234,31 @@ export function setI18nLabelOverride(
   applyAndReload([[`se_i18n_label_${labelKey}`, value]]);
 }
 
+/**
+ * Snapshot every per-key i18n label override currently set on the URL.
+ * Used by the Save-as-draft flow to bulk-promote session edits into a draft.
+ */
+export function listI18nLabelOverrides(): Array<{ key: string; value: string }> {
+  const out: Array<{ key: string; value: string }> = [];
+  const params = currentParams();
+  for (const [k, v] of params.entries()) {
+    if (k.startsWith("se_i18n_label_")) {
+      out.push({ key: k.slice("se_i18n_label_".length), value: v });
+    }
+  }
+  return out;
+}
+
+/** Drop every `se_i18n_label_*` URL param without reloading immediately. */
+export function clearI18nLabelOverridesSilently(): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  for (const k of [...url.searchParams.keys()]) {
+    if (k.startsWith("se_i18n_label_")) url.searchParams.delete(k);
+  }
+  window.history.replaceState({}, "", url.toString());
+}
+
 // ── Bulk operations ─────────────────────────────────────────────────────────
 
 export function clearAllOverrides(): void {

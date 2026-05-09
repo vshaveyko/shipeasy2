@@ -639,6 +639,11 @@ button { font-family: inherit; }
   border-radius:3px; outline:none; resize:vertical;
   color:var(--fg); font-family:var(--mono); font-size:11.5px; line-height:1.45; }
 .dtf-modal textarea:focus { border-color:color-mix(in oklab, var(--pri) 45%, var(--line)); }
+.dtf-modal .dtf-input { width:100%; box-sizing:border-box; height:28px;
+  padding:4px 8px; background:var(--bg-2); border:1px solid var(--line);
+  border-radius:3px; outline:none; color:var(--fg);
+  font-family:var(--mono); font-size:11.5px; }
+.dtf-modal .dtf-input:focus { border-color:color-mix(in oklab, var(--pri) 45%, var(--line)); }
 .dtf-modal .ft { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--line);
   background:var(--bg-2); }
 .dtf-modal .ft .sp { flex:1; }

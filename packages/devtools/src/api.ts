@@ -301,6 +301,15 @@ export class DevtoolsApi {
     return (await res.json()) as AttachmentUploadResult;
   }
 
+  async createDraft(input: { profileId: string; name: string }): Promise<DraftRecord> {
+    const r = await this.post<DraftRecord>("/api/admin/i18n/drafts", {
+      profile_id: input.profileId,
+      name: input.name,
+    });
+    this.cache.delete("drafts");
+    return r;
+  }
+
   async upsertDraftKey(draftId: string, key: string, value: string): Promise<void> {
     await this.post(`/api/admin/i18n/drafts/${encodeURIComponent(draftId)}/keys`, { key, value });
     this.invalidateKeysCache();

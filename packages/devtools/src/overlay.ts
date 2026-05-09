@@ -7,6 +7,9 @@ import {
   snapshotOverridesFromStorage,
   isEditLabelsModeActive,
   setEditLabelsMode,
+  listI18nLabelOverrides,
+  clearI18nLabelOverridesSilently,
+  getI18nProfileOverride,
 } from "./overrides";
 import { DevtoolsApi } from "./api";
 import { renderUserPanel, type UserPanelState } from "./panels/user";
@@ -959,7 +962,116 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     if (!toggle) return;
     if (isEditLabelsModeActive()) toggle.classList.add("active");
     toggle.addEventListener("click", () => {
-      setEditLabelsMode(!isEditLabelsModeActive());
+      const wasActive = isEditLabelsModeActive();
+      if (!wasActive) {
+        setEditLabelsMode(true);
+        return;
+      }
+      const overrides = listI18nLabelOverrides();
+      if (overrides.length === 0) {
+        setEditLabelsMode(false);
+        return;
+      }
+      openSaveDraftModal(panel, overrides);
+    });
+  }
+
+  function openSaveDraftModal(
+    panel: HTMLElement,
+    overrides: Array<{ key: string; value: string }>,
+  ): void {
+    panel.querySelector(".dtf-modal-bg")?.remove();
+
+    const api = getApi();
+    const profileId = getI18nProfileOverride();
+    const defaultName = `edit-${new Date().toISOString().slice(0, 10)}`;
+
+    const wrap = document.createElement("div");
+    wrap.className = "dtf-modal-bg";
+    wrap.innerHTML = `
+      <div class="dtf-modal" role="dialog" aria-modal="true">
+        <div class="hd">
+          <span class="k">Save edits as draft</span>
+          <button class="x" data-cancel aria-label="Close">${I.x}</button>
+        </div>
+        <div class="bd">
+          <p style="margin:0;color:var(--fg-2);font-size:11px;line-height:1.5">
+            ${overrides.length} label edit${overrides.length === 1 ? "" : "s"} will be promoted into a new draft
+            ${profileId ? `under profile <span class="mono" style="color:var(--fg)">${escapeHtml(profileId)}</span>` : "of the active profile"}.
+            Session URL overrides will be cleared once the draft is created.
+          </p>
+          <div class="row">
+            <span class="lbl mono">Name</span>
+            <input class="dtf-input" data-name placeholder="${escapeAttr(defaultName)}" value="${escapeAttr(defaultName)}" />
+          </div>
+          <div class="row" style="display:${api ? "none" : "grid"}">
+            <span class="lbl mono">Note</span>
+            <span style="color:var(--warn);font-size:11px">Not signed in — only Discard is available.</span>
+          </div>
+          <div class="dtf-modal-err" data-err style="color:var(--danger);font-family:var(--mono);font-size:10.5px;min-height:0"></div>
+        </div>
+        <div class="ft">
+          <span style="flex:1"></span>
+          <button class="ibtn" data-discard>Discard edits</button>
+          <button class="ibtn pri" data-save${api ? "" : " disabled"}>Save draft</button>
+        </div>
+      </div>`;
+    panel.appendChild(wrap);
+
+    const nameInp = wrap.querySelector<HTMLInputElement>("[data-name]")!;
+    const errEl = wrap.querySelector<HTMLElement>("[data-err]")!;
+    const saveBtn = wrap.querySelector<HTMLButtonElement>("[data-save]")!;
+    const discardBtn = wrap.querySelector<HTMLButtonElement>("[data-discard]")!;
+    const cancelBtn = wrap.querySelector<HTMLButtonElement>("[data-cancel]")!;
+
+    nameInp.focus();
+    nameInp.select();
+
+    const close = () => wrap.remove();
+    cancelBtn.addEventListener("click", close);
+    wrap.addEventListener("click", (e) => {
+      if (e.target === wrap) close();
+    });
+    discardBtn.addEventListener("click", () => {
+      close();
+      setEditLabelsMode(false);
+    });
+    saveBtn.addEventListener("click", async () => {
+      if (!api) return;
+      errEl.textContent = "";
+      const name = (nameInp.value || defaultName).trim();
+      if (!name) {
+        errEl.textContent = "Name is required.";
+        return;
+      }
+      let targetProfile = profileId;
+      if (!targetProfile) {
+        try {
+          const profiles = await api.profiles();
+          targetProfile = profiles.find((p) => p.name === "en:prod")?.id ?? profiles[0]?.id ?? null;
+        } catch (err) {
+          errEl.textContent = err instanceof Error ? err.message : String(err);
+          return;
+        }
+      }
+      if (!targetProfile) {
+        errEl.textContent = "No profile available to anchor the draft.";
+        return;
+      }
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving…";
+      try {
+        const draft = await api.createDraft({ profileId: targetProfile, name });
+        for (const o of overrides) {
+          await api.upsertDraftKey(draft.id, o.key, o.value);
+        }
+        clearI18nLabelOverridesSilently();
+        setEditLabelsMode(false);
+      } catch (err) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save draft";
+        errEl.textContent = err instanceof Error ? err.message : String(err);
+      }
     });
   }
 
