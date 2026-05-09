@@ -5,7 +5,9 @@ const RUN = Date.now();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function evRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..");
+  // Same row layout as attributes/metrics/universes — walk up 3 levels so the
+  // Delete button (row sibling, not label-block descendant) is in scope.
+  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
 }
 
 // ── Form UI ───────────────────────────────────────────────────────────────────
@@ -120,7 +122,7 @@ test.describe("Pending event — approval workflow", () => {
       test.skip(true, "No seeded pending events — seed one via /collect to exercise this path");
       return;
     }
-    const row = pendingBadge.locator("..").locator("..");
+    const row = pendingBadge.locator("..").locator("..").locator("..");
     await expect(row.getByRole("button", { name: /^approve$/i })).toBeVisible();
     await expect(row.getByRole("button", { name: /^delete$/i })).toBeVisible();
   });
@@ -132,7 +134,7 @@ test.describe("Pending event — approval workflow", () => {
       test.skip(true, "No pending events to approve");
       return;
     }
-    const row = pendingBadge.locator("..").locator("..");
+    const row = pendingBadge.locator("..").locator("..").locator("..");
     await row.getByRole("button", { name: /^approve$/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/events$/);

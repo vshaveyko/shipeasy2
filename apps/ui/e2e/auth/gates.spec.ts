@@ -5,10 +5,23 @@ const RUN = Date.now();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function gateRow(page: Page, name: string) {
-  // Same row layout as attributes/metrics/universes — walk up 3 levels so
-  // the returned locator includes the badge + Delete button (siblings of the
-  // label-block, not descendants of it).
+  // Match the gate name link/text and walk up to the row container that holds
+  // the badge, the Disable button, and the actions dropdown trigger.
   return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
+}
+
+/** Open the per-row "Actions" dropdown and click the Delete item, then
+ *  confirm in the destructive-confirm dialog. */
+async function deleteGateViaActions(page: Page, name: string) {
+  await page.getByRole("button", { name: new RegExp(`Actions for ${name}`, "i") }).click();
+  await page.getByRole("menuitem", { name: /^delete( gate)?$/i }).click();
+  // Confirm dialog (per fix "require confirm dialog before deleting a gate")
+  // Wait for the dialog explicitly so the row-still-visible assertion runs
+  // after the row is actually gone, not just after we issued the action.
+  const dialog = page.getByRole("dialog");
+  await dialog.waitFor({ state: "visible" });
+  await dialog.getByRole("button", { name: /^delete( gate)?$/i }).click();
+  await dialog.waitFor({ state: "hidden" });
 }
 
 // ── Quick-profile UI ──────────────────────────────────────────────────────────
@@ -138,9 +151,7 @@ test.describe("Rollout gate — full CRUD", () => {
 
   test("delete gate → removed from list and from admin API", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
-    await gateRow(page, key)
-      .getByRole("button", { name: /^delete$/i })
-      .click();
+    await deleteGateViaActions(page, key);
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
     await expect(page.getByText(key, { exact: true })).not.toBeVisible();
@@ -180,9 +191,7 @@ test.describe("Killswitch gate — create with killswitch=true", () => {
 
   test("cleanup: delete killswitch gate", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
-    await gateRow(page, key)
-      .getByRole("button", { name: /^delete$/i })
-      .click();
+    await deleteGateViaActions(page, key);
     await expect(page.getByText(key, { exact: true })).not.toBeVisible();
   });
 });
@@ -212,9 +221,7 @@ test.describe("Beta gate — create and verify 0% default", () => {
 
   test("cleanup: delete beta gate", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
-    await gateRow(page, key)
-      .getByRole("button", { name: /^delete$/i })
-      .click();
+    await deleteGateViaActions(page, key);
     await expect(page.getByText(key, { exact: true })).not.toBeVisible();
   });
 });
@@ -244,9 +251,7 @@ test.describe("Full rollout gate — 100%", () => {
 
   test("cleanup: delete full-rollout gate", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
-    await gateRow(page, key)
-      .getByRole("button", { name: /^delete$/i })
-      .click();
+    await deleteGateViaActions(page, key);
     await expect(page.getByText(key, { exact: true })).not.toBeVisible();
   });
 });
