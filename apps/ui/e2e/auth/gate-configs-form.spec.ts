@@ -5,7 +5,9 @@ const RUN = Date.now();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function gateRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..");
+  // Same row layout as attributes/metrics/universes/events — walk up 3 levels
+  // so the Delete + Disable + Edit siblings of the label-block are in scope.
+  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
 }
 
 // ── New-gate form at /dashboard/configs/gates/new ─────────────────────────────

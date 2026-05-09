@@ -6,9 +6,11 @@ const RUN = Date.now();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Find a div-row by the exact text of its name span (2 levels up from span)
+// Find a div-row by the exact text of its name span (3 levels up from span,
+// matching the post-redesign label-block layout used by attributes/metrics/
+// universes/events/gate-configs/etc).
 const divRow = (page: Page, name: string) =>
-  page.getByText(name, { exact: true }).locator("..").locator("..");
+  page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
 
 // ── Scenario 1: Full experiment lifecycle ─────────────────────────────────────
 // Register an event → create a metric → create an experiment → start → stop → delete.
@@ -71,6 +73,7 @@ test.describe("Integration: full experiment lifecycle", () => {
     await page.goto("/dashboard/e2e-project-id/experiments/metrics");
     await page
       .getByText(mName, { exact: true })
+      .locator("..")
       .locator("..")
       .locator("..")
       .getByRole("button", { name: /^delete$/i })
