@@ -643,6 +643,7 @@ button { font-family: inherit; }
 .dtf-inline-form .ft button.primary { background:var(--warn-bg-strong);
   color:var(--warn); border-color:var(--warn-border); }
 .dtf-inline-form .ft button.primary:hover { background:color-mix(in oklab, var(--warn) 30%, var(--bg-3)); }
+.dtf-inline-form .ft button.ghost { background:transparent; }
 
 /* JSON tree editor */
 .json-tree { font-family:var(--mono); font-size:11px; max-height:340px; overflow:auto;

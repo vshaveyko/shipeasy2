@@ -124,7 +124,6 @@ export async function renderConfigsPanel(
   api: DevtoolsApi,
   view: ViewOpts,
   setOverrideCount: (n: number) => void,
-  modalRoot: ParentNode & { appendChild: (n: Node) => Node },
 ): Promise<void> {
   container.innerHTML = loadingState();
   let configs: ConfigRecord[];
@@ -202,7 +201,7 @@ export async function renderConfigsPanel(
         e.stopPropagation();
         const name = btn.getAttribute("data-edit")!;
         const r = rows.find((x) => x.name === name)!;
-        openOverrideModal(modalRoot, r);
+        openOverrideEditor(container, r, () => paint());
       });
     });
     container.querySelectorAll<HTMLElement>("[data-clear]").forEach((btn) => {
@@ -218,7 +217,10 @@ export async function renderConfigsPanel(
   paint();
 }
 
-// ── Override modal ──────────────────────────────────────────────────────────
+// ── Inline override editor ──────────────────────────────────────────────────
+// Renders a compact editor in place of the configs list — same panel chrome,
+// no full-page modal scrim. Mirrors the inline-form pattern used by the
+// feedback panel.
 
 function clone<T>(v: T): T {
   return v == null || typeof v !== "object" ? v : (JSON.parse(JSON.stringify(v)) as T);
@@ -238,14 +240,15 @@ function validateAgainstSchema(value: unknown, schema: Record<string, unknown>):
   }
 }
 
-function openOverrideModal(
-  modalRoot: ParentNode & { appendChild: (n: Node) => Node },
+function openOverrideEditor(
+  container: HTMLElement,
   row: {
     name: string;
     real: unknown;
     override: unknown;
     schema: Record<string, unknown>;
   },
+  onClose: () => void,
 ): void {
   // Devtool can't edit schemas — only values. Schema is used purely to drive
   // the form layout and validation. Coerce primitive legacy values to {} so
@@ -257,15 +260,9 @@ function openOverrideModal(
       : {};
   let draft: Record<string, unknown> = clone(initial);
 
-  const wrap = document.createElement("div");
-  wrap.className = "dtf-modal-bg";
-  wrap.innerHTML = `<div class="dtf-modal" data-role="modal"></div>`;
-  const modal = wrap.querySelector<HTMLElement>(".dtf-modal")!;
-  modalRoot.appendChild(wrap);
-
   function close(): void {
-    wrap.remove();
     document.removeEventListener("keydown", onKey);
+    onClose();
   }
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") close();
@@ -281,46 +278,48 @@ function openOverrideModal(
     close();
   }
   function paintError(message: string | null): void {
-    const errEl = modal.querySelector<HTMLElement>("[data-error]");
+    const errEl = container.querySelector<HTMLElement>("[data-error]");
     if (errEl) errEl.textContent = message ?? "";
   }
   function paint(): void {
     const dirty = !valEqual(draft, row.real);
-    modal.innerHTML = `
-      <div class="hd">
-        <span class="k">${escapeHtml(row.name)}</span>
-        <span class="type-tag t-object">object</span>
-        <button class="x" data-action="close" title="Close (Esc)">${I.x}</button>
-      </div>
-      <div class="bd">
-        <div data-form></div>
-        <div class="dtf-sf-error" data-error></div>
-      </div>
-      <div class="ft">
-        <button class="ghost" data-action="reset" ${dirty ? "" : "disabled"} style="${dirty ? "" : "opacity:.4"}">↺ Reset all</button>
-        <span class="sp"></span>
-        <button data-action="cancel">Cancel <span style="opacity:.6;margin-left:4px">Esc</span></button>
-        <button class="primary" data-action="save">Save override <span style="opacity:.6;margin-left:4px">⌘⏎</span></button>
+    container.innerHTML = `
+      <div class="dtf-inline-form">
+        <div class="hd">
+          <button class="back" data-action="close" title="Back (Esc)">${I.arrowLeft} Back</button>
+          <span class="k" style="margin-left:8px">${escapeHtml(row.name)}</span>
+          <span class="type-tag t-object">object</span>
+        </div>
+        <div class="bd">
+          <div data-form></div>
+          <div class="dtf-sf-error" data-error></div>
+        </div>
+        <div class="ft">
+          <button class="ghost" data-action="reset" ${dirty ? "" : "disabled"} style="${dirty ? "" : "opacity:.4"}">↺ Reset</button>
+          <span class="sp"></span>
+          <button data-action="cancel">Cancel</button>
+          <button class="primary" data-action="save">Save <span style="opacity:.6;margin-left:4px">⌘⏎</span></button>
+        </div>
       </div>`;
 
-    const formHost = modal.querySelector<HTMLElement>("[data-form]")!;
+    const formHost = container.querySelector<HTMLElement>("[data-form]")!;
     renderSchemaForm(formHost, row.schema, draft, (next) => {
       draft = next;
       // Live-validate to clear stale errors as the user types.
       paintError(null);
       // Re-render only on dirty toggle to refresh the Reset button state.
       const nowDirty = !valEqual(draft, row.real);
-      const resetBtn = modal.querySelector<HTMLButtonElement>('[data-action="reset"]');
+      const resetBtn = container.querySelector<HTMLButtonElement>('[data-action="reset"]');
       if (resetBtn) {
         resetBtn.disabled = !nowDirty;
         resetBtn.style.opacity = nowDirty ? "" : ".4";
       }
     });
 
-    modal.querySelector('[data-action="close"]')!.addEventListener("click", close);
-    modal.querySelector('[data-action="cancel"]')!.addEventListener("click", close);
-    modal.querySelector('[data-action="save"]')!.addEventListener("click", save);
-    modal.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
+    container.querySelector('[data-action="close"]')!.addEventListener("click", close);
+    container.querySelector('[data-action="cancel"]')!.addEventListener("click", close);
+    container.querySelector('[data-action="save"]')!.addEventListener("click", save);
+    container.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
       const realObj =
         row.real !== null && typeof row.real === "object" && !Array.isArray(row.real)
           ? (row.real as Record<string, unknown>)
@@ -330,9 +329,6 @@ function openOverrideModal(
     });
   }
 
-  wrap.addEventListener("click", (e) => {
-    if (e.target === wrap) close();
-  });
   document.addEventListener("keydown", onKey);
   paint();
 }

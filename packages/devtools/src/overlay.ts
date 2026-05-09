@@ -985,7 +985,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         void renderExperimentsPanel(body, api, view, setOverrideCount);
         break;
       case "configs":
-        void renderConfigsPanel(body, api, view, setOverrideCount, root);
+        void renderConfigsPanel(body, api, view, setOverrideCount);
         break;
       case "labels":
         void renderLabelsPanel(body, api, view, shadow, {
