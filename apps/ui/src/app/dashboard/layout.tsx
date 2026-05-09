@@ -80,7 +80,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <BillingBanner status={billingStatus.status} trialEndsAt={billingStatus.trialEndsAt} />
         )}
         <main className="flex-1 overflow-y-auto bg-[var(--se-bg)]">
-          <div className="mx-auto flex min-h-full w-full max-w-[1280px] flex-col px-6 py-6">
+          <div className="mx-auto flex h-full w-full max-w-[1280px] flex-col px-6 py-6">
             {children}
           </div>
         </main>

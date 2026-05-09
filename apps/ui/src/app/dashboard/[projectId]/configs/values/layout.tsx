@@ -21,11 +21,11 @@ export default async function ConfigValuesLayout({ children }: { children: React
   }
 
   return (
-    <div className="grid h-full min-h-[640px] grid-cols-[280px_minmax(0,1fr)] gap-0 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-      <aside className="border-r border-[var(--se-line)] bg-[var(--se-bg-1)]">
+    <div className="grid h-full min-h-0 grid-cols-[280px_minmax(0,1fr)] gap-0 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
+      <aside className="min-h-0 border-r border-[var(--se-line)] bg-[var(--se-bg-1)]">
         <ConfigsTree configs={configs} />
       </aside>
-      <div className="min-w-0 overflow-y-auto">{children}</div>
+      <div className="min-h-0 min-w-0 overflow-y-auto">{children}</div>
     </div>
   );
 }
