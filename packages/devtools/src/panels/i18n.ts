@@ -994,7 +994,7 @@ export async function renderLabelsPanel(
     return;
   }
 
-  // Wire the locale select that the shell rendered into the search bar.
+  // Wire the locale select that the shell rendered into the panel header.
   const localeSel = (container.getRootNode() as ShadowRoot).querySelector<HTMLSelectElement>(
     "select[data-locale]",
   );
@@ -1045,19 +1045,46 @@ export async function renderLabelsPanel(
         paint();
       });
     });
-    container.querySelectorAll<HTMLTextAreaElement>("textarea[data-edit-key]").forEach((ta) => {
-      ta.addEventListener("input", () => {
-        // Save as a session override on blur (don't reload on every keystroke).
+    container.querySelectorAll<HTMLInputElement>("input[data-edit-key]").forEach((inp) => {
+      inp.addEventListener("input", () => {
+        const row = inp.closest(".dtf-detail");
+        const saveBtn = row?.querySelector<HTMLButtonElement>("button[data-save-key]");
+        if (!saveBtn) return;
+        const original = filtered.find((x) => x.key === inp.dataset.editKey)?.value ?? "";
+        const dirty = inp.value !== original;
+        saveBtn.disabled = !dirty;
+        saveBtn.classList.toggle("dirty", dirty);
       });
-      ta.addEventListener("blur", () => {
-        const k = ta.dataset.editKey!;
+      inp.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const row = inp.closest(".dtf-detail");
+        row?.querySelector<HTMLButtonElement>("button[data-save-key]")?.click();
+      });
+    });
+    container.querySelectorAll<HTMLButtonElement>("button[data-save-key]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const k = btn.dataset.saveKey!;
+        const inp = btn
+          .closest(".dtf-detail")
+          ?.querySelector<HTMLInputElement>("input[data-edit-key]");
+        if (!inp) return;
         const original = filtered.find((x) => x.key === k)?.value ?? "";
-        if (ta.value === original) {
-          // No-op: clear any prior override silently.
+        if (inp.value === original) {
           setI18nLabelOverride(k, null);
         } else {
-          setI18nLabelOverride(k, ta.value);
+          setI18nLabelOverride(k, inp.value);
         }
+        btn.classList.add("done");
+        const prev = btn.textContent;
+        btn.textContent = "Saved ✓";
+        btn.disabled = true;
+        btn.classList.remove("dirty");
+        setTimeout(() => {
+          btn.classList.remove("done");
+          btn.textContent = prev;
+        }, 1100);
       });
     });
   }
@@ -1108,9 +1135,12 @@ export async function renderLabelsPanel(
       </div>
       <div class="dtf-detail${isOpen ? " open" : ""}">
         <div class="inner"><div class="pad lbl-pad">
-          <div class="lbl-edit">
-            <div class="hd"><span>${escapeHtml(hook.locale)}</span></div>
-            <textarea data-edit-key="${escapeHtml(r.key)}" placeholder="Translate to ${escapeHtml(hook.locale)}…">${escapeHtml(v)}</textarea>
+          <div class="lbl-edit-row">
+            <span class="lbl-edit-loc">${escapeHtml(hook.locale)}</span>
+            <input type="text" class="lbl-edit-input" data-edit-key="${escapeHtml(r.key)}"
+              value="${escapeHtml(v)}"
+              placeholder="Translate to ${escapeHtml(hook.locale)}…" />
+            <button class="lbl-edit-save" data-save-key="${escapeHtml(r.key)}" disabled>Save</button>
           </div>
           <div class="actions">
             ${api.hideAdminLinks ? "" : `<a target="_blank" rel="noopener" href="${api.adminUrl}/dashboard/i18n/keys">↗ Open in dashboard</a>`}

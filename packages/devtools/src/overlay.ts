@@ -6,6 +6,7 @@ import {
   buildOverrideUrl,
   snapshotOverridesFromStorage,
   isEditLabelsModeActive,
+  setEditLabelsMode,
 } from "./overrides";
 import { DevtoolsApi } from "./api";
 import { renderUserPanel, type UserPanelState } from "./panels/user";
@@ -747,6 +748,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
           <span class="title">${escapeHtml(tabDef.label)}</span>
           <span class="sub">${escapeHtml(sub)}</span>
         </div>
+        ${headExtrasHtml(tab)}
         <div class="actions">
           <button class="ib" data-action="refresh" title="Refresh">${I.refresh}</button>
           <button class="ib" data-action="collapse" title="Collapse">${I.x}</button>
@@ -803,6 +805,10 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       document.addEventListener("mousemove", move);
       document.addEventListener("mouseup", up);
     });
+
+    // Labels-tab head extras (Edit-on-page toggle). Locale select is wired
+    // by renderLabelsPanel once profiles load.
+    wireHeadExtras(panel);
 
     // Header actions
     panel.querySelector('[data-action="refresh"]')!.addEventListener("click", () => {
@@ -892,6 +898,15 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     const titleEl = panel.querySelector<HTMLElement>(".dtf-head .ti .title");
     if (tabDef && titleEl) titleEl.textContent = tabDef.label;
 
+    // Header extras (locale select + edit-labels toggle for `labels` tab).
+    const head = panel.querySelector<HTMLElement>(".dtf-head");
+    head?.querySelector(".dtf-head-extras")?.remove();
+    if (head && next === "labels") {
+      const ti = head.querySelector(".ti");
+      ti?.insertAdjacentHTML("afterend", headExtrasHtml(next));
+      wireHeadExtras(panel);
+    }
+
     // Search bar — drop the existing one (if any) and insert one for the new
     // tab if the new tab uses search. Cheaper to rebuild than to reconcile
     // placeholder/value/locale-select across tab kinds.
@@ -923,8 +938,29 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
           <button class="${view.view === "page" ? "active" : ""}" data-view="page">page</button>
           <button class="${view.view === "all" ? "active" : ""}" data-view="all">all</button>
         </div>
-        ${tab === "labels" ? `<select class="dtf-locale-sel" data-locale></select>` : ""}
       </div>`;
+  }
+
+  function headExtrasHtml(tab: PanelKey): string {
+    if (tab !== "labels") return "";
+    return `<div class="dtf-head-extras" data-labels-extras>
+        <button class="dtf-head-toggle" data-action="toggle-edit-labels"
+          title="Edit labels in place — click any string on the page">
+          ${I.book}<span>Edit on page</span>
+        </button>
+        <select class="dtf-head-locale" data-locale title="Profile / locale"></select>
+      </div>`;
+  }
+
+  function wireHeadExtras(panel: HTMLElement): void {
+    const toggle = panel.querySelector<HTMLButtonElement>(
+      '.dtf-head-extras [data-action="toggle-edit-labels"]',
+    );
+    if (!toggle) return;
+    if (isEditLabelsModeActive()) toggle.classList.add("active");
+    toggle.addEventListener("click", () => {
+      setEditLabelsMode(!isEditLabelsModeActive());
+    });
   }
 
   function wireSearch(panel: HTMLElement, tab: PanelKey): void {
