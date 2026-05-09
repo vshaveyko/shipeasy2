@@ -2,7 +2,7 @@ import { ToggleLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { listGates } from "@/lib/handlers/gates";
 import { EmptyState } from "@/components/dashboard/empty-state";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { GatesContent } from "./gates-content";
 
@@ -24,7 +24,7 @@ export default async function GatesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         title="Gates"
         description="Gates toggle features on and off per user, attribute, or percentage."
@@ -34,20 +34,22 @@ export default async function GatesPage() {
           </LinkButton>
         }
       />
-      {gates.length === 0 ? (
-        <EmptyState
-          icon={ToggleLeft}
-          title="No gates yet"
-          description="Create your first gate to start rolling features out to targeted users, percentages, or rules."
-          action={
-            <LinkButton size="sm" href={`/dashboard/${projectId}/configs/gates/new`}>
-              Create gate
-            </LinkButton>
-          }
-        />
-      ) : (
-        <GatesContent gates={gates} />
-      )}
-    </div>
+      <PageBody>
+        {gates.length === 0 ? (
+          <EmptyState
+            icon={ToggleLeft}
+            title="No gates yet"
+            description="Create your first gate to start rolling features out to targeted users, percentages, or rules."
+            action={
+              <LinkButton size="sm" href={`/dashboard/${projectId}/configs/gates/new`}>
+                Create gate
+              </LinkButton>
+            }
+          />
+        ) : (
+          <GatesContent gates={gates} />
+        )}
+      </PageBody>
+    </Page>
   );
 }

@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { Languages } from "lucide-react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { KeysTable } from "./_components/keys-table";
 import type { DraftKeyRow } from "@/lib/handlers/i18n";
@@ -57,19 +57,21 @@ export function KeysContent() {
 
   if (profilesQ.isLoading || draftsQ.isLoading) {
     return (
-      <div className="space-y-6">
+      <Page>
         <PageHeader
           title="Label keys"
           description="Manage translation keys across profiles and drafts."
         />
-        <div className="text-muted-foreground text-sm">Loading…</div>
-      </div>
+        <PageBody>
+          <div className="text-muted-foreground text-sm">Loading…</div>
+        </PageBody>
+      </Page>
     );
   }
 
   if (profiles.length === 0) {
     return (
-      <div className="space-y-6">
+      <Page>
         <PageHeader
           title="Label keys"
           description="Manage your translation keys across profiles and drafts."
@@ -79,22 +81,24 @@ export function KeysContent() {
             </LinkButton>
           }
         />
-        <EmptyState
-          icon={Languages}
-          title="No profiles yet"
-          description="Create a profile (e.g. en:prod) before pushing keys. Use the CLI or MCP tool to scan your codebase."
-          action={
-            <LinkButton size="sm" href="/dashboard/i18n/profiles/new">
-              New profile
-            </LinkButton>
-          }
-        />
-      </div>
+        <PageBody>
+          <EmptyState
+            icon={Languages}
+            title="No profiles yet"
+            description="Create a profile (e.g. en:prod) before pushing keys. Use the CLI or MCP tool to scan your codebase."
+            action={
+              <LinkButton size="sm" href="/dashboard/i18n/profiles/new">
+                New profile
+              </LinkButton>
+            }
+          />
+        </PageBody>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         kicker={`${profiles.length} profile${profiles.length === 1 ? "" : "s"} · ${openDrafts.length} open draft${openDrafts.length === 1 ? "" : "s"} · ${totalDraftKeys} pending key${totalDraftKeys === 1 ? "" : "s"}`}
         title="Label keys"
@@ -105,7 +109,9 @@ export function KeysContent() {
           </LinkButton>
         }
       />
-      <KeysTable profiles={profiles} drafts={openDrafts} draftKeysByDraft={draftKeysByDraft} />
-    </div>
+      <PageBody scroll={false} className="pb-0">
+        <KeysTable profiles={profiles} drafts={openDrafts} draftKeysByDraft={draftKeysByDraft} />
+      </PageBody>
+    </Page>
   );
 }

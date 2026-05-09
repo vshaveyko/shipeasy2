@@ -1159,7 +1159,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   // ── Main render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       {/* ── Profile tabs + draft selector ── */}
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--se-line)] pb-3">
         <div className="env-tabs" role="tablist" aria-label="Profile">
@@ -1308,7 +1308,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           </a>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] text-sm">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] text-sm">
           {/* Header */}
           <div className={cn(ROW_GRID, "border-b border-[var(--se-line)] bg-[var(--se-bg-2)]")}>
             <div className="flex h-9 items-center justify-center">
@@ -1338,7 +1338,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           </div>
 
           {/* Virtual scroll body */}
-          <div ref={scrollRef} className="relative max-h-[calc(100vh-22rem)] overflow-auto">
+          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-auto">
             {/* Sticky pinned section — floats at top while scrolling through the section's content */}
             {pinnedIdx !== null && flatRows[pinnedIdx]?.kind === "folder" && (
               <div

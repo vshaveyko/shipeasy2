@@ -18,7 +18,7 @@ import type { ProjectModuleKey } from "@shipeasy/core";
 import { listKeys } from "@/lib/handlers/keys";
 import { getEnvAsync } from "@/lib/env";
 import { getIdentity } from "@/lib/server-action";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { cn } from "@/lib/utils";
 import { selectAndOpenProjectAction } from "./actions";
@@ -126,7 +126,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
       : "Toggle which modules are exposed in this project's devtools overlay and admin tabs.";
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         kicker={
           <LinkButton size="sm" variant="ghost" href="/dashboard/projects">
@@ -139,36 +139,37 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
           <DeleteProjectButton id={project.id} name={project.name} domain={project.domain} />
         }
       />
+      <PageBody className="space-y-6">
+        <ProjectTabs projectId={id} active={activeTab} />
 
-      <ProjectTabs projectId={id} active={activeTab} />
-
-      {activeTab === "modules" ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          {MODULES.map((m) => (
-            <ModuleToggleCard
-              key={m.key}
-              moduleKey={m.key}
-              title={m.title}
-              description={m.description}
-              icon={m.icon}
-              initialEnabled={
-                {
-                  translations: project.moduleTranslations,
-                  configs: project.moduleConfigs,
-                  gates: project.moduleGates,
-                  experiments: project.moduleExperiments,
-                  feedback: project.moduleFeedback,
-                  user: project.moduleUser,
-                  events: project.moduleEvents,
-                }[m.key]
-              }
-            />
-          ))}
-        </div>
-      ) : (
-        <KeysList keys={await listKeys(identity)} />
-      )}
-    </div>
+        {activeTab === "modules" ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {MODULES.map((m) => (
+              <ModuleToggleCard
+                key={m.key}
+                moduleKey={m.key}
+                title={m.title}
+                description={m.description}
+                icon={m.icon}
+                initialEnabled={
+                  {
+                    translations: project.moduleTranslations,
+                    configs: project.moduleConfigs,
+                    gates: project.moduleGates,
+                    experiments: project.moduleExperiments,
+                    feedback: project.moduleFeedback,
+                    user: project.moduleUser,
+                    events: project.moduleEvents,
+                  }[m.key]
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <KeysList keys={await listKeys(identity)} />
+        )}
+      </PageBody>
+    </Page>
   );
 }
 

@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { listBugs } from "@/lib/handlers/bugs";
 import { listFeatureRequests } from "@/lib/handlers/feature-requests";
 import { listConnectors } from "@/lib/handlers/connectors";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { cn } from "@/lib/utils";
 import { ConnectorsModal, type ConnectorListItem } from "./_components/connectors-modal";
 
@@ -126,36 +126,37 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ tab?
   const openBugs = bugs.filter((b) => b.status === "open" || b.status === "triaged").length;
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         title="Feedback"
         description="Bug reports and feature requests filed via the in-page Shipeasy nub."
       />
+      <PageBody className="space-y-6">
+        <div className="flex items-center gap-1 border-b">
+          <TabLink
+            href={`/dashboard/${projectId}/feedback?tab=bugs`}
+            active={tab === "bugs"}
+            icon={Bug}
+            label="Bugs"
+            count={bugs.length}
+          />
+          <TabLink
+            href={`/dashboard/${projectId}/feedback?tab=requests`}
+            active={tab === "requests"}
+            icon={Lightbulb}
+            label="Feature requests"
+            count={requests.length}
+          />
+          <ConnectorsModal connectors={connectors} />
+        </div>
 
-      <div className="flex items-center gap-1 border-b">
-        <TabLink
-          href={`/dashboard/${projectId}/feedback?tab=bugs`}
-          active={tab === "bugs"}
-          icon={Bug}
-          label="Bugs"
-          count={bugs.length}
-        />
-        <TabLink
-          href={`/dashboard/${projectId}/feedback?tab=requests`}
-          active={tab === "requests"}
-          icon={Lightbulb}
-          label="Feature requests"
-          count={requests.length}
-        />
-        <ConnectorsModal connectors={connectors} />
-      </div>
-
-      {tab === "bugs" ? (
-        <BugsList bugs={bugs} openCount={openBugs} projectId={projectId ?? ""} />
-      ) : (
-        <RequestsList items={requests} projectId={projectId ?? ""} />
-      )}
-    </div>
+        {tab === "bugs" ? (
+          <BugsList bugs={bugs} openCount={openBugs} projectId={projectId ?? ""} />
+        ) : (
+          <RequestsList items={requests} projectId={projectId ?? ""} />
+        )}
+      </PageBody>
+    </Page>
   );
 }
 

@@ -7,7 +7,7 @@ import { FlaskConical, Search, Play, Square } from "lucide-react";
 import { projectIdFromPathname } from "@/lib/project-path";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { ActionForm } from "@/components/ui/action-form";
@@ -45,13 +45,15 @@ export function ExperimentsContent() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <Page>
         <PageHeader
           title="Experiments"
           description="Run A/B tests on metrics with guardrails. Results compute daily once an experiment starts."
         />
-        <div className="text-muted-foreground text-sm">Loading…</div>
-      </div>
+        <PageBody>
+          <div className="text-muted-foreground text-sm">Loading…</div>
+        </PageBody>
+      </Page>
     );
   }
 
@@ -62,7 +64,7 @@ export function ExperimentsContent() {
 
   if (experiments.length === 0) {
     return (
-      <div className="space-y-6">
+      <Page>
         <PageHeader
           title="Experiments"
           description="Run A/B tests on metrics with guardrails. Results compute daily once an experiment starts."
@@ -72,13 +74,15 @@ export function ExperimentsContent() {
             </LinkButton>
           }
         />
-        <HeroEmptyState kind="experiments" />
-      </div>
+        <PageBody>
+          <HeroEmptyState kind="experiments" />
+        </PageBody>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         kicker={`${experiments.length} experiment${experiments.length === 1 ? "" : "s"} · ${running} running · ${drafts} draft · ${archived} archived`}
         title="Experiments"
@@ -89,156 +93,158 @@ export function ExperimentsContent() {
           </LinkButton>
         }
       />
-
-      <div className="grid gap-3 md:grid-cols-4">
-        {[
-          { k: "RUNNING", v: running, color: "var(--se-accent)" },
-          { k: "DRAFT", v: drafts, color: "var(--se-fg-2)" },
-          { k: "STOPPED", v: stopped, color: "var(--se-warn)" },
-          { k: "ARCHIVED", v: archived, color: "var(--se-fg-3)" },
-        ].map((s) => (
-          <div
-            key={s.k}
-            className="rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)] px-4 py-3"
-          >
-            <div className="t-caps" style={{ color: s.color }}>
-              {s.k}
-            </div>
+      <PageBody className="space-y-6">
+        <div className="grid gap-3 md:grid-cols-4">
+          {[
+            { k: "RUNNING", v: running, color: "var(--se-accent)" },
+            { k: "DRAFT", v: drafts, color: "var(--se-fg-2)" },
+            { k: "STOPPED", v: stopped, color: "var(--se-warn)" },
+            { k: "ARCHIVED", v: archived, color: "var(--se-fg-3)" },
+          ].map((s) => (
             <div
-              className="mt-1 text-[24px] font-medium tracking-[-0.02em]"
-              style={{ fontVariantNumeric: "tabular-nums" }}
+              key={s.k}
+              className="rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)] px-4 py-3"
             >
-              {s.v}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-        <div className="flex items-center gap-3 border-b border-[var(--se-line)] px-4 py-3">
-          <div className="text-[14px] font-medium">All experiments</div>
-          <div className="ml-auto flex h-8 w-[220px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-            <Search className="size-3 text-[var(--se-fg-3)]" />
-            <input
-              placeholder="Filter experiments"
-              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-            />
-          </div>
-        </div>
-
-        <div
-          className="grid gap-3 border-b border-[var(--se-line)] px-5 py-2"
-          style={{
-            gridTemplateColumns: "28px minmax(0,1fr) 110px 110px 130px 120px",
-            background: "var(--se-bg-2)",
-          }}
-        >
-          <span />
-          <span className="t-caps dim-3">Experiment</span>
-          <span className="t-caps dim-3">Allocation</span>
-          <span className="t-caps dim-3">Variants</span>
-          <span className="t-caps dim-3">Status</span>
-          <span />
-        </div>
-        {experiments.map((exp) => {
-          const variantCount = Array.isArray(exp.groups) ? exp.groups.length : 0;
-          return (
-            <div
-              key={exp.id}
-              className="grid items-center gap-3 border-b border-[var(--se-line)] px-5 py-3 last:border-none hover:bg-[var(--se-bg-2)]"
-              style={{ gridTemplateColumns: "28px minmax(0,1fr) 110px 110px 130px 120px" }}
-            >
-              <div
-                className="grid size-7 place-items-center rounded-md"
-                style={{
-                  background: exp.status === "running" ? "var(--se-accent-soft)" : "var(--se-bg-3)",
-                  color: exp.status === "running" ? "var(--se-accent)" : "var(--se-fg-3)",
-                  border: "1px solid var(--se-line-2)",
-                }}
-              >
-                <FlaskConical className="size-3" />
+              <div className="t-caps" style={{ color: s.color }}>
+                {s.k}
               </div>
-              <div className="min-w-0">
-                <a
-                  href={`/dashboard/experiments/${exp.id}`}
-                  className="block truncate font-mono text-[13px] font-medium hover:underline"
+              <div
+                className="mt-1 text-[24px] font-medium tracking-[-0.02em]"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {s.v}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
+          <div className="flex items-center gap-3 border-b border-[var(--se-line)] px-4 py-3">
+            <div className="text-[14px] font-medium">All experiments</div>
+            <div className="ml-auto flex h-8 w-[220px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
+              <Search className="size-3 text-[var(--se-fg-3)]" />
+              <input
+                placeholder="Filter experiments"
+                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
+              />
+            </div>
+          </div>
+
+          <div
+            className="grid gap-3 border-b border-[var(--se-line)] px-5 py-2"
+            style={{
+              gridTemplateColumns: "28px minmax(0,1fr) 110px 110px 130px 120px",
+              background: "var(--se-bg-2)",
+            }}
+          >
+            <span />
+            <span className="t-caps dim-3">Experiment</span>
+            <span className="t-caps dim-3">Allocation</span>
+            <span className="t-caps dim-3">Variants</span>
+            <span className="t-caps dim-3">Status</span>
+            <span />
+          </div>
+          {experiments.map((exp) => {
+            const variantCount = Array.isArray(exp.groups) ? exp.groups.length : 0;
+            return (
+              <div
+                key={exp.id}
+                className="grid items-center gap-3 border-b border-[var(--se-line)] px-5 py-3 last:border-none hover:bg-[var(--se-bg-2)]"
+                style={{ gridTemplateColumns: "28px minmax(0,1fr) 110px 110px 130px 120px" }}
+              >
+                <div
+                  className="grid size-7 place-items-center rounded-md"
+                  style={{
+                    background:
+                      exp.status === "running" ? "var(--se-accent-soft)" : "var(--se-bg-3)",
+                    color: exp.status === "running" ? "var(--se-accent)" : "var(--se-fg-3)",
+                    border: "1px solid var(--se-line-2)",
+                  }}
                 >
-                  {exp.name}
-                </a>
-                <div className="t-mono-xs dim-2 mt-0.5 truncate">
-                  universe · {exp.universe ?? "default"}
+                  <FlaskConical className="size-3" />
+                </div>
+                <div className="min-w-0">
+                  <a
+                    href={`/dashboard/experiments/${exp.id}`}
+                    className="block truncate font-mono text-[13px] font-medium hover:underline"
+                  >
+                    {exp.name}
+                  </a>
+                  <div className="t-mono-xs dim-2 mt-0.5 truncate">
+                    universe · {exp.universe ?? "default"}
+                  </div>
+                </div>
+                <div
+                  className="font-mono text-[11px] text-[var(--se-fg-2)]"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {Math.round((exp.allocationPct ?? 0) / 100)}%
+                </div>
+                <div
+                  className="font-mono text-[11px] text-[var(--se-fg-2)]"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {variantCount}
+                </div>
+                <div className="flex justify-start">
+                  <span className={STATUS_BADGE[exp.status] ?? "se-badge"}>
+                    <span className="dot" />
+                    {exp.status.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-end gap-1">
+                  {exp.status === "draft" ? (
+                    <ActionForm
+                      action={setExperimentStatusAction}
+                      loading="Starting experiment…"
+                      success="Experiment started"
+                      onSuccess={() => mutate()}
+                    >
+                      <input type="hidden" name="id" value={exp.id} />
+                      <input type="hidden" name="status" value="running" />
+                      <Button size="sm" variant="ghost" type="submit" aria-label="Start experiment">
+                        <Play className="size-3" />
+                      </Button>
+                    </ActionForm>
+                  ) : null}
+                  {exp.status === "running" ? (
+                    <ActionForm
+                      action={setExperimentStatusAction}
+                      loading="Stopping experiment…"
+                      success="Experiment stopped"
+                      onSuccess={() => mutate()}
+                    >
+                      <input type="hidden" name="id" value={exp.id} />
+                      <input type="hidden" name="status" value="stopped" />
+                      <Button size="sm" variant="ghost" type="submit" aria-label="Stop experiment">
+                        <Square className="size-3" />
+                      </Button>
+                    </ActionForm>
+                  ) : null}
+                  {exp.status !== "running" && exp.status !== "archived" ? (
+                    <ActionForm
+                      action={deleteExperimentAction}
+                      loading="Deleting experiment…"
+                      success="Experiment deleted"
+                      onSuccess={() => mutate()}
+                    >
+                      <input type="hidden" name="id" value={exp.id} />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        type="submit"
+                        className="text-[var(--se-fg-3)] hover:bg-[var(--se-danger-soft)] hover:text-[var(--se-danger)]"
+                      >
+                        Delete
+                      </Button>
+                    </ActionForm>
+                  ) : null}
                 </div>
               </div>
-              <div
-                className="font-mono text-[11px] text-[var(--se-fg-2)]"
-                style={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                {Math.round((exp.allocationPct ?? 0) / 100)}%
-              </div>
-              <div
-                className="font-mono text-[11px] text-[var(--se-fg-2)]"
-                style={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                {variantCount}
-              </div>
-              <div className="flex justify-start">
-                <span className={STATUS_BADGE[exp.status] ?? "se-badge"}>
-                  <span className="dot" />
-                  {exp.status.toUpperCase()}
-                </span>
-              </div>
-              <div className="flex items-center justify-end gap-1">
-                {exp.status === "draft" ? (
-                  <ActionForm
-                    action={setExperimentStatusAction}
-                    loading="Starting experiment…"
-                    success="Experiment started"
-                    onSuccess={() => mutate()}
-                  >
-                    <input type="hidden" name="id" value={exp.id} />
-                    <input type="hidden" name="status" value="running" />
-                    <Button size="sm" variant="ghost" type="submit" aria-label="Start experiment">
-                      <Play className="size-3" />
-                    </Button>
-                  </ActionForm>
-                ) : null}
-                {exp.status === "running" ? (
-                  <ActionForm
-                    action={setExperimentStatusAction}
-                    loading="Stopping experiment…"
-                    success="Experiment stopped"
-                    onSuccess={() => mutate()}
-                  >
-                    <input type="hidden" name="id" value={exp.id} />
-                    <input type="hidden" name="status" value="stopped" />
-                    <Button size="sm" variant="ghost" type="submit" aria-label="Stop experiment">
-                      <Square className="size-3" />
-                    </Button>
-                  </ActionForm>
-                ) : null}
-                {exp.status !== "running" && exp.status !== "archived" ? (
-                  <ActionForm
-                    action={deleteExperimentAction}
-                    loading="Deleting experiment…"
-                    success="Experiment deleted"
-                    onSuccess={() => mutate()}
-                  >
-                    <input type="hidden" name="id" value={exp.id} />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      type="submit"
-                      className="text-[var(--se-fg-3)] hover:bg-[var(--se-danger-soft)] hover:text-[var(--se-danger)]"
-                    >
-                      Delete
-                    </Button>
-                  </ActionForm>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      </PageBody>
+    </Page>
   );
 }

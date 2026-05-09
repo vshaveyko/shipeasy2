@@ -4,7 +4,7 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 
 import { auth } from "@/auth";
 import { getBug } from "@/lib/handlers/bugs";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { BUG_STATUSES, type BugStatus } from "@shipeasy/core/db/schema";
 import { updateBugStatusAction, deleteBugAction } from "./actions";
 
@@ -43,19 +43,21 @@ export default async function BugDetailPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          href={`/dashboard/${projectId}/feedback?tab=bugs`}
-          className="inline-flex items-center gap-1.5 text-[12px] text-[var(--se-fg-3)] hover:text-foreground"
-        >
-          <ArrowLeft className="size-3.5" />
-          All bugs
-        </Link>
-      </div>
-
+    <Page>
       <PageHeader
-        kicker={`Reported ${fmt(bug.createdAt)}${bug.reporterEmail ? ` · ${bug.reporterEmail}` : ""}`}
+        kicker={
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/${projectId}/feedback?tab=bugs`}
+              className="inline-flex items-center gap-1.5 text-[12px] text-[var(--se-fg-3)] hover:text-foreground"
+            >
+              <ArrowLeft className="size-3.5" />
+              All bugs
+            </Link>
+            <span className="text-[var(--se-fg-4)]">·</span>
+            <span>{`Reported ${fmt(bug.createdAt)}${bug.reporterEmail ? ` · ${bug.reporterEmail}` : ""}`}</span>
+          </div>
+        }
         title={bug.title}
         actions={
           <form action={deleteBugAction}>
@@ -70,89 +72,90 @@ export default async function BugDetailPage({ params }: { params: Promise<{ id: 
           </form>
         }
       />
+      <PageBody>
+        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-4">
+            <Section title="Steps to reproduce" body={bug.stepsToReproduce} />
+            <Section title="Actual result" body={bug.actualResult} />
+            <Section title="Expected result" body={bug.expectedResult} />
 
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <div className="space-y-4">
-          <Section title="Steps to reproduce" body={bug.stepsToReproduce} />
-          <Section title="Actual result" body={bug.actualResult} />
-          <Section title="Expected result" body={bug.expectedResult} />
-
-          <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4">
-            <div className="mb-3 t-caps text-[var(--se-fg-3)]">Attachments</div>
-            {bug.attachments.length === 0 ? (
-              <div className="text-[12.5px] text-[var(--se-fg-4)]">None.</div>
-            ) : (
-              <ul className="space-y-3">
-                {bug.attachments.map((a) => (
-                  <li key={a.id} className="space-y-2">
-                    <div className="flex items-center justify-between text-[12.5px]">
-                      <span className="font-mono text-[var(--se-fg-2)]">{a.filename}</span>
-                      <span className="text-[var(--se-fg-4)]">
-                        {a.kind} · {(a.sizeBytes / 1024).toFixed(0)} KB
-                      </span>
-                    </div>
-                    {a.kind === "screenshot" ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={attachmentUrl(a.id)}
-                        alt={a.filename}
-                        className="max-h-[480px] w-full rounded border border-[var(--se-line-2)] object-contain"
-                      />
-                    ) : a.kind === "recording" ? (
-                      <video
-                        src={attachmentUrl(a.id)}
-                        controls
-                        className="w-full rounded border border-[var(--se-line-2)]"
-                      />
-                    ) : (
-                      <a
-                        href={attachmentUrl(a.id)}
-                        target="_blank"
-                        rel="noopener"
-                        className="inline-block rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 py-1.5 text-[12px] hover:bg-[var(--se-bg-3)]"
-                      >
-                        Download ↗
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4">
-            <form action={updateBugStatusAction} className="space-y-2">
-              <input type="hidden" name="id" value={bug.id} />
-              <label className="t-caps block text-[var(--se-fg-3)]">Status</label>
-              <select
-                name="status"
-                defaultValue={bug.status}
-                className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"
-              >
-                {BUG_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="w-full rounded border border-transparent bg-[var(--se-accent)] px-3 py-1.5 text-[12px] font-medium text-[var(--se-accent-fg)] hover:opacity-90"
-              >
-                Update status
-              </button>
-            </form>
+            <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4">
+              <div className="mb-3 t-caps text-[var(--se-fg-3)]">Attachments</div>
+              {bug.attachments.length === 0 ? (
+                <div className="text-[12.5px] text-[var(--se-fg-4)]">None.</div>
+              ) : (
+                <ul className="space-y-3">
+                  {bug.attachments.map((a) => (
+                    <li key={a.id} className="space-y-2">
+                      <div className="flex items-center justify-between text-[12.5px]">
+                        <span className="font-mono text-[var(--se-fg-2)]">{a.filename}</span>
+                        <span className="text-[var(--se-fg-4)]">
+                          {a.kind} · {(a.sizeBytes / 1024).toFixed(0)} KB
+                        </span>
+                      </div>
+                      {a.kind === "screenshot" ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={attachmentUrl(a.id)}
+                          alt={a.filename}
+                          className="max-h-[480px] w-full rounded border border-[var(--se-line-2)] object-contain"
+                        />
+                      ) : a.kind === "recording" ? (
+                        <video
+                          src={attachmentUrl(a.id)}
+                          controls
+                          className="w-full rounded border border-[var(--se-line-2)]"
+                        />
+                      ) : (
+                        <a
+                          href={attachmentUrl(a.id)}
+                          target="_blank"
+                          rel="noopener"
+                          className="inline-block rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 py-1.5 text-[12px] hover:bg-[var(--se-bg-3)]"
+                        >
+                          Download ↗
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
-          <Meta label="Page URL" value={bug.pageUrl} link />
-          <Meta label="User agent" value={bug.userAgent} />
-          <Meta label="Viewport" value={bug.viewport} />
-          <Meta label="Updated" value={fmt(bug.updatedAt)} />
+          <div className="space-y-4">
+            <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4">
+              <form action={updateBugStatusAction} className="space-y-2">
+                <input type="hidden" name="id" value={bug.id} />
+                <label className="t-caps block text-[var(--se-fg-3)]">Status</label>
+                <select
+                  name="status"
+                  defaultValue={bug.status}
+                  className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"
+                >
+                  {BUG_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_LABEL[s]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  className="w-full rounded border border-transparent bg-[var(--se-accent)] px-3 py-1.5 text-[12px] font-medium text-[var(--se-accent-fg)] hover:opacity-90"
+                >
+                  Update status
+                </button>
+              </form>
+            </div>
+
+            <Meta label="Page URL" value={bug.pageUrl} link />
+            <Meta label="User agent" value={bug.userAgent} />
+            <Meta label="Viewport" value={bug.viewport} />
+            <Meta label="Updated" value={fmt(bug.updatedAt)} />
+          </div>
         </div>
-      </div>
-    </div>
+      </PageBody>
+    </Page>
   );
 }
 

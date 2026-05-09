@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listProfiles } from "@/lib/handlers/i18n";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { NewDraftForm } from "./new-draft-form";
 
@@ -17,7 +17,7 @@ export default async function NewDraftPage() {
   const profiles = await listProfiles(identity).catch(() => []);
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         title="New draft"
         description="A draft collects proposed translations before they are published to a profile."
@@ -27,8 +27,9 @@ export default async function NewDraftPage() {
           </LinkButton>
         }
       />
-
-      <NewDraftForm profiles={profiles} />
-    </div>
+      <PageBody>
+        <NewDraftForm profiles={profiles} />
+      </PageBody>
+    </Page>
   );
 }

@@ -251,8 +251,8 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
   ).length;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-[var(--se-line)] bg-[var(--se-bg-1)] px-6 py-3">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--se-line)] bg-[var(--se-bg-1)] px-6 py-3">
         <div className="crumbs flex items-center gap-2 font-mono text-[13px] text-[var(--se-fg-3)]">
           <span>Configs</span>
           <span className="text-[var(--se-fg-4)]">/</span>
@@ -280,7 +280,7 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6">
         <PageHeader
           kicker={`${fieldCount} ${
             fieldCount === 1 ? "field" : "fields"

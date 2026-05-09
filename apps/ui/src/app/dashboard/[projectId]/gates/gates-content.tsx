@@ -9,7 +9,7 @@ import { Search, Shield, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { ActionForm } from "@/components/ui/action-form";
@@ -35,7 +35,6 @@ interface GateRow {
   rolloutPct: number;
   rules: unknown;
   enabled: number | boolean;
-  killswitch: number | boolean;
 }
 
 const fetcher = async (url: string): Promise<GateRow[]> => {
@@ -62,13 +61,15 @@ export function GatesContent() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <Page>
         <PageHeader
           title="Gates"
           description="Gates toggle features on and off per user, attribute, or percentage."
         />
-        <div className="text-muted-foreground text-sm">Loading…</div>
-      </div>
+        <PageBody>
+          <div className="text-muted-foreground text-sm">Loading…</div>
+        </PageBody>
+      </Page>
     );
   }
 
@@ -78,7 +79,7 @@ export function GatesContent() {
 
   if (total === 0) {
     return (
-      <div className="space-y-6">
+      <Page>
         <PageHeader
           title="Gates"
           description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
@@ -88,13 +89,15 @@ export function GatesContent() {
             </LinkButton>
           }
         />
-        <HeroEmptyState kind="gates" />
-      </div>
+        <PageBody>
+          <HeroEmptyState kind="gates" />
+        </PageBody>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         kicker={`${total} gate${total === 1 ? "" : "s"} · ${enabled} enabled · ${paused} paused`}
         title="Gates"
@@ -105,117 +108,107 @@ export function GatesContent() {
           </LinkButton>
         }
       />
-
-      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-        <div className="flex items-center gap-3 border-b border-[var(--se-line)] px-4 py-3">
-          <div className="text-[14px] font-medium">All gates</div>
-          <div className="ml-auto flex h-8 w-[220px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-            <Search className="size-3 text-[var(--se-fg-3)]" />
-            <input
-              placeholder="Filter gates"
-              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-            />
-          </div>
-        </div>
-
-        <div
-          className="grid gap-3 border-b border-[var(--se-line)] px-5 py-2"
-          style={{
-            gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 32px",
-            background: "var(--se-bg-2)",
-          }}
-        >
-          <span />
-          <span className="t-caps dim-3">Gate</span>
-          <span className="t-caps dim-3">Rollout</span>
-          <span className="t-caps dim-3">Rules</span>
-          <span className="t-caps dim-3">Status</span>
-          <span />
-          <span />
-        </div>
-        {optimisticGates.map((gate) => {
-          const ruleCount = Array.isArray(gate.rules) ? gate.rules.length : 0;
-          const isEnabled = Boolean(gate.enabled);
-          const isKill = Boolean(gate.killswitch);
-          const color = isKill
-            ? "var(--se-danger)"
-            : isEnabled
-              ? "var(--se-accent)"
-              : "var(--se-fg-4)";
-          return (
-            <div
-              key={gate.id}
-              className="grid items-center gap-3 border-b border-[var(--se-line)] px-5 py-3 transition-colors last:border-none hover:bg-[var(--se-bg-2)]"
-              style={{ gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 32px" }}
-            >
-              <Shield className="size-3.5" style={{ color }} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <a
-                    href={`/dashboard/${projectId}/gates/${gate.id}`}
-                    className="truncate font-mono text-[13px] font-medium hover:underline"
-                  >
-                    {gate.name}
-                  </a>
-                  {isKill ? (
-                    <span className="se-badge se-badge-killed">
-                      <span className="dot" />
-                      KILLSWITCH
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-              <div
-                className="font-mono text-[11px] text-[var(--se-fg-2)]"
-                style={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                {Math.round((gate.rolloutPct ?? 0) / 100)}%
-              </div>
-              <div className="font-mono text-[11px] text-[var(--se-fg-2)]">
-                {ruleCount} rule{ruleCount === 1 ? "" : "s"}
-              </div>
-              <div className="flex justify-end">
-                {isEnabled ? (
-                  <span className="se-badge se-badge-live">
-                    <span className="dot" />
-                    ENABLED
-                  </span>
-                ) : (
-                  <span className="se-badge">
-                    <span className="dot" />
-                    DISABLED
-                  </span>
-                )}
-              </div>
-              {/* Optimistic toggle */}
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  aria-label={isEnabled ? "Disable gate" : "Enable gate"}
-                  className={`se-toggle ${isEnabled ? "on" : ""}`}
-                  onClick={() => {
-                    const nextEnabled = !isEnabled;
-                    startTransition(async () => {
-                      setOptimisticEnabled({ id: gate.id, enabled: nextEnabled });
-                      const fd = new FormData();
-                      fd.append("id", gate.id);
-                      fd.append("enabled", String(nextEnabled));
-                      const result = await enableGateAction(fd);
-                      if (!result.ok) {
-                        toast.error(result.error);
-                      } else {
-                        await mutate();
-                      }
-                    });
-                  }}
-                />
-              </div>
-              <GateRowMenu gate={gate} onDeleted={() => mutate()} />
+      <PageBody>
+        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
+          <div className="flex items-center gap-3 border-b border-[var(--se-line)] px-4 py-3">
+            <div className="text-[14px] font-medium">All gates</div>
+            <div className="ml-auto flex h-8 w-[220px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
+              <Search className="size-3 text-[var(--se-fg-3)]" />
+              <input
+                placeholder="Filter gates"
+                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
+              />
             </div>
-          );
-        })}
-      </div>
-    </div>
+          </div>
+
+          <div
+            className="grid gap-3 border-b border-[var(--se-line)] px-5 py-2"
+            style={{
+              gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 32px",
+              background: "var(--se-bg-2)",
+            }}
+          >
+            <span />
+            <span className="t-caps dim-3">Gate</span>
+            <span className="t-caps dim-3">Rollout</span>
+            <span className="t-caps dim-3">Rules</span>
+            <span className="t-caps dim-3">Status</span>
+            <span />
+            <span />
+          </div>
+          {optimisticGates.map((gate) => {
+            const ruleCount = Array.isArray(gate.rules) ? gate.rules.length : 0;
+            const isEnabled = Boolean(gate.enabled);
+            const color = isEnabled ? "var(--se-accent)" : "var(--se-fg-4)";
+            return (
+              <div
+                key={gate.id}
+                className="grid items-center gap-3 border-b border-[var(--se-line)] px-5 py-3 transition-colors last:border-none hover:bg-[var(--se-bg-2)]"
+                style={{ gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 32px" }}
+              >
+                <Shield className="size-3.5" style={{ color }} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`/dashboard/${projectId}/gates/${gate.id}`}
+                      className="truncate font-mono text-[13px] font-medium hover:underline"
+                    >
+                      {gate.name}
+                    </a>
+                  </div>
+                </div>
+                <div
+                  className="font-mono text-[11px] text-[var(--se-fg-2)]"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {Math.round((gate.rolloutPct ?? 0) / 100)}%
+                </div>
+                <div className="font-mono text-[11px] text-[var(--se-fg-2)]">
+                  {ruleCount} rule{ruleCount === 1 ? "" : "s"}
+                </div>
+                <div className="flex justify-end">
+                  {isEnabled ? (
+                    <span className="se-badge se-badge-live">
+                      <span className="dot" />
+                      ENABLED
+                    </span>
+                  ) : (
+                    <span className="se-badge">
+                      <span className="dot" />
+                      DISABLED
+                    </span>
+                  )}
+                </div>
+                {/* Optimistic toggle */}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    aria-label={isEnabled ? "Disable gate" : "Enable gate"}
+                    className={`se-toggle ${isEnabled ? "on" : ""}`}
+                    onClick={() => {
+                      const nextEnabled = !isEnabled;
+                      startTransition(async () => {
+                        setOptimisticEnabled({ id: gate.id, enabled: nextEnabled });
+                        const fd = new FormData();
+                        fd.append("id", gate.id);
+                        fd.append("enabled", String(nextEnabled));
+                        const result = await enableGateAction(fd);
+                        if (!result.ok) {
+                          toast.error(result.error);
+                        } else {
+                          await mutate();
+                        }
+                      });
+                    }}
+                  />
+                </div>
+                <GateRowMenu gate={gate} onDeleted={() => mutate()} />
+              </div>
+            );
+          })}
+        </div>
+      </PageBody>
+    </Page>
   );
 }
 

@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import type { JsonSchema } from "@shipeasy/core";
 
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageFooter, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -146,82 +146,78 @@ export default function NewConfigValuePage() {
   }
 
   return (
-    <div className="space-y-5 p-6">
+    <Page className="px-6">
       <PageHeader
         title="New config"
         description="Define a key, the shape of its value, and the default each environment starts with."
-        actions={
-          <LinkButton variant="ghost" size="sm" href={cancelHref}>
-            Cancel
-          </LinkButton>
-        }
       />
+      <PageBody className="space-y-5">
+        <Card>
+          <CardHeader className="border-b pb-4">
+            <CardTitle>Basics</CardTitle>
+            <CardDescription>How SDKs will look this config up.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="config-key">Key</Label>
+              <Input
+                id="config-key"
+                name="key"
+                placeholder="pricing.thresholds"
+                className="font-mono"
+                required
+                pattern="[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)*"
+                title="Lowercase segments separated by dots, e.g. pricing.thresholds"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                data-testid="config-key-input"
+              />
+              <p className="text-xs text-muted-foreground">
+                Used in SDK as{" "}
+                <code className="font-mono">getConfig(&apos;{name || "…"}&apos;)</code>
+              </p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="config-description">Description (optional)</Label>
+              <Input
+                id="config-description"
+                name="description"
+                placeholder="Tiered pricing thresholds for plan upgrades"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="border-b pb-4">
-          <CardTitle>Basics</CardTitle>
-          <CardDescription>How SDKs will look this config up.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="config-key">Key</Label>
-            <Input
-              id="config-key"
-              name="key"
-              placeholder="pricing.thresholds"
-              className="font-mono"
-              required
-              pattern="[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)*"
-              title="Lowercase segments separated by dots, e.g. pricing.thresholds"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              data-testid="config-key-input"
-            />
-            <p className="text-xs text-muted-foreground">
-              Used in SDK as <code className="font-mono">getConfig(&apos;{name || "…"}&apos;)</code>
-            </p>
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-3 border-b pb-4">
+            <div className="space-y-1.5">
+              <CardTitle>Fields</CardTitle>
+              <CardDescription>
+                Each field is a property on the returned object. The default value is what every SDK
+                gets until you publish a change.
+              </CardDescription>
+            </div>
+            <span className="shrink-0 text-[11px] uppercase tracking-wide text-muted-foreground">
+              {fields.length} {fields.length === 1 ? "field" : "fields"}
+            </span>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <FieldsEditor fields={fields} onChange={setFields} />
+          </CardContent>
+        </Card>
+
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-[var(--radius-md)] border border-[color-mix(in_oklab,var(--se-danger)_30%,transparent)] bg-[var(--se-danger-soft)] px-4 py-2 text-[13px] text-[var(--se-danger)]"
+          >
+            {error}
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="config-description">Description (optional)</Label>
-            <Input
-              id="config-description"
-              name="description"
-              placeholder="Tiered pricing thresholds for plan upgrades"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 border-b pb-4">
-          <div className="space-y-1.5">
-            <CardTitle>Fields</CardTitle>
-            <CardDescription>
-              Each field is a property on the returned object. The default value is what every SDK
-              gets until you publish a change.
-            </CardDescription>
-          </div>
-          <span className="shrink-0 text-[11px] uppercase tracking-wide text-muted-foreground">
-            {fields.length} {fields.length === 1 ? "field" : "fields"}
-          </span>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <FieldsEditor fields={fields} onChange={setFields} />
-        </CardContent>
-      </Card>
-
-      {error ? (
-        <div
-          role="alert"
-          className="rounded-[var(--radius-md)] border border-[color-mix(in_oklab,var(--se-danger)_30%,transparent)] bg-[var(--se-danger-soft)] px-4 py-2 text-[13px] text-[var(--se-danger)]"
-        >
-          {error}
-        </div>
-      ) : null}
-
-      <div className="flex items-center justify-between gap-2">
+        ) : null}
+      </PageBody>
+      <PageFooter align="between">
         <p className="text-[12px] text-muted-foreground">
           Fields and defaults can be edited any time. Schema changes do not bump value versions.
         </p>
@@ -233,7 +229,7 @@ export default function NewConfigValuePage() {
             {pending ? "Creating…" : "Create config"}
           </Button>
         </div>
-      </div>
-    </div>
+      </PageFooter>
+    </Page>
   );
 }

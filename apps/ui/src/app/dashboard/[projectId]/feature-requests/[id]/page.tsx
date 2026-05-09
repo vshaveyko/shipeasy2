@@ -4,7 +4,7 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 
 import { auth } from "@/auth";
 import { getFeatureRequest } from "@/lib/handlers/feature-requests";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import {
   FEATURE_REQUEST_STATUSES,
   FEATURE_REQUEST_IMPORTANCES,
@@ -54,19 +54,21 @@ export default async function FeatureRequestDetailPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          href={`/dashboard/${projectId}/feedback?tab=requests`}
-          className="inline-flex items-center gap-1.5 text-[12px] text-[var(--se-fg-3)] hover:text-foreground"
-        >
-          <ArrowLeft className="size-3.5" />
-          All requests
-        </Link>
-      </div>
-
+    <Page>
       <PageHeader
-        kicker={`Filed ${fmt(item.createdAt)}${item.reporterEmail ? ` · ${item.reporterEmail}` : ""}`}
+        kicker={
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/${projectId}/feedback?tab=requests`}
+              className="inline-flex items-center gap-1.5 text-[12px] text-[var(--se-fg-3)] hover:text-foreground"
+            >
+              <ArrowLeft className="size-3.5" />
+              All requests
+            </Link>
+            <span className="text-[var(--se-fg-4)]">·</span>
+            <span>{`Filed ${fmt(item.createdAt)}${item.reporterEmail ? ` · ${item.reporterEmail}` : ""}`}</span>
+          </div>
+        }
         title={item.title}
         actions={
           <form action={deleteFeatureRequestAction}>
@@ -81,58 +83,59 @@ export default async function FeatureRequestDetailPage({
           </form>
         }
       />
-
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <div className="space-y-4">
-          <Section title="Description" body={item.description} />
-          <Section title="Use case" body={item.useCase} />
-        </div>
-        <div className="space-y-4">
-          <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4">
-            <form action={updateFeatureRequestAction} className="space-y-3">
-              <input type="hidden" name="id" value={item.id} />
-              <div className="space-y-1">
-                <label className="t-caps block text-[var(--se-fg-3)]">Status</label>
-                <select
-                  name="status"
-                  defaultValue={item.status}
-                  className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"
-                >
-                  {FEATURE_REQUEST_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_LABEL[s]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="t-caps block text-[var(--se-fg-3)]">Importance</label>
-                <select
-                  name="importance"
-                  defaultValue={item.importance}
-                  className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"
-                >
-                  {FEATURE_REQUEST_IMPORTANCES.map((i) => (
-                    <option key={i} value={i}>
-                      {IMPORTANCE_LABEL[i]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full rounded border border-transparent bg-[var(--se-accent)] px-3 py-1.5 text-[12px] font-medium text-[var(--se-accent-fg)] hover:opacity-90"
-              >
-                Save
-              </button>
-            </form>
+      <PageBody>
+        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-4">
+            <Section title="Description" body={item.description} />
+            <Section title="Use case" body={item.useCase} />
           </div>
-          <Meta label="Page URL" value={item.pageUrl} link />
-          <Meta label="User agent" value={item.userAgent} />
-          <Meta label="Updated" value={fmt(item.updatedAt)} />
+          <div className="space-y-4">
+            <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4">
+              <form action={updateFeatureRequestAction} className="space-y-3">
+                <input type="hidden" name="id" value={item.id} />
+                <div className="space-y-1">
+                  <label className="t-caps block text-[var(--se-fg-3)]">Status</label>
+                  <select
+                    name="status"
+                    defaultValue={item.status}
+                    className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"
+                  >
+                    {FEATURE_REQUEST_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABEL[s]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="t-caps block text-[var(--se-fg-3)]">Importance</label>
+                  <select
+                    name="importance"
+                    defaultValue={item.importance}
+                    className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"
+                  >
+                    {FEATURE_REQUEST_IMPORTANCES.map((i) => (
+                      <option key={i} value={i}>
+                        {IMPORTANCE_LABEL[i]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full rounded border border-transparent bg-[var(--se-accent)] px-3 py-1.5 text-[12px] font-medium text-[var(--se-accent-fg)] hover:opacity-90"
+                >
+                  Save
+                </button>
+              </form>
+            </div>
+            <Meta label="Page URL" value={item.pageUrl} link />
+            <Meta label="User agent" value={item.userAgent} />
+            <Meta label="Updated" value={fmt(item.updatedAt)} />
+          </div>
         </div>
-      </div>
-    </div>
+      </PageBody>
+    </Page>
   );
 }
 

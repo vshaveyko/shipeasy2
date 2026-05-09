@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { listGates } from "@/lib/handlers/gates";
 import { listAttributes } from "@/lib/handlers/attributes";
-import { PageHeader } from "@/components/dashboard/page-header";
+import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
@@ -43,13 +43,19 @@ export default async function GateDetailPage({ params }: { params: Promise<{ id:
   }));
 
   return (
-    <div className="space-y-6">
-      <LinkButton variant="ghost" size="sm" className="-ml-2" href={`/dashboard/${projectId}/configs/gates`}>
-        <ArrowLeft className="size-3.5" />
-        Gates
-      </LinkButton>
-
+    <Page>
       <PageHeader
+        kicker={
+          <LinkButton
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            href={`/dashboard/${projectId}/configs/gates`}
+          >
+            <ArrowLeft className="size-3.5" />
+            Gates
+          </LinkButton>
+        }
         title={gate.name}
         description="Manage targeting rules for this gate."
         actions={
@@ -58,20 +64,23 @@ export default async function GateDetailPage({ params }: { params: Promise<{ id:
           </Badge>
         }
       />
-
-      <Card>
-        <CardHeader className="border-b pb-4">
-          <CardTitle>Targeting rules</CardTitle>
-          <CardDescription>Rules are evaluated in order. First matching rule wins.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <RulesBuilder
-            gateId={gate.id}
-            initialRules={initialRules}
-            attributes={attributes.map((a) => ({ id: a.id, name: a.name }))}
-          />
-        </CardContent>
-      </Card>
-    </div>
+      <PageBody>
+        <Card>
+          <CardHeader className="border-b pb-4">
+            <CardTitle>Targeting rules</CardTitle>
+            <CardDescription>
+              Rules are evaluated in order. First matching rule wins.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <RulesBuilder
+              gateId={gate.id}
+              initialRules={initialRules}
+              attributes={attributes.map((a) => ({ id: a.id, name: a.name }))}
+            />
+          </CardContent>
+        </Card>
+      </PageBody>
+    </Page>
   );
 }
