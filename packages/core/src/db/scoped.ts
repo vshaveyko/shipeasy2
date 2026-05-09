@@ -151,7 +151,10 @@ export async function findProjectById(d1: D1Database, id: string) {
 
 /**
  * Returns projects the user can access — projects they own, plus projects
- * where they have an active (accepted, non-removed) membership row.
+ * where they have a non-removed membership row (pending OR active). Pending
+ * invitations are intentionally included: they get auto-accepted at the
+ * first access check (`hasProjectAccess`), so anything in this list is
+ * effectively reachable.
  */
 export async function listAccessibleProjects(d1: D1Database, email: string) {
   const db = getDb(d1);
@@ -169,13 +172,7 @@ export async function listAccessibleProjects(d1: D1Database, email: string) {
     .select({ project: projects })
     .from(projectMembers)
     .innerJoin(projects, eq(projects.id, projectMembers.projectId))
-    .where(
-      and(
-        eq(projectMembers.email, e),
-        eq(projectMembers.status, "active"),
-        isNull(projectMembers.removedAt),
-      )!,
-    )
+    .where(and(eq(projectMembers.email, e), isNull(projectMembers.removedAt))!)
     .all();
   const seen = new Set(owned.map((p) => p.id));
   const merged = [...owned];
@@ -205,19 +202,33 @@ export async function hasProjectAccess(
     .where(and(eq(projects.id, projectId), eq(projects.ownerEmail, e))!)
     .limit(1);
   if (owner) return true;
+  // Look up by (projectId, email) only — we then branch on status. This
+  // lets us *lazily accept* a `pending` row on first successful access:
+  // the JWT callback also tries to accept on sign-in, but a returning
+  // user with a stale cookie may never re-trigger it. Doing the flip here
+  // makes the access gate self-healing.
   const [member] = await db
-    .select({ id: projectMembers.id })
+    .select({ id: projectMembers.id, status: projectMembers.status })
     .from(projectMembers)
     .where(
       and(
         eq(projectMembers.projectId, projectId),
         eq(projectMembers.email, e),
-        eq(projectMembers.status, "active"),
         isNull(projectMembers.removedAt),
       )!,
     )
     .limit(1);
-  return !!member;
+  if (!member) return false;
+  if (member.status === "active") return true;
+  if (member.status === "pending") {
+    await db
+      .update(projectMembers)
+      .set({ status: "active", acceptedAt: new Date().toISOString() })
+      .where(eq(projectMembers.id, member.id));
+    return true;
+  }
+  // status === "removed" — the member was explicitly kicked, do not grant.
+  return false;
 }
 
 /**
