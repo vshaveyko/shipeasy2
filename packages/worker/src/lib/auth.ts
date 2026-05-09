@@ -7,6 +7,13 @@ import type { WorkerEnv } from "../env";
 
 export type AuthedContext = Context<{ Bindings: WorkerEnv; Variables: { key: SdkKeyMeta } }>;
 
+/** Hosts that are always allowed regardless of the project's configured domain.
+ *  Loopback addresses can never reach the worker from another machine, so
+ *  whitelisting them here unblocks local development without weakening prod. */
+function isLoopbackHost(host: string): boolean {
+  return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "[::1]";
+}
+
 /** Returns true if the request origin matches the project's stored domain pattern. */
 function originAllowed(
   requestOrigin: string | null,
@@ -17,6 +24,7 @@ function originAllowed(
   if (!requestOrigin) return false;
   try {
     const host = new URL(requestOrigin).hostname;
+    if (isLoopbackHost(host)) return true;
     // Support wildcard prefix: "*.example.com" matches "app.example.com"
     if (allowedOrigin.startsWith("*.")) {
       return host.endsWith(allowedOrigin.slice(1));
