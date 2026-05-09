@@ -69,7 +69,8 @@ test.describe("i18n Keys table — search", () => {
   test("searching 'auth' narrows count to 3 keys", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
     await page.getByPlaceholder(/filter keys/i).fill("auth");
-    await expect(page.getByText("3 keys")).toBeVisible();
+    // Subtree count is rendered as a badge inside the "auth N" subtree button.
+    await expect(page.getByRole("button", { name: /^auth\s+3$/i })).toBeVisible();
   });
 
   test("searching 'auth' auto-expands tree and shows leaf values", async ({ page }) => {
@@ -97,9 +98,11 @@ test.describe("i18n Keys table — search", () => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
     const input = page.getByPlaceholder(/filter keys/i);
     await input.fill("auth");
-    await expect(page.getByText("3 keys")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^auth\s+3$/i })).toBeVisible();
     await input.clear();
-    await expect(page.getByText("5 keys")).toBeVisible();
+    // After clear, the original 5-key tree is restored. Check via a leaf that
+    // only shows in the unfiltered tree (the root-level "simple" key).
+    await expect(page.getByText("Simple value")).toBeVisible();
   });
 });
 
