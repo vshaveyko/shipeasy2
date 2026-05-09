@@ -94,8 +94,11 @@ export default async function FeatureRequestDetailPage({
               <form action={updateFeatureRequestAction} className="space-y-3">
                 <input type="hidden" name="id" value={item.id} />
                 <div className="space-y-1">
-                  <label className="t-caps block text-[var(--se-fg-3)]">Status</label>
+                  <label htmlFor="fr-status" className="t-caps block text-[var(--se-fg-3)]">
+                    Status
+                  </label>
                   <select
+                    id="fr-status"
                     name="status"
                     defaultValue={item.status}
                     className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"
@@ -108,8 +111,11 @@ export default async function FeatureRequestDetailPage({
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="t-caps block text-[var(--se-fg-3)]">Importance</label>
+                  <label htmlFor="fr-importance" className="t-caps block text-[var(--se-fg-3)]">
+                    Importance
+                  </label>
                   <select
+                    id="fr-importance"
                     name="importance"
                     defaultValue={item.importance}
                     className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"

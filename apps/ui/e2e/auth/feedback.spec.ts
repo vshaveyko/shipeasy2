@@ -45,17 +45,22 @@ test.describe("Bugs dashboard", () => {
     await page.goto(`/dashboard/e2e-project-id/bugs/${bugId}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.getByText(/1\. visit \//)).toBeVisible();
-    await expect(page.getByText("boom")).toBeVisible();
+    await expect(page.getByText("boom", { exact: true })).toBeVisible();
 
     // Update status via the form on the detail page.
     await page.getByLabel(/^status$/i).selectOption("in_progress");
-    await page.getByRole("button", { name: /update status/i }).click();
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().method() === "POST" && r.url().includes(`/bugs/${bugId}`),
+      ),
+      page.getByRole("button", { name: /update status/i }).click(),
+    ]);
     await expect(page).toHaveURL(new RegExp(`/dashboard/e2e-project-id/bugs/${bugId}$`));
     await page.reload();
     await expect(page.getByLabel(/^status$/i)).toHaveValue("in_progress");
   });
 
-  test("list row supports inline status/priority edit and delete", async ({ page, request }) => {
+  test("list row picker updates status and priority", async ({ page, request }) => {
     test.skip(!bugId, "previous test failed");
     await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
 
@@ -70,20 +75,84 @@ test.describe("Bugs dashboard", () => {
     await page.getByRole("menuitem", { name: "High" }).click();
     await expect(priorityTrigger).toContainText("High");
 
-    // Verify persistence via the admin API
+    await expect
+      .poll(async () => {
+        const res = await request.get(`/api/admin/bugs/${bugId}`);
+        const body = (await res.json()) as { status: string; priority: string | null };
+        return { status: body.status, priority: body.priority };
+      })
+      .toEqual({ status: "triaged", priority: "high" });
+  });
+
+  test("inline picker values persist after reload", async ({ page }) => {
+    test.skip(!bugId, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
+    await expect(page.getByLabel(`Status for ${title}`)).toContainText("Triaged");
+    await expect(page.getByLabel(`Priority for ${title}`)).toContainText("High");
+  });
+
+  test("priority can be cleared via the picker", async ({ page, request }) => {
+    test.skip(!bugId, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
+    const priorityTrigger = page.getByLabel(`Priority for ${title}`);
+    await priorityTrigger.click();
+    await page.getByRole("menuitem", { name: "No priority" }).click();
+    await expect(priorityTrigger).toContainText("No priority");
+
+    await expect
+      .poll(async () => {
+        const res = await request.get(`/api/admin/bugs/${bugId}`);
+        const body = (await res.json()) as { priority: string | null };
+        return body.priority;
+      })
+      .toBeNull();
+  });
+
+  test("edit pencil navigates to the detail page", async ({ page }) => {
+    test.skip(!bugId, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: title })
+      .getByRole("link", { name: "Edit bug report" })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/dashboard/e2e-project-id/bugs/${bugId}$`));
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  });
+
+  test("delete dialog can be cancelled without deleting", async ({ page, request }) => {
+    test.skip(!bugId, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: title })
+      .getByRole("button", { name: "Delete bug report" })
+      .click();
+    await expect(page.getByRole("heading", { name: /delete bug report\?/i })).toBeVisible();
+    await page.getByRole("button", { name: /^cancel$/i }).click();
+    await expect(page.getByRole("heading", { name: /delete bug report\?/i })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
+
     const res = await request.get(`/api/admin/bugs/${bugId}`);
     expect(res.ok()).toBeTruthy();
-    const body = (await res.json()) as { status: string; priority: string | null };
-    expect(body.status).toBe("triaged");
-    expect(body.priority).toBe("high");
+  });
 
-    // Delete via the row action.
-    await page.getByRole("button", { name: `Delete bug report` }).click();
-    await page.getByRole("button", { name: /^delete$/i }).click();
+  test("delete confirms, removes the row, and returns 404", async ({ page, request }) => {
+    test.skip(!bugId, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: title })
+      .getByRole("button", { name: "Delete bug report" })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: /^delete$/i }).click();
     await expect(page.getByRole("link", { name: new RegExp(title) })).toHaveCount(0);
 
-    const after = await request.get(`/api/admin/bugs/${bugId}`);
-    expect(after.status()).toBe(404);
+    await expect
+      .poll(async () => (await request.get(`/api/admin/bugs/${bugId}`)).status())
+      .toBe(404);
   });
 });
 
@@ -114,12 +183,17 @@ test.describe("Feature requests dashboard", () => {
     await expect(page.getByText(/would be cool/)).toBeVisible();
 
     await page.getByLabel(/^status$/i).selectOption("planned");
-    await page.getByRole("button", { name: /^save$/i }).click();
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().method() === "POST" && r.url().includes(`/feature-requests/${id}`),
+      ),
+      page.getByRole("button", { name: /^save$/i }).click(),
+    ]);
     await page.reload();
     await expect(page.getByLabel(/^status$/i)).toHaveValue("planned");
   });
 
-  test("list row supports inline status/importance edit and delete", async ({ page, request }) => {
+  test("list row picker updates status and importance", async ({ page, request }) => {
     test.skip(!id, "previous test failed");
     await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
 
@@ -134,17 +208,112 @@ test.describe("Feature requests dashboard", () => {
     await page.getByRole("menuitem", { name: "Critical" }).click();
     await expect(importanceTrigger).toContainText("Critical");
 
+    await expect
+      .poll(async () => {
+        const res = await request.get(`/api/admin/feature-requests/${id}`);
+        const body = (await res.json()) as { status: string; importance: string };
+        return { status: body.status, importance: body.importance };
+      })
+      .toEqual({ status: "considering", importance: "critical" });
+  });
+
+  test("inline picker values persist after reload", async ({ page }) => {
+    test.skip(!id, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
+    await expect(page.getByLabel(`Status for ${title}`)).toContainText("Considering");
+    await expect(page.getByLabel(`Importance for ${title}`)).toContainText("Critical");
+  });
+
+  test("edit pencil navigates to the detail page", async ({ page }) => {
+    test.skip(!id, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: title })
+      .getByRole("link", { name: "Edit feature request" })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/dashboard/e2e-project-id/feature-requests/${id}$`));
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  });
+
+  test("delete dialog can be cancelled without deleting", async ({ page, request }) => {
+    test.skip(!id, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: title })
+      .getByRole("button", { name: "Delete feature request" })
+      .click();
+    await expect(page.getByRole("heading", { name: /delete feature request\?/i })).toBeVisible();
+    await page.getByRole("button", { name: /^cancel$/i }).click();
+    await expect(page.getByRole("heading", { name: /delete feature request\?/i })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
+
     const res = await request.get(`/api/admin/feature-requests/${id}`);
     expect(res.ok()).toBeTruthy();
-    const body = (await res.json()) as { status: string; importance: string };
-    expect(body.status).toBe("considering");
-    expect(body.importance).toBe("critical");
+  });
 
-    await page.getByRole("button", { name: `Delete feature request` }).click();
-    await page.getByRole("button", { name: /^delete$/i }).click();
+  test("delete confirms, removes the row, and returns 404", async ({ page, request }) => {
+    test.skip(!id, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: title })
+      .getByRole("button", { name: "Delete feature request" })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: /^delete$/i }).click();
     await expect(page.getByRole("link", { name: new RegExp(title) })).toHaveCount(0);
 
-    const after = await request.get(`/api/admin/feature-requests/${id}`);
-    expect(after.status()).toBe(404);
+    await expect
+      .poll(async () => (await request.get(`/api/admin/feature-requests/${id}`)).status())
+      .toBe(404);
+  });
+});
+
+test.describe("Feedback tabs", () => {
+  test.describe.configure({ mode: "serial" });
+
+  const bugTitle = `e2e-tabs-bug-${RUN}`;
+  const frTitle = `e2e-tabs-fr-${RUN}`;
+  let bugId = "";
+  let frId = "";
+
+  test.beforeAll(async ({ request }) => {
+    const b = await postJson(request, "/api/admin/bugs", {
+      title: bugTitle,
+      stepsToReproduce: "x",
+      actualResult: "x",
+      expectedResult: "y",
+    });
+    bugId = b.id;
+    const f = await postJson(request, "/api/admin/feature-requests", {
+      title: frTitle,
+      description: "x",
+      useCase: "y",
+      importance: "nice_to_have",
+    });
+    frId = f.id;
+  });
+
+  test.afterAll(async ({ request }) => {
+    if (bugId) await request.delete(`/api/admin/bugs/${bugId}`);
+    if (frId) await request.delete(`/api/admin/feature-requests/${frId}`);
+  });
+
+  test("tabs route between bugs and feature requests", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
+    await expect(page.getByRole("link", { name: new RegExp(bugTitle) })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(frTitle) })).toHaveCount(0);
+
+    await page.getByRole("link", { name: /feature requests/i }).click();
+    await expect(page).toHaveURL(/tab=requests/);
+    await expect(page.getByRole("link", { name: new RegExp(frTitle) })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(bugTitle) })).toHaveCount(0);
+
+    await page.getByRole("link", { name: /^bugs/i }).first().click();
+    await expect(page).toHaveURL(/tab=bugs/);
+    await expect(page.getByRole("link", { name: new RegExp(bugTitle) })).toBeVisible();
   });
 });

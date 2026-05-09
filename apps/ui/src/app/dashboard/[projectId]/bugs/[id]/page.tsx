@@ -127,8 +127,11 @@ export default async function BugDetailPage({ params }: { params: Promise<{ id: 
             <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4">
               <form action={updateBugStatusAction} className="space-y-2">
                 <input type="hidden" name="id" value={bug.id} />
-                <label className="t-caps block text-[var(--se-fg-3)]">Status</label>
+                <label htmlFor="bug-status" className="t-caps block text-[var(--se-fg-3)]">
+                  Status
+                </label>
                 <select
+                  id="bug-status"
                   name="status"
                   defaultValue={bug.status}
                   className="w-full rounded border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-1.5 text-[13px]"

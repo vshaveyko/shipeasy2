@@ -48,6 +48,9 @@ function cleanE2eTestData() {
     "user_attributes",
     "universes",
     "experiments",
+    "report_attachments",
+    "bug_reports",
+    "feature_requests",
   ];
   for (const tbl of tables) {
     try {
