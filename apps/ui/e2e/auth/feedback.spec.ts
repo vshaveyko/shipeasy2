@@ -59,14 +59,16 @@ test.describe("Bugs dashboard", () => {
     test.skip(!bugId, "previous test failed");
     await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
 
-    const statusSelect = page.getByLabel(`Status for ${title}`);
-    const prioritySelect = page.getByLabel(`Priority for ${title}`);
+    const statusTrigger = page.getByLabel(`Status for ${title}`);
+    const priorityTrigger = page.getByLabel(`Priority for ${title}`);
 
-    await statusSelect.selectOption("triaged");
-    await expect(statusSelect).toHaveValue("triaged");
+    await statusTrigger.click();
+    await page.getByRole("menuitem", { name: "Triaged" }).click();
+    await expect(statusTrigger).toContainText("Triaged");
 
-    await prioritySelect.selectOption("high");
-    await expect(prioritySelect).toHaveValue("high");
+    await priorityTrigger.click();
+    await page.getByRole("menuitem", { name: "High" }).click();
+    await expect(priorityTrigger).toContainText("High");
 
     // Verify persistence via the admin API
     const res = await request.get(`/api/admin/bugs/${bugId}`);
@@ -121,14 +123,16 @@ test.describe("Feature requests dashboard", () => {
     test.skip(!id, "previous test failed");
     await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
 
-    const statusSelect = page.getByLabel(`Status for ${title}`);
-    const importanceSelect = page.getByLabel(`Importance for ${title}`);
+    const statusTrigger = page.getByLabel(`Status for ${title}`);
+    const importanceTrigger = page.getByLabel(`Importance for ${title}`);
 
-    await statusSelect.selectOption("considering");
-    await expect(statusSelect).toHaveValue("considering");
+    await statusTrigger.click();
+    await page.getByRole("menuitem", { name: "Considering" }).click();
+    await expect(statusTrigger).toContainText("Considering");
 
-    await importanceSelect.selectOption("critical");
-    await expect(importanceSelect).toHaveValue("critical");
+    await importanceTrigger.click();
+    await page.getByRole("menuitem", { name: "Critical" }).click();
+    await expect(importanceTrigger).toContainText("Critical");
 
     const res = await request.get(`/api/admin/feature-requests/${id}`);
     expect(res.ok()).toBeTruthy();

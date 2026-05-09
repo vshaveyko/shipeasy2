@@ -15,7 +15,7 @@ import {
 } from "@shipeasy/core/db/schema";
 import { cn } from "@/lib/utils";
 import { ConnectorsModal, type ConnectorListItem } from "./_components/connectors-modal";
-import { InlineSelect } from "./_components/inline-select";
+import { StatusPicker, type StatusOption } from "./_components/status-picker";
 import { RowActions } from "./_components/row-actions";
 import {
   updateBugFieldAction,
@@ -36,48 +36,46 @@ function timeAgo(iso: string): string {
   return `${Math.round(sec / 86400)}d ago`;
 }
 
-const BUG_STATUS_LABEL: Record<string, string> = {
-  open: "Open",
-  triaged: "Triaged",
-  in_progress: "In progress",
-  resolved: "Resolved",
-  wont_fix: "Won't fix",
-};
+const BUG_STATUS_OPTIONS: readonly StatusOption[] = [
+  { value: "open", label: "Open", tone: "blue" },
+  { value: "triaged", label: "Triaged", tone: "amber" },
+  { value: "in_progress", label: "In progress", tone: "violet" },
+  { value: "resolved", label: "Resolved", tone: "green" },
+  { value: "wont_fix", label: "Won't fix", tone: "neutral" },
+] as const;
+// Schema-coverage assertion: keep options list in sync with BUG_STATUSES
+void (BUG_STATUSES satisfies ReadonlyArray<(typeof BUG_STATUS_OPTIONS)[number]["value"]>);
 
-const BUG_PRIORITY_LABEL: Record<string, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-  critical: "Critical",
-};
+const BUG_PRIORITY_OPTIONS: readonly StatusOption[] = [
+  { value: "", label: "No priority", tone: "neutral" },
+  { value: "low", label: "Low", tone: "neutral" },
+  { value: "medium", label: "Medium", tone: "amber" },
+  { value: "high", label: "High", tone: "orange" },
+  { value: "critical", label: "Critical", tone: "red" },
+] as const;
+void (BUG_PRIORITIES satisfies ReadonlyArray<
+  Exclude<(typeof BUG_PRIORITY_OPTIONS)[number]["value"], "">
+>);
 
-const FR_STATUS_LABEL: Record<string, string> = {
-  open: "Open",
-  considering: "Considering",
-  planned: "Planned",
-  shipped: "Shipped",
-  declined: "Declined",
-};
+const FR_STATUS_OPTIONS: readonly StatusOption[] = [
+  { value: "open", label: "Open", tone: "blue" },
+  { value: "considering", label: "Considering", tone: "amber" },
+  { value: "planned", label: "Planned", tone: "violet" },
+  { value: "shipped", label: "Shipped", tone: "green" },
+  { value: "declined", label: "Declined", tone: "neutral" },
+] as const;
+void (FEATURE_REQUEST_STATUSES satisfies ReadonlyArray<
+  (typeof FR_STATUS_OPTIONS)[number]["value"]
+>);
 
-const FR_IMPORTANCE_LABEL: Record<string, string> = {
-  nice_to_have: "Nice to have",
-  important: "Important",
-  critical: "Critical",
-};
-
-const BUG_STATUS_OPTIONS = BUG_STATUSES.map((s) => ({ value: s, label: BUG_STATUS_LABEL[s] }));
-const BUG_PRIORITY_OPTIONS = [
-  { value: "", label: "—" },
-  ...BUG_PRIORITIES.map((p) => ({ value: p, label: BUG_PRIORITY_LABEL[p] })),
-];
-const FR_STATUS_OPTIONS = FEATURE_REQUEST_STATUSES.map((s) => ({
-  value: s,
-  label: FR_STATUS_LABEL[s],
-}));
-const FR_IMPORTANCE_OPTIONS = FEATURE_REQUEST_IMPORTANCES.map((i) => ({
-  value: i,
-  label: FR_IMPORTANCE_LABEL[i],
-}));
+const FR_IMPORTANCE_OPTIONS: readonly StatusOption[] = [
+  { value: "nice_to_have", label: "Nice to have", tone: "neutral" },
+  { value: "important", label: "Important", tone: "amber" },
+  { value: "critical", label: "Critical", tone: "red" },
+] as const;
+void (FEATURE_REQUEST_IMPORTANCES satisfies ReadonlyArray<
+  (typeof FR_IMPORTANCE_OPTIONS)[number]["value"]
+>);
 
 const BUGS_GRID = "minmax(0,1fr) 130px 110px 160px 90px 70px";
 const REQUESTS_GRID = "minmax(0,1fr) 130px 130px 160px 90px 70px";
@@ -246,7 +244,7 @@ function BugsList({
                 >
                   {b.title}
                 </Link>
-                <InlineSelect
+                <StatusPicker
                   id={b.id}
                   name="status"
                   value={b.status}
@@ -254,7 +252,7 @@ function BugsList({
                   action={updateBugFieldAction}
                   ariaLabel={`Status for ${b.title}`}
                 />
-                <InlineSelect
+                <StatusPicker
                   id={b.id}
                   name="priority"
                   value={b.priority ?? ""}
@@ -328,7 +326,7 @@ function RequestsList({
                 >
                   {r.title}
                 </Link>
-                <InlineSelect
+                <StatusPicker
                   id={r.id}
                   name="status"
                   value={r.status}
@@ -336,7 +334,7 @@ function RequestsList({
                   action={updateFeatureRequestFieldAction}
                   ariaLabel={`Status for ${r.title}`}
                 />
-                <InlineSelect
+                <StatusPicker
                   id={r.id}
                   name="importance"
                   value={r.importance}
