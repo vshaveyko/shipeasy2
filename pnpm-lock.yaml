@@ -125,8 +125,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/devtools
       '@shipeasy/sdk':
-        specifier: ^2.1.12
-        version: 2.1.12
+        specifier: ^2.1.15
+        version: 2.1.15
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -237,6 +237,9 @@ importers:
         specifier: ^4.0.0
         version: 4.3.6
     devDependencies:
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
       typescript:
         specifier: ^5.7.4
         version: 5.9.3
@@ -3377,8 +3380,8 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
-  '@shipeasy/sdk@2.1.12':
-    resolution: {integrity: sha512-7c7mbQ1KC81YNmwSBxDHHz/p6rmIIXhAAc8kntAtnPvPYpqI8y9ZDj4+7avwpYRTDHNsS0tIhhuQWRaeQV9/vg==}
+  '@shipeasy/sdk@2.1.15':
+    resolution: {integrity: sha512-ZJNGCpI43pLto06IXgWMwjDwKDWcmKneJzMe1e22TrOknhYkKih1un/mbXM28Zwjsil3Xo4qZsUB36gVn6g5HQ==}
     engines: {node: '>=20'}
 
   '@shipeasy/sdk@2.1.8':
@@ -10888,7 +10891,7 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@shipeasy/sdk@2.1.12':
+  '@shipeasy/sdk@2.1.15':
     dependencies:
       murmurhash-js: 1.0.0
 
