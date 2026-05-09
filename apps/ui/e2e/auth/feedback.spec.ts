@@ -40,7 +40,7 @@ test.describe("Bugs dashboard", () => {
     await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   });
 
-  test("detail page renders fields and updates status", async ({ page, request }) => {
+  test("detail page renders fields and updates status", async ({ page }) => {
     test.skip(!bugId, "previous test failed");
     await page.goto(`/dashboard/e2e-project-id/bugs/${bugId}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
@@ -53,10 +53,35 @@ test.describe("Bugs dashboard", () => {
     await expect(page).toHaveURL(new RegExp(`/dashboard/e2e-project-id/bugs/${bugId}$`));
     await page.reload();
     await expect(page.getByLabel(/^status$/i)).toHaveValue("in_progress");
+  });
 
-    // Cleanup via API so we don't leave fixtures behind.
-    const res = await request.delete(`/api/admin/bugs/${bugId}`);
+  test("list row supports inline status/priority edit and delete", async ({ page, request }) => {
+    test.skip(!bugId, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=bugs");
+
+    const statusSelect = page.getByLabel(`Status for ${title}`);
+    const prioritySelect = page.getByLabel(`Priority for ${title}`);
+
+    await statusSelect.selectOption("triaged");
+    await expect(statusSelect).toHaveValue("triaged");
+
+    await prioritySelect.selectOption("high");
+    await expect(prioritySelect).toHaveValue("high");
+
+    // Verify persistence via the admin API
+    const res = await request.get(`/api/admin/bugs/${bugId}`);
     expect(res.ok()).toBeTruthy();
+    const body = (await res.json()) as { status: string; priority: string | null };
+    expect(body.status).toBe("triaged");
+    expect(body.priority).toBe("high");
+
+    // Delete via the row action.
+    await page.getByRole("button", { name: `Delete bug report` }).click();
+    await page.getByRole("button", { name: /^delete$/i }).click();
+    await expect(page.getByRole("link", { name: new RegExp(title) })).toHaveCount(0);
+
+    const after = await request.get(`/api/admin/bugs/${bugId}`);
+    expect(after.status()).toBe(404);
   });
 });
 
@@ -80,7 +105,7 @@ test.describe("Feature requests dashboard", () => {
     await expect(page.getByRole("link", { name: new RegExp(title) })).toBeVisible();
   });
 
-  test("detail page renders + status update", async ({ page, request }) => {
+  test("detail page renders + status update", async ({ page }) => {
     test.skip(!id, "previous test failed");
     await page.goto(`/dashboard/e2e-project-id/feature-requests/${id}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
@@ -90,8 +115,32 @@ test.describe("Feature requests dashboard", () => {
     await page.getByRole("button", { name: /^save$/i }).click();
     await page.reload();
     await expect(page.getByLabel(/^status$/i)).toHaveValue("planned");
+  });
 
-    const res = await request.delete(`/api/admin/feature-requests/${id}`);
+  test("list row supports inline status/importance edit and delete", async ({ page, request }) => {
+    test.skip(!id, "previous test failed");
+    await page.goto("/dashboard/e2e-project-id/feedback?tab=requests");
+
+    const statusSelect = page.getByLabel(`Status for ${title}`);
+    const importanceSelect = page.getByLabel(`Importance for ${title}`);
+
+    await statusSelect.selectOption("considering");
+    await expect(statusSelect).toHaveValue("considering");
+
+    await importanceSelect.selectOption("critical");
+    await expect(importanceSelect).toHaveValue("critical");
+
+    const res = await request.get(`/api/admin/feature-requests/${id}`);
     expect(res.ok()).toBeTruthy();
+    const body = (await res.json()) as { status: string; importance: string };
+    expect(body.status).toBe("considering");
+    expect(body.importance).toBe("critical");
+
+    await page.getByRole("button", { name: `Delete feature request` }).click();
+    await page.getByRole("button", { name: /^delete$/i }).click();
+    await expect(page.getByRole("link", { name: new RegExp(title) })).toHaveCount(0);
+
+    const after = await request.get(`/api/admin/feature-requests/${id}`);
+    expect(after.status()).toBe(404);
   });
 });

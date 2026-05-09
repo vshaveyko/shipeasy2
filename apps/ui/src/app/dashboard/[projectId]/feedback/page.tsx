@@ -7,8 +7,22 @@ import { listBugs } from "@/lib/handlers/bugs";
 import { listFeatureRequests } from "@/lib/handlers/feature-requests";
 import { listConnectors } from "@/lib/handlers/connectors";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
+import {
+  BUG_STATUSES,
+  BUG_PRIORITIES,
+  FEATURE_REQUEST_STATUSES,
+  FEATURE_REQUEST_IMPORTANCES,
+} from "@shipeasy/core/db/schema";
 import { cn } from "@/lib/utils";
 import { ConnectorsModal, type ConnectorListItem } from "./_components/connectors-modal";
+import { InlineSelect } from "./_components/inline-select";
+import { RowActions } from "./_components/row-actions";
+import {
+  updateBugFieldAction,
+  deleteBugInlineAction,
+  updateFeatureRequestFieldAction,
+  deleteFeatureRequestInlineAction,
+} from "./actions";
 
 export const metadata: Metadata = { title: "Feedback" };
 
@@ -30,6 +44,13 @@ const BUG_STATUS_LABEL: Record<string, string> = {
   wont_fix: "Won't fix",
 };
 
+const BUG_PRIORITY_LABEL: Record<string, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
+};
+
 const FR_STATUS_LABEL: Record<string, string> = {
   open: "Open",
   considering: "Considering",
@@ -38,11 +59,28 @@ const FR_STATUS_LABEL: Record<string, string> = {
   declined: "Declined",
 };
 
-const IMPORTANCE_LABEL: Record<string, string> = {
+const FR_IMPORTANCE_LABEL: Record<string, string> = {
   nice_to_have: "Nice to have",
   important: "Important",
   critical: "Critical",
 };
+
+const BUG_STATUS_OPTIONS = BUG_STATUSES.map((s) => ({ value: s, label: BUG_STATUS_LABEL[s] }));
+const BUG_PRIORITY_OPTIONS = [
+  { value: "", label: "—" },
+  ...BUG_PRIORITIES.map((p) => ({ value: p, label: BUG_PRIORITY_LABEL[p] })),
+];
+const FR_STATUS_OPTIONS = FEATURE_REQUEST_STATUSES.map((s) => ({
+  value: s,
+  label: FR_STATUS_LABEL[s],
+}));
+const FR_IMPORTANCE_OPTIONS = FEATURE_REQUEST_IMPORTANCES.map((i) => ({
+  value: i,
+  label: FR_IMPORTANCE_LABEL[i],
+}));
+
+const BUGS_GRID = "minmax(0,1fr) 130px 110px 160px 90px 70px";
+const REQUESTS_GRID = "minmax(0,1fr) 130px 130px 160px 90px 70px";
 
 type Tab = "bugs" | "requests";
 
@@ -184,32 +222,57 @@ function BugsList({
           <div
             className="grid gap-3 border-b border-[var(--se-line)] px-5 py-2 text-[var(--se-fg-3)]"
             style={{
-              gridTemplateColumns: "minmax(0,1fr) 140px 160px 120px",
+              gridTemplateColumns: BUGS_GRID,
               background: "var(--se-bg-2)",
             }}
           >
             <span className="t-caps">Title</span>
             <span className="t-caps">Status</span>
+            <span className="t-caps">Priority</span>
             <span className="t-caps">Reporter</span>
             <span className="t-caps">Filed {openCount > 0 ? `· ${openCount} open` : ""}</span>
+            <span className="t-caps text-right">Actions</span>
           </div>
           <ul className="divide-y divide-[var(--se-line)]">
             {bugs.map((b) => (
-              <li key={b.id}>
+              <li
+                key={b.id}
+                className="grid items-center gap-3 px-5 py-2 hover:bg-[var(--se-bg-2)]"
+                style={{ gridTemplateColumns: BUGS_GRID }}
+              >
                 <Link
-                  href={`/dashboard/bugs/${b.id}`}
-                  className="grid items-center gap-3 px-5 py-3 hover:bg-[var(--se-bg-2)]"
-                  style={{ gridTemplateColumns: "minmax(0,1fr) 140px 160px 120px" }}
+                  href={`/dashboard/${projectId}/bugs/${b.id}`}
+                  className="truncate text-[14px] hover:underline"
                 >
-                  <span className="truncate text-[14px]">{b.title}</span>
-                  <span className="text-[12px] uppercase tracking-wide text-[var(--se-fg-3)]">
-                    {BUG_STATUS_LABEL[b.status] ?? b.status}
-                  </span>
-                  <span className="truncate text-[12px] text-[var(--se-fg-3)]">
-                    {b.reporterEmail ?? "—"}
-                  </span>
-                  <span className="text-[12px] text-[var(--se-fg-3)]">{timeAgo(b.createdAt)}</span>
+                  {b.title}
                 </Link>
+                <InlineSelect
+                  id={b.id}
+                  name="status"
+                  value={b.status}
+                  options={BUG_STATUS_OPTIONS}
+                  action={updateBugFieldAction}
+                  ariaLabel={`Status for ${b.title}`}
+                />
+                <InlineSelect
+                  id={b.id}
+                  name="priority"
+                  value={b.priority ?? ""}
+                  options={BUG_PRIORITY_OPTIONS}
+                  action={updateBugFieldAction}
+                  ariaLabel={`Priority for ${b.title}`}
+                />
+                <span className="truncate text-[12px] text-[var(--se-fg-3)]">
+                  {b.reporterEmail ?? "—"}
+                </span>
+                <span className="text-[12px] text-[var(--se-fg-3)]">{timeAgo(b.createdAt)}</span>
+                <RowActions
+                  id={b.id}
+                  title={b.title}
+                  editHref={`/dashboard/${projectId}/bugs/${b.id}`}
+                  deleteAction={deleteBugInlineAction}
+                  kind="bug"
+                />
               </li>
             ))}
           </ul>
@@ -241,36 +304,57 @@ function RequestsList({
           <div
             className="grid gap-3 border-b border-[var(--se-line)] px-5 py-2 text-[var(--se-fg-3)]"
             style={{
-              gridTemplateColumns: "minmax(0,1fr) 130px 130px 160px 120px",
+              gridTemplateColumns: REQUESTS_GRID,
               background: "var(--se-bg-2)",
             }}
           >
             <span className="t-caps">Title</span>
-            <span className="t-caps">Importance</span>
             <span className="t-caps">Status</span>
+            <span className="t-caps">Importance</span>
             <span className="t-caps">Reporter</span>
             <span className="t-caps">Filed</span>
+            <span className="t-caps text-right">Actions</span>
           </div>
           <ul className="divide-y divide-[var(--se-line)]">
             {items.map((r) => (
-              <li key={r.id}>
+              <li
+                key={r.id}
+                className="grid items-center gap-3 px-5 py-2 hover:bg-[var(--se-bg-2)]"
+                style={{ gridTemplateColumns: REQUESTS_GRID }}
+              >
                 <Link
-                  href={`/dashboard/feature-requests/${r.id}`}
-                  className="grid items-center gap-3 px-5 py-3 hover:bg-[var(--se-bg-2)]"
-                  style={{ gridTemplateColumns: "minmax(0,1fr) 130px 130px 160px 120px" }}
+                  href={`/dashboard/${projectId}/feature-requests/${r.id}`}
+                  className="truncate text-[14px] hover:underline"
                 >
-                  <span className="truncate text-[14px]">{r.title}</span>
-                  <span className="text-[12px] text-[var(--se-fg-3)]">
-                    {IMPORTANCE_LABEL[r.importance] ?? r.importance}
-                  </span>
-                  <span className="text-[12px] uppercase tracking-wide text-[var(--se-fg-3)]">
-                    {FR_STATUS_LABEL[r.status] ?? r.status}
-                  </span>
-                  <span className="truncate text-[12px] text-[var(--se-fg-3)]">
-                    {r.reporterEmail ?? "—"}
-                  </span>
-                  <span className="text-[12px] text-[var(--se-fg-3)]">{timeAgo(r.createdAt)}</span>
+                  {r.title}
                 </Link>
+                <InlineSelect
+                  id={r.id}
+                  name="status"
+                  value={r.status}
+                  options={FR_STATUS_OPTIONS}
+                  action={updateFeatureRequestFieldAction}
+                  ariaLabel={`Status for ${r.title}`}
+                />
+                <InlineSelect
+                  id={r.id}
+                  name="importance"
+                  value={r.importance}
+                  options={FR_IMPORTANCE_OPTIONS}
+                  action={updateFeatureRequestFieldAction}
+                  ariaLabel={`Importance for ${r.title}`}
+                />
+                <span className="truncate text-[12px] text-[var(--se-fg-3)]">
+                  {r.reporterEmail ?? "—"}
+                </span>
+                <span className="text-[12px] text-[var(--se-fg-3)]">{timeAgo(r.createdAt)}</span>
+                <RowActions
+                  id={r.id}
+                  title={r.title}
+                  editHref={`/dashboard/${projectId}/feature-requests/${r.id}`}
+                  deleteAction={deleteFeatureRequestInlineAction}
+                  kind="request"
+                />
               </li>
             ))}
           </ul>
