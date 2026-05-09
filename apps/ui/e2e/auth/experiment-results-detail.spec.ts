@@ -95,8 +95,8 @@ test.describe("Results page — draft state", () => {
   test("Start button is visible; Stop button is not", async ({ page }) => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-    await expect(page.getByRole("button", { name: /^start$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^stop$/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /^start( experiment)?$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^stop( experiment)?$/i })).not.toBeVisible();
   });
 
   test("Guardrails card is rendered", async ({ page }) => {
@@ -133,7 +133,7 @@ test.describe("Results page — running state", () => {
       .getByText(name, { exact: true })
       .locator("..")
       .locator("..")
-      .getByRole("button", { name: /^start$/i })
+      .getByRole("button", { name: /^start( experiment)?$/i })
       .click();
     await expect(
       p
@@ -150,7 +150,7 @@ test.describe("Results page — running state", () => {
     const p = await ctx.newPage();
     await p.goto("/dashboard/e2e-project-id/experiments");
     const row = p.getByText(name, { exact: true }).locator("..").locator("..");
-    const stopBtn = row.getByRole("button", { name: /^stop$/i });
+    const stopBtn = row.getByRole("button", { name: /^stop( experiment)?$/i });
     if ((await stopBtn.count()) > 0) {
       await stopBtn.click();
       await expect(row.getByRole("button", { name: /^delete$/i })).toBeVisible();
@@ -176,8 +176,8 @@ test.describe("Results page — running state", () => {
   test("Stop button visible; Start button not visible", async ({ page }) => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-    await expect(page.getByRole("button", { name: /^stop$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^start$/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /^stop( experiment)?$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^start( experiment)?$/i })).not.toBeVisible();
   });
 
   test("Verdict is '—' before first analysis run", async ({ page }) => {
@@ -208,8 +208,8 @@ test.describe("Results page — stopped state", () => {
     await p.getByRole("button", { name: /^save draft$/i }).click();
     await expect(p).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     const row = p.getByText(name, { exact: true }).locator("..").locator("..");
-    await row.getByRole("button", { name: /^start$/i }).click();
-    await row.getByRole("button", { name: /^stop$/i }).click();
+    await row.getByRole("button", { name: /^start( experiment)?$/i }).click();
+    await row.getByRole("button", { name: /^stop( experiment)?$/i }).click();
     await ctx.close();
   });
 
@@ -238,8 +238,8 @@ test.describe("Results page — stopped state", () => {
   test("neither Start nor Stop button visible once stopped", async ({ page }) => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-    await expect(page.getByRole("button", { name: /^start$/i })).not.toBeVisible();
-    await expect(page.getByRole("button", { name: /^stop$/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /^start( experiment)?$/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /^stop( experiment)?$/i })).not.toBeVisible();
   });
 
   test("admin API results endpoint returns is_final=1 once stopped", async ({ page }) => {
