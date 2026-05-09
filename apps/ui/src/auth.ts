@@ -54,34 +54,54 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     debug() {},
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) token.id = user.id;
 
-      const email = (token.email as string | undefined) ?? (user?.email as string | undefined);
-      if (email && !token.project_id) {
+      const rawEmail = (token.email as string | undefined) ?? (user?.email as string | undefined);
+      // Membership rows are stored lowercased (`normalizeEmail` in
+      // handlers/members.ts). OAuth providers can return mixed-case emails;
+      // SQLite text equality is case-sensitive, so without this the pending
+      // invitation wouldn't match and the new member would stay locked out.
+      const email = rawEmail?.trim().toLowerCase();
+      if (!email) return token;
+
+      // A fresh sign-in (NextAuth passes a `user`) or an explicit
+      // `update()` call. We don't want to hit D1 on every JWT decode, but
+      // we MUST run accept-pending on every sign-in — even returning users
+      // whose token already has a `project_id` from a prior login. Without
+      // this, anyone invited *after* their first login stays stuck in the
+      // `pending` membership state forever.
+      const isSignIn = !!user || trigger === "signIn" || trigger === "signUp";
+      if (isSignIn) {
         const env = await getEnvAsync();
-        // Auto-accept any pending invitations for this email so the user
-        // shows up in `listAccessibleProjects` immediately. Without this,
-        // invited team members would land here with no membership row in
-        // `active` state and we'd auto-create a brand-new empty project for
-        // them — exactly the bug being fixed.
-        await acceptPendingInvitesForEmail(env.DB, email);
-        const accessible = await listAccessibleProjects(env.DB, email);
-        if (accessible.length > 0) {
-          token.project_id = accessible[0].id;
-        } else {
-          const now = new Date().toISOString();
-          const id = crypto.randomUUID();
-          await insertProject(env.DB, {
-            id,
-            name: email.split("@")[0],
-            ownerEmail: email,
-            plan: "free",
-            status: "active",
-            createdAt: now,
-            updatedAt: now,
-          });
-          token.project_id = id;
+        const accepted = await acceptPendingInvitesForEmail(env.DB, email);
+        // Re-resolve project_id when:
+        //   1. the token has none yet (first login), or
+        //   2. we just accepted invites — the user probably wants to land on
+        //      the project they were invited to, not the empty auto-created
+        //      one bound earlier.
+        if (!token.project_id || accepted > 0) {
+          const accessible = await listAccessibleProjects(env.DB, email);
+          if (accessible.length > 0) {
+            // Prefer the most-recently-accepted membership project: it's
+            // appended last in `listAccessibleProjects` (member rows after
+            // owned). Fall back to whatever's first.
+            const memberProject = accessible[accessible.length - 1];
+            token.project_id = accepted > 0 && memberProject ? memberProject.id : accessible[0].id;
+          } else {
+            const now = new Date().toISOString();
+            const id = crypto.randomUUID();
+            await insertProject(env.DB, {
+              id,
+              name: email.split("@")[0],
+              ownerEmail: email,
+              plan: "free",
+              status: "active",
+              createdAt: now,
+              updatedAt: now,
+            });
+            token.project_id = id;
+          }
         }
       }
       return token;

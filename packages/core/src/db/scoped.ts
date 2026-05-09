@@ -155,10 +155,14 @@ export async function findProjectById(d1: D1Database, id: string) {
  */
 export async function listAccessibleProjects(d1: D1Database, email: string) {
   const db = getDb(d1);
+  // Membership rows are stored lowercased; SQLite text equality is
+  // case-sensitive so we normalize here too rather than relying on every
+  // caller to do it.
+  const e = email.trim().toLowerCase();
   const owned = await db
     .select()
     .from(projects)
-    .where(eq(projects.ownerEmail, email))
+    .where(eq(projects.ownerEmail, e))
     .orderBy(projects.createdAt)
     .all();
   const memberRows = await db
@@ -167,7 +171,7 @@ export async function listAccessibleProjects(d1: D1Database, email: string) {
     .innerJoin(projects, eq(projects.id, projectMembers.projectId))
     .where(
       and(
-        eq(projectMembers.email, email),
+        eq(projectMembers.email, e),
         eq(projectMembers.status, "active"),
         isNull(projectMembers.removedAt),
       )!,
@@ -194,10 +198,11 @@ export async function hasProjectAccess(
   email: string,
 ): Promise<boolean> {
   const db = getDb(d1);
+  const e = email.trim().toLowerCase();
   const [owner] = await db
     .select({ id: projects.id })
     .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.ownerEmail, email))!)
+    .where(and(eq(projects.id, projectId), eq(projects.ownerEmail, e))!)
     .limit(1);
   if (owner) return true;
   const [member] = await db
@@ -206,7 +211,7 @@ export async function hasProjectAccess(
     .where(
       and(
         eq(projectMembers.projectId, projectId),
-        eq(projectMembers.email, email),
+        eq(projectMembers.email, e),
         eq(projectMembers.status, "active"),
         isNull(projectMembers.removedAt),
       )!,
@@ -222,17 +227,18 @@ export async function hasProjectAccess(
  */
 export async function acceptPendingInvitesForEmail(d1: D1Database, email: string): Promise<number> {
   const db = getDb(d1);
+  const e = email.trim().toLowerCase();
   const now = new Date().toISOString();
   const pending = await db
     .select({ id: projectMembers.id })
     .from(projectMembers)
-    .where(and(eq(projectMembers.email, email), eq(projectMembers.status, "pending"))!)
+    .where(and(eq(projectMembers.email, e), eq(projectMembers.status, "pending"))!)
     .all();
   if (pending.length === 0) return 0;
   await db
     .update(projectMembers)
     .set({ status: "active", acceptedAt: now })
-    .where(and(eq(projectMembers.email, email), eq(projectMembers.status, "pending"))!);
+    .where(and(eq(projectMembers.email, e), eq(projectMembers.status, "pending"))!);
   return pending.length;
 }
 
