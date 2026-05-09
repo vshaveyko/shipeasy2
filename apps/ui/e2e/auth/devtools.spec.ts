@@ -140,11 +140,15 @@ async function openPanel(page: Page, panelTitle: string): Promise<void> {
 test.describe("DevTools — activation", () => {
   test("toolbar mounts via ?se-devtools URL param", async ({ page }) => {
     await setup(page);
-    await page.goto("/dashboard?se-devtools");
+    // Hit the project-scoped URL directly so the layout's devtools-loader
+    // script sees `?se-devtools` on first load (the /dashboard root redirect
+    // forwards query params, but using the resolved URL avoids the round-trip
+    // and matches what real users see).
+    await page.goto("/dashboard/e2e-project-id?se-devtools");
     await waitForOverlay(page);
 
-    // All four toolbar icons are present
-    for (const label of ["Gates", "Configs", "Experiments", "i18n"]) {
+    // All four toolbar icons are present (i18n panel was renamed to Translations)
+    for (const label of ["Gates", "Configs", "Experiments", "Translations"]) {
       await expect(page.getByTitle(label)).toBeVisible();
     }
   });
@@ -415,7 +419,7 @@ test.describe("DevTools — i18n panel", () => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
 
     // KEYS mock contains common.save, common.cancel, nav.home → chunks = common, nav
     await expect(page.locator('.tab[data-chunk="common"]')).toBeVisible();
@@ -461,7 +465,7 @@ test.describe("DevTools — i18n panel", () => {
     await page.route("**/api/admin/i18n/keys**", (r) => r.fulfill({ json: DEEP }));
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
 
     await page.locator('.tab[data-chunk="checkout"]').click();
 
@@ -480,7 +484,7 @@ test.describe("DevTools — i18n panel", () => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
 
     const subfoot = page.locator(".panel-subfoot");
     await expect(subfoot).toBeVisible();
@@ -496,7 +500,7 @@ test.describe("DevTools — i18n panel", () => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
 
     await page.locator("#se-profile-sel").selectOption("p2");
     expect(await page.evaluate(() => sessionStorage.getItem("se_i18n_profile"))).toBe("p2");
@@ -506,7 +510,7 @@ test.describe("DevTools — i18n panel", () => {
     await setup(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
 
     await page.locator("#se-draft-sel").selectOption("d1");
     expect(await page.evaluate(() => sessionStorage.getItem("se_i18n_draft"))).toBe("d1");
@@ -527,7 +531,7 @@ test.describe("DevTools — i18n panel", () => {
       document.body.appendChild(el);
     });
 
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
 
     // Before toggle: no decoration class.
     await expect(page.locator("#fake-label")).not.toHaveClass(/__se_label_target/);
@@ -558,7 +562,7 @@ test.describe("DevTools — i18n panel", () => {
       document.body.appendChild(el);
     });
 
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
     await page.locator("#se-edit-toggle").click();
 
     await page.locator("#fake-label").click();
@@ -583,7 +587,7 @@ test.describe("DevTools — i18n panel", () => {
       document.body.appendChild(el);
     });
 
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
     await page.locator("#se-edit-toggle").click();
     await page.locator("#fake-label").click();
 
@@ -613,7 +617,7 @@ test.describe("DevTools — i18n panel", () => {
       document.body.appendChild(el);
     });
 
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
     await page.locator("#se-edit-toggle").click();
 
     // First edit cycle to set the override
@@ -682,7 +686,7 @@ test.describe("DevTools — empty states", () => {
     await setupEmpty(page);
     await page.goto("/dashboard?se-devtools");
     await waitForOverlay(page);
-    await openPanel(page, "i18n");
+    await openPanel(page, "Translations");
 
     await expect(page.getByText("No translation keys yet")).toBeVisible();
     const cta = page.getByRole("link", { name: /Create new key/i });
