@@ -3,7 +3,11 @@
     "deny": [
       "Bash(*wrangler d1 execute*--remote*)",
       "Bash(*wrangler d1 execute*--env=production*)",
-      "Bash(*wrangler d1 execute*--env production*)"
+      "Bash(*wrangler d1 execute*--env production*)",
+      "Bash(git stash:*)",
+      "Bash(git stash)",
+      "Bash(git reset:*)",
+      "Bash(git reset)"
     ]
   }
 }
