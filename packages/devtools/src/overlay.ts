@@ -189,6 +189,27 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     saveCachedProject(null);
   }
 
+  // Single DevtoolsApi instance per session — reused across renders so its
+  // in-memory response cache survives tab switches. Reset on signout / when
+  // the session swaps to a different project.
+  let api: DevtoolsApi | null = null;
+  function getApi(): DevtoolsApi | null {
+    if (!session) return null;
+    if (!api || api.token !== session.token || api.projectId !== session.projectId) {
+      api = new DevtoolsApi(
+        opts.adminUrl,
+        session.token,
+        session.projectId,
+        resolveHideAdminLinks(opts),
+      );
+    } else {
+      // Kill-switch state can flip while the overlay is open — keep the cached
+      // api instance but refresh the boolean, since it gates empty-state CTAs.
+      api.hideAdminLinks = resolveHideAdminLinks(opts);
+    }
+    return api;
+  }
+
   // Per-tab view state (search + page/all)
   const tabView: Record<PanelKey, ViewState> = {
     user: { view: "all", search: "" },
@@ -784,7 +805,12 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     });
 
     // Header actions
-    panel.querySelector('[data-action="refresh"]')!.addEventListener("click", () => render());
+    panel.querySelector('[data-action="refresh"]')!.addEventListener("click", () => {
+      // Drop the in-memory api cache so the next render fetches fresh data
+      // for every panel. Cheap — panel modules call api.<list>() directly.
+      getApi()?.invalidate();
+      render();
+    });
     panel.querySelector('[data-action="collapse"]')!.addEventListener("click", () => {
       state = { ...state, collapsed: true };
       saveOverlayState(state);
@@ -826,6 +852,7 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
       saveCachedProject(null);
       session = null;
       project = null;
+      api = null;
       render();
     });
 
@@ -924,12 +951,8 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
     if (!body) return;
     if (!session) return; // unauthed is handled at the shell level (renderExpandedUnauthed)
 
-    const api = new DevtoolsApi(
-      opts.adminUrl,
-      session.token,
-      session.projectId,
-      resolveHideAdminLinks(opts),
-    );
+    const api = getApi();
+    if (!api) return;
 
     // Trigger a project refresh in the background so module gating reflects
     // dashboard state without forcing the user to reopen the panel.
@@ -1015,6 +1038,9 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
         saveCachedProject(null);
         session = null;
         project = null;
+        // Don't touch the outer `api` cache here — `api` is shadowed by the
+        // function parameter. getApi() returns null while session is null,
+        // and rebuilds a fresh instance once a new session is established.
         render();
         return;
       }
@@ -1061,13 +1087,8 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
 
   // Refresh project meta for module gating.
   if (session) {
-    const api = new DevtoolsApi(
-      opts.adminUrl,
-      session.token,
-      session.projectId,
-      resolveHideAdminLinks(opts),
-    );
-    void ensureProjectLoaded(api);
+    const api = getApi();
+    if (api) void ensureProjectLoaded(api);
   }
 
   // ShipEasy controls (kill-switch flags hosted in the controls project) —
