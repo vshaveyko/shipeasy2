@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,6 +78,8 @@ interface Props {
 }
 
 export default function NewExperimentClient({ gates }: Props) {
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
   const [selectedProfile, setSelectedProfile] = useState("conversion");
   const [allocation, setAllocation] = useState(100);
   const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
@@ -132,7 +137,7 @@ export default function NewExperimentClient({ gates }: Props) {
         title="New experiment"
         description="Define a hypothesis, split your traffic, and pre-register your metrics."
         actions={
-          <LinkButton variant="ghost" size="sm" href="/dashboard/experiments">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/experiments`}>
             Cancel
           </LinkButton>
         }
@@ -536,7 +541,7 @@ export default function NewExperimentClient({ gates }: Props) {
         </Card>
 
         <div className="col-span-full flex justify-end gap-2">
-          <LinkButton variant="ghost" size="sm" href="/dashboard/experiments">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/experiments`}>
             Cancel
           </LinkButton>
           <Button size="sm" type="submit">

@@ -43,7 +43,7 @@ export default async function GateEditorPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-5">
-      <LinkButton variant="ghost" size="sm" className="-ml-2" href="/dashboard/gates">
+      <LinkButton variant="ghost" size="sm" className="-ml-2" href={`/dashboard/${projectId}/gates`}>
         <ArrowLeft className="size-3.5" /> Gates
       </LinkButton>
 

@@ -175,7 +175,7 @@ export default async function KeysPage({
           {visibleKeys.length === 0 ? (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
               No active keys. Use “Create key” above or{" "}
-              <a className="underline" href="/dashboard/keys?show=revoked">
+              <a className="underline" href={`/dashboard/${projectId}/keys?show=revoked`}>
                 show revoked
               </a>
               .

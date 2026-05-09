@@ -29,7 +29,7 @@ export default async function GatesPage() {
         title="Gates"
         description="Gates toggle features on and off per user, attribute, or percentage."
         actions={
-          <LinkButton size="sm" href="/dashboard/configs/gates/new">
+          <LinkButton size="sm" href={`/dashboard/${projectId}/configs/gates/new`}>
             New gate
           </LinkButton>
         }
@@ -40,7 +40,7 @@ export default async function GatesPage() {
           title="No gates yet"
           description="Create your first gate to start rolling features out to targeted users, percentages, or rules."
           action={
-            <LinkButton size="sm" href="/dashboard/configs/gates/new">
+            <LinkButton size="sm" href={`/dashboard/${projectId}/configs/gates/new`}>
               Create gate
             </LinkButton>
           }

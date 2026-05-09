@@ -134,14 +134,14 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ tab?
 
       <div className="flex items-center gap-1 border-b">
         <TabLink
-          href="/dashboard/feedback?tab=bugs"
+          href={`/dashboard/${projectId}/feedback?tab=bugs`}
           active={tab === "bugs"}
           icon={Bug}
           label="Bugs"
           count={bugs.length}
         />
         <TabLink
-          href="/dashboard/feedback?tab=requests"
+          href={`/dashboard/${projectId}/feedback?tab=requests`}
           active={tab === "requests"}
           icon={Lightbulb}
           label="Feature requests"
@@ -151,9 +151,9 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ tab?
       </div>
 
       {tab === "bugs" ? (
-        <BugsList bugs={bugs} openCount={openBugs} />
+        <BugsList bugs={bugs} openCount={openBugs} projectId={projectId ?? ""} />
       ) : (
-        <RequestsList items={requests} />
+        <RequestsList items={requests} projectId={projectId ?? ""} />
       )}
     </div>
   );
@@ -162,9 +162,11 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ tab?
 function BugsList({
   bugs,
   openCount,
+  projectId,
 }: {
   bugs: Awaited<ReturnType<typeof listBugs>>;
   openCount: number;
+  projectId: string;
 }) {
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
@@ -216,7 +218,13 @@ function BugsList({
   );
 }
 
-function RequestsList({ items }: { items: Awaited<ReturnType<typeof listFeatureRequests>> }) {
+function RequestsList({
+  items,
+  projectId,
+}: {
+  items: Awaited<ReturnType<typeof listFeatureRequests>>;
+  projectId: string;
+}) {
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
       {items.length === 0 ? (

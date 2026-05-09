@@ -44,7 +44,7 @@ export default async function GateDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-6">
-      <LinkButton variant="ghost" size="sm" className="-ml-2" href="/dashboard/configs/gates">
+      <LinkButton variant="ghost" size="sm" className="-ml-2" href={`/dashboard/${projectId}/configs/gates`}>
         <ArrowLeft className="size-3.5" />
         Gates
       </LinkButton>

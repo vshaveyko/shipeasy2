@@ -57,7 +57,7 @@ export default async function FeatureRequestDetailPage({
     <div className="space-y-6">
       <div>
         <Link
-          href="/dashboard/feedback?tab=requests"
+          href={`/dashboard/${projectId}/feedback?tab=requests`}
           className="inline-flex items-center gap-1.5 text-[12px] text-[var(--se-fg-3)] hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />

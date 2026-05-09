@@ -46,7 +46,7 @@ export default async function BugDetailPage({ params }: { params: Promise<{ id: 
     <div className="space-y-6">
       <div>
         <Link
-          href="/dashboard/feedback?tab=bugs"
+          href={`/dashboard/${projectId}/feedback?tab=bugs`}
           className="inline-flex items-center gap-1.5 text-[12px] text-[var(--se-fg-3)] hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />

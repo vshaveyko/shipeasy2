@@ -1,7 +1,10 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import useSWR from "swr";
 import { FlaskConical, Search, Play, Square } from "lucide-react";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -33,6 +36,8 @@ const fetcher = async (url: string): Promise<ExperimentRow[]> => {
 };
 
 export function ExperimentsContent() {
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
   const { data, isLoading, mutate } = useSWR<ExperimentRow[]>("/api/admin/experiments", fetcher, {
     dedupingInterval: 0,
   });
@@ -62,7 +67,7 @@ export function ExperimentsContent() {
           title="Experiments"
           description="Run A/B tests on metrics with guardrails. Results compute daily once an experiment starts."
           actions={
-            <LinkButton size="sm" href="/dashboard/experiments/new">
+            <LinkButton size="sm" href={`/dashboard/${projectId}/experiments/new`}>
               New experiment
             </LinkButton>
           }
@@ -79,7 +84,7 @@ export function ExperimentsContent() {
         title="Experiments"
         description="Run A/B tests on metrics with guardrails. Results compute daily once an experiment starts."
         actions={
-          <LinkButton size="sm" href="/dashboard/experiments/new">
+          <LinkButton size="sm" href={`/dashboard/${projectId}/experiments/new`}>
             New experiment
           </LinkButton>
         }

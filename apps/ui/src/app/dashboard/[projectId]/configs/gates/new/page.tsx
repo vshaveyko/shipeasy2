@@ -6,14 +6,19 @@ import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { createGateAction } from "../actions";
 
-export default function NewGatePage() {
+export default async function NewGatePage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   return (
     <div className="space-y-6">
       <PageHeader
         title="New gate"
         description="A gate is a named boolean rollout rule. Define a key, a default, and targeting rules."
         actions={
-          <LinkButton variant="ghost" size="sm" href="/dashboard/configs/gates">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/configs/gates`}>
             Cancel
           </LinkButton>
         }
@@ -102,7 +107,7 @@ export default function NewGatePage() {
         </Card>
 
         <div className="col-span-full flex justify-end gap-2">
-          <LinkButton variant="ghost" size="sm" href="/dashboard/configs/gates">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/configs/gates`}>
             Cancel
           </LinkButton>
           <Button size="sm" type="submit">

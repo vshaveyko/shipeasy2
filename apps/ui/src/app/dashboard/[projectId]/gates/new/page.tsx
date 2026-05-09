@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +45,8 @@ const PROFILES = [
 ] as const;
 
 export default function NewGatePage() {
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
   const [selectedProfile, setSelectedProfile] = useState<string>("rollout");
   const [rolloutPct, setRolloutPct] = useState(10);
   const [killswitch, setKillswitch] = useState(false);
@@ -61,7 +66,7 @@ export default function NewGatePage() {
         title="New gate"
         description="A gate is a named boolean rollout rule. Pick a profile to pre-fill the rollout and targeting."
         actions={
-          <LinkButton variant="ghost" size="sm" href="/dashboard/gates">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/gates`}>
             Cancel
           </LinkButton>
         }
@@ -244,7 +249,7 @@ export default function NewGatePage() {
         </Card>
 
         <div className="col-span-full flex justify-end gap-2">
-          <LinkButton variant="ghost" size="sm" href="/dashboard/gates">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/gates`}>
             Cancel
           </LinkButton>
           <Button size="sm" type="submit">

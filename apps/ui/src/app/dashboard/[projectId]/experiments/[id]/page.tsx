@@ -125,7 +125,7 @@ export default async function ExperimentDetailPage({
 
   return (
     <div className="space-y-6">
-      <LinkButton variant="ghost" size="sm" className="-ml-2" href="/dashboard/experiments">
+      <LinkButton variant="ghost" size="sm" className="-ml-2" href={`/dashboard/${projectId}/experiments`}>
         <ArrowLeft className="size-3.5" />
         Experiments
       </LinkButton>
