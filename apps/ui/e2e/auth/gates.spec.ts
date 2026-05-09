@@ -5,7 +5,10 @@ const RUN = Date.now();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function gateRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..");
+  // Same row layout as attributes/metrics/universes — walk up 3 levels so
+  // the returned locator includes the badge + Delete button (siblings of the
+  // label-block, not descendants of it).
+  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
 }
 
 // ── Quick-profile UI ──────────────────────────────────────────────────────────
@@ -89,7 +92,7 @@ test.describe("Rollout gate — full CRUD", () => {
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
-    await expect(gateRow(page, key).getByText("enabled", { exact: true })).toBeVisible();
+    await expect(gateRow(page, key).getByText(/^enabled$/i)).toBeVisible();
 
     // Admin API: gate is present with correct rolloutPct (50% → 5000 in 0-10000 scale)
     const resp = await page.request.get("/api/admin/gates");
@@ -105,12 +108,12 @@ test.describe("Rollout gate — full CRUD", () => {
   test("disable gate → disabled badge; admin API reflects enabled=0", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
-      .getByRole("button", { name: /^disable$/i })
+      .getByRole("button", { name: /^disable( gate)?$/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
-    await expect(gateRow(page, key).getByText("disabled")).toBeVisible();
-    await expect(gateRow(page, key).getByRole("button", { name: /^enable$/i })).toBeVisible();
+    await expect(gateRow(page, key).getByText(/^disabled$/i)).toBeVisible();
+    await expect(gateRow(page, key).getByRole("button", { name: /^enable( gate)?$/i })).toBeVisible();
 
     const resp = await page.request.get("/api/admin/gates");
     const gates = await resp.json();
@@ -121,11 +124,11 @@ test.describe("Rollout gate — full CRUD", () => {
   test("re-enable gate → enabled badge; admin API reflects enabled=1", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
     await gateRow(page, key)
-      .getByRole("button", { name: /^enable$/i })
+      .getByRole("button", { name: /^enable( gate)?$/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
-    await expect(gateRow(page, key).getByText("enabled", { exact: true })).toBeVisible();
+    await expect(gateRow(page, key).getByText(/^enabled$/i)).toBeVisible();
 
     const resp = await page.request.get("/api/admin/gates");
     const gates = await resp.json();

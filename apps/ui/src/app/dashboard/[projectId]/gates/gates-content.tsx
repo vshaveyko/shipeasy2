@@ -1,7 +1,10 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+import { usePathname } from "next/navigation";
 import useSWR from "swr";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 import { Search, Shield, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +45,8 @@ const fetcher = async (url: string): Promise<GateRow[]> => {
 };
 
 export function GatesContent() {
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
   const { data, isLoading, mutate } = useSWR<GateRow[]>("/api/admin/gates", fetcher, {
     dedupingInterval: 0,
   });
@@ -78,7 +83,7 @@ export function GatesContent() {
           title="Gates"
           description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
           actions={
-            <LinkButton size="sm" href="/dashboard/gates/new">
+            <LinkButton size="sm" href={`/dashboard/${projectId}/gates/new`}>
               New gate
             </LinkButton>
           }
@@ -95,7 +100,7 @@ export function GatesContent() {
         title="Gates"
         description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
         actions={
-          <LinkButton size="sm" href="/dashboard/gates/new">
+          <LinkButton size="sm" href={`/dashboard/${projectId}/gates/new`}>
             New gate
           </LinkButton>
         }
@@ -147,7 +152,7 @@ export function GatesContent() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <a
-                    href={`/dashboard/gates/${gate.id}`}
+                    href={`/dashboard/${projectId}/gates/${gate.id}`}
                     className="truncate font-mono text-[13px] font-medium hover:underline"
                   >
                     {gate.name}
