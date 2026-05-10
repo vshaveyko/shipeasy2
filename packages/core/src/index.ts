@@ -7,6 +7,7 @@ export * from "./errors";
 export * from "./limits";
 export * from "./types";
 export * from "./kv/cache";
+export * from "./kv/cdn-cache-keys";
 export * from "./kv/purge";
 export * from "./kv/rebuild";
 export * from "./db/scoped";

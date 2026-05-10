@@ -5,6 +5,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb, getI18nStrings } from "@shipeasy/core";
 import { labelKeys, labelProfiles } from "@shipeasy/core/db/schema";
 import type { AuthedContext } from "../lib/auth";
+import { withEdgeCache } from "../lib/edge-cache";
 
 // The loader script is inlined here so the worker serves it without a separate
 // deploy step. It reads data-key / data-profile from its own <script> tag,
@@ -40,14 +41,35 @@ const LOADER_JS = `(function(){
   fetch(url,{headers:{'X-SDK-Key':key}}).then(function(r){return r.ok?r.json():Promise.reject(r.status);}).then(function(d){install(d.strings||{},d.locale||'en');}).catch(function(){});
 })();`;
 
-export function handleI18nLoader(c: AuthedContext) {
-  return new Response(LOADER_JS, {
-    headers: {
-      "Content-Type": "application/javascript; charset=utf-8",
-      "Cache-Control": "public, max-age=60",
-      "Access-Control-Allow-Origin": "*",
-    },
-  });
+export async function handleI18nLoader(c: AuthedContext) {
+  // Loader is a tiny static script identical for every customer. The URL
+  // itself is the cache key — no project scoping. Browser cache (immutable)
+  // handles the second hit; the colo cache handles the first hit per colo.
+  const buildRes = () =>
+    new Response(LOADER_JS, {
+      headers: {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*",
+        "Timing-Allow-Origin": "*",
+      },
+    });
+  const cache =
+    typeof caches !== "undefined"
+      ? ((caches as unknown as { default?: Cache }).default ?? null)
+      : null;
+  if (!cache) return buildRes();
+  const cacheKey = new Request(c.req.url, { method: "GET" });
+  const hit = await cache.match(cacheKey);
+  if (hit) {
+    const res = new Response(hit.body, hit);
+    res.headers.set("X-Edge-Cache", "HIT");
+    return res;
+  }
+  const res = buildRes();
+  res.headers.set("X-Edge-Cache", "MISS");
+  c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()));
+  return res;
 }
 
 export async function handleI18nStrings(c: AuthedContext) {
@@ -55,15 +77,31 @@ export async function handleI18nStrings(c: AuthedContext) {
   const profile = c.req.query("profile");
   if (!profile) return c.json({ error: "profile query param required" }, 400);
 
-  const cached = await getI18nStrings(c.env, key.project_id, profile);
-  if (cached) {
-    return c.json(cached, 200, {
-      "Cache-Control": "public, max-age=30, stale-while-revalidate=60",
-      ETag: `"${cached.version}"`,
-    });
-  }
+  return withEdgeCache(
+    c,
+    { route: "/sdk/i18n/strings", projectId: key.project_id, profile },
+    async () => {
+      const cached = await getI18nStrings(c.env, key.project_id, profile);
+      const payload = cached ?? (await loadFromD1(c, key.project_id, profile));
 
-  // KV miss — fall back to D1 and build the response from scratch.
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=31536000, immutable",
+          ETag: `"${payload.version}"`,
+          "Timing-Allow-Origin": "*",
+        },
+      });
+    },
+  );
+}
+
+async function loadFromD1(
+  c: AuthedContext,
+  projectId: string,
+  profile: string,
+): Promise<{ strings: Record<string, string>; locale: string; version: string }> {
   const db = getDb(c.env.DB);
 
   const profileRows = await db
@@ -71,7 +109,7 @@ export async function handleI18nStrings(c: AuthedContext) {
     .from(labelProfiles)
     .where(
       and(
-        eq(labelProfiles.projectId, key.project_id),
+        eq(labelProfiles.projectId, projectId),
         eq(labelProfiles.name, profile),
         isNull(labelProfiles.deletedAt),
       ),
@@ -79,15 +117,13 @@ export async function handleI18nStrings(c: AuthedContext) {
     .limit(1);
 
   if (profileRows.length === 0) {
-    return c.json({ strings: {}, locale: "en", version: "0" });
+    return { strings: {}, locale: "en", version: "0" };
   }
-
-  const profileId = profileRows[0].id;
 
   const rows = await db
     .select({ key: labelKeys.key, value: labelKeys.value, updatedAt: labelKeys.updatedAt })
     .from(labelKeys)
-    .where(eq(labelKeys.profileId, profileId));
+    .where(eq(labelKeys.profileId, profileRows[0].id));
 
   const strings: Record<string, string> = {};
   let latestTs = "";
@@ -95,11 +131,6 @@ export async function handleI18nStrings(c: AuthedContext) {
     strings[row.key] = row.value;
     if (row.updatedAt > latestTs) latestTs = row.updatedAt;
   }
-
   const version = latestTs ? latestTs.slice(0, 19).replace(/\D/g, "") : "0";
-
-  return c.json({ strings, locale: "en", version }, 200, {
-    "Cache-Control": "public, max-age=30, stale-while-revalidate=60",
-    ETag: `"${version}"`,
-  });
+  return { strings, locale: "en", version };
 }

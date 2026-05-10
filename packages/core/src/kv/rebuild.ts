@@ -18,6 +18,7 @@ import {
 import { sha256 } from "../auth/crypto";
 import type { CoreEnv } from "../env";
 import { ApiError } from "../errors";
+import { sdkCachePath } from "./cdn-cache-keys";
 import { purgeCache } from "./purge";
 
 const MAX_KV_BYTES = 24 * 1024 * 1024;
@@ -32,7 +33,7 @@ export function flagsKvKey(projectId: string, env: ConfigEnv): string {
 }
 
 export function flagsCdnPath(projectId: string, env: ConfigEnv): string {
-  return `/sdk/flags/${projectId}?env=${env}`;
+  return sdkCachePath({ route: "/sdk/flags", projectId, env });
 }
 
 /**
@@ -210,7 +211,7 @@ export async function rebuildExperiments(env: CoreEnv, projectId: string): Promi
 
   if (!env.FLAGS_KV) return;
   await env.FLAGS_KV.put(`${projectId}:experiments`, serialized);
-  await purgeCache(env, `/sdk/experiments/${projectId}`);
+  await purgeCache(env, sdkCachePath({ route: "/sdk/experiments", projectId }));
 }
 
 export async function rebuildCatalog(env: CoreEnv, projectId: string): Promise<void> {
@@ -278,8 +279,13 @@ export async function rebuildI18nProfile(
   }
   const version = latestTs ? latestTs.slice(0, 19).replace(/\D/g, "") : "0";
 
+  const profileName = profileRows[0].name;
   await env.FLAGS_KV.put(
-    i18nKvKey(projectId, profileRows[0].name),
+    i18nKvKey(projectId, profileName),
     JSON.stringify({ strings, locale: "en", version }),
+  );
+  await purgeCache(
+    env,
+    sdkCachePath({ route: "/sdk/i18n/strings", projectId, profile: profileName }),
   );
 }
