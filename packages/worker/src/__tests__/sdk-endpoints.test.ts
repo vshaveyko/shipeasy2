@@ -872,6 +872,41 @@ describe("POST /collect", () => {
     expect(body.unregistered).toContain("pending_event");
   });
 
+  it("__auto_* metric bypasses catalog check → 202 with no pending row", async () => {
+    await rebuildFlags(t.env, t.projectId, "free");
+    await rebuildExperiments(t.env, t.projectId);
+    await rebuildCatalog(t.env, t.projectId);
+
+    const resp = await fetchApp(
+      req("POST", "/collect", t.clientKey, {
+        events: [
+          {
+            type: "metric",
+            event_name: "__auto_page_load",
+            value: 123,
+            user_id: "u-auto",
+            ts: Date.now(),
+          },
+          {
+            type: "metric",
+            event_name: "__auto_lcp",
+            value: 2500,
+            user_id: "u-auto",
+            ts: Date.now(),
+          },
+        ],
+      }),
+      t.env,
+    );
+    expect(resp.status).toBe(202);
+
+    const row = (await t.env
+      .DB!.prepare("SELECT name FROM events WHERE project_id = ? AND name LIKE '__auto_%'")
+      .bind(t.projectId)
+      .first()) as { name: string } | null;
+    expect(row).toBeNull();
+  });
+
   it("unknown event → 422 and auto-creates a pending row in D1", async () => {
     await rebuildFlags(t.env, t.projectId, "free");
     await rebuildExperiments(t.env, t.projectId);

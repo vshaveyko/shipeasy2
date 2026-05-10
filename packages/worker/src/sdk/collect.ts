@@ -67,8 +67,13 @@ export async function handleCollect(c: AuthedContext) {
   }
 
   // Validate metric event names against the catalog.
+  // SDK auto-guardrail metrics (`__auto_*`) are built-in — bypass catalog check.
   const metricNames = new Set<string>();
-  for (const e of events) if (e.type === "metric") metricNames.add(e.event_name);
+  for (const e of events) {
+    if (e.type !== "metric") continue;
+    if (e.event_name.startsWith("__auto_")) continue;
+    metricNames.add(e.event_name);
+  }
 
   if (metricNames.size > 0) {
     const catalog = await getCatalog(c.env, key.project_id);
