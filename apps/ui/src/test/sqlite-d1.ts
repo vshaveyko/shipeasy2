@@ -26,6 +26,8 @@ const MIGRATIONS = [
   join(__dirname, "../../../../packages/worker/migrations/0017_project_modules_user_events.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0018_bug_priority.sql"),
   join(__dirname, "../../../../packages/worker/migrations/0019_configs_schema.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0020_killswitch_split.sql"),
+  join(__dirname, "../../../../packages/worker/migrations/0021_gatekeepers.sql"),
 ];
 
 class SqliteStatement {

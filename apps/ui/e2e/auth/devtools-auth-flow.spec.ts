@@ -11,7 +11,6 @@ const GATES = [
     id: "g1",
     name: "dark-mode",
     enabled: true,
-    killswitch: false,
     rolloutPct: 100,
     updatedAt: "2024-01-01T00:00:00Z",
   },
@@ -53,7 +52,7 @@ test.describe("DevTools — full auth round-trip", () => {
     await waitForOverlayReady(page);
 
     // Mock admin API so the panel load after auth succeeds on the fresh token.
-    await page.route("**/api/admin/gates", (r) => r.fulfill({ json: GATES }));
+    await page.route("**/api/admin/gates**", (r) => r.fulfill({ json: GATES }));
 
     await page.getByTitle("Gates").click();
     await page.waitForTimeout(300);
@@ -87,7 +86,7 @@ test.describe("DevTools — full auth round-trip", () => {
   }) => {
     await page.goto("/dashboard?se-devtools");
     await waitForOverlayReady(page);
-    await page.route("**/api/admin/gates", (r) => r.fulfill({ json: GATES }));
+    await page.route("**/api/admin/gates**", (r) => r.fulfill({ json: GATES }));
 
     // Authorize first
     await page.getByTitle("Gates").click();

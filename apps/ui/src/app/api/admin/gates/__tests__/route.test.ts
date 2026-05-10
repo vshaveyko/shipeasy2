@@ -33,17 +33,21 @@ async function createGate(name = "my_gate", rollout_pct = 100) {
 }
 
 describe("GET /admin/gates", () => {
-  it("returns empty list initially", async () => {
+  it("returns empty page initially", async () => {
     const res = await GET(req("GET", "/api/admin/gates"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual([]);
+    expect(await res.json()).toEqual({ data: [], next_cursor: null });
   });
 
   it("lists all created gates", async () => {
     await createGate("gate_a");
     await createGate("gate_b");
-    const body = (await (await GET(req("GET", "/api/admin/gates"))).json()) as { name: string }[];
-    expect(body.map((g) => g.name).sort()).toEqual(["gate_a", "gate_b"]);
+    const body = (await (await GET(req("GET", "/api/admin/gates"))).json()) as {
+      data: { name: string }[];
+      next_cursor: string | null;
+    };
+    expect(body.data.map((g) => g.name).sort()).toEqual(["gate_a", "gate_b"]);
+    expect(body.next_cursor).toBeNull();
   });
 });
 
@@ -86,10 +90,11 @@ describe("PATCH /admin/gates/:id", () => {
       params: Promise.resolve({ id }),
     });
     expect(res.status).toBe(200);
-    const list = (await (await GET(req("GET", "/api/admin/gates"))).json()) as {
-      id: string;
-      rolloutPct: number;
-    }[];
+    const list = (
+      (await (await GET(req("GET", "/api/admin/gates"))).json()) as {
+        data: { id: string; rolloutPct: number }[];
+      }
+    ).data;
     expect(list.find((g) => g.id === id)?.rolloutPct).toBe(42);
   });
 
@@ -108,7 +113,11 @@ describe("DELETE /admin/gates/:id", () => {
       params: Promise.resolve({ id }),
     });
     expect(res.status).toBe(200);
-    const list = (await (await GET(req("GET", "/api/admin/gates"))).json()) as { id: string }[];
+    const list = (
+      (await (await GET(req("GET", "/api/admin/gates"))).json()) as {
+        data: { id: string }[];
+      }
+    ).data;
     expect(list.find((g) => g.id === id)).toBeUndefined();
   });
 

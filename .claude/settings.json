@@ -7,7 +7,14 @@
       "Bash(git stash:*)",
       "Bash(git stash)",
       "Bash(git reset:*)",
-      "Bash(git reset)"
+      "Bash(git reset)",
+      "Bash(npm publish)",
+      "Bash(npm publish:*)",
+      "Bash(pnpm publish)",
+      "Bash(pnpm publish:*)",
+      "Bash(yarn publish)",
+      "Bash(yarn publish:*)",
+      "Bash(npm run publish:*)"
     ]
   }
 }

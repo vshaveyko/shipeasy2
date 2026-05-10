@@ -74,7 +74,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       </aside>
 
       {/* Right column: topbar + billing banner + page content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <TopBar
           user={session.user ?? {}}
           planLabel={planLabel}
@@ -84,7 +84,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         {billingStatus && (
           <BillingBanner status={billingStatus.status} trialEndsAt={billingStatus.trialEndsAt} />
         )}
-        <main className="flex flex-1 flex-col overflow-hidden bg-[var(--se-bg)]">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--se-bg)]">
           <div className="mx-auto flex w-full min-h-0 max-w-[1280px] flex-1 flex-col px-6">
             {children}
           </div>

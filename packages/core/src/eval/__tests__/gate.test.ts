@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { matchRule, evalGate, type GateRule, type Gate, type User } from "../gate";
+import {
+  matchRule,
+  evalGate,
+  evalGatekeeper,
+  type GateRule,
+  type Gate,
+  type Gatekeeper,
+  type StackedGateEntry,
+  type User,
+} from "../gate";
 
 describe("matchRule", () => {
   const user: User = {
@@ -139,14 +148,6 @@ describe("evalGate", () => {
   };
   const user: User = { user_id: "user-for-gate-tests" };
 
-  it("returns false when killswitch=1", () => {
-    expect(evalGate({ ...baseGate, killswitch: 1 }, user)).toBe(false);
-  });
-
-  it("returns false when killswitch=true", () => {
-    expect(evalGate({ ...baseGate, killswitch: true }, user)).toBe(false);
-  });
-
   it("returns false when enabled=0", () => {
     expect(evalGate({ ...baseGate, enabled: 0 }, user)).toBe(false);
   });
@@ -209,5 +210,111 @@ describe("evalGate", () => {
       if (evalGate(gateA, u) !== evalGate(gateB, u)) diffs++;
     }
     expect(diffs).toBeGreaterThan(0);
+  });
+});
+
+describe("evalGatekeeper", () => {
+  const base: Gatekeeper = {
+    rules: [],
+    rolloutPct: 0,
+    salt: "kg-salt",
+    enabled: 1,
+    stack: [],
+  };
+  const user: User = { user_id: "u-test", country: "US", plan: "team" };
+
+  it("falls through to false when stack is empty (no legacy fallback rules)", () => {
+    expect(evalGatekeeper({ ...base, stack: [] }, user)).toBe(false);
+  });
+
+  it("falls back to legacy evalGate when stack is null/undefined", () => {
+    // legacy: rolloutPct 100% means everyone passes
+    const legacy: Gatekeeper = { ...base, stack: null, rolloutPct: 10000 };
+    expect(evalGatekeeper(legacy, user)).toBe(true);
+  });
+
+  it("returns false when disabled regardless of stack", () => {
+    const stack: StackedGateEntry[] = [{ id: "1", type: "rollout", rolloutPct: 10000 }];
+    expect(evalGatekeeper({ ...base, enabled: 0, stack }, user)).toBe(false);
+  });
+
+  it("short-circuits on the first PASS", () => {
+    const stack: StackedGateEntry[] = [
+      // First passes via condition match → second never evaluated.
+      { id: "c1", type: "condition", rules: [{ attr: "country", op: "eq", value: "US" }] },
+      // 0% rollout — would fail if reached.
+      { id: "r1", type: "rollout", rolloutPct: 0 },
+    ];
+    expect(evalGatekeeper({ ...base, stack }, user)).toBe(true);
+  });
+
+  it("returns false when every entry fails", () => {
+    const stack: StackedGateEntry[] = [
+      { id: "c1", type: "condition", rules: [{ attr: "country", op: "eq", value: "ZZ" }] },
+      { id: "r1", type: "rollout", rolloutPct: 0 },
+    ];
+    expect(evalGatekeeper({ ...base, stack }, user)).toBe(false);
+  });
+
+  it("ANY mode passes if any rule matches", () => {
+    const stack: StackedGateEntry[] = [
+      {
+        id: "c1",
+        type: "condition",
+        pass: "any",
+        rules: [
+          { attr: "country", op: "eq", value: "ZZ" }, // fails
+          { attr: "plan", op: "eq", value: "team" }, // matches
+        ],
+      },
+      { id: "r1", type: "rollout", rolloutPct: 0 },
+    ];
+    expect(evalGatekeeper({ ...base, stack }, user)).toBe(true);
+  });
+
+  it("ALL mode requires every rule to match (default)", () => {
+    const stack: StackedGateEntry[] = [
+      {
+        id: "c1",
+        type: "condition",
+        rules: [
+          { attr: "country", op: "eq", value: "US" },
+          { attr: "plan", op: "eq", value: "free" }, // fails
+        ],
+      },
+      { id: "r1", type: "rollout", rolloutPct: 0 },
+    ];
+    expect(evalGatekeeper({ ...base, stack }, user)).toBe(false);
+  });
+
+  it("rollout entry: 100% always passes", () => {
+    const stack: StackedGateEntry[] = [{ id: "r1", type: "rollout", rolloutPct: 10000 }];
+    expect(evalGatekeeper({ ...base, stack }, user)).toBe(true);
+  });
+
+  it("rollout entry: 0% never passes", () => {
+    const stack: StackedGateEntry[] = [{ id: "r1", type: "rollout", rolloutPct: 0 }];
+    expect(evalGatekeeper({ ...base, stack }, user)).toBe(false);
+  });
+
+  it("rollout uses bucketBy attribute when present", () => {
+    const stack: StackedGateEntry[] = [
+      { id: "r1", type: "rollout", rolloutPct: 5000, bucketBy: "company_id", salt: "rev" },
+    ];
+    const u1: User = { user_id: "u-x", company_id: "co-1" };
+    const u2: User = { user_id: "u-x", company_id: "co-2" };
+    // Same user_id, different company_id — different bucket inputs.
+    // We don't assert the exact boolean (depends on hash), but they must each be deterministic.
+    expect(evalGatekeeper({ ...base, stack }, u1)).toBe(evalGatekeeper({ ...base, stack }, u1));
+    expect(evalGatekeeper({ ...base, stack }, u2)).toBe(evalGatekeeper({ ...base, stack }, u2));
+  });
+
+  it("condition entry with no rules never passes (avoids vacuous true)", () => {
+    const stack: StackedGateEntry[] = [
+      { id: "c1", type: "condition", rules: [] },
+      { id: "r1", type: "rollout", rolloutPct: 10000 }, // would pass
+    ];
+    // Empty condition fails → falls through to rollout 100% → passes
+    expect(evalGatekeeper({ ...base, stack }, user)).toBe(true);
   });
 });

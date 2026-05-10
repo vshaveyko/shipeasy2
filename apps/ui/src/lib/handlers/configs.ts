@@ -18,12 +18,14 @@ import {
   configDraftUpsertSchema,
   configPublishSchema,
 } from "@shipeasy/core/schemas/configs";
+import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import { syncUsage } from "../billing";
 import type { AdminIdentity } from "../admin-auth";
+import { keysetWhere, sliceWithCursor } from "./_pagination";
 
 export type ConfigSummary = {
   id: string;
@@ -85,10 +87,21 @@ function assertValueMatchesSchema(value: unknown, schema: JsonSchema): void {
   }
 }
 
-export async function listConfigs(identity: AdminIdentity): Promise<ConfigSummary[]> {
+export async function listConfigs(
+  identity: AdminIdentity,
+  opts: PageQuery,
+): Promise<Page<ConfigSummary>> {
   const s = scopedDb(identity.projectId);
-  const meta = await s.select(configs);
-  if (meta.length === 0) return [];
+  // Killswitches share this table but live behind their own surface.
+  const ks = keysetWhere(configs.updatedAt, configs.id, opts.cursor);
+  const where = ks ? and(eq(configs.kind, "config"), ks)! : eq(configs.kind, "config");
+  const metaRows = await s
+    .selectWhere(configs, where)
+    .orderBy(desc(configs.updatedAt), desc(configs.id))
+    .limit(opts.limit + 1);
+  const sliced = sliceWithCursor(metaRows, opts.limit);
+  const meta = sliced.data;
+  if (meta.length === 0) return { data: [], next_cursor: sliced.next_cursor };
 
   const [valueRows, draftRows] = await Promise.all([
     s
@@ -138,7 +151,7 @@ export async function listConfigs(identity: AdminIdentity): Promise<ConfigSummar
     };
   }
 
-  return meta.map((m) => ({
+  const data = meta.map((m) => ({
     id: m.id,
     name: m.name,
     description: m.description,
@@ -147,11 +160,23 @@ export async function listConfigs(identity: AdminIdentity): Promise<ConfigSummar
     envs: envByConfig.get(m.id) ?? {},
     drafts: draftsByConfig.get(m.id) ?? {},
   }));
+  return { data, next_cursor: sliced.next_cursor };
+}
+
+export async function listAllConfigs(identity: AdminIdentity): Promise<ConfigSummary[]> {
+  const out: ConfigSummary[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await listConfigs(identity, { limit: 500, cursor });
+    out.push(...page.data);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return out;
 }
 
 export async function getConfig(identity: AdminIdentity, id: string): Promise<ConfigDetail> {
   const s = scopedDb(identity.projectId);
-  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
   if (rows.length === 0) throw new ApiError("Config not found", 404);
   const meta = rows[0];
 
@@ -233,6 +258,7 @@ export async function createConfig(identity: AdminIdentity, input: unknown) {
       id,
       name: parsed.name,
       description: parsed.description ?? null,
+      kind: "config",
       schemaJson: parsed.schema,
       updatedAt: now,
     });
@@ -267,7 +293,7 @@ export async function updateConfig(identity: AdminIdentity, id: string, input: u
   const now = new Date().toISOString();
   const s = await scopedDbSA(identity.projectId);
 
-  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
   if (rows.length === 0) throw new ApiError("Config not found", 404);
   const meta = rows[0];
 
@@ -312,7 +338,7 @@ export async function updateConfig(identity: AdminIdentity, id: string, input: u
 export async function updateConfigSchema(identity: AdminIdentity, id: string, input: unknown) {
   const parsed = configSchemaUpdateSchema.parse(input);
   const s = await scopedDbSA(identity.projectId);
-  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
   if (rows.length === 0) throw new ApiError("Config not found", 404);
   await s
     .update(configs)
@@ -326,7 +352,7 @@ export async function saveDraft(identity: AdminIdentity, id: string, input: unkn
   const parsed = configDraftUpsertSchema.parse(input);
   const s = await scopedDbSA(identity.projectId);
 
-  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
   if (rows.length === 0) throw new ApiError("Config not found", 404);
   assertValueMatchesSchema(parsed.value, rows[0].schemaJson);
 
@@ -380,7 +406,7 @@ export async function discardDraft(identity: AdminIdentity, id: string, input: u
   const parsed = configPublishSchema.parse(input);
   const s = await scopedDbSA(identity.projectId);
 
-  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
   if (rows.length === 0) throw new ApiError("Config not found", 404);
 
   await s
@@ -397,7 +423,7 @@ export async function publishDraft(identity: AdminIdentity, id: string, input: u
   const env = await getEnvAsync();
   const s = await scopedDbSA(identity.projectId);
 
-  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
   if (rows.length === 0) throw new ApiError("Config not found", 404);
   const meta = rows[0];
 
@@ -446,7 +472,7 @@ export async function deleteConfig(identity: AdminIdentity, id: string) {
   const project = await loadProject(identity.projectId);
   const env = await getEnvAsync();
   const s = await scopedDbSA(identity.projectId);
-  const rows = await s.selectWhere(configs, eq(configs.id, id));
+  const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
   if (rows.length === 0) throw new ApiError("Config not found", 404);
   await s.update(configs).set({ deletedAt: new Date().toISOString() }).where(eq(configs.id, id));
   await rebuildFlags(env, identity.projectId, project.plan);
@@ -460,12 +486,15 @@ export async function bulkDeleteConfigs(identity: AdminIdentity, ids: string[]) 
   const project = await loadProject(identity.projectId);
   const env = await getEnvAsync();
   const s = await scopedDbSA(identity.projectId);
-  const existing = await s.selectWhere(configs, inArray(configs.id, ids));
+  const existing = await s.selectWhere(
+    configs,
+    and(inArray(configs.id, ids), eq(configs.kind, "config"))!,
+  );
   if (existing.length === 0) throw new ApiError("No matching configs found", 404);
   await s
     .update(configs)
     .set({ deletedAt: new Date().toISOString() })
-    .where(inArray(configs.id, ids));
+    .where(and(inArray(configs.id, ids), eq(configs.kind, "config"))!);
   await rebuildFlags(env, identity.projectId, project.plan);
   await writeAudit(identity, "config.bulk_delete", "config", null, {
     count: existing.length,

@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { listGates } from "@/lib/handlers/gates";
+import { listAllGates } from "@/lib/handlers/gates";
 import NewExperimentClient from "./new-experiment-client";
 
 export default async function NewExperimentPage() {
@@ -9,7 +9,7 @@ export default async function NewExperimentPage() {
   let gates: { id: string; name: string }[] = [];
   if (projectId) {
     try {
-      const raw = await listGates({
+      const raw = await listAllGates({
         projectId,
         actorEmail: session?.user?.email ?? "unknown",
         source: "jwt",

@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { adminList } from "../admin-list";
 
 const RUN = Date.now();
 
@@ -10,10 +11,12 @@ function expRow(page: Page, name: string) {
 
 async function cleanupExperiment(request: APIRequestContext, name: string) {
   try {
-    const resp = await request.get("/api/admin/experiments");
-    if (!resp.ok()) return;
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === name);
+    const exps = await adminList<{ id: string; name: string; status: string }>(
+      request,
+      "/api/admin/experiments",
+    ).catch(() => null);
+    if (!exps) return;
+    const exp = exps.find((e) => e.name === name);
     if (!exp) return;
     if (exp.status === "running") {
       await request.post(`/api/admin/experiments/${exp.id}/status`, {
@@ -27,9 +30,11 @@ async function cleanupExperiment(request: APIRequestContext, name: string) {
 }
 
 async function getExperimentId(page: Page, name: string): Promise<string> {
-  const resp = await page.request.get("/api/admin/experiments");
-  const exps = await resp.json();
-  const exp = exps.find((e: { name: string }) => e.name === name);
+  const exps = await adminList<{ id: string; name: string }>(
+    page.request,
+    "/api/admin/experiments",
+  );
+  const exp = exps.find((e) => e.name === name);
   if (!exp) throw new Error(`Experiment '${name}' not found in admin API`);
   return exp.id;
 }
@@ -134,15 +139,17 @@ test.describe("Conversion experiment — full lifecycle", () => {
   });
 
   test("admin API returns experiment with correct name and 2 groups", async ({ page }) => {
-    const resp = await page.request.get("/api/admin/experiments");
-    expect(resp.ok()).toBe(true);
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === name);
+    const exps = await adminList<{
+      name: string;
+      status: string;
+      groups: { name: string }[];
+    }>(page.request, "/api/admin/experiments");
+    const exp = exps.find((e) => e.name === name);
     expect(exp).toBeDefined();
-    expect(exp.groups).toHaveLength(2);
-    expect(exp.groups[0].name).toBe("control");
-    expect(exp.groups[1].name).toBe("test");
-    expect(exp.status).toBe("draft");
+    expect(exp!.groups).toHaveLength(2);
+    expect(exp!.groups[0].name).toBe("control");
+    expect(exp!.groups[1].name).toBe("test");
+    expect(exp!.status).toBe("draft");
   });
 
   test("results page: draft experiment shows 'Draft' status stat and '—' verdict", async ({
@@ -222,10 +229,8 @@ test.describe("Conversion experiment — full lifecycle", () => {
 
     await expect(page.getByText(name, { exact: true })).not.toBeVisible();
 
-    const resp = await page.request.get("/api/admin/experiments");
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === name);
-    expect(exp).toBeUndefined();
+    const exps = await adminList<{ name: string }>(page.request, "/api/admin/experiments");
+    expect(exps.find((e) => e.name === name)).toBeUndefined();
   });
 });
 
@@ -254,16 +259,18 @@ test.describe("Multi-variant experiment — 3 groups", () => {
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
 
-    const resp = await page.request.get("/api/admin/experiments");
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === name);
+    const exps = await adminList<{
+      name: string;
+      groups: { name: string; weight: number }[];
+    }>(page.request, "/api/admin/experiments");
+    const exp = exps.find((e) => e.name === name);
     expect(exp).toBeDefined();
-    expect(exp.groups).toHaveLength(3);
+    expect(exp!.groups).toHaveLength(3);
     // All weights sum to 10000
-    const weightSum = exp.groups.reduce((acc: number, g: { weight: number }) => acc + g.weight, 0);
+    const weightSum = exp!.groups.reduce((acc, g) => acc + g.weight, 0);
     expect(weightSum).toBe(10000);
     // Third group name matches what we typed
-    const variant = exp.groups.find((g: { name: string }) => g.name === "variant_b");
+    const variant = exp!.groups.find((g) => g.name === "variant_b");
     expect(variant).toBeDefined();
   });
 
@@ -310,11 +317,13 @@ test.describe("Revenue experiment — 60% allocation", () => {
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
 
-    const resp = await page.request.get("/api/admin/experiments");
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === name);
+    const exps = await adminList<{ name: string; allocationPct: number }>(
+      page.request,
+      "/api/admin/experiments",
+    );
+    const exp = exps.find((e) => e.name === name);
     expect(exp).toBeDefined();
-    expect(exp.allocationPct).toBe(6000); // 60% * 100
+    expect(exp!.allocationPct).toBe(6000); // 60% * 100
   });
 
   test("results page shows 60% allocation in setup card", async ({ page }) => {

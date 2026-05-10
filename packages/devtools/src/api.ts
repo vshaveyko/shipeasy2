@@ -110,8 +110,31 @@ export class DevtoolsApi {
     return (Array.isArray(body) ? body : ((body as { data: T }).data ?? body)) as T;
   }
 
+  /**
+   * Drain a paginated `{ data, next_cursor }` list endpoint by walking cursors.
+   * Devtools shows the entire list at once; without this, large projects would
+   * silently truncate at the first page (limit=100 default).
+   */
+  private async drainList<T>(basePath: string): Promise<T[]> {
+    const sep = basePath.includes("?") ? "&" : "?";
+    const out: T[] = [];
+    let cursor: string | null = null;
+    do {
+      const q = `${sep}limit=500${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const res = await fetch(`${this.adminUrl}${basePath}${q}`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+      });
+      if (!res.ok) throw new Error(`${basePath} → HTTP ${res.status}`);
+      const body = (await res.json()) as T[] | { data: T[]; next_cursor: string | null };
+      if (Array.isArray(body)) return body;
+      out.push(...body.data);
+      cursor = body.next_cursor;
+    } while (cursor);
+    return out;
+  }
+
   gates(): Promise<GateRecord[]> {
-    return this.memo("gates", () => this.get("/api/admin/gates"));
+    return this.memo("gates", () => this.drainList<GateRecord>("/api/admin/gates"));
   }
 
   configs(): Promise<ConfigRecord[]> {
@@ -119,10 +142,12 @@ export class DevtoolsApi {
       // The list endpoint sheds `valueJson` (per-env), so fetch each config's
       // detail and project the active env's value back into `valueJson`.
       // Default env is `prod`.
-      const list =
-        await this.get<
-          Array<{ id: string; name: string; updatedAt: string; schema?: Record<string, unknown> }>
-        >("/api/admin/configs");
+      const list = await this.drainList<{
+        id: string;
+        name: string;
+        updatedAt: string;
+        schema?: Record<string, unknown>;
+      }>("/api/admin/configs");
       const env = "prod";
       const details = await Promise.all(
         list.map(async (c) => {
@@ -158,11 +183,13 @@ export class DevtoolsApi {
   }
 
   experiments(): Promise<ExperimentRecord[]> {
-    return this.memo("experiments", () => this.get("/api/admin/experiments"));
+    return this.memo("experiments", () =>
+      this.drainList<ExperimentRecord>("/api/admin/experiments"),
+    );
   }
 
   universes(): Promise<UniverseRecord[]> {
-    return this.memo("universes", () => this.get("/api/admin/universes"));
+    return this.memo("universes", () => this.drainList<UniverseRecord>("/api/admin/universes"));
   }
 
   profiles(): Promise<ProfileRecord[]> {

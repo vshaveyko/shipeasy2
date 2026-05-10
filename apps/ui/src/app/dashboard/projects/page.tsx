@@ -6,8 +6,8 @@ import { auth } from "@/auth";
 export const metadata: Metadata = { title: "Projects" };
 import { listProjectsByEmail, findProjectById, getEffectivePlan } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
-import { listGates } from "@/lib/handlers/gates";
-import { listExperiments } from "@/lib/handlers/experiments";
+import { listAllGates } from "@/lib/handlers/gates";
+import { listAllExperiments } from "@/lib/handlers/experiments";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { selectAndOpenProjectAction } from "./[id]/actions";
@@ -85,8 +85,8 @@ export default async function ProjectsPage() {
         allProjects.map(async (proj): Promise<ProjectRow> => {
           const identity = { projectId: proj.id, actorEmail, source: "jwt" as const };
           const [gates, experiments] = await Promise.all([
-            listGates(identity).catch(() => []),
-            listExperiments(identity).catch(() => []),
+            listAllGates(identity).catch(() => []),
+            listAllExperiments(identity).catch(() => []),
           ]);
           return {
             id: proj.id,

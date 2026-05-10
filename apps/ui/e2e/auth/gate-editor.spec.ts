@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { adminList } from "../admin-list";
 
 const RUN = Date.now();
 
@@ -55,14 +56,15 @@ test.describe("Gate editor page", () => {
     await page.getByRole("button", { name: /save changes/i }).click();
     await expect(page.getByRole("button", { name: /save changes/i })).toBeEnabled();
 
-    const resp = await page.request.get("/api/admin/gates");
-    expect(resp.ok()).toBe(true);
-    const gates = await resp.json();
-    const gate = gates.find((g: { name: string }) => g.name === key);
+    const gates = await adminList<{
+      name: string;
+      rules: { value: string }[];
+    }>(page.request, "/api/admin/gates");
+    const gate = gates.find((g) => g.name === key);
     expect(gate).toBeDefined();
-    expect(Array.isArray(gate.rules)).toBe(true);
-    expect(gate.rules.length).toBeGreaterThanOrEqual(1);
-    expect(gate.rules[0].value).toBe("us-east");
+    expect(Array.isArray(gate!.rules)).toBe(true);
+    expect(gate!.rules.length).toBeGreaterThanOrEqual(1);
+    expect(gate!.rules[0].value).toBe("us-east");
   });
 
   test("Back link returns to the gates list", async ({ page }) => {

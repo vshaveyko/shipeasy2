@@ -78,16 +78,21 @@ async function createExp(name = "checkout-exp", body = EXP_BODY) {
 }
 
 describe("GET /admin/experiments", () => {
-  it("returns empty list initially", async () => {
-    expect(await (await GET(req("GET", "/api/admin/experiments"))).json()).toEqual([]);
+  it("returns empty page initially", async () => {
+    expect(await (await GET(req("GET", "/api/admin/experiments"))).json()).toEqual({
+      data: [],
+      next_cursor: null,
+    });
   });
 
   it("lists created experiments", async () => {
     await createExp("exp-a");
     await createExp("exp-b");
-    const body = (await (await GET(req("GET", "/api/admin/experiments"))).json()) as {
-      name: string;
-    }[];
+    const body = (
+      (await (await GET(req("GET", "/api/admin/experiments"))).json()) as {
+        data: { name: string }[];
+      }
+    ).data;
     expect(body.map((e) => e.name).sort()).toEqual(["exp-a", "exp-b"]);
   });
 });

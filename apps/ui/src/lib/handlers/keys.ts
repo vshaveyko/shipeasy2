@@ -9,23 +9,60 @@ import {
 } from "@shipeasy/core";
 import { sdkKeys } from "@shipeasy/core/db/schema";
 import { keyCreateSchema } from "@shipeasy/core/schemas/keys";
+import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
+import { keysetWhere, sliceWithCursor } from "./_pagination";
 
-export async function listKeys(identity: AdminIdentity) {
-  const s = scopedDb(identity.projectId);
-  const rows = await s.select(sdkKeys);
-  return rows.map((r) => ({
+export interface KeySummary {
+  id: string;
+  type: string;
+  created_at: string;
+  revoked_at: string | null;
+  expires_at: string | null;
+  created_by_email: string | null;
+}
+
+function toSummary(r: typeof sdkKeys.$inferSelect): KeySummary {
+  return {
     id: r.id,
     type: r.type,
     created_at: r.createdAt,
     revoked_at: r.revokedAt,
     expires_at: r.expiresAt,
     created_by_email: r.createdByEmail,
-  }));
+  };
+}
+
+/**
+ * sdkKeys has no `updated_at` column; we paginate by `created_at`. The public
+ * shape uses snake_case (`created_at`), so we encode the cursor on raw rows
+ * (which use `createdAt`) and only transform the page slice.
+ */
+export async function listKeys(
+  identity: AdminIdentity,
+  opts: PageQuery,
+): Promise<Page<KeySummary>> {
+  const s = scopedDb(identity.projectId);
+  const ks = keysetWhere(sdkKeys.createdAt, sdkKeys.id, opts.cursor);
+  const base = ks ? s.selectWhere(sdkKeys, ks) : s.select(sdkKeys);
+  const rows = await base.orderBy(desc(sdkKeys.createdAt), desc(sdkKeys.id)).limit(opts.limit + 1);
+  const sliced = sliceWithCursor(rows, opts.limit, "createdAt");
+  return { data: sliced.data.map(toSummary), next_cursor: sliced.next_cursor };
+}
+
+export async function listAllKeys(identity: AdminIdentity): Promise<KeySummary[]> {
+  const out: KeySummary[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await listKeys(identity, { limit: 500, cursor });
+    out.push(...page.data);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return out;
 }
 
 export async function listActiveKeys(identity: AdminIdentity) {

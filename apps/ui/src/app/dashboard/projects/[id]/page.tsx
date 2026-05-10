@@ -15,7 +15,7 @@ import {
 import { auth } from "@/auth";
 import { findProjectById } from "@shipeasy/core";
 import type { ProjectModuleKey } from "@shipeasy/core";
-import { listKeys } from "@/lib/handlers/keys";
+import { listAllKeys } from "@/lib/handlers/keys";
 import { getEnvAsync } from "@/lib/env";
 import { getIdentity } from "@/lib/server-action";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
@@ -62,7 +62,7 @@ const MODULES: Array<{
   {
     key: "gates",
     title: "Gatekeepers",
-    description: "Feature gates with targeting rules, percentage rollouts, and killswitches.",
+    description: "Feature gates with targeting rules and percentage rollouts.",
     icon: <ShieldCheck className="size-4" />,
   },
   {
@@ -166,7 +166,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Props)
             ))}
           </div>
         ) : (
-          <KeysList keys={await listKeys(identity)} />
+          <KeysList keys={await listAllKeys(identity)} />
         )}
       </PageBody>
     </Page>

@@ -14,6 +14,34 @@ import {
 
 export type GateRule = { attr: string; op: string; value: unknown };
 
+/** One entry in a gatekeeper's ordered sub-gate stack.
+ *
+ * Evaluated top-to-bottom; the first entry that returns true short-circuits
+ * the gatekeeper to PASS. The last entry on a published stack is the
+ * hard-coded `public` rollout floor (locked: true) — it can be tuned but not
+ * removed. */
+export type StackedGateEntry =
+  | {
+      id: string;
+      type: "condition";
+      name?: string;
+      fromTemplate?: string | null;
+      pass?: "all" | "any";
+      rules: GateRule[];
+      locked?: boolean;
+    }
+  | {
+      id: string;
+      type: "rollout";
+      name?: string;
+      fromTemplate?: string | null;
+      /** 0–10000 basis points (matches gates.rolloutPct scale). */
+      rolloutPct: number;
+      bucketBy?: string;
+      salt?: string;
+      locked?: boolean;
+    };
+
 export type ExperimentGroup = {
   name: string;
   weight: number;
@@ -83,6 +111,19 @@ export const projects = sqliteTable(
     ownerDomainUniq: uniqueIndex("projects_owner_domain_uniq").on(t.ownerEmail, t.domain),
   }),
 );
+
+/** Per-user account state. Keyed by normalized lowercase email so it joins
+ *  cleanly with `projects.owner_email` and `project_members.email`. Tracks
+ *  terms acceptance + onboarding completion so we can gate first-login users
+ *  through `/onboarding/*` and re-prompt when terms version changes. */
+export const users = sqliteTable("users", {
+  email: text("email").primaryKey(),
+  termsAcceptedAt: text("terms_accepted_at"),
+  termsVersion: text("terms_version"),
+  onboardingCompletedAt: text("onboarding_completed_at"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
 
 export const PROJECT_MODULE_KEYS = [
   "translations",
@@ -234,7 +275,14 @@ export const gates = sqliteTable(
     rolloutPct: integer("rollout_pct").notNull().default(0),
     salt: text("salt").notNull(),
     enabled: integer("enabled").notNull().default(1),
-    killswitch: integer("killswitch").notNull().default(0),
+    // Gatekeeper metadata + ordered sub-gate stack. Stack is null on rows that
+    // predate the gatekeeper migration; eval falls back to rules+rolloutPct.
+    title: text("title"),
+    description: text("description"),
+    folder: text("folder"),
+    groupName: text("group_name"),
+    ownerEmail: text("owner_email"),
+    stack: text("stack", { mode: "json" }).$type<StackedGateEntry[]>(),
     updatedAt: text("updated_at").notNull(),
     deletedAt: text("deleted_at"),
   },
@@ -249,11 +297,33 @@ export const gates = sqliteTable(
 export const CONFIG_ENVS = ["dev", "staging", "prod"] as const;
 export type ConfigEnv = (typeof CONFIG_ENVS)[number];
 
+export const CONFIG_KINDS = ["config", "killswitch"] as const;
+export type ConfigKind = (typeof CONFIG_KINDS)[number];
+
 /** Permissive default schema — accepts any object. */
 export const DEFAULT_CONFIG_SCHEMA = {
   type: "object" as const,
   properties: {},
   additionalProperties: true,
+};
+
+/** Fixed schema for killswitch configs.
+ *
+ *   { value: bool, switches: { [switch_key]: bool } }
+ *
+ * `switches` is optional so users can ship a plain on/off without per-switch overrides.
+ * When present, individual switch keys take precedence over `value` on the client. */
+export const KILLSWITCH_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    value: { type: "boolean" as const },
+    switches: {
+      type: "object" as const,
+      additionalProperties: { type: "boolean" as const },
+    },
+  },
+  required: ["value"],
+  additionalProperties: false,
 };
 
 export type JsonSchema = Record<string, unknown>;
@@ -267,6 +337,7 @@ export const configs = sqliteTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
+    kind: text("kind", { enum: CONFIG_KINDS }).notNull().default("config"),
     schemaJson: text("schema_json", { mode: "json" })
       .$type<JsonSchema>()
       .notNull()

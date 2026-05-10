@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FlaskConical,
   ToggleLeft,
+  Power,
   Layers,
   Activity,
   Languages,
@@ -44,6 +45,7 @@ const PROJECT_SECTIONS: NavSection[] = [
     items: [
       { href: "", label: "Home", icon: LayoutDashboard, exact: true },
       { href: "/gates", label: "Gates", icon: ToggleLeft },
+      { href: "/killswitches", label: "Killswitches", icon: Power },
       { href: "/configs/values", label: "Configs", icon: Layers },
       { href: "/experiments", label: "Experiments", icon: FlaskConical },
       { href: "/metrics", label: "Metrics", icon: Activity },

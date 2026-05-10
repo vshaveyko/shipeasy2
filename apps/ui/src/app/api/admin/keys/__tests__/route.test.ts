@@ -31,15 +31,20 @@ async function createKey(type: "server" | "client" | "admin" = "server") {
 }
 
 describe("GET /admin/keys", () => {
-  it("returns empty list initially", async () => {
-    expect(await (await GET(req("GET", "/api/admin/keys"))).json()).toEqual([]);
+  it("returns empty page initially", async () => {
+    expect(await (await GET(req("GET", "/api/admin/keys"))).json()).toEqual({
+      data: [],
+      next_cursor: null,
+    });
   });
 
   it("lists created keys", async () => {
     await createKey("server");
     await createKey("client");
-    const body = (await (await GET(req("GET", "/api/admin/keys"))).json()) as { type: string }[];
-    expect(body.map((k) => k.type).sort()).toEqual(["client", "server"]);
+    const body = (await (await GET(req("GET", "/api/admin/keys"))).json()) as {
+      data: { type: string }[];
+    };
+    expect(body.data.map((k) => k.type).sort()).toEqual(["client", "server"]);
   });
 });
 
@@ -83,10 +88,11 @@ describe("POST /admin/keys auto-revoke", () => {
     const first = await createKey("server");
     const second = await createKey("server");
 
-    const all = (await (await GET(req("GET", "/api/admin/keys"))).json()) as {
-      id: string;
-      revoked_at: string | null;
-    }[];
+    const all = (
+      (await (await GET(req("GET", "/api/admin/keys"))).json()) as {
+        data: { id: string; revoked_at: string | null }[];
+      }
+    ).data;
     const firstRow = all.find((k) => k.id === first.id);
     const secondRow = all.find((k) => k.id === second.id);
     expect(firstRow?.revoked_at).not.toBeNull();
@@ -102,11 +108,11 @@ describe("POST /admin/keys auto-revoke", () => {
     const server = await createKey("server");
     await createKey("client");
 
-    const all = (await (await GET(req("GET", "/api/admin/keys"))).json()) as {
-      id: string;
-      type: string;
-      revoked_at: string | null;
-    }[];
+    const all = (
+      (await (await GET(req("GET", "/api/admin/keys"))).json()) as {
+        data: { id: string; type: string; revoked_at: string | null }[];
+      }
+    ).data;
     const serverRow = all.find((k) => k.id === server.id);
     expect(serverRow?.revoked_at).toBeNull();
   });

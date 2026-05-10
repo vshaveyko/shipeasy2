@@ -1,6 +1,6 @@
 import { ToggleLeft } from "lucide-react";
 import { auth } from "@/auth";
-import { listGates } from "@/lib/handlers/gates";
+import { listAllGates } from "@/lib/handlers/gates";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
@@ -10,10 +10,10 @@ export default async function GatesPage() {
   const session = await auth();
   const projectId = session?.user?.project_id;
 
-  let gates: Awaited<ReturnType<typeof listGates>> = [];
+  let gates: Awaited<ReturnType<typeof listAllGates>> = [];
   if (projectId) {
     try {
-      gates = await listGates({
+      gates = await listAllGates({
         projectId,
         actorEmail: session?.user?.email ?? "unknown",
         source: "jwt",

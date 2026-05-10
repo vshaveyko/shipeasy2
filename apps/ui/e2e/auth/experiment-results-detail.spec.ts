@@ -1,5 +1,6 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { adminList } from "../admin-list";
 
 const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
 const RUN = Date.now();
@@ -11,9 +12,11 @@ function expRow(page: Page, name: string) {
 }
 
 async function getExperimentId(page: Page, name: string): Promise<string> {
-  const resp = await page.request.get("/api/admin/experiments");
-  const exps = await resp.json();
-  const exp = exps.find((e: { name: string }) => e.name === name);
+  const exps = await adminList<{ id: string; name: string }>(
+    page.request,
+    "/api/admin/experiments",
+  );
+  const exp = exps.find((e) => e.name === name);
   if (!exp) throw new Error(`Experiment '${name}' not found`);
   return exp.id;
 }

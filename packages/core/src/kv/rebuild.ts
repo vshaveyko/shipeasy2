@@ -72,18 +72,31 @@ export async function rebuildFlags(
 
   const gatesMap: Record<string, unknown> = {};
   for (const g of gateRows) {
-    gatesMap[g.name] = {
+    const entry: Record<string, unknown> = {
       rules: g.rules,
       rolloutPct: g.rolloutPct,
       salt: g.salt,
       enabled: g.enabled,
-      killswitch: g.killswitch,
     };
+    // Stack-aware gatekeepers ship the ordered sub-gate stack in the blob.
+    // Legacy SDKs that ignore `stack` still see correct results because the
+    // legacy `rules`+`rolloutPct` columns are kept in sync as a best-effort
+    // approximation by the writer.
+    if (g.stack && Array.isArray(g.stack) && g.stack.length > 0) {
+      entry.stack = g.stack;
+    }
+    gatesMap[g.name] = entry;
   }
 
-  // Config id → name lookup.
+  // Config id → (name, kind) lookup. Killswitches share the configs table but
+  // ship in a separate `killswitches` map so the SDK can expose them through
+  // a dedicated read API without re-deriving kind from the schema.
   const nameByConfigId = new Map<string, string>();
-  for (const c of configRows) nameByConfigId.set(c.id, c.name);
+  const kindByConfigId = new Map<string, "config" | "killswitch">();
+  for (const c of configRows) {
+    nameByConfigId.set(c.id, c.name);
+    kindByConfigId.set(c.id, (c.kind ?? "config") as "config" | "killswitch");
+  }
 
   // Latest published value per (configId, env).
   type Latest = { value: unknown; version: number };
@@ -102,15 +115,23 @@ export async function rebuildFlags(
 
   for (const envName of CONFIG_ENVS) {
     const configsMap: Record<string, unknown> = {};
+    const killswitchesMap: Record<string, unknown> = {};
     for (const [configId, byEnv] of latest) {
       const entry = byEnv.get(envName);
       if (!entry) continue;
       const name = nameByConfigId.get(configId);
       if (!name) continue;
-      configsMap[name] = { value: entry.value, version: entry.version };
+      const kind = kindByConfigId.get(configId) ?? "config";
+      const payload = { value: entry.value, version: entry.version };
+      if (kind === "killswitch") killswitchesMap[name] = payload;
+      else configsMap[name] = payload;
     }
 
-    const content = JSON.stringify({ gates: gatesMap, configs: configsMap });
+    const content = JSON.stringify({
+      gates: gatesMap,
+      configs: configsMap,
+      killswitches: killswitchesMap,
+    });
     const version = await contentVersion(content);
     const blob = {
       blobFormat: BLOB_FORMAT,
@@ -119,6 +140,7 @@ export async function rebuildFlags(
       plan: planName,
       gates: gatesMap,
       configs: configsMap,
+      killswitches: killswitchesMap,
     };
 
     const serialized = JSON.stringify(blob);

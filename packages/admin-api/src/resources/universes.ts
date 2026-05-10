@@ -4,6 +4,7 @@ import {
   type UniverseCreateInput,
   type UniverseUpdateInput,
 } from "@shipeasy/core/schemas/universes";
+import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import type { Transport } from "../transport.js";
 import { ApiError } from "../transport.js";
 
@@ -18,7 +19,8 @@ export interface Universe {
 }
 
 export interface UniversesClient {
-  list(): Promise<Universe[]>;
+  list(opts?: Partial<PageQuery>): Promise<Page<Universe>>;
+  listAll(): Promise<Universe[]>;
   resolve(idOrName: string): Promise<Universe>;
   create(input: UniverseCreateInput): Promise<Universe>;
   update(id: string, input: UniverseUpdateInput): Promise<Universe>;
@@ -28,11 +30,24 @@ export interface UniversesClient {
 const BASE = "/api/admin/universes";
 
 export function universesClient(t: Transport): UniversesClient {
-  async function list() {
-    return t.request<Universe[]>("GET", BASE);
+  async function list(opts: Partial<PageQuery> = {}): Promise<Page<Universe>> {
+    const query: Record<string, string> = {};
+    if (opts.limit !== undefined) query.limit = String(opts.limit);
+    if (opts.cursor) query.cursor = opts.cursor;
+    return t.request<Page<Universe>>("GET", BASE, undefined, query);
+  }
+  async function listAll(): Promise<Universe[]> {
+    const out: Universe[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await list({ limit: 500, cursor });
+      out.push(...page.data);
+      cursor = page.next_cursor ?? undefined;
+    } while (cursor);
+    return out;
   }
   async function resolve(idOrName: string) {
-    const all = await list();
+    const all = await listAll();
     const found = all.find((u) => u.id === idOrName) ?? all.find((u) => u.name === idOrName);
     if (!found) throw new ApiError(`Universe '${idOrName}' not found`, 404);
     return found;
@@ -40,6 +55,7 @@ export function universesClient(t: Transport): UniversesClient {
 
   return {
     list,
+    listAll,
     resolve,
     create: (input) => t.request<Universe>("POST", BASE, universeCreateSchema.parse(input)),
     update: (id, input) =>

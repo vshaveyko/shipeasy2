@@ -117,7 +117,7 @@ describe("GET /sdk/flags", () => {
     // Simpler: use the D1 exec() method to insert.
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `g1-${t.projectId}`,
@@ -127,7 +127,6 @@ describe("GET /sdk/flags", () => {
         10000,
         "salt1",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();
@@ -147,7 +146,7 @@ describe("GET /sdk/flags", () => {
   it("gate with enabled=0 is excluded from blob", async () => {
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `g-dis-${t.projectId}`,
@@ -156,7 +155,6 @@ describe("GET /sdk/flags", () => {
         "[]",
         10000,
         "s",
-        0,
         0,
         new Date().toISOString(),
       )
@@ -170,32 +168,49 @@ describe("GET /sdk/flags", () => {
     expect(body.gates["disabled_gate"]).toBeUndefined();
   });
 
-  it("killswitch gate is included with killswitch=1", async () => {
+  it("flags blob exposes a separate killswitches map for kind='killswitch' configs", async () => {
+    // Seed a config row marked as killswitch and a corresponding value row.
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO configs (id, project_id, name, kind, schema_json, updated_at) VALUES (?, ?, ?, 'killswitch', ?, ?)",
       )
       .bind(
-        `g-ks-${t.projectId}`,
+        `c-ks-${t.projectId}`,
         t.projectId,
-        "ks_gate",
-        "[]",
-        0,
-        "s",
-        1,
-        1,
+        "_default.payments_off",
+        '{"type":"object","properties":{"value":{"type":"boolean"},"switches":{"type":"object","additionalProperties":{"type":"boolean"}}},"required":["value"],"additionalProperties":false}',
+        new Date().toISOString(),
+      )
+      .run();
+    await t.env
+      .DB!.prepare(
+        "INSERT INTO config_values (id, project_id, config_id, env, value_json, version, published_at, published_by) VALUES (?, ?, ?, 'prod', ?, 1, ?, 'test')",
+      )
+      .bind(
+        `cv-ks-${t.projectId}`,
+        t.projectId,
+        `c-ks-${t.projectId}`,
+        '{"value":true,"switches":{"eu_only":false}}',
         new Date().toISOString(),
       )
       .run();
 
     await rebuildFlags(t.env, t.projectId, "free");
 
-    const resp = await fetchApp(req("GET", "/sdk/flags", t.serverKey), t.env);
+    const resp = await fetchApp(req("GET", "/sdk/flags?env=prod", t.serverKey), t.env);
     const body = (await resp.json()) as {
-      gates: Record<string, { killswitch: number; rolloutPct: number }>;
+      configs: Record<string, unknown>;
+      killswitches: Record<
+        string,
+        { value: { value: boolean; switches?: Record<string, boolean> } }
+      >;
     };
-    expect(body.gates["ks_gate"].killswitch).toBe(1);
-    expect(body.gates["ks_gate"].rolloutPct).toBe(0);
+    const ks = body.killswitches["_default.payments_off"];
+    expect(ks).toBeDefined();
+    expect(ks.value.value).toBe(true);
+    expect(ks.value.switches).toEqual({ eu_only: false });
+    // Doesn't leak into the regular configs map.
+    expect(body.configs["_default.payments_off"]).toBeUndefined();
   });
 
   it("returns ETag and X-Poll-Interval headers", async () => {
@@ -224,7 +239,7 @@ describe("GET /sdk/flags", () => {
 
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `g-new-${t.projectId}`,
@@ -234,7 +249,6 @@ describe("GET /sdk/flags", () => {
         5000,
         "s2",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();
@@ -281,9 +295,9 @@ describe("GET /sdk/flags", () => {
     const id = `g-del-${t.projectId}`;
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
-      .bind(id, t.projectId, "to_delete", "[]", 10000, "s", 1, 0, new Date().toISOString())
+      .bind(id, t.projectId, "to_delete", "[]", 10000, "s", 1, new Date().toISOString())
       .run();
     await rebuildFlags(t.env, t.projectId, "free");
 
@@ -334,7 +348,7 @@ describe("POST /sdk/evaluate", () => {
   it("100% gate evaluates to true", async () => {
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `ge1-${t.projectId}`,
@@ -344,7 +358,6 @@ describe("POST /sdk/evaluate", () => {
         10000,
         "s",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();
@@ -364,7 +377,7 @@ describe("POST /sdk/evaluate", () => {
   it("0% gate evaluates to false", async () => {
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `ge2-${t.projectId}`,
@@ -374,7 +387,6 @@ describe("POST /sdk/evaluate", () => {
         0,
         "s",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();
@@ -390,20 +402,19 @@ describe("POST /sdk/evaluate", () => {
     expect(body.flags["zero_rollout"]).toBe(false);
   });
 
-  it("killswitch gate evaluates to false regardless of rollout", async () => {
+  it("disabled gate (enabled=0) evaluates to false regardless of rollout", async () => {
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `ge3-${t.projectId}`,
         t.projectId,
-        "ks_eval",
+        "disabled_eval",
         "[]",
         10000,
         "s",
-        1,
-        1,
+        0,
         new Date().toISOString(),
       )
       .run();
@@ -416,7 +427,8 @@ describe("POST /sdk/evaluate", () => {
       t.env,
     );
     const body = (await resp.json()) as { flags: Record<string, boolean> };
-    expect(body.flags["ks_eval"]).toBe(false);
+    // Disabled gates aren't in the blob → falsy.
+    expect(body.flags["disabled_eval"]).toBeFalsy();
   });
 
   it("string config appears in evaluate response", async () => {
@@ -565,7 +577,7 @@ describe("POST /sdk/evaluate", () => {
     const rules = JSON.stringify([{ attr: "plan", op: "eq", value: "pro" }]);
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `ge-tgt-${t.projectId}`,
@@ -575,7 +587,6 @@ describe("POST /sdk/evaluate", () => {
         10000,
         "pro_gate",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();
@@ -646,7 +657,7 @@ describe("POST /sdk/evaluate", () => {
     const rules = JSON.stringify([{ attr: "plan", op: "eq", value: "pro" }]);
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `ge-rule-${t.projectId}`,
@@ -656,7 +667,6 @@ describe("POST /sdk/evaluate", () => {
         10000,
         "s",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();
@@ -1097,7 +1107,7 @@ describe("GET /sdk/bootstrap", () => {
   it("returns evaluated flags, configs, and experiments for the given user", async () => {
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `gb1-${t.projectId}`,
@@ -1107,7 +1117,6 @@ describe("GET /sdk/bootstrap", () => {
         10000,
         "s",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();
@@ -1132,20 +1141,19 @@ describe("GET /sdk/bootstrap", () => {
     expect(body.flags["boot_gate"]).toBe(true);
   });
 
-  it("killswitch gate evaluates to false in bootstrap response", async () => {
+  it("disabled gate (enabled=0) is absent from bootstrap response", async () => {
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `gb-ks-${t.projectId}`,
         t.projectId,
-        "boot_ks_gate",
+        "boot_disabled_gate",
         "[]",
         10000,
         "s",
-        1,
-        1,
+        0,
         new Date().toISOString(),
       )
       .run();
@@ -1159,7 +1167,7 @@ describe("GET /sdk/bootstrap", () => {
     );
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { flags: Record<string, boolean> };
-    expect(body.flags["boot_ks_gate"]).toBe(false);
+    expect(body.flags["boot_disabled_gate"]).toBeFalsy();
   });
 
   it("gate added and rebuilt is reflected in next bootstrap call", async () => {
@@ -1173,7 +1181,7 @@ describe("GET /sdk/bootstrap", () => {
 
     await t.env
       .DB!.prepare(
-        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, killswitch, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO gates (id, project_id, name, rules, rollout_pct, salt, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         `gb2-${t.projectId}`,
@@ -1183,7 +1191,6 @@ describe("GET /sdk/bootstrap", () => {
         10000,
         "s2",
         1,
-        0,
         new Date().toISOString(),
       )
       .run();

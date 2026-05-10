@@ -8,7 +8,7 @@ import { createGate, deleteGate, setGateEnabled, bulkDeleteGates } from "@/lib/h
 export async function createGateAction(formData: FormData) {
   const identity = await getIdentity();
   const name = formData.get("key") as string;
-  await createGate(identity, { name, rollout_pct: 0, rules: [], killswitch: false });
+  await createGate(identity, { name, rollout_pct: 0, rules: [] });
   revalidatePath("/dashboard/[projectId]/configs/gates", "page");
   revalidatePath("/dashboard");
   redirect(`/dashboard/${identity.projectId}/configs/gates`);

@@ -5,9 +5,9 @@ import { auth } from "@/auth";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PRODUCTS } from "@/lib/products";
-import { listGates } from "@/lib/handlers/gates";
-import { listConfigs } from "@/lib/handlers/configs";
-import { listExperiments } from "@/lib/handlers/experiments";
+import { listAllGates } from "@/lib/handlers/gates";
+import { listAllConfigs } from "@/lib/handlers/configs";
+import { listAllExperiments } from "@/lib/handlers/experiments";
 import { listProfiles } from "@/lib/handlers/i18n";
 import { getProject } from "@/lib/handlers/projects";
 import { getEffectivePlan } from "@shipeasy/core";
@@ -44,9 +44,9 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
   if (projectId) {
     try {
       const [gates, configs, experiments, profiles, project] = await Promise.all([
-        listGates(identity).catch(() => []),
-        listConfigs(identity).catch(() => []),
-        listExperiments(identity).catch(() => []),
+        listAllGates(identity).catch(() => []),
+        listAllConfigs(identity).catch(() => []),
+        listAllExperiments(identity).catch(() => []),
         listProfiles(identity).catch(() => []),
         getProject(identity, projectId).catch(() => null),
       ]);

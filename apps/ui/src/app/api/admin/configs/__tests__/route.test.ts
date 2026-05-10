@@ -44,19 +44,20 @@ async function createConfig(
 }
 
 describe("GET /admin/configs", () => {
-  it("returns empty list initially", async () => {
+  it("returns empty page initially", async () => {
     const res = await GET(req("GET", "/api/admin/configs"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual([]);
+    expect(await res.json()).toEqual({ data: [], next_cursor: null });
   });
 
   it("lists created configs with their schemas", async () => {
     await createConfig("a");
     await createConfig("b");
-    const body = (await (await GET(req("GET", "/api/admin/configs"))).json()) as {
-      name: string;
-      schema: { type: string };
-    }[];
+    const body = (
+      (await (await GET(req("GET", "/api/admin/configs"))).json()) as {
+        data: { name: string; schema: { type: string } }[];
+      }
+    ).data;
     expect(body.map((c) => c.name).sort()).toEqual(["a", "b"]);
     expect(body.every((c) => c.schema.type === "object")).toBe(true);
   });
@@ -232,7 +233,11 @@ describe("DELETE /admin/configs/:id", () => {
       (await DELETE(req("DELETE", `/api/admin/configs/${id}`), { params: Promise.resolve({ id }) }))
         .status,
     ).toBe(200);
-    const list = (await (await GET(req("GET", "/api/admin/configs"))).json()) as { id: string }[];
+    const list = (
+      (await (await GET(req("GET", "/api/admin/configs"))).json()) as {
+        data: { id: string }[];
+      }
+    ).data;
     expect(list.find((c) => c.id === id)).toBeUndefined();
   });
 

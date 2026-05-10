@@ -2456,12 +2456,28 @@ button { font-family: inherit; }
       let n = await r.json();
       return Array.isArray(n) ? n : (n.data ?? n);
     }
+    async drainList(t) {
+      let r = t.includes("?") ? "&" : "?",
+        n = [],
+        o = null;
+      do {
+        let i = `${r}limit=500${o ? `&cursor=${encodeURIComponent(o)}` : ""}`,
+          a = await fetch(`${this.adminUrl}${t}${i}`, {
+            headers: { Authorization: `Bearer ${this.token}` },
+          });
+        if (!a.ok) throw new Error(`${t} \u2192 HTTP ${a.status}`);
+        let s = await a.json();
+        if (Array.isArray(s)) return s;
+        (n.push(...s.data), (o = s.next_cursor));
+      } while (o);
+      return n;
+    }
     gates() {
-      return this.memo("gates", () => this.get("/api/admin/gates"));
+      return this.memo("gates", () => this.drainList("/api/admin/gates"));
     }
     configs() {
       return this.memo("configs", async () => {
-        let t = await this.get("/api/admin/configs"),
+        let t = await this.drainList("/api/admin/configs"),
           r = "prod";
         return await Promise.all(
           t.map(async (o) => {
@@ -2484,10 +2500,10 @@ button { font-family: inherit; }
       });
     }
     experiments() {
-      return this.memo("experiments", () => this.get("/api/admin/experiments"));
+      return this.memo("experiments", () => this.drainList("/api/admin/experiments"));
     }
     universes() {
-      return this.memo("universes", () => this.get("/api/admin/universes"));
+      return this.memo("universes", () => this.drainList("/api/admin/universes"));
     }
     profiles() {
       return this.memo("profiles", () => this.get("/api/admin/i18n/profiles"));

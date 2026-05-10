@@ -25,7 +25,12 @@ CREATE TABLE IF NOT EXISTS gates (
   rollout_pct INTEGER NOT NULL DEFAULT 0,
   salt TEXT NOT NULL,
   enabled INTEGER NOT NULL DEFAULT 1,
-  killswitch INTEGER NOT NULL DEFAULT 0,
+  title TEXT,
+  description TEXT,
+  folder TEXT,
+  group_name TEXT,
+  owner_email TEXT,
+  stack TEXT,
   updated_at TEXT NOT NULL,
   deleted_at TEXT
 );
@@ -35,6 +40,7 @@ CREATE TABLE IF NOT EXISTS configs (
   project_id TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
+  kind TEXT NOT NULL DEFAULT 'config',
   schema_json TEXT NOT NULL DEFAULT '{"type":"object","properties":{},"additionalProperties":true}',
   updated_at TEXT NOT NULL,
   deleted_at TEXT

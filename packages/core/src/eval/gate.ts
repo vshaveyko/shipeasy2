@@ -14,7 +14,6 @@ export interface Gate {
   rolloutPct: number; // 0–10000 basis points
   salt: string;
   enabled: 0 | 1 | boolean;
-  killswitch?: 0 | 1 | boolean;
   hashVersion?: number;
 }
 
@@ -76,7 +75,6 @@ export function matchRule(rule: GateRule, user: User): boolean {
 }
 
 export function evalGate(gate: Gate, user: User): boolean {
-  if (isEnabled(gate.killswitch)) return false;
   if (!isEnabled(gate.enabled)) return false;
 
   for (const rule of gate.rules ?? []) {
@@ -89,4 +87,84 @@ export function evalGate(gate: Gate, user: User): boolean {
   const hash = getHashFn(gate.hashVersion);
   const segment = hash(`${gate.salt}:${uid}`) % 10000;
   return segment < gate.rolloutPct;
+}
+
+// ── Gatekeeper (stacked) evaluation ────────────────────────────────────────
+//
+// A gatekeeper is a Gate with an ordered `stack` of sub-gates. Each sub-gate
+// is either a condition (rules + ALL/ANY) or a rollout (% on a bucket key).
+// The stack short-circuits on the first PASS; if every entry fails, the
+// gatekeeper returns false. When `stack` is absent, behavior falls back to
+// the legacy single-rule + rolloutPct evaluation.
+
+export type StackedGateEntry =
+  | {
+      id: string;
+      type: "condition";
+      name?: string;
+      fromTemplate?: string | null;
+      pass?: "all" | "any";
+      rules: GateRule[];
+      locked?: boolean;
+    }
+  | {
+      id: string;
+      type: "rollout";
+      name?: string;
+      fromTemplate?: string | null;
+      rolloutPct: number;
+      bucketBy?: string;
+      salt?: string;
+      locked?: boolean;
+    };
+
+export interface Gatekeeper extends Gate {
+  stack?: StackedGateEntry[] | null;
+}
+
+function pickIdentifier(user: User, bucketBy: string | undefined): string | undefined {
+  if (bucketBy) {
+    const v = user[bucketBy];
+    if (typeof v === "string" && v.length > 0) return v;
+    if (typeof v === "number") return String(v);
+  }
+  return user.user_id ?? user.anonymous_id;
+}
+
+function evalStackEntry(
+  entry: StackedGateEntry,
+  user: User,
+  fallbackSalt: string,
+  hashVersion: number | undefined,
+): boolean {
+  if (entry.type === "condition") {
+    const rules = entry.rules ?? [];
+    if (rules.length === 0) return false;
+    const mode = entry.pass ?? "all";
+    if (mode === "any") {
+      for (const r of rules) if (matchRule(r, user)) return true;
+      return false;
+    }
+    for (const r of rules) if (!matchRule(r, user)) return false;
+    return true;
+  }
+  // rollout
+  const pct = entry.rolloutPct ?? 0;
+  if (pct <= 0) return false;
+  const uid = pickIdentifier(user, entry.bucketBy);
+  if (!uid) return false;
+  if (pct >= 10000) return true;
+  const salt = entry.salt && entry.salt.length > 0 ? entry.salt : fallbackSalt;
+  const hash = getHashFn(hashVersion);
+  return hash(`${salt}:${uid}`) % 10000 < pct;
+}
+
+export function evalGatekeeper(gate: Gatekeeper, user: User): boolean {
+  if (!isEnabled(gate.enabled)) return false;
+  const stack = gate.stack;
+  if (!stack || stack.length === 0) return evalGate(gate, user);
+  for (const entry of stack) {
+    if (evalStackEntry(entry, user, gate.salt, gate.hashVersion)) return true;
+  }
+  return false;
 }

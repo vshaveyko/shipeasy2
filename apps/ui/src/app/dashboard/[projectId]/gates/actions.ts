@@ -10,10 +10,11 @@ export async function createGateAction(formData: FormData) {
   const identity = await getIdentity();
   const name = formData.get("key") as string;
   const rollout_pct = Math.round(Number(formData.get("rollout_pct") ?? 0) * 100);
-  const killswitch = formData.get("killswitch") === "true";
-  await createGate(identity, { name, rollout_pct, rules: [], killswitch });
+  const created = await createGate(identity, { name, rollout_pct, rules: [] });
   revalidatePath("/dashboard/[projectId]/gates", "page");
-  redirect(`/dashboard/${identity.projectId}/gates`);
+  // Land directly on the gatekeeper wizard for the new gate so the user can
+  // start stacking sub-gates immediately.
+  redirect(`/dashboard/${identity.projectId}/gates/${created.id}`);
 }
 
 export async function deleteGateAction(formData: FormData) {

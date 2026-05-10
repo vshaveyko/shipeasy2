@@ -38,17 +38,21 @@ async function createUniverse(name = "main") {
 }
 
 describe("GET /admin/universes", () => {
-  it("returns empty list initially", async () => {
-    expect(await (await GET(req("GET", "/api/admin/universes"))).json()).toEqual([]);
+  it("returns empty page initially", async () => {
+    expect(await (await GET(req("GET", "/api/admin/universes"))).json()).toEqual({
+      data: [],
+      next_cursor: null,
+    });
   });
 
   it("lists created universes", async () => {
     await createUniverse("u1");
     await createUniverse("u2");
     const body = (await (await GET(req("GET", "/api/admin/universes"))).json()) as {
-      name: string;
-    }[];
-    expect(body.map((u) => u.name).sort()).toEqual(["u1", "u2"]);
+      data: { name: string }[];
+      next_cursor: string | null;
+    };
+    expect(body.data.map((u) => u.name).sort()).toEqual(["u1", "u2"]);
   });
 });
 
@@ -116,8 +120,10 @@ describe("DELETE /admin/universes/:id", () => {
         })
       ).status,
     ).toBe(200);
-    const list = (await (await GET(req("GET", "/api/admin/universes"))).json()) as { id: string }[];
-    expect(list.find((u) => u.id === id)).toBeUndefined();
+    const page = (await (await GET(req("GET", "/api/admin/universes"))).json()) as {
+      data: { id: string }[];
+    };
+    expect(page.data.find((u) => u.id === id)).toBeUndefined();
   });
 
   it("returns 404 for unknown id", async () => {

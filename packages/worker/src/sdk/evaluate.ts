@@ -2,13 +2,13 @@
 
 import {
   evalExperiment,
-  evalGate,
+  evalGatekeeper,
   getExperiments,
   getFlags,
   resolveEnv,
   type Experiment,
   type ExperimentAssignment,
-  type Gate,
+  type Gatekeeper,
   type User,
 } from "@shipeasy/core";
 import type { AuthedContext } from "../lib/auth";
@@ -36,9 +36,9 @@ export async function handleEvaluate(c: AuthedContext) {
   ]);
 
   const flags: Record<string, boolean> = {};
-  const gatesMap = flagsBlob.gates as Record<string, Gate>;
+  const gatesMap = flagsBlob.gates as Record<string, Gatekeeper>;
   for (const [name, gate] of Object.entries(gatesMap)) {
-    flags[name] = evalGate(gate, user);
+    flags[name] = evalGatekeeper(gate, user);
   }
 
   const configs: Record<string, unknown> = {};
@@ -75,9 +75,23 @@ export async function handleEvaluate(c: AuthedContext) {
 
   const attrWarnings: Record<string, string[]> = {};
   for (const [name, gate] of Object.entries(gatesMap)) {
-    const missing = (gate.rules ?? [])
-      .map((r) => r.attr)
-      .filter((attr) => user[attr] === undefined || user[attr] === null);
+    // Collect referenced attributes across the whole stack (or the legacy
+    // top-level rules if no stack is published).
+    const referenced: string[] = [];
+    if (gate.stack && gate.stack.length > 0) {
+      for (const entry of gate.stack) {
+        if (entry.type === "condition") {
+          for (const r of entry.rules ?? []) referenced.push(r.attr);
+        } else if (entry.type === "rollout" && entry.bucketBy) {
+          referenced.push(entry.bucketBy);
+        }
+      }
+    } else {
+      for (const r of gate.rules ?? []) referenced.push(r.attr);
+    }
+    const missing = Array.from(new Set(referenced)).filter(
+      (attr) => user[attr] === undefined || user[attr] === null,
+    );
     if (missing.length > 0) attrWarnings[name] = missing;
   }
 

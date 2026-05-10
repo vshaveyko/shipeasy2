@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { auth } from "@/auth";
-import { listConfigs, type ConfigSummary } from "@/lib/handlers/configs";
+import { listAllConfigs, type ConfigSummary } from "@/lib/handlers/configs";
 import { ConfigsTree } from "./configs-tree";
 
 export default async function ConfigValuesLayout({ children }: { children: ReactNode }) {
@@ -10,7 +10,7 @@ export default async function ConfigValuesLayout({ children }: { children: React
   let configs: ConfigSummary[] = [];
   if (projectId) {
     try {
-      configs = await listConfigs({
+      configs = await listAllConfigs({
         projectId,
         actorEmail: session?.user?.email ?? "unknown",
         source: "jwt",

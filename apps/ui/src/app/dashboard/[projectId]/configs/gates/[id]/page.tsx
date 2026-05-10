@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
-import { listGates } from "@/lib/handlers/gates";
+import { listAllGates } from "@/lib/handlers/gates";
 import { listAttributes } from "@/lib/handlers/attributes";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Badge } from "@/components/ui/badge";
@@ -23,11 +23,11 @@ export default async function GateDetailPage({ params }: { params: Promise<{ id:
     source: "jwt" as const,
   };
 
-  let gate: Awaited<ReturnType<typeof listGates>>[0] | null = null;
+  let gate: Awaited<ReturnType<typeof listAllGates>>[number] | null = null;
   let attributes: Awaited<ReturnType<typeof listAttributes>> = [];
 
   try {
-    const gates = await listGates(identity);
+    const gates = await listAllGates(identity);
     gate = gates.find((g) => g.id === id) ?? null;
     attributes = await listAttributes(identity);
   } catch {
@@ -36,7 +36,8 @@ export default async function GateDetailPage({ params }: { params: Promise<{ id:
 
   if (!gate) notFound();
 
-  const initialRules = (gate.rules ?? []).map((r) => ({
+  const rawRules = (gate.rules ?? []) as Array<{ attr: string; op: string; value: unknown }>;
+  const initialRules = rawRules.map((r) => ({
     attr: r.attr,
     op: r.op,
     value: String(r.value ?? ""),

@@ -1,6 +1,6 @@
 import { Globe2 } from "lucide-react";
 import { auth } from "@/auth";
-import { listUniverses } from "@/lib/handlers/universes";
+import { listAllUniverses } from "@/lib/handlers/universes";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,10 @@ export default async function UniversesPage() {
   const session = await auth();
   const projectId = session?.user?.project_id;
 
-  let universes: Awaited<ReturnType<typeof listUniverses>> = [];
+  let universes: Awaited<ReturnType<typeof listAllUniverses>> = [];
   if (projectId) {
     try {
-      universes = await listUniverses({
+      universes = await listAllUniverses({
         projectId,
         actorEmail: session?.user?.email ?? "unknown",
         source: "jwt",

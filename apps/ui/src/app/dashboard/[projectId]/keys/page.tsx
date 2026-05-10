@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { KeyRound, Zap } from "lucide-react";
 import { auth } from "@/auth";
-import { listKeys } from "@/lib/handlers/keys";
+import { listAllKeys } from "@/lib/handlers/keys";
 
 export const metadata: Metadata = { title: "SDK Keys" };
 import { EmptyState } from "@/components/dashboard/empty-state";
@@ -46,10 +46,10 @@ export default async function KeysPage({
   const { new_key, show } = await searchParams;
   const showRevoked = show === "revoked";
 
-  let keys: Awaited<ReturnType<typeof listKeys>> = [];
+  let keys: Awaited<ReturnType<typeof listAllKeys>> = [];
   if (projectId) {
     try {
-      keys = await listKeys({
+      keys = await listAllKeys({
         projectId,
         actorEmail: session?.user?.email ?? "unknown",
         source: "jwt",

@@ -103,12 +103,15 @@ test.describe("Integration: gate and config for the same feature", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
     await expect(divRow(page, featureSlug).getByText("enabled")).toBeVisible();
 
-    // 2. Create the feature config
+    // 2. Create the feature config (navigate the 4-step wizard)
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
     await page.locator("#config-key").fill(featureSlug);
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
     await page.getByRole("button", { name: /^create config$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values$/);
-    await expect(page.getByText(featureSlug, { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/]+$/);
+    await expect(page.getByText(featureSlug, { exact: true }).first()).toBeVisible();
 
     // 3. Disable then re-enable the gate (test the toggle cycle)
     await page.goto("/dashboard/e2e-project-id/configs/gates");

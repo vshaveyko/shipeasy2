@@ -1,5 +1,12 @@
-import { and, eq } from "drizzle-orm";
-import { checkLimit, rebuildExperiments, ApiError, getEffectivePlan, buildUsageUpdates, getDb } from "@shipeasy/core";
+import { and, desc, eq } from "drizzle-orm";
+import {
+  checkLimit,
+  rebuildExperiments,
+  ApiError,
+  getEffectivePlan,
+  buildUsageUpdates,
+  getDb,
+} from "@shipeasy/core";
 import {
   experiments,
   experimentMetrics,
@@ -12,17 +19,41 @@ import {
   experimentUpdateSchema,
   experimentMetricsUpdateSchema,
 } from "@shipeasy/core/schemas/experiments";
+import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnv, getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import { syncUsage } from "../billing";
 import type { AdminIdentity } from "../admin-auth";
+import { keysetWhere, sliceWithCursor } from "./_pagination";
 
 const IMMUTABLE_WHILE_RUNNING = ["allocation_pct", "groups", "salt", "universe", "params"] as const;
 
-export async function listExperiments(identity: AdminIdentity) {
-  return scopedDb(identity.projectId).select(experiments);
+type ExperimentRow = Awaited<ReturnType<ReturnType<typeof scopedDb>["select"]>>[number];
+
+export async function listExperiments(
+  identity: AdminIdentity,
+  opts: PageQuery,
+): Promise<Page<ExperimentRow>> {
+  const s = scopedDb(identity.projectId);
+  const ks = keysetWhere(experiments.updatedAt, experiments.id, opts.cursor);
+  const base = ks ? s.selectWhere(experiments, ks) : s.select(experiments);
+  const rows = await base
+    .orderBy(desc(experiments.updatedAt), desc(experiments.id))
+    .limit(opts.limit + 1);
+  return sliceWithCursor(rows as ExperimentRow[], opts.limit);
+}
+
+export async function listAllExperiments(identity: AdminIdentity): Promise<ExperimentRow[]> {
+  const out: ExperimentRow[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await listExperiments(identity, { limit: 500, cursor });
+    out.push(...page.data);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return out;
 }
 
 export async function getExperiment(identity: AdminIdentity, id: string) {

@@ -115,10 +115,11 @@ test.describe("admin API — Bearer-token auth (no mocks)", () => {
     const res = await clean.request.get("/api/admin/gates", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const body = (await res.json()) as unknown;
+    const body = (await res.json()) as { data: unknown[]; next_cursor: string | null };
     await clean.close();
 
     expect(res.status()).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect("next_cursor" in body).toBe(true);
   });
 });

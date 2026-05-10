@@ -5,6 +5,7 @@ import {
   experimentStatusUpdateSchema,
   experimentMetricsUpdateSchema,
 } from "@shipeasy/core/schemas/experiments";
+import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import type { Transport } from "../transport.js";
 import { ApiError } from "../transport.js";
 
@@ -54,7 +55,8 @@ export interface ExperimentMetricsInput {
 }
 
 export interface ExperimentsClient {
-  list(): Promise<Experiment[]>;
+  list(opts?: Partial<PageQuery>): Promise<Page<Experiment>>;
+  listAll(): Promise<Experiment[]>;
   get(id: string): Promise<Experiment>;
   resolve(idOrName: string): Promise<Experiment>;
   create(input: ExperimentCreateInput): Promise<Experiment>;
@@ -73,14 +75,32 @@ export interface ExperimentsClient {
 const BASE = "/api/admin/experiments";
 
 export function experimentsClient(t: Transport): ExperimentsClient {
-  async function list() {
-    return t.request<Experiment[]>("GET", BASE);
+  async function list(opts: Partial<PageQuery> = {}): Promise<Page<Experiment>> {
+    const query: Record<string, string> = {};
+    if (opts.limit !== undefined) query.limit = String(opts.limit);
+    if (opts.cursor) query.cursor = opts.cursor;
+    return t.request<Page<Experiment>>("GET", BASE, undefined, query);
+  }
+  async function listAll(): Promise<Experiment[]> {
+    const out: Experiment[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await list({ limit: 500, cursor });
+      out.push(...page.data);
+      cursor = page.next_cursor ?? undefined;
+    } while (cursor);
+    return out;
   }
   async function resolve(idOrName: string) {
-    // Server has GET /:id but we accept name too. Try id first via list (single
-    // round trip) since the list is small in practice.
-    const all = await list();
-    const found = all.find((e) => e.id === idOrName) ?? all.find((e) => e.name === idOrName);
+    // Server has GET /:id but we accept name too. Try GET /:id first; if it
+    // 404s, fall back to a paginated scan by name.
+    try {
+      return await t.request<Experiment>("GET", `${BASE}/${idOrName}`);
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 404) throw err;
+    }
+    const all = await listAll();
+    const found = all.find((e) => e.name === idOrName);
     if (!found) throw new ApiError(`Experiment '${idOrName}' not found`, 404);
     return found;
   }
@@ -94,6 +114,7 @@ export function experimentsClient(t: Transport): ExperimentsClient {
 
   return {
     list,
+    listAll,
     resolve,
     get: (id: string) => t.request<Experiment>("GET", `${BASE}/${id}`),
     create: (input) => t.request<Experiment>("POST", BASE, experimentCreateSchema.parse(input)),

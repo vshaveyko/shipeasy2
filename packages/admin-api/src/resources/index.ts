@@ -3,6 +3,7 @@ import { gatesClient, gatesResource } from "./gates.js";
 import { experimentsClient, experimentsResource } from "./experiments.js";
 import { configsClient, configsResource } from "./configs.js";
 import { universesClient, universesResource } from "./universes.js";
+import { killswitchesClient, killswitchesResource } from "./killswitches.js";
 
 /**
  * Aggregate admin client. Each resource lives in its own file under
@@ -18,6 +19,7 @@ export function createAdminClient(transport: Transport) {
     experiments: experimentsClient(transport),
     configs: configsClient(transport),
     universes: universesClient(transport),
+    killswitches: killswitchesClient(transport),
   };
 }
 
@@ -33,6 +35,7 @@ export const RESOURCE_REGISTRY = [
   experimentsResource,
   configsResource,
   universesResource,
+  killswitchesResource,
 ] as const;
 
 export {
@@ -44,4 +47,6 @@ export {
   configsResource,
   universesClient,
   universesResource,
+  killswitchesClient,
+  killswitchesResource,
 };

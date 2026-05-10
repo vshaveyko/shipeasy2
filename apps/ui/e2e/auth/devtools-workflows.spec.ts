@@ -179,8 +179,11 @@ async function setup(page: Page): Promise<void> {
       },
     }),
   );
-  await page.route("**/api/admin/gates", (r) => r.fulfill({ json: GATES }));
-  await page.route("**/api/admin/configs", (r) => r.fulfill({ json: CONFIGS }));
+  // `**` suffix matches the `?limit=&cursor=` pagination query the devtools
+  // client now appends. The drainList helper accepts both raw arrays and
+  // `{ data, next_cursor }`, so plain-array mocks keep working.
+  await page.route("**/api/admin/gates**", (r) => r.fulfill({ json: GATES }));
+  await page.route("**/api/admin/configs**", (r) => r.fulfill({ json: CONFIGS }));
   await page.route(/\/api\/admin\/configs\/[^/?]+$/, (r) => {
     const id = r.request().url().split("/").pop();
     const cfg = CONFIGS.find((c) => c.id === id);
@@ -192,8 +195,8 @@ async function setup(page: Page): Promise<void> {
       },
     });
   });
-  await page.route("**/api/admin/experiments", (r) => r.fulfill({ json: EXPERIMENTS }));
-  await page.route("**/api/admin/universes", (r) => r.fulfill({ json: UNIVERSES }));
+  await page.route("**/api/admin/experiments**", (r) => r.fulfill({ json: EXPERIMENTS }));
+  await page.route("**/api/admin/universes**", (r) => r.fulfill({ json: UNIVERSES }));
   await page.route("**/api/admin/i18n/profiles", (r) => r.fulfill({ json: PROFILES }));
   await page.route("**/api/admin/i18n/drafts", (r) => r.fulfill({ json: [] }));
   await page.route("**/api/admin/i18n/keys**", (r) => r.fulfill({ json: KEYS }));

@@ -5,6 +5,7 @@ import {
   configDraftUpsertSchema,
   configPublishSchema,
 } from "@shipeasy/core/schemas/configs";
+import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import type { Transport } from "../transport.js";
 import { ApiError } from "../transport.js";
 
@@ -34,7 +35,8 @@ export interface ConfigActivityEntry {
 }
 
 export interface ConfigsClient {
-  list(): Promise<Config[]>;
+  list(opts?: Partial<PageQuery>): Promise<Page<Config>>;
+  listAll(): Promise<Config[]>;
   get(id: string): Promise<Config>;
   resolve(idOrName: string): Promise<Config>;
   create(input: ConfigCreateInput): Promise<Config>;
@@ -52,18 +54,37 @@ export interface ConfigsClient {
 const BASE = "/api/admin/configs";
 
 export function configsClient(t: Transport): ConfigsClient {
-  async function list() {
-    return t.request<Config[]>("GET", BASE);
+  async function list(opts: Partial<PageQuery> = {}): Promise<Page<Config>> {
+    const query: Record<string, string> = {};
+    if (opts.limit !== undefined) query.limit = String(opts.limit);
+    if (opts.cursor) query.cursor = opts.cursor;
+    return t.request<Page<Config>>("GET", BASE, undefined, query);
+  }
+  async function listAll(): Promise<Config[]> {
+    const out: Config[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await list({ limit: 500, cursor });
+      out.push(...page.data);
+      cursor = page.next_cursor ?? undefined;
+    } while (cursor);
+    return out;
   }
   async function resolve(idOrName: string) {
-    const all = await list();
-    const found = all.find((c) => c.id === idOrName) ?? all.find((c) => c.name === idOrName);
+    try {
+      return await t.request<Config>("GET", `${BASE}/${idOrName}`);
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 404) throw err;
+    }
+    const all = await listAll();
+    const found = all.find((c) => c.name === idOrName);
     if (!found) throw new ApiError(`Config '${idOrName}' not found`, 404);
     return found;
   }
 
   return {
     list,
+    listAll,
     resolve,
     get: (id) => t.request<Config>("GET", `${BASE}/${id}`),
     create: (input) => t.request<Config>("POST", BASE, configCreateSchema.parse(input)),

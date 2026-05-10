@@ -115,10 +115,13 @@ async function setup(page: Page): Promise<void> {
 
   // Intercept admin API calls made by the devtools panels.
   // Use glob patterns to match any origin — devtools calls https://app.shipeasy.dev by default.
-  await page.route("**/api/admin/gates", (r) => r.fulfill({ json: GATES }));
-  await page.route("**/api/admin/configs", (r) => r.fulfill({ json: CONFIGS }));
-  await page.route("**/api/admin/experiments", (r) => r.fulfill({ json: EXPERIMENTS }));
-  await page.route("**/api/admin/universes", (r) => r.fulfill({ json: UNIVERSES }));
+  // `**` at the end matches the `?limit=&cursor=` pagination query the
+  // devtools client now appends. Mocks return raw arrays — the devtools
+  // drainList helper accepts both raw arrays and `{ data, next_cursor }`.
+  await page.route("**/api/admin/gates**", (r) => r.fulfill({ json: GATES }));
+  await page.route("**/api/admin/configs**", (r) => r.fulfill({ json: CONFIGS }));
+  await page.route("**/api/admin/experiments**", (r) => r.fulfill({ json: EXPERIMENTS }));
+  await page.route("**/api/admin/universes**", (r) => r.fulfill({ json: UNIVERSES }));
   await page.route("**/api/admin/i18n/profiles", (r) => r.fulfill({ json: PROFILES }));
   await page.route("**/api/admin/i18n/drafts", (r) => r.fulfill({ json: DRAFTS }));
   await page.route("**/api/admin/i18n/keys**", (r) => r.fulfill({ json: KEYS }));

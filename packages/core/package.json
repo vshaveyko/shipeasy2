@@ -2,11 +2,13 @@
   "name": "@shipeasy/core",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./db/schema": "./src/db/schema.ts",
     "./db/scoped": "./src/db/scoped.ts",
     "./schemas/*": "./src/schemas/*.ts",
+    "./pagination": "./src/pagination.ts",
     "./config/plans": "./src/config/plans.ts",
     "./connectors": "./src/connectors/index.ts"
   },

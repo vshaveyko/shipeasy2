@@ -1,15 +1,43 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { checkLimit, rebuildExperiments, ApiError, getEffectivePlan } from "@shipeasy/core";
 import { universes, experiments } from "@shipeasy/core/db/schema";
 import { universeCreateSchema, universeUpdateSchema } from "@shipeasy/core/schemas/universes";
+import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnvAsync } from "../env";
 import { loadProject } from "../project";
 import { writeAudit } from "../audit";
 import type { AdminIdentity } from "../admin-auth";
+import { keysetWhere, sliceWithCursor } from "./_pagination";
 
-export async function listUniverses(identity: AdminIdentity) {
-  return scopedDb(identity.projectId).select(universes);
+type UniverseRow = Awaited<ReturnType<ReturnType<typeof scopedDb>["select"]>>[number];
+
+/**
+ * Universes table has no `updated_at` column, so we paginate by `created_at`.
+ * This is acceptable: universes change rarely after creation.
+ */
+export async function listUniverses(
+  identity: AdminIdentity,
+  opts: PageQuery,
+): Promise<Page<UniverseRow>> {
+  const s = scopedDb(identity.projectId);
+  const ks = keysetWhere(universes.createdAt, universes.id, opts.cursor);
+  const base = ks ? s.selectWhere(universes, ks) : s.select(universes);
+  const rows = await base
+    .orderBy(desc(universes.createdAt), desc(universes.id))
+    .limit(opts.limit + 1);
+  return sliceWithCursor(rows as UniverseRow[], opts.limit, "createdAt");
+}
+
+export async function listAllUniverses(identity: AdminIdentity): Promise<UniverseRow[]> {
+  const out: UniverseRow[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await listUniverses(identity, { limit: 500, cursor });
+    out.push(...page.data);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return out;
 }
 
 export async function createUniverse(identity: AdminIdentity, input: unknown) {

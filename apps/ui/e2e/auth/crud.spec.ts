@@ -216,7 +216,8 @@ test.describe("Feature Gates CRUD", () => {
 
   const gKey = `e2egate${RUN}`;
   // Helper: finds the row div containing gKey (span → inner div → outer justify-between div)
-  const gRow = (page: Page) => page.getByText(gKey, { exact: true }).locator("..").locator("..").locator("..");
+  const gRow = (page: Page) =>
+    page.getByText(gKey, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create gate → appears in list with enabled badge", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates/new");
@@ -271,10 +272,16 @@ test.describe("Configs CRUD", () => {
   test("create config → appears in list", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
     await page.locator("#config-key").fill(cKey);
+    // Walk through the 4-step wizard.
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
     await page.getByRole("button", { name: /^create config$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values$/);
-    await expect(page.getByText(cKey, { exact: true })).toBeVisible();
+    // createConfigAction redirects to /values/<new-id>; the new key shows up in
+    // the editor's left-rail tree.
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/]+$/);
+    await expect(page.getByText(cKey, { exact: true }).first()).toBeVisible();
   });
 
   test("delete config → removed from list", async ({ page }) => {
@@ -295,7 +302,8 @@ test.describe("Events CRUD", () => {
 
   const evName = `e2eev${RUN}`;
   // Events: span → inner flex div → outer justify-between div (2 levels up)
-  const evRow = (page: Page) => page.getByText(evName, { exact: true }).locator("..").locator("..").locator("..");
+  const evRow = (page: Page) =>
+    page.getByText(evName, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create event via form → appears in list as approved", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/events");
@@ -326,7 +334,8 @@ test.describe("Attributes CRUD", () => {
 
   const aName = `e2eattr${RUN}`;
   // Attributes: span → inner flex div → outer justify-between div (2 levels up)
-  const aRow = (page: Page) => page.getByText(aName, { exact: true }).locator("..").locator("..").locator("..");
+  const aRow = (page: Page) =>
+    page.getByText(aName, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create attribute → appears in list with string type", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/attributes");
@@ -355,7 +364,8 @@ test.describe("Universes CRUD", () => {
 
   const uName = `e2euni${RUN}`;
   // Universes: span → inner div → outer justify-between div (2 levels up)
-  const uRow = (page: Page) => page.getByText(uName, { exact: true }).locator("..").locator("..").locator("..");
+  const uRow = (page: Page) =>
+    page.getByText(uName, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create universe → appears in list", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/universes");

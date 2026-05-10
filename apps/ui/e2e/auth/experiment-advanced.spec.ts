@@ -1,5 +1,6 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { adminList } from "../admin-list";
 
 const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
 const RUN = Date.now();
@@ -11,9 +12,11 @@ function expRow(page: Page, name: string) {
 }
 
 async function getExperimentId(page: Page, name: string): Promise<string> {
-  const resp = await page.request.get("/api/admin/experiments");
-  const exps = await resp.json();
-  const exp = exps.find((e: { name: string }) => e.name === name);
+  const exps = await adminList<{ id: string; name: string }>(
+    page.request,
+    "/api/admin/experiments",
+  );
+  const exp = exps.find((e) => e.name === name);
   if (!exp) throw new Error(`Experiment '${name}' not found`);
   return exp.id;
 }
@@ -101,11 +104,13 @@ test.describe("Experiment params schema editor", () => {
     await page.getByRole("button", { name: /^save draft$/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
 
-    const resp = await page.request.get("/api/admin/experiments");
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === expKey);
+    const exps = await adminList<{ name: string; params?: Record<string, unknown> }>(
+      page.request,
+      "/api/admin/experiments",
+    );
+    const exp = exps.find((e) => e.name === expKey);
     expect(exp).toBeDefined();
-    expect(exp.params?.button_color ?? exp.params?.["button_color"]).toBeDefined();
+    expect(exp!.params?.button_color ?? exp!.params?.["button_color"]).toBeDefined();
 
     // Cleanup
     await expRow(page, expKey)
@@ -138,9 +143,8 @@ test.describe("Experiment — targeting gate selector", () => {
     const p = await ctx.newPage();
     // Delete experiment (if exists). The list-row Delete button is now a
     // confirm trigger — open the dialog, then click Delete inside it.
-    const resp = await p.request.get("/api/admin/experiments");
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === expKey);
+    const exps = await adminList<{ name: string }>(p.request, "/api/admin/experiments");
+    const exp = exps.find((e) => e.name === expKey);
     if (exp) {
       await p.goto("/dashboard/e2e-project-id/experiments");
       const row = p.getByText(expKey, { exact: true }).locator("..").locator("..");
@@ -181,11 +185,14 @@ test.describe("Experiment — targeting gate selector", () => {
     await page.getByRole("button", { name: /^save draft$/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
 
-    const resp = await page.request.get("/api/admin/experiments");
-    const exps = await resp.json();
-    const exp = exps.find((e: { name: string }) => e.name === expKey);
+    const exps = await adminList<{
+      name: string;
+      gate?: string;
+      targetingGate?: string;
+    }>(page.request, "/api/admin/experiments");
+    const exp = exps.find((e) => e.name === expKey);
     expect(exp).toBeDefined();
-    expect(exp.gate ?? exp.targetingGate).toBe(gateKey);
+    expect(exp!.gate ?? exp!.targetingGate).toBe(gateKey);
   });
 });
 

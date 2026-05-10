@@ -13,9 +13,12 @@ export * from "./db/scoped";
 export { getDb, type Db } from "./db";
 export {
   CONFIG_ENVS,
+  CONFIG_KINDS,
   DEFAULT_CONFIG_SCHEMA,
+  KILLSWITCH_SCHEMA,
   PROJECT_MODULE_KEYS,
   type ConfigEnv,
+  type ConfigKind,
   type JsonSchema,
   type ProjectModuleKey,
   type ProjectModules,

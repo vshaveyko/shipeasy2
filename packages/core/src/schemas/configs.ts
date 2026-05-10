@@ -1,14 +1,27 @@
 import { z } from "zod";
-import { CONFIG_ENVS } from "../db/schema";
+import { CONFIG_ENVS, CONFIG_KINDS } from "../db/schema.js";
 
-// Allow dot-separated namespace keys e.g. `pricing.tiers`, `ranker.weights.ltr`.
-// Each segment matches the old rule; whole key <=128 chars.
+const SEGMENT = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
+
+/** Names are exactly two segments — `<folder>.<name>` — so the dashboard can
+ *  group rows by folder. `_default` is reserved for the migration that lifts
+ *  legacy single-segment names. */
 export const configNameSchema = z
   .string()
   .max(128)
-  .regex(/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)*$/, {
-    message: "Must be lowercase segments separated by dots (e.g. `pricing.tiers`).",
-  });
+  .refine(
+    (s) => {
+      const parts = s.split(".");
+      if (parts.length !== 2) return false;
+      return parts.every((p) => SEGMENT.test(p));
+    },
+    {
+      message:
+        "Must be `folder.name` — exactly two lowercase segments separated by a dot (e.g. `pricing.tiers`).",
+    },
+  );
+
+export const configKindSchema = z.enum(CONFIG_KINDS);
 
 export const configEnvSchema = z.enum(CONFIG_ENVS);
 

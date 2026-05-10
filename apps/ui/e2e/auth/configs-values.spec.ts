@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { adminList } from "../admin-list";
 
 const RUN = Date.now();
 
@@ -50,23 +51,30 @@ async function deleteActiveConfig(page: Page): Promise<void> {
 // ── New-config form UI (schema builder + value form) ──────────────────────────
 
 test.describe("New config form UI", () => {
-  test("renders the schema builder with an Add field button", async ({ page }) => {
+  test("renders the wizard stepper and details step", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
     await expect(page.getByRole("heading", { name: /^new config$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /add field/i })).toBeVisible();
+    await expect(page.getByTestId("config-key-input")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^continue$/i })).toBeVisible();
   });
 
-  test("clicking Add field appends a new row with name + type controls", async ({ page }) => {
+  test("Schema step exposes Add field which opens the field editor", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
-    await page.getByRole("button", { name: /add field/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await expect(page.getByRole("button", { name: /add (root )?field/i }).first()).toBeVisible();
+    await page
+      .getByRole("button", { name: /add (root )?field/i })
+      .first()
+      .click();
+    // Edit field dialog opens with a Field name input and type picker
     await expect(page.getByRole("textbox", { name: /field name/i })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: /field type/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /field type string/i })).toBeVisible();
   });
 
-  test("create button is enabled and configurable", async ({ page }) => {
+  test("Continue button is enabled and key input is editable", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
     await expect(page.getByTestId("config-key-input")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^create config$/i })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^continue$/i })).toBeEnabled();
   });
 });
 
@@ -88,9 +96,10 @@ test.describe("Object config — create, view, delete", () => {
     await page.goto("/dashboard/e2e-project-id/configs/values");
     await expect(treeItem(page, key)).toBeVisible();
 
-    const resp = await page.request.get("/api/admin/configs");
-    expect(resp.ok()).toBe(true);
-    const configs = (await resp.json()) as { name: string; schema: { type: string } }[];
+    const configs = await adminList<{ name: string; schema: { type: string } }>(
+      page.request,
+      "/api/admin/configs",
+    );
     const cfg = configs.find((c) => c.name === key);
     expect(cfg).toBeDefined();
     expect(cfg!.schema.type).toBe("object");
@@ -108,8 +117,7 @@ test.describe("Object config — create, view, delete", () => {
     await treeItem(page, key).click();
     await deleteActiveConfig(page);
 
-    const resp = await page.request.get("/api/admin/configs");
-    const configs = (await resp.json()) as { name: string }[];
+    const configs = await adminList<{ name: string }>(page.request, "/api/admin/configs");
     expect(configs.some((c) => c.name === key)).toBe(false);
   });
 });
@@ -128,12 +136,12 @@ test.describe("Schema vs value separation", () => {
     });
 
     // Find the new config's id.
-    const list = (await (await page.request.get("/api/admin/configs")).json()) as {
+    const list = await adminList<{
       id: string;
       name: string;
       schema: Record<string, unknown>;
       envs: Record<string, { version: number } | undefined>;
-    }[];
+    }>(page.request, "/api/admin/configs");
     const cfg = list.find((c) => c.name === key)!;
     expect(cfg.envs.prod?.version).toBe(1);
 
@@ -149,21 +157,18 @@ test.describe("Schema vs value separation", () => {
     expect(patchResp.ok()).toBe(true);
 
     // Version unchanged after schema-only update.
-    const after = (await (await page.request.get("/api/admin/configs")).json()) as {
+    const after = await adminList<{
       name: string;
       schema: { properties?: Record<string, unknown> };
       envs: Record<string, { version: number } | undefined>;
-    }[];
+    }>(page.request, "/api/admin/configs");
     const updated = after.find((c) => c.name === key)!;
     expect(updated.envs.prod?.version).toBe(1);
     expect(Object.keys(updated.schema.properties ?? {})).toEqual(["a", "b"]);
   });
 
   test("server rejects a value that violates the current schema", async ({ page }) => {
-    const list = (await (await page.request.get("/api/admin/configs")).json()) as {
-      id: string;
-      name: string;
-    }[];
+    const list = await adminList<{ id: string; name: string }>(page.request, "/api/admin/configs");
     const cfg = list.find((c) => c.name === key)!;
 
     // Tighten schema: require `b`.

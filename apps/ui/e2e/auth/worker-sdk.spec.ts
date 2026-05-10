@@ -13,6 +13,7 @@
 import path from "node:path";
 import type { APIRequestContext } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { adminList } from "../admin-list";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -92,9 +93,8 @@ test.beforeAll(async ({ request }) => {
 
   // Revoke any leftover keys from previous runs (wrangler locks SQLite so
   // auth.setup.ts cleanup may fail silently; revoked keys don't count toward plan limit).
-  const existingKeys = await request.get("/api/admin/keys");
-  if (existingKeys.ok()) {
-    const keys: { id: string }[] = await existingKeys.json();
+  const keys = await adminList<{ id: string }>(request, "/api/admin/keys").catch(() => null);
+  if (keys) {
     for (const k of keys) {
       await request.post(`/api/admin/keys/${k.id}/revoke`);
     }
@@ -139,7 +139,6 @@ test.describe("Gates → /sdk/flags", () => {
     await adminPost(request, "/api/admin/gates", {
       name: gateName,
       rollout_pct: 10000,
-      killswitch: false,
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
@@ -150,7 +149,7 @@ test.describe("Gates → /sdk/flags", () => {
     expect(gate).toBeDefined();
     expect(gate.enabled).toBe(1);
     expect(gate.rolloutPct).toBe(10000);
-    expect(gate.killswitch).toBe(0);
+    expect(gate.killswitch).toBeUndefined();
   });
 
   test("/sdk/flags returns ETag and X-Poll-Interval headers", async ({ request }) => {
@@ -177,7 +176,6 @@ test.describe("Gates → /sdk/flags", () => {
     const created = await adminPost(request, "/api/admin/gates", {
       name,
       rollout_pct: 10000,
-      killswitch: false,
     });
     const id = created.id as string;
 
@@ -193,20 +191,25 @@ test.describe("Gates → /sdk/flags", () => {
     expect(flags.gates[name]).toBeUndefined();
   });
 
-  test("killswitch gate → flags blob shows killswitch=1", async ({ request }) => {
-    await adminPost(request, "/api/admin/gates", {
-      name: gateKsName,
-      rollout_pct: 0,
-      killswitch: true,
+  test("killswitch config → flags blob exposes a separate killswitches map", async ({
+    request,
+  }) => {
+    const ksName = `_default.${gateKsName}`;
+    await adminPost(request, "/api/admin/killswitches", {
+      name: ksName,
+      value: true,
+      switches: { eu_only: false },
     });
 
     const resp = await workerGet(request, "/sdk/flags", serverKey);
     expect(resp.ok()).toBe(true);
     const flags = await resp.json();
-    const gate = flags.gates[gateKsName];
-    expect(gate).toBeDefined();
-    expect(gate.killswitch).toBe(1);
-    expect(gate.rolloutPct).toBe(0);
+    expect(flags.killswitches).toBeDefined();
+    expect(flags.killswitches[ksName]).toBeDefined();
+    expect(flags.killswitches[ksName].value.value).toBe(true);
+    expect(flags.killswitches[ksName].value.switches).toEqual({ eu_only: false });
+    // And it should not leak into the configs map.
+    expect(flags.configs[ksName]).toBeUndefined();
   });
 
   test("requesting /sdk/flags with a client key → 401/403 (wrong key type)", async ({
@@ -336,7 +339,6 @@ test.describe("User evaluation → /sdk/evaluate", () => {
     await adminPost(request, "/api/admin/gates", {
       name,
       rollout_pct: 10000,
-      killswitch: false,
     });
 
     const resp = await workerPost(request, "/sdk/evaluate", clientKey, {
@@ -352,27 +354,10 @@ test.describe("User evaluation → /sdk/evaluate", () => {
     await adminPost(request, "/api/admin/gates", {
       name,
       rollout_pct: 0,
-      killswitch: false,
     });
 
     const resp = await workerPost(request, "/sdk/evaluate", clientKey, {
       user: { user_id: "test-user-2" },
-    });
-    expect(resp.ok()).toBe(true);
-    const body = await resp.json();
-    expect(body.flags[name]).toBe(false);
-  });
-
-  test("killswitch gate evaluates to false regardless of rollout", async ({ request }) => {
-    const name = `e2eval_ks_${RUN}`;
-    await adminPost(request, "/api/admin/gates", {
-      name,
-      rollout_pct: 10000, // would be 100% without killswitch
-      killswitch: true,
-    });
-
-    const resp = await workerPost(request, "/sdk/evaluate", clientKey, {
-      user: { user_id: "test-user-3" },
     });
     expect(resp.ok()).toBe(true);
     const body = await resp.json();
@@ -384,7 +369,6 @@ test.describe("User evaluation → /sdk/evaluate", () => {
     const created = await adminPost(request, "/api/admin/gates", {
       name,
       rollout_pct: 10000,
-      killswitch: false,
     });
     await request.patch(`/api/admin/gates/${created.id as string}`, {
       data: { enabled: false },
@@ -724,7 +708,6 @@ test.describe("SDK bootstrap → /sdk/bootstrap", () => {
     await adminPost(request, "/api/admin/gates", {
       name: `e2boot_gate_${RUN}`,
       rollout_pct: 5000,
-      killswitch: false,
     });
 
     const etagAfter = (await workerGet(request, "/sdk/bootstrap", serverKey)).headers()["etag"];

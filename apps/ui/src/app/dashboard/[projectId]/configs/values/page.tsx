@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { auth } from "@/auth";
-import { listConfigs } from "@/lib/handlers/configs";
+import { listAllConfigs } from "@/lib/handlers/configs";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { redirect } from "next/navigation";
 
@@ -16,7 +16,7 @@ export default async function ConfigValuesEmptyPage({
   const session = await auth();
 
   try {
-    const list = await listConfigs({
+    const list = await listAllConfigs({
       projectId,
       actorEmail: session?.user?.email ?? "unknown",
       source: "jwt",

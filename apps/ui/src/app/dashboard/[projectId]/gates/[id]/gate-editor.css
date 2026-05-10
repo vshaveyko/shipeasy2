@@ -1,0 +1,1171 @@
+/* Gatekeeper editor — bespoke styles ported from the design handoff
+   (project/app/gates-editor.html). Selectors are scoped to .gke-root so
+   they don't leak. Tokens reuse the project's --se-* design system. */
+
+.gke-root {
+  --gke-r-sm: 6px;
+  --gke-r-md: 8px;
+  --gke-r-lg: 10px;
+}
+
+.gke-card {
+  background: var(--se-bg-1);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--gke-r-lg);
+  overflow: hidden;
+}
+.gke-card .gke-hd {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--se-line-2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--se-bg-2);
+}
+.gke-card .gke-hd .ttl {
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--se-fg);
+}
+.gke-card .gke-hd .sub {
+  font-family: var(--se-mono);
+  font-size: 10.5px;
+  color: var(--se-fg-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Stepper ───────────────────────────────────────────── */
+.gke-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 22px;
+  background: var(--se-bg-1);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--gke-r-lg);
+  flex-shrink: 0;
+}
+.gke-step {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--se-fg-3);
+  transition: color 0.12s;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  font-family: inherit;
+}
+.gke-step:hover {
+  color: var(--se-fg-2);
+}
+.gke-step[data-tip] {
+  position: relative;
+}
+.gke-step[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  color: var(--se-fg);
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: var(--font-sans, inherit);
+  white-space: normal;
+  width: max-content;
+  max-width: 280px;
+  line-height: 1.45;
+  border: 1px solid var(--se-line-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease-out;
+  z-index: 50;
+}
+.gke-step[data-tip]:hover::after,
+.gke-step[data-tip]:focus-visible::after {
+  opacity: 1;
+}
+.gke-step .num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--se-mono);
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--se-bg-3);
+  border: 1px solid var(--se-line-2);
+  color: var(--se-fg-3);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.gke-step.done .num {
+  background: var(--se-accent);
+  color: var(--se-accent-fg);
+  border-color: var(--se-accent);
+}
+.gke-step.current .num {
+  background: var(--se-bg-1);
+  color: var(--se-fg);
+  border-color: var(--se-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--se-accent) 22%, transparent);
+}
+.gke-step.current,
+.gke-step.done {
+  color: var(--se-fg);
+}
+.gke-step .body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  align-items: flex-start;
+}
+.gke-step .lbl {
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.gke-step-info {
+  color: var(--se-fg-4);
+  flex-shrink: 0;
+  transition: color 0.12s;
+  /* Match the title's optical baseline — Lucide icons render slightly low
+     because of their default vertical-align: baseline. */
+  vertical-align: middle;
+  position: relative;
+  top: -0.5px;
+}
+.gke-step:hover .gke-step-info {
+  color: var(--se-fg-2);
+}
+.gke-step.current .gke-step-info {
+  color: var(--se-accent);
+}
+.gke-step .tag {
+  font-family: var(--se-mono);
+  font-size: 10px;
+  color: var(--se-fg-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+.gke-step.current .tag {
+  color: var(--se-accent);
+}
+.gke-conn {
+  flex: 1;
+  height: 1px;
+  background: var(--se-line-2);
+  margin: 0 6px;
+  min-width: 18px;
+}
+.gke-conn.done {
+  background: var(--se-accent);
+}
+
+/* ── Footer ───────────────────────────────────────────── */
+.gke-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: var(--se-bg-1);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--gke-r-lg);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  flex-shrink: 0;
+}
+.gke-foot .meta {
+  font-family: var(--se-mono);
+  font-size: 11.5px;
+  color: var(--se-fg-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gke-foot .meta .sep {
+  color: var(--se-fg-4);
+}
+.gke-foot .acts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Inputs ──────────────────────────────────────────── */
+.gke-ed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--se-bg-2);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--gke-r-md);
+  padding: 0 12px;
+  height: 38px;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.gke-ed:hover {
+  border-color: var(--se-line-3);
+  background: var(--se-bg-3);
+}
+.gke-ed:focus-within {
+  border-color: var(--se-accent);
+  background: var(--se-bg-1);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--se-accent) 16%, transparent);
+}
+.gke-ed input,
+.gke-ed select {
+  all: unset;
+  flex: 1;
+  font-size: 14px;
+  color: var(--se-fg);
+  min-width: 0;
+  font-family: inherit;
+  cursor: text;
+}
+.gke-ed.mono input,
+.gke-ed.mono select {
+  font-family: var(--se-mono);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.gke-ed input::placeholder {
+  color: var(--se-fg-4);
+}
+.gke-ed .pre {
+  font-family: var(--se-mono);
+  font-size: 12.5px;
+  color: var(--se-fg-3);
+  flex-shrink: 0;
+}
+.gke-ed.disabled {
+  background: var(--se-bg-1);
+  border-color: var(--se-line);
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.gke-ed.disabled input {
+  color: var(--se-fg-2);
+  cursor: not-allowed;
+}
+.gke-ed.sm {
+  height: 30px;
+  padding: 0 10px;
+}
+.gke-ed.sm input,
+.gke-ed.sm select {
+  font-size: 12.5px;
+}
+
+.gke-ta {
+  width: 100%;
+  background: var(--se-bg-2);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--gke-r-md);
+  padding: 11px 13px;
+  color: var(--se-fg);
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 88px;
+  outline: none;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.gke-ta:focus {
+  border-color: var(--se-accent);
+  background: var(--se-bg-1);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--se-accent) 16%, transparent);
+}
+
+/* Form rows (Step 1) */
+.gke-row {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: start;
+  padding: 18px 22px;
+  gap: 22px;
+  border-bottom: 1px solid var(--se-line);
+}
+.gke-row:last-child {
+  border-bottom: none;
+}
+.gke-row .lbl {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--se-fg-3);
+  padding-top: 11px;
+}
+.gke-row .help {
+  font-size: 11.5px;
+  color: var(--se-fg-3);
+  margin-top: 7px;
+  line-height: 1.55;
+}
+.gke-row .help code {
+  font-family: var(--se-mono);
+  background: var(--se-bg-3);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--se-fg-2);
+  font-size: 11px;
+}
+
+/* Step head */
+.gke-stephead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 4px;
+}
+.gke-stephead h2 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 6px 0 4px;
+}
+.gke-stephead .stem {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: var(--se-accent);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gke-stephead p {
+  color: var(--se-fg-2);
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-width: 64ch;
+  margin: 0;
+}
+/* Step 1 / 3 wrapper — flows with the page scroll. */
+.gke-stepwrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Step 2 layout — two columns, each owning its own scroll ─────── */
+/*
+ * Independent column scroll without depending on the parent flex chain.
+ * The grid is sized explicitly against the dynamic viewport: viewport minus
+ * dashboard chrome (topbar ~52px + billing banner up to ~52px), wizard
+ * stepper (~64px), wizard footer (~64px), page paddings (~48px) and gaps.
+ * The exact subtractor doesn't have to be perfect — when the wizard ends up
+ * shorter than the env, PageBody's outer scroll picks up the slack, and the
+ * inner cols still scroll their own content first.
+ */
+/*
+ * Both columns are sticky-pinned to the top of their grid cell with their
+ * own max-height + overflow. The PageBody owns the outer page scroll; each
+ * column owns its inner scroll. `align-self: start` is critical — without
+ * it the grid would stretch the col to the full grid row height (which is
+ * driven by the *taller* col), defeating sticky behaviour.
+ */
+.gke-step2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+.gke-step2-main,
+.gke-step2-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100dvh - 180px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.gke-step2-side {
+  gap: 14px;
+}
+@media (max-width: 1100px) {
+  .gke-step2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gke-step2-main,
+  .gke-step2-side {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+.gke-stephead-desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* `max-width` from the base rule still applies; clear the multi-line cap so
+     the ellipsis kicks in based on container width, not 64ch. */
+  max-width: 100%;
+}
+
+/* Pills */
+.gke-pillstat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--se-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--se-line-2);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.gke-pillstat.valid {
+  background: color-mix(in oklab, var(--se-accent) 12%, transparent);
+  color: var(--se-accent);
+  border-color: color-mix(in oklab, var(--se-accent) 35%, transparent);
+}
+.gke-pillstat.draft {
+  background: var(--se-warn-soft);
+  color: var(--se-warn);
+  border-color: color-mix(in oklab, var(--se-warn) 35%, transparent);
+}
+
+.gke-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: color-mix(in oklab, var(--se-accent) 5%, var(--se-bg-1));
+  border: 1px solid color-mix(in oklab, var(--se-accent) 22%, var(--se-line-2));
+  border-radius: var(--gke-r-md);
+  font-size: 12.5px;
+  color: var(--se-fg-2);
+  line-height: 1.5;
+}
+.gke-hint b {
+  color: var(--se-fg);
+  font-weight: 500;
+}
+
+/* Toolbar */
+.gke-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--se-bg-2);
+  border-bottom: 1px solid var(--se-line-2);
+}
+.gke-addroot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--se-accent);
+  color: var(--se-accent-fg);
+  border: 1px solid color-mix(in oklab, var(--se-accent) 75%, white);
+  border-radius: var(--gke-r-sm);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 4px 10px -4px color-mix(in oklab, var(--se-accent) 60%, transparent);
+}
+.gke-addroot:hover {
+  filter: brightness(1.08);
+}
+.gke-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  background: var(--se-bg-3);
+  color: var(--se-fg-2);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--gke-r-sm);
+  font-size: 11.5px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.gke-secondary:hover {
+  background: var(--se-bg-4);
+  color: var(--se-fg);
+}
+
+.gke-icbtn {
+  all: unset;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--gke-r-sm);
+  color: var(--se-fg-3);
+  cursor: pointer;
+}
+.gke-icbtn:hover {
+  background: var(--se-bg-3);
+  color: var(--se-fg);
+}
+.gke-icbtn.danger:hover {
+  background: var(--se-danger-soft);
+  color: var(--se-danger);
+}
+.gke-icbtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.gke-rowbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--se-bg-3);
+  border: 1px solid var(--se-line-2);
+  border-radius: var(--gke-r-sm);
+  font-size: 11.5px;
+  color: var(--se-fg-2);
+  cursor: pointer;
+  font-family: inherit;
+}
+.gke-rowbtn:hover {
+  background: var(--se-bg-4);
+  color: var(--se-fg);
+  border-color: var(--se-line-3);
+}
+
+/* Eval flow strip */
+.gke-evalflow {
+  padding: 14px 18px;
+  background: var(--se-bg-2);
+  border-bottom: 1px solid var(--se-line-2);
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: var(--se-fg-3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gke-evalflow b {
+  color: var(--se-fg-2);
+  font-weight: 500;
+}
+.gke-evalflow .arrow {
+  color: var(--se-fg-4);
+}
+
+/* Stack rows */
+.gke-stack {
+  display: flex;
+  flex-direction: column;
+}
+.gke-gate {
+  display: grid;
+  grid-template-columns: 32px 36px minmax(0, 1fr) 130px auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px 14px 14px;
+  border-bottom: 1px solid var(--se-line);
+  background: var(--se-bg-1);
+  cursor: pointer;
+  transition: background 0.1s;
+  text-align: left;
+  font-family: inherit;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+}
+.gke-gate:hover {
+  background: color-mix(in oklab, var(--se-accent) 3%, var(--se-bg-1));
+}
+.gke-gate:last-child {
+  border-bottom: none;
+}
+.gke-gate.locked {
+  background: color-mix(in oklab, var(--se-fg-4) 4%, var(--se-bg-1));
+}
+.gke-gate.expanded {
+  background: color-mix(in oklab, var(--se-accent) 5%, var(--se-bg-1));
+}
+
+.gke-gate .order {
+  font-family: var(--se-mono);
+  font-size: 11.5px;
+  color: var(--se-fg-4);
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gke-gate .order .n {
+  font-weight: 500;
+  color: var(--se-fg-3);
+}
+
+.gke-gate .badge-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--se-line-2);
+  background: var(--se-bg-2);
+  color: var(--se-fg-2);
+}
+.gke-gate.t-condition .badge-ico {
+  color: var(--se-info);
+  border-color: color-mix(in oklab, var(--se-info) 32%, var(--se-line-2));
+  background: color-mix(in oklab, var(--se-info) 10%, var(--se-bg-2));
+}
+.gke-gate.t-rollout .badge-ico {
+  color: var(--se-accent);
+  border-color: color-mix(in oklab, var(--se-accent) 32%, var(--se-line-2));
+  background: color-mix(in oklab, var(--se-accent) 10%, var(--se-bg-2));
+}
+.gke-gate.locked .badge-ico {
+  color: var(--se-fg-3);
+  border-color: var(--se-line-2);
+  background: var(--se-bg-3);
+}
+
+.gke-gate .body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.gke-gate .body .name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--se-fg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.gke-gate .body .name .pill {
+  font-family: var(--se-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1.5px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--se-line-2);
+  color: var(--se-fg-3);
+  background: var(--se-bg-3);
+}
+.gke-gate .body .name .pill.cond {
+  color: var(--se-info);
+  border-color: color-mix(in oklab, var(--se-info) 30%, var(--se-line-2));
+  background: color-mix(in oklab, var(--se-info) 10%, transparent);
+}
+.gke-gate .body .name .pill.roll {
+  color: var(--se-accent);
+  border-color: color-mix(in oklab, var(--se-accent) 30%, var(--se-line-2));
+  background: color-mix(in oklab, var(--se-accent) 10%, transparent);
+}
+.gke-gate .body .name .pill.tmpl {
+  color: var(--se-purple);
+  border-color: color-mix(in oklab, var(--se-purple) 30%, var(--se-line-2));
+  background: color-mix(in oklab, var(--se-purple) 10%, transparent);
+}
+.gke-gate .body .summary {
+  font-family: var(--se-mono);
+  font-size: 11.5px;
+  color: var(--se-fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gke-pass {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.gke-pass .top {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: var(--se-fg-3);
+}
+.gke-pass .bar {
+  width: 100%;
+  height: 5px;
+  background: var(--se-bg-3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.gke-pass .bar .fill {
+  height: 100%;
+  background: var(--se-info);
+  border-radius: 99px;
+  transition: width 0.2s;
+}
+
+.gke-state {
+  font-family: var(--se-mono);
+  font-size: 10.5px;
+  color: var(--se-fg-3);
+}
+.gke-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.55;
+  transition: opacity 0.1s;
+}
+.gke-gate:hover .gke-actions {
+  opacity: 1;
+}
+
+/* Mini rollout slider in row */
+.gke-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+.gke-mini:hover {
+  border-color: var(--se-line-2);
+  background: var(--se-bg-2);
+}
+.gke-mini .num {
+  font-family: var(--se-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--se-accent);
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.gke-mini .num.zero {
+  color: var(--se-fg-4);
+}
+.gke-mini .track {
+  position: relative;
+  flex: 1;
+  height: 18px;
+  display: flex;
+  align-items: center;
+}
+.gke-mini .bar {
+  flex: 1;
+  height: 6px;
+  background: var(--se-bg-3);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid var(--se-line);
+}
+.gke-mini .bar .fill {
+  height: 100%;
+  background: var(--se-accent);
+  border-radius: 99px;
+  transition: width 0.15s;
+}
+.gke-mini input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+/* Add gate CTA at the bottom */
+.gke-addcta {
+  padding: 16px 18px;
+  display: flex;
+  justify-content: center;
+  background: var(--se-bg-2);
+  border-top: 1px solid var(--se-line);
+}
+
+/* Inline editor (expanded gate) */
+.gke-inline {
+  padding: 14px 16px 18px;
+  border-top: 1px solid var(--se-line-2);
+  background: color-mix(in oklab, var(--se-accent) 3%, var(--se-bg-2));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-bottom: 1px solid var(--se-line);
+}
+.gke-rule {
+  padding: 12px;
+  background: var(--se-bg-2);
+  border: 1px solid var(--se-line);
+  border-radius: var(--gke-r-md);
+}
+.gke-cond {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 130px minmax(0, 1.6fr);
+  gap: 8px;
+  align-items: center;
+}
+.gke-cond .gke-ed {
+  height: 34px;
+}
+.gke-cond .gke-ed input,
+.gke-cond .gke-ed select {
+  font-size: 13px;
+}
+
+.gke-ophint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--se-fg-3);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gke-ophint code {
+  font-family: var(--se-mono);
+  color: var(--se-fg-2);
+  background: var(--se-bg-3);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* Big rollout slider */
+.gke-rolloutcard {
+  padding: 18px 20px;
+  background: var(--se-bg-2);
+  border: 1px solid var(--se-line);
+  border-radius: var(--gke-r-md);
+}
+.gke-rolloutcard .num-big {
+  font-family: var(--se-mono);
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--se-accent);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.gke-rolloutcard .num-big.zero {
+  color: var(--se-fg-4);
+}
+.gke-rolloutcard .lbl {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--se-fg-3);
+  margin-top: 6px;
+}
+.gke-rollouttrack {
+  position: relative;
+  height: 36px;
+  margin: 18px 0 6px;
+}
+.gke-rollouttrack .bg {
+  position: absolute;
+  inset: 14px 0;
+  background: var(--se-bg-3);
+  border-radius: 99px;
+  border: 1px solid var(--se-line);
+}
+.gke-rollouttrack .fill {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  background: var(--se-accent);
+  border-radius: 99px;
+}
+.gke-rollouttrack .knob {
+  position: absolute;
+  top: 4px;
+  width: 28px;
+  height: 28px;
+  background: var(--se-bg-1);
+  border: 2px solid var(--se-accent);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 4px 10px -2px color-mix(in oklab, var(--se-accent) 50%, transparent);
+}
+.gke-rollouttrack input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+.gke-rolloutticks {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--se-mono);
+  font-size: 10.5px;
+  color: var(--se-fg-4);
+  margin-top: 4px;
+}
+
+/* Attribute helper */
+.gke-attrs {
+  /* Inner overflow removed — the right column itself scrolls. */
+}
+.gke-attrs .grp {
+  padding: 10px 14px;
+  font-family: var(--se-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--se-fg-4);
+  background: var(--se-bg-2);
+  border-bottom: 1px solid var(--se-line);
+  border-top: 1px solid var(--se-line);
+}
+.gke-attrs .grp:first-of-type {
+  border-top: none;
+}
+.gke-attrs .attr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--se-line);
+  cursor: pointer;
+  font-size: 12px;
+  width: 100%;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  font-family: inherit;
+  text-align: left;
+}
+.gke-attrs .attr:hover {
+  background: color-mix(in oklab, var(--se-accent) 5%, var(--se-bg-1));
+}
+.gke-attrs .attr:last-child {
+  border-bottom: none;
+}
+.gke-attrs .attr .key {
+  font-family: var(--se-mono);
+  font-size: 12px;
+  color: var(--se-fg);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gke-attrs .attr .ex {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: var(--se-fg-3);
+}
+
+/* Test panel */
+.gke-result {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: var(--gke-r-md);
+  background: color-mix(in oklab, var(--se-accent) 12%, var(--se-bg-1));
+  border: 1px solid color-mix(in oklab, var(--se-accent) 32%, transparent);
+}
+.gke-result .label {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: var(--se-accent);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gke-result .v {
+  font-family: var(--se-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--se-accent);
+  letter-spacing: -0.01em;
+}
+.gke-result.deny {
+  background: color-mix(in oklab, var(--se-danger) 10%, var(--se-bg-1));
+  border-color: color-mix(in oklab, var(--se-danger) 30%, transparent);
+}
+.gke-result.deny .label,
+.gke-result.deny .v {
+  color: var(--se-danger);
+}
+
+.gke-testrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--se-bg-2);
+  border: 1px solid var(--se-line);
+  border-radius: var(--gke-r-sm);
+  font-size: 12.5px;
+}
+.gke-testrow.pass {
+  border-color: color-mix(in oklab, var(--se-accent) 40%, var(--se-line));
+  background: color-mix(in oklab, var(--se-accent) 6%, var(--se-bg-2));
+}
+.gke-testrow.skip {
+  opacity: 0.45;
+}
+.gke-testrow .pill {
+  font-family: var(--se-mono);
+  font-size: 9.5px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--se-bg-3);
+  color: var(--se-fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.gke-testrow.pass .pill {
+  background: color-mix(in oklab, var(--se-accent) 18%, transparent);
+  color: var(--se-accent);
+}
+.gke-testrow .lbl {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gke-testrow .meta {
+  font-family: var(--se-mono);
+  font-size: 10.5px;
+  color: var(--se-fg-4);
+  flex-shrink: 0;
+}
+
+/* Tokens in summary */
+.gke-tok-key {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: #a78bfa;
+}
+.gke-tok-op {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--se-bg-3);
+  color: var(--se-fg-2);
+  border: 1px solid var(--se-line-2);
+}
+.gke-tok-val {
+  font-family: var(--se-mono);
+  font-size: 11px;
+  color: var(--se-accent);
+}
+
+/* SDK preview */
+.gke-sdk-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--se-line-2);
+  background: var(--se-bg-2);
+  padding: 0 12px;
+  overflow-x: auto;
+}
+.gke-sdk-tabs button {
+  all: unset;
+  padding: 11px 14px;
+  font-family: var(--se-mono);
+  font-size: 11.5px;
+  color: var(--se-fg-3);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.gke-sdk-tabs button:hover {
+  color: var(--se-fg-2);
+}
+.gke-sdk-tabs button.active {
+  color: var(--se-fg);
+  border-bottom-color: var(--se-accent);
+}
+.gke-sdk-body {
+  position: relative;
+  background: var(--se-bg-1);
+}
+.gke-sdk-body pre {
+  margin: 0;
+  padding: 18px 22px;
+  font-family: var(--se-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--se-fg-2);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Review item */
+.gke-rv {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--se-line);
+  align-items: start;
+}
+.gke-rv:last-child {
+  border-bottom: none;
+}
+.gke-rv .lbl {
+  font-family: var(--se-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--se-fg-3);
+  padding-top: 3px;
+}
+.gke-rv .val {
+  font-size: 13.5px;
+  color: var(--se-fg);
+  line-height: 1.55;
+}
+.gke-rv .val.mono {
+  font-family: var(--se-mono);
+  font-size: 13px;
+}
+.gke-rv .val.dim {
+  color: var(--se-fg-2);
+}
