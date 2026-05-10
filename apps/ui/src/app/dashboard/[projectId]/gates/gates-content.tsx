@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { IntegrationSnippetButton } from "@/components/integration";
 import { deleteGateAction, enableGateAction } from "./actions";
 
 interface GateRow {
@@ -40,7 +41,27 @@ interface GateRow {
 const fetcher = async (url: string): Promise<GateRow[]> => {
   const res = await fetch(url, { credentials: "same-origin" });
   if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-  return (await res.json()) as GateRow[];
+  // The admin gates list paginates `{ data, next_cursor }`. The dashboard
+  // wants the full list, so we drain pages here. Project gate counts are
+  // small in practice (tens to low hundreds), so a few sequential calls is
+  // fine; SWR caches the union.
+  const acc: GateRow[] = [];
+  let next: string | null | undefined;
+  let page = (await res.json()) as { data?: GateRow[]; next_cursor?: string | null } | GateRow[];
+  // Tolerate the legacy array shape while migrations land.
+  if (Array.isArray(page)) return page;
+  acc.push(...(page.data ?? []));
+  next = page.next_cursor ?? null;
+  while (next) {
+    const r = await fetch(`${url}?cursor=${encodeURIComponent(next)}`, {
+      credentials: "same-origin",
+    });
+    if (!r.ok) break;
+    page = (await r.json()) as { data?: GateRow[]; next_cursor?: string | null };
+    acc.push(...(page.data ?? []));
+    next = page.next_cursor ?? null;
+  }
+  return acc;
 };
 
 export function GatesContent() {
@@ -80,17 +101,8 @@ export function GatesContent() {
   if (total === 0) {
     return (
       <Page>
-        <PageHeader
-          title="Gates"
-          description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
-          actions={
-            <LinkButton size="sm" href={`/dashboard/${projectId}/gates/new`}>
-              New gate
-            </LinkButton>
-          }
-        />
         <PageBody>
-          <HeroEmptyState kind="gates" />
+          <HeroEmptyState kind="gates" ctaHref={`/dashboard/${projectId}/gates/new`} />
         </PageBody>
       </Page>
     );
@@ -124,7 +136,7 @@ export function GatesContent() {
           <div
             className="grid gap-3 border-b border-[var(--se-line)] px-5 py-2"
             style={{
-              gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 32px",
+              gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 28px 32px",
               background: "var(--se-bg-2)",
             }}
           >
@@ -133,6 +145,7 @@ export function GatesContent() {
             <span className="t-caps dim-3">Rollout</span>
             <span className="t-caps dim-3">Rules</span>
             <span className="t-caps dim-3">Status</span>
+            <span />
             <span />
             <span />
           </div>
@@ -144,7 +157,9 @@ export function GatesContent() {
               <div
                 key={gate.id}
                 className="grid items-center gap-3 border-b border-[var(--se-line)] px-5 py-3 transition-colors last:border-none hover:bg-[var(--se-bg-2)]"
-                style={{ gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 32px" }}
+                style={{
+                  gridTemplateColumns: "20px minmax(0,1fr) 120px 90px 120px 60px 28px 32px",
+                }}
               >
                 <Shield className="size-3.5" style={{ color }} />
                 <div className="min-w-0">
@@ -202,6 +217,7 @@ export function GatesContent() {
                     }}
                   />
                 </div>
+                <IntegrationSnippetButton kind="gate" name={gate.name} stopPropagation />
                 <GateRowMenu gate={gate} onDeleted={() => mutate()} />
               </div>
             );

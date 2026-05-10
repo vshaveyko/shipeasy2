@@ -11,6 +11,7 @@ import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { ActionForm } from "@/components/ui/action-form";
+import { IntegrationSnippetButton } from "@/components/integration";
 import { deleteExperimentAction, setExperimentStatusAction } from "./actions";
 
 interface ExperimentRow {
@@ -193,6 +194,7 @@ export function ExperimentsContent() {
                   </span>
                 </div>
                 <div className="flex items-center justify-end gap-1">
+                  <IntegrationSnippetButton kind="experiment" name={exp.name} stopPropagation />
                   {exp.status === "draft" ? (
                     <ActionForm
                       action={setExperimentStatusAction}

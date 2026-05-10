@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { IntegrationSnippetButton } from "@/components/integration";
 import { cn } from "@/lib/utils";
 import type { KeyRow, DraftKeyRow } from "@/lib/handlers/i18n";
 import {
@@ -1067,6 +1068,9 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
                   <Sparkles className="size-3 text-[var(--se-accent)]" />
                 </Button>
               )}
+              <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                <IntegrationSnippetButton kind="translation" name={leaf.key} stopPropagation />
+              </span>
               <form action={deleteKeyAction}>
                 <input type="hidden" name="id" value={leaf.id} />
                 <Button

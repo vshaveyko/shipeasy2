@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { SlidersHorizontal, Search, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { IntegrationSnippetButton } from "@/components/integration";
 import type { ConfigSummary } from "@/lib/handlers/configs";
 
 type Props = {
@@ -96,14 +97,20 @@ export function ConfigsTree({ configs }: Props) {
                   const active = c.id === activeId;
                   const drafts = draftCount(c);
                   return (
-                    <li key={c.id}>
+                    <li
+                      key={c.id}
+                      className={cn(
+                        "group flex items-center gap-1 rounded-md",
+                        active ? "bg-[var(--se-bg-3)]" : "hover:bg-[var(--se-bg-2)]",
+                      )}
+                    >
                       <Link
                         href={`/dashboard/configs/values/${c.id}`}
                         className={cn(
-                          "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px]",
+                          "flex flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px]",
                           active
-                            ? "bg-[var(--se-bg-3)] text-foreground"
-                            : "text-[var(--se-fg-2)] hover:bg-[var(--se-bg-2)] hover:text-foreground",
+                            ? "text-foreground"
+                            : "text-[var(--se-fg-2)] hover:text-foreground",
                         )}
                       >
                         <SlidersHorizontal
@@ -124,6 +131,14 @@ export function ConfigsTree({ configs }: Props) {
                           {fieldCount(c.schema)} {fieldCount(c.schema) === 1 ? "field" : "fields"}
                         </span>
                       </Link>
+                      <div
+                        className={cn(
+                          "pr-1 transition-opacity",
+                          active ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                        )}
+                      >
+                        <IntegrationSnippetButton kind="config" name={c.name} stopPropagation />
+                      </div>
                     </li>
                   );
                 })}
