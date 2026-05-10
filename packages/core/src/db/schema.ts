@@ -430,6 +430,8 @@ export const experiments = sqliteTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    description: text("description"),
+    tag: text("tag"),
     universe: text("universe").notNull(),
     targetingGate: text("targeting_gate"),
     allocationPct: integer("allocation_pct").notNull().default(0),

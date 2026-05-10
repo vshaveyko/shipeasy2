@@ -13,6 +13,8 @@ import { ok, fail } from "@/lib/action-result";
 export async function createExperimentAction(formData: FormData) {
   const identity = await getIdentity();
   const name = formData.get("name") as string;
+  const description = ((formData.get("description") as string) || "").trim() || null;
+  const tag = ((formData.get("tag") as string) || "").trim() || null;
   const universe = (formData.get("universe") as string) || "default";
   const allocationRaw = Number(formData.get("allocation") ?? 100);
   const allocation_pct = Math.round(Math.min(100, Math.max(0, allocationRaw)) * 100);
@@ -60,6 +62,8 @@ export async function createExperimentAction(formData: FormData) {
 
   await createExperiment(identity, {
     name,
+    description,
+    tag,
     universe,
     targeting_gate,
     allocation_pct,

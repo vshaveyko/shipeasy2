@@ -13,6 +13,8 @@ export const paramSchemaSchema = z.record(z.string(), z.enum(["string", "bool", 
 export const experimentCreateSchema = z
   .object({
     name: experimentNameSchema,
+    description: z.string().max(2000).nullable().default(null),
+    tag: z.string().max(64).nullable().default(null),
     universe: z.string().min(1),
     targeting_gate: z.string().nullable().default(null),
     allocation_pct: z.number().int().min(0).max(10000).default(0),
@@ -31,6 +33,8 @@ export const experimentCreateSchema = z
 
 export const experimentUpdateSchema = z.object({
   name: experimentNameSchema.optional(),
+  description: z.string().max(2000).nullable().optional(),
+  tag: z.string().max(64).nullable().optional(),
   targeting_gate: z.string().nullable().optional(),
   allocation_pct: z.number().int().min(0).max(10000).optional(),
   salt: z.string().min(1).max(64).optional(),
