@@ -29,6 +29,16 @@ test.describe("Metrics dashboard (top-level)", () => {
     await expect(page.getByText(/events over time/i)).toBeVisible();
   });
 
+  test("auto-collected health card surfaces the opt-in snippet", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/metrics?demo=1");
+
+    const snippet = page.getByTestId("auto-collect-enable-snippet");
+    await expect(snippet).toBeVisible();
+    await expect(snippet).toContainText(/disabled by default/i);
+    await expect(snippet).toContainText(/autoCollect: true/);
+    await expect(page.getByText(/opt-in · web vitals \+ JS errors/i)).toBeVisible();
+  });
+
   test("register-event CTA opens the event drawer with code preview", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/metrics?demo=1");
 

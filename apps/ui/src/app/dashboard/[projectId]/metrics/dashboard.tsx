@@ -505,7 +505,7 @@ export function MetricsDashboard({
         <div className="met-card">
           <div className="met-card-head">
             <div className="met-card-head-title">Auto-collected health</div>
-            <span className="t-mono-xs dim-2">no setup required · web vitals + errors</span>
+            <span className="t-mono-xs dim-2">opt-in · web vitals + JS errors</span>
             <div className="ml-auto">
               <span
                 className="met-badge"
@@ -519,6 +519,35 @@ export function MetricsDashboard({
                 AUTO
               </span>
             </div>
+          </div>
+          <div
+            data-testid="auto-collect-enable-snippet"
+            style={{
+              padding: "10px 18px",
+              background: "var(--se-bg-2)",
+              borderBottom: "1px solid var(--se-line)",
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <span className="text-[12px] dim">
+              Disabled by default. Enable in your <code>shipeasy()</code> call:
+            </span>
+            <code
+              className="t-mono-xs"
+              style={{
+                color: "var(--se-accent)",
+                background: "var(--se-bg-3)",
+                padding: "4px 8px",
+                borderRadius: 4,
+                border: "1px solid var(--se-line)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              shipeasy({"{ apiKey, autoCollect: true }"})
+            </code>
           </div>
           <div
             style={{

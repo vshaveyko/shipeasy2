@@ -131,8 +131,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/devtools
       '@shipeasy/sdk':
-        specifier: ^2.1.15
-        version: 2.1.15
+        specifier: ^2.2.0
+        version: 2.2.0
       '@shipeasy/shared':
         specifier: workspace:*
         version: link:../_shared
@@ -3424,12 +3424,12 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
-  '@shipeasy/sdk@2.1.15':
-    resolution: {integrity: sha512-ZJNGCpI43pLto06IXgWMwjDwKDWcmKneJzMe1e22TrOknhYkKih1un/mbXM28Zwjsil3Xo4qZsUB36gVn6g5HQ==}
-    engines: {node: '>=20'}
-
   '@shipeasy/sdk@2.1.8':
     resolution: {integrity: sha512-31teqE9epCFRC7Vmfkv2QHXhP7/r/FxdNOZ/8i55MTEBPmGMG/xdnUhoqJjKWWKojB0jB9zudvBS/tnkc8FSrQ==}
+    engines: {node: '>=20'}
+
+  '@shipeasy/sdk@2.2.0':
+    resolution: {integrity: sha512-+IOZ9SHrJxjQeL8n1xK/KwgCvm0WutB5ncvNEezDVjizWY8SPnFFDLaTJYlxx4JfdIdXQJ8RsSfkJUr6nO9CAQ==}
     engines: {node: '>=20'}
 
   '@sindresorhus/is@7.2.0':
@@ -11016,11 +11016,11 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@shipeasy/sdk@2.1.15':
+  '@shipeasy/sdk@2.1.8':
     dependencies:
       murmurhash-js: 1.0.0
 
-  '@shipeasy/sdk@2.1.8':
+  '@shipeasy/sdk@2.2.0':
     dependencies:
       murmurhash-js: 1.0.0
 
