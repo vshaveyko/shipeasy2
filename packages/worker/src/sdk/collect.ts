@@ -143,16 +143,17 @@ export async function handleCollect(c: AuthedContext) {
   const db = getDb(c.env.DB);
   for (const e of events) {
     if (e.type === "exposure") {
+      // AE: one index only. Pack experiment + ids into blobs.
       c.env.EXPOSURES?.writeDataPoint({
-        blobs: [e.group, e.user_id ?? "", e.anonymous_id ?? ""],
+        indexes: [key.project_id],
+        blobs: [e.experiment, e.group, e.user_id ?? "", e.anonymous_id ?? ""],
         doubles: [e.ts],
-        indexes: [key.project_id, e.experiment, "exposure"],
       });
     } else if (e.type === "metric") {
       c.env.METRIC_EVENTS?.writeDataPoint({
-        blobs: [e.user_id ?? "", e.anonymous_id ?? ""],
+        indexes: [key.project_id],
+        blobs: [e.event_name, e.user_id ?? "", e.anonymous_id ?? ""],
         doubles: [Number(e.value ?? 0), e.ts],
-        indexes: [key.project_id, e.event_name, "metric"],
       });
     } else if (e.type === "identify" && e.user_id && e.anonymous_id) {
       await db

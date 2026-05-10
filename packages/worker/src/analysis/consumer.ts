@@ -165,12 +165,11 @@ async function analyzeExperiment(
 
   // Exposures: user → group (first-exposure wins).
   const exposureSql = `
-    SELECT blob2 AS user_id, blob1 AS grp, MIN(double1) AS first_ts
+    SELECT blob3 AS user_id, blob2 AS grp, MIN(double1) AS first_ts
     FROM EXPOSURES
     WHERE index1 = ${sqlString(projectId)}
-      AND index2 = ${sqlString(exp.name)}
-      AND index3 = 'exposure'
-    GROUP BY blob2, blob1
+      AND blob1 = ${sqlString(exp.name)}
+    GROUP BY blob3, blob2
   `;
   const exposures = await queryAE<{ user_id: string; grp: string; first_ts: number }>(
     exposureSql,
@@ -207,14 +206,13 @@ async function analyzeExperiment(
 
   for (const metric of attached) {
     const metricSql = `
-      SELECT blob1 AS user_id, SUM(double1) AS total_value, COUNT(*) AS event_count
+      SELECT blob2 AS user_id, SUM(double1) AS total_value, COUNT(*) AS event_count
       FROM METRIC_EVENTS
       WHERE index1 = ${sqlString(projectId)}
-        AND index2 = ${sqlString(metric.eventName)}
-        AND index3 = 'metric'
+        AND blob1 = ${sqlString(metric.eventName)}
         AND double2 >= ${windowStart}
         AND double2 <  ${windowEnd}
-      GROUP BY blob1
+      GROUP BY blob2
     `;
     const metricRows = await queryAE<{
       user_id: string;

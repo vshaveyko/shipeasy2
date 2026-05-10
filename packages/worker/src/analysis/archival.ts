@@ -24,20 +24,18 @@ export async function runArchival(env: WorkerEnv): Promise<void> {
     if (!plan.data_export) continue;
 
     const exposureSql = `
-      SELECT blob1 AS grp, blob2 AS user_id, blob3 AS anonymous_id,
-             double1 AS ts, index2 AS experiment
+      SELECT blob2 AS grp, blob3 AS user_id, blob4 AS anonymous_id,
+             double1 AS ts, blob1 AS experiment
       FROM EXPOSURES
       WHERE index1 = ${sqlString(proj.id)}
-        AND index3 = 'exposure'
         AND double1 >= ${startMs}
         AND double1 <  ${endMs}
     `;
     const metricSql = `
-      SELECT blob1 AS user_id, blob2 AS anonymous_id,
-             double1 AS value, double2 AS ts, index2 AS event_name
+      SELECT blob2 AS user_id, blob3 AS anonymous_id,
+             double1 AS value, double2 AS ts, blob1 AS event_name
       FROM METRIC_EVENTS
       WHERE index1 = ${sqlString(proj.id)}
-        AND index3 = 'metric'
         AND double2 >= ${startMs}
         AND double2 <  ${endMs}
     `;
