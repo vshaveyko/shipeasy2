@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import {
   checkLimit,
   rebuildExperiments,
@@ -38,8 +38,11 @@ export async function listExperiments(
 ): Promise<Page<ExperimentRow>> {
   const s = scopedDb(identity.projectId);
   const ks = keysetWhere(experiments.updatedAt, experiments.id, opts.cursor);
-  const base = ks ? s.selectWhere(experiments, ks) : s.select(experiments);
-  const rows = await base
+  // scopedDb already filters deletedAt IS NULL; also drop archived from default lists.
+  const notArchived = ne(experiments.status, "archived");
+  const where = ks ? and(notArchived, ks)! : notArchived;
+  const rows = await s
+    .selectWhere(experiments, where)
     .orderBy(desc(experiments.updatedAt), desc(experiments.id))
     .limit(opts.limit + 1);
   return sliceWithCursor(rows as ExperimentRow[], opts.limit);

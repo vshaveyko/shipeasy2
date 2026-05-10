@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { setProjectDomain } from "../seed-fixtures";
+
 test.describe("/devtools-auth — input validation", () => {
   test("missing origin parameter shows a helpful message", async ({ page }) => {
     await page.goto("/devtools-auth");
@@ -19,6 +21,12 @@ test.describe("/devtools-auth — input validation", () => {
 
 test.describe("/devtools-auth — signed-in flow", () => {
   const CUSTOMER_ORIGIN = "https://customer.example.com";
+  const CUSTOMER_HOST = "customer.example.com";
+
+  // The popup only lists projects whose domain matches the requesting origin.
+  // The shared e2e fixture has domain=NULL, so set it transiently here.
+  test.beforeAll(() => setProjectDomain(CUSTOMER_HOST));
+  test.afterAll(() => setProjectDomain(null));
 
   test("shows the requesting host and an approval button", async ({ page }) => {
     await page.goto(`/devtools-auth?origin=${encodeURIComponent(CUSTOMER_ORIGIN)}`);

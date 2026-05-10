@@ -2,10 +2,13 @@ import { z } from "zod";
 import { CONFIG_ENVS, CONFIG_KINDS } from "../db/schema.js";
 
 const SEGMENT = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
+// `_default` is the reserved folder for legacy single-segment names.
+const RESERVED_FOLDER = "_default";
 
 /** Names are exactly two segments — `<folder>.<name>` — so the dashboard can
  *  group rows by folder. `_default` is reserved for the migration that lifts
- *  legacy single-segment names. */
+ *  legacy single-segment names and is the only segment allowed to start with
+ *  an underscore. */
 export const configNameSchema = z
   .string()
   .max(128)
@@ -13,7 +16,7 @@ export const configNameSchema = z
     (s) => {
       const parts = s.split(".");
       if (parts.length !== 2) return false;
-      return parts.every((p) => SEGMENT.test(p));
+      return parts.every((p, i) => (p === RESERVED_FOLDER && i === 0 ? true : SEGMENT.test(p)));
     },
     {
       message:

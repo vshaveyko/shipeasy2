@@ -15,18 +15,21 @@ export default async function ConfigValuesEmptyPage({
   const { projectId } = await params;
   const session = await auth();
 
+  // The redirect() call below MUST live outside the try block — Next signals
+  // navigation by throwing a NEXT_REDIRECT, which a `catch {}` would swallow.
+  let list: Awaited<ReturnType<typeof listAllConfigs>> = [];
   try {
-    const list = await listAllConfigs({
+    list = await listAllConfigs({
       projectId,
       actorEmail: session?.user?.email ?? "unknown",
       source: "jwt",
     });
-    if (list.length > 0) {
-      const byName = [...list].sort((a, b) => a.name.localeCompare(b.name));
-      redirect(`/dashboard/${projectId}/configs/values/${byName[0].id}`);
-    }
   } catch {
     // DB unavailable in dev — fall through to empty state.
+  }
+  if (list.length > 0) {
+    const byName = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    redirect(`/dashboard/${projectId}/configs/values/${byName[0].id}`);
   }
 
   return (

@@ -170,7 +170,7 @@ export default async function ExperimentDetailPage({
           <div className="flex flex-wrap items-center gap-3">
             <span className={STATUS_BADGE[status] ?? "se-badge"}>
               <span className="dot" />
-              {status.toUpperCase()}
+              {status === "running" ? "LIVE" : status.toUpperCase()}
               {dayLabel ? ` · ${dayLabel}` : ""}
             </span>
             <span className="t-mono-xs dim-2">{id}</span>
@@ -303,7 +303,7 @@ export default async function ExperimentDetailPage({
             {/* Variants card */}
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
               <div className="flex items-center gap-3 border-b border-[var(--se-line)] px-5 py-3.5">
-                <div className="text-[14px] font-medium">Variants</div>
+                <h2 className="text-[14px] font-medium">Variants</h2>
                 <span className="ml-auto t-mono-xs dim-2">
                   {groups.length === 2 && groups[0].weight === groups[1].weight
                     ? "50/50 split · sticky by user_id"

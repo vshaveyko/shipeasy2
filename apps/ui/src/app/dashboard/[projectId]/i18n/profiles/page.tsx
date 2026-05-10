@@ -9,7 +9,12 @@ import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { DeleteProfileButton } from "./delete-profile-button";
 
-export default async function I18nProfilesPage() {
+export default async function I18nProfilesPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   const session = await auth();
   if (!session?.user?.project_id) redirect("/auth/signin");
   const identity = {
@@ -39,7 +44,7 @@ export default async function I18nProfilesPage() {
         title="Profiles"
         description="Locale + environment groupings like en:prod or fr:staging. A profile is a versioned manifest of label chunks."
         actions={
-          <LinkButton size="sm" href="/dashboard/i18n/profiles/new">
+          <LinkButton size="sm" href={`/dashboard/${projectId}/i18n/profiles/new`}>
             New profile
           </LinkButton>
         }
@@ -51,7 +56,7 @@ export default async function I18nProfilesPage() {
             title="No profiles yet"
             description="Create your first profile to start publishing localized content."
             action={
-              <LinkButton size="sm" href="/dashboard/i18n/profiles/new">
+              <LinkButton size="sm" href={`/dashboard/${projectId}/i18n/profiles/new`}>
                 New profile
               </LinkButton>
             }
@@ -84,7 +89,7 @@ export default async function I18nProfilesPage() {
                         <LinkButton
                           variant="ghost"
                           size="sm"
-                          href={`/dashboard/i18n/keys?profile=${profile.id}`}
+                          href={`/dashboard/${projectId}/i18n/keys?profile=${profile.id}`}
                         >
                           Browse keys
                         </LinkButton>

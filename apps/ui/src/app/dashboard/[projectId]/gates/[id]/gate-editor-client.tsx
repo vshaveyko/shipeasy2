@@ -520,7 +520,7 @@ export function GateEditorClient({
   }
 
   return (
-    <div className="gke-root flex flex-col gap-[18px]">
+    <div className="gke-root flex min-w-0 flex-col gap-[18px] [overflow-x:clip]">
       {/* Stepper */}
       <div className="gke-stepper">
         {STEPS.map((s, i) => {
@@ -868,12 +868,19 @@ function StepGatesView({
               const expanded = expandedId === g.id;
               return (
                 <div key={g.id}>
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     className={`gke-gate t-${g.type} ${g.locked ? "locked" : ""} ${
                       expanded ? "expanded" : ""
                     }`}
                     onClick={() => setExpandedId(expanded ? null : g.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setExpandedId(expanded ? null : g.id);
+                      }
+                    }}
                   >
                     <div className="order">
                       <span className="n">{String(idx + 1).padStart(2, "0")}</span>
@@ -998,7 +1005,7 @@ function StepGatesView({
                         <Trash2 className="size-3" />
                       </button>
                     </div>
-                  </button>
+                  </div>
 
                   {expanded && (
                     <InlineGateEditor

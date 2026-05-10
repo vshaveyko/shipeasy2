@@ -60,7 +60,9 @@ test.describe("i18n keys — bulk selection + delete", () => {
   /** Load the keys page, switch to our fixture profile, expand the tree. */
   async function openProfile(page: import("@playwright/test").Page) {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await page.getByRole("button", { name: profileName, exact: true }).click();
+    // The redesigned profile selector renders as a tablist instead of bare
+    // buttons, so we look for a tab with the profile name.
+    await page.getByRole("tab", { name: profileName, exact: true }).click();
     // Wait for table header — appears once sections load from the API.
     await expect(page.getByLabel("Select all visible keys")).toBeVisible();
     // Each expand chevron click may trigger a lazy fetch. Wait for network
@@ -126,8 +128,9 @@ test.describe("i18n keys — bulk selection + delete", () => {
     await page.getByLabel("Select key bulk.standalone").check();
     await expect(page.getByText("1 selected")).toBeVisible();
 
-    page.once("dialog", (dialog) => dialog.dismiss());
+    // First click on Delete arms the inline confirm; Cancel aborts.
     await page.getByRole("button", { name: "Delete", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
 
     // Key still exists and selection preserved.
     await expect(page.getByLabel("Select key bulk.standalone")).toBeVisible();
@@ -144,11 +147,12 @@ test.describe("i18n keys — bulk selection + delete", () => {
     await page.getByLabel("Select subtree bulk.two").check();
     await expect(page.getByText("2 selected")).toBeVisible();
 
-    page.once("dialog", (dialog) => dialog.accept());
+    // Inline confirm: first click arms, second commits.
     await page.getByRole("button", { name: "Delete", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm", exact: true }).click();
 
-    // Bar clears.
-    await expect(page.getByText(/\d+ selected/)).not.toBeAttached();
+    // Bar clears (case-insensitive match on the badge text).
+    await expect(page.getByText(/\d+ selected/i)).not.toBeAttached();
 
     // The two deleted leaves are gone.
     await expect(page.getByLabel("Select key bulk.two.gamma")).not.toBeAttached();

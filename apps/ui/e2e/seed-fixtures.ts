@@ -42,3 +42,34 @@ export function seedI18nFixture(): void {
     }
   }
 }
+
+/** Transiently set the e2e fixture project's domain. Pass `null` to clear it.
+ *  Specs that exercise origin-allowlisted flows (devtools-auth, admin bearer
+ *  token via /devtools-auth) must set the domain to match the test origin in
+ *  beforeAll, then clear it in afterAll so other specs see a null-domain
+ *  project. */
+export function setProjectDomain(domain: string | null): void {
+  const db = locateD1();
+  if (!db) return;
+  const pid = "e2e-project-id";
+  const literal = domain === null ? "NULL" : `'${domain.replace(/'/g, "''")}'`;
+  try {
+    execSync(`sqlite3 "${db}" "UPDATE projects SET domain=${literal} WHERE id='${pid}'"`);
+  } catch {
+    // ignore
+  }
+}
+
+/** Transiently switch the e2e fixture project to a different plan. Specs that
+ *  exceed free-plan limits (e.g. creating multiple configs/experiments) should
+ *  bump to "paid" in beforeAll and reset to "free" in afterAll. */
+export function setProjectPlan(plan: "free" | "paid"): void {
+  const db = locateD1();
+  if (!db) return;
+  const pid = "e2e-project-id";
+  try {
+    execSync(`sqlite3 "${db}" "UPDATE projects SET plan='${plan}' WHERE id='${pid}'"`);
+  } catch {
+    // ignore
+  }
+}

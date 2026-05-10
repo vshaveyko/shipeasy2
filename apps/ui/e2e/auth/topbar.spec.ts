@@ -5,8 +5,10 @@ test.describe("Top bar", () => {
     await page.goto("/dashboard");
 
     const header = page.locator("header");
+    // The seed project is "Default project" — header echoes it verbatim,
+    // and the sidebar plan-badge surfaces "Free" for the test workspace.
     await expect(header.getByText(/default project/i).first()).toBeVisible();
-    await expect(header.getByText(/^free$/i)).toBeVisible();
+    await expect(page.getByText(/^free$/i).first()).toBeVisible();
   });
 
   test("user menu opens and exposes settings, keys, and sign out", async ({ page }) => {

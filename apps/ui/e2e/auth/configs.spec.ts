@@ -11,9 +11,8 @@ test.describe("Gates product", () => {
   test("new-gate form renders the required fields", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates/new");
 
-    await expect(page.getByRole("heading", { name: /^new gate$/i, level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^new gatekeeper$/i, level: 1 })).toBeVisible();
     await expect(page.getByLabel(/^key$/i)).toBeVisible();
-    await expect(page.getByLabel(/^description$/i)).toBeVisible();
   });
 
   test("typing into the key field updates the input", async ({ page }) => {

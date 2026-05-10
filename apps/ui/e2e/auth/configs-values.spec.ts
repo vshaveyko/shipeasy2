@@ -1,7 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 import { adminList } from "../admin-list";
+import { setProjectPlan } from "../seed-fixtures";
 
 const RUN = Date.now();
+
+// Free plan caps configs at 1 — bump to paid for the whole spec so describe
+// blocks can create multiple configs without hitting 429.
+test.beforeAll(() => setProjectPlan("paid"));
+test.afterAll(() => setProjectPlan("free"));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -82,7 +88,7 @@ test.describe("New config form UI", () => {
 
 test.describe("Object config — create, view, delete", () => {
   test.describe.configure({ mode: "serial" });
-  const key = `e2cfg_obj_${RUN}`;
+  const key = `e2.cfg_obj_${RUN}`;
 
   test("create via API and verify tree shows the new key", async ({ page }) => {
     await createConfigViaApi(page, {
@@ -126,7 +132,7 @@ test.describe("Object config — create, view, delete", () => {
 
 test.describe("Schema vs value separation", () => {
   test.describe.configure({ mode: "serial" });
-  const key = `e2cfg_schema_${RUN}`;
+  const key = `e2.cfg_schema_${RUN}`;
 
   test("schema update via PATCH does not bump value version", async ({ page }) => {
     await createConfigViaApi(page, {
@@ -203,11 +209,13 @@ test.describe("Object-only enforcement", () => {
   test("creating a config with a non-object value returns 400", async ({ page }) => {
     const resp = await page.request.post("/api/admin/configs", {
       data: {
-        name: `e2cfg_reject_${RUN}`,
+        name: `e2.cfg_reject_${RUN}`,
         schema: { type: "object", properties: {} },
         value: "just a string",
       },
     });
+    // assertValueMatchesSchema throws ApiError(400); Zod-shape failures throw 422.
+    // A non-object top-level value is caught by assertValueMatchesSchema → 400.
     expect(resp.status()).toBe(400);
   });
 });

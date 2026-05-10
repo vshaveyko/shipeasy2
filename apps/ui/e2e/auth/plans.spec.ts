@@ -5,10 +5,11 @@ import { expect, test } from "@playwright/test";
 test.describe("Plans — settings page display", () => {
   test("current plan is shown in the Plan section", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/settings");
-    await expect(page.getByText(/^plan$/i).first()).toBeVisible();
-    await expect(page.getByText(/^current$/i)).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByText(/^plan$/i).first()).toBeVisible();
+    await expect(main.getByText(/^current$/i)).toBeVisible();
     // Plan name should be one of: free, paid
-    await expect(page.getByText(/\bfree\b/i).or(page.getByText(/\bpaid\b/i))).toBeVisible();
+    await expect(main.getByText(/\bfree\b/i).or(main.getByText(/\bpaid\b/i))).toBeVisible();
   });
 
   test("Manage billing link is visible in Plan section", async ({ page }) => {
@@ -24,12 +25,14 @@ test.describe("Plans — settings page display", () => {
 
   test("plan section shows resource limits (gates, configs, experiments)", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/settings");
+    const main = page.getByRole("main");
     // Plans have per-resource limits shown on the settings page
     await expect(
-      page
+      main
         .getByText(/gates/i)
-        .or(page.getByText(/experiments/i))
-        .or(page.getByText(/keys/i)),
+        .or(main.getByText(/experiments/i))
+        .or(main.getByText(/keys/i))
+        .first(),
     ).toBeVisible();
   });
 });
@@ -54,13 +57,16 @@ test.describe("Plans — gated feature display", () => {
       page
         .getByText(/sequential testing.*available/i)
         .or(page.getByText(/sequential testing.*pro/i))
-        .or(page.getByText(/msprt.*pro/i)),
+        .or(page.getByText(/msprt.*pro/i))
+        .first(),
     ).toBeVisible();
   });
 
-  test("CUPED note visible on experiment results page", async ({ page }) => {
+  // TODO: The redesigned experiment detail page no longer surfaces a CUPED /
+  // variance-reduction note in the activity panel. Re-enable when the gated
+  // copy is reintroduced (or replaced by an equivalent upgrade hint).
+  test.skip("CUPED note visible on experiment results page", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/any_id");
-    // CUPED is available from Pro plan. For free plan, it may show an upgrade note.
     await expect(page.getByText(/cuped/i).or(page.getByText(/variance reduction/i))).toBeVisible();
   });
 });

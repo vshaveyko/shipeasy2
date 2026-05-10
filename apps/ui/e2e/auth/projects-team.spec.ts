@@ -126,8 +126,10 @@ test.describe("Team page", () => {
     await page.goto("/dashboard/team");
 
     await expect(page.getByRole("heading", { name: /^team$/i })).toBeVisible();
-    await expect(page.getByText("you", { exact: true })).toBeVisible();
-    await expect(page.getByText("owner", { exact: true })).toBeVisible();
+    // The hero empty state on a fresh workspace surfaces "just you so far"
+    // and an "Invite people" CTA instead of an explicit member row.
+    await expect(page.getByText(/just you so far/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^invite people$/i }).first()).toBeVisible();
   });
 
   test("sidebar Team link navigates here", async ({ page }) => {
@@ -147,7 +149,10 @@ test.describe("Team invite + remove", () => {
   test("owner can invite a teammate via the modal", async ({ page }) => {
     await page.goto("/dashboard/team");
 
-    await page.getByRole("button", { name: /^invite people$/i }).click();
+    await page
+      .getByRole("button", { name: /^invite people$/i })
+      .first()
+      .click();
 
     // Modal opens with an email input
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -171,7 +176,13 @@ test.describe("Team invite + remove", () => {
 
   test("changing the role of an invited member works", async ({ page }) => {
     await page.goto("/dashboard/team");
-    const row = page.getByText(invitee, { exact: true }).first().locator("..").locator("..");
+    // email text → div → min-w-0 → row container; <select> is a sibling of min-w-0.
+    const row = page
+      .getByText(invitee, { exact: true })
+      .first()
+      .locator("..")
+      .locator("..")
+      .locator("..");
     const select = row.locator("select").first();
     await select.selectOption("viewer");
     // The select stays at viewer after the action revalidates
@@ -183,12 +194,17 @@ test.describe("Team invite + remove", () => {
     await page.goto("/dashboard/team");
     await page.getByRole("button", { name: new RegExp(`remove ${invitee}`, "i") }).click();
 
-    await expect(page.getByText(invitee, { exact: true })).not.toBeVisible();
+    // The remove form may still flash the invitee name in a transient toast;
+    // assert that the row's own member name is gone instead of the global text.
+    await expect(page.locator("b").filter({ hasText: invitee })).toHaveCount(0);
   });
 
   test("invalid emails surface an error and do not close the modal", async ({ page }) => {
     await page.goto("/dashboard/team");
-    await page.getByRole("button", { name: /^invite people$/i }).click();
+    await page
+      .getByRole("button", { name: /^invite people$/i })
+      .first()
+      .click();
     const input = page.getByPlaceholder("email@company.com");
     await input.fill("not-an-email");
     await input.press("Enter");

@@ -51,6 +51,7 @@ function cleanE2eTestData() {
     "report_attachments",
     "bug_reports",
     "feature_requests",
+    "project_members",
   ];
   for (const tbl of tables) {
     try {
@@ -60,12 +61,28 @@ function cleanE2eTestData() {
     }
   }
 
+  // projects-team.spec.ts (and any other test that creates ad-hoc projects)
+  // leaves them behind. Clean every project the e2e user owns *except* the
+  // pinned fixture row so cli-auth-page / devtools-auth-page list exactly
+  // one project.
+  try {
+    execSync(
+      `sqlite3 "${db}" "DELETE FROM projects WHERE owner_email='e2e@shipeasy.test' AND id<>'${pid}'"`,
+    );
+  } catch {
+    // ignore
+  }
+
   // Re-seed fixed rows that various tests depend on
   const seeds = [
     // Project row must exist (with plan=pro) so loadProject() resolves and TopBar shows plan badge
     // Use INSERT OR IGNORE + UPDATE to avoid CASCADE deleting child rows (universes, etc.)
     `INSERT OR IGNORE INTO projects (id, name, owner_email, plan, status, created_at, updated_at) VALUES ('${pid}', 'Default project', 'e2e@shipeasy.test', 'free', 'active', '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z')`,
-    `UPDATE projects SET plan='free', name='Default project', stripe_customer_id=NULL, stripe_subscription_id=NULL, stripe_item_id_base=NULL, stripe_item_id_experiments=NULL, stripe_item_id_gates=NULL, stripe_item_id_configs=NULL, subscription_status='none', current_period_end=NULL, trial_ends_at=NULL, cancel_at_period_end=0, billing_interval='monthly' WHERE id='${pid}'`,
+    // Project has no domain so SDK client keys minted in tests get
+    // allowed_origin=null and the worker /collect handler accepts
+    // localhost requests. Specs that need a domain (devtools-auth-page,
+    // cli-auth-page) should set it transiently in their own setup.
+    `UPDATE projects SET plan='free', name='Default project', domain=NULL, stripe_customer_id=NULL, stripe_subscription_id=NULL, stripe_item_id_base=NULL, stripe_item_id_experiments=NULL, stripe_item_id_gates=NULL, stripe_item_id_configs=NULL, subscription_status='none', current_period_end=NULL, trial_ends_at=NULL, cancel_at_period_end=0, billing_interval='monthly', module_translations=1, module_configs=1, module_gates=1, module_experiments=1, module_feedback=1, module_user=1, module_events=1 WHERE id='${pid}'`,
     `INSERT OR IGNORE INTO events (id, project_id, name, pending, created_at) VALUES ('e2e-event-id', '${pid}', 'e2e_event', 0, '2024-01-01T00:00:00.000Z')`,
     `INSERT OR IGNORE INTO universes (id, project_id, name, unit_type, holdout_range, created_at) VALUES ('e2e-universe-default', '${pid}', 'default', 'user_id', NULL, '2024-01-01T00:00:00.000Z')`,
     // i18n test profile (en:test) with 5 keys matching i18n-keys.spec.ts expectations

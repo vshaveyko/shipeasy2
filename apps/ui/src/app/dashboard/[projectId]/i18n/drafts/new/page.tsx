@@ -5,7 +5,8 @@ import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { NewDraftForm } from "./new-draft-form";
 
-export default async function NewDraftPage() {
+export default async function NewDraftPage({ params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
   const session = await auth();
   if (!session?.user?.project_id) redirect("/auth/signin");
   const identity = {
@@ -22,7 +23,7 @@ export default async function NewDraftPage() {
         title="New draft"
         description="A draft collects proposed translations before they are published to a profile."
         actions={
-          <LinkButton variant="ghost" size="sm" href="/dashboard/i18n/drafts">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/i18n/drafts`}>
             Cancel
           </LinkButton>
         }

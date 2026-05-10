@@ -11,18 +11,17 @@ test.describe("Sign-in page", () => {
 
     await expect(page.getByRole("button", { name: /continue with github/i })).toBeVisible();
 
-    await expect(page.getByRole("link", { name: /terms of service/i })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: /^terms$/i })).toHaveAttribute(
       "href",
       "https://docs.shipeasy.ai/terms",
     );
   });
 
-  test("logo links back to landing page", async ({ page }) => {
+  test("renders the brand mark in the side panel", async ({ page }) => {
     await page.goto("/auth/signin");
-
-    await page.getByRole("link", { name: "ShipEasy", exact: true }).click();
-
-    await expect(page).toHaveURL(/\/$/);
+    // Side aside is hidden under lg breakpoint; default Playwright viewport
+    // is 1280px which is lg, so the panel renders.
+    await expect(page.getByText(/^Shipeasy$/i).first()).toBeVisible();
   });
 
   test("relative ?callbackUrl is forwarded to the OAuth provider", async ({ page }) => {

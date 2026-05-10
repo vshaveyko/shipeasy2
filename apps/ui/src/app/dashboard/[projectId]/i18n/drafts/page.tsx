@@ -15,7 +15,12 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   abandoned: { label: "ABANDONED", cls: "se-badge" },
 };
 
-export default async function I18nDraftsPage() {
+export default async function I18nDraftsPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   const session = await auth();
   if (!session?.user?.project_id) redirect("/auth/signin");
   const identity = {
@@ -43,7 +48,7 @@ export default async function I18nDraftsPage() {
         title="Drafts"
         description="Unpublished translation drafts. Review AI-generated translations and tweak copy before promoting to a profile."
         actions={
-          <LinkButton size="sm" href="/dashboard/i18n/drafts/new">
+          <LinkButton size="sm" href={`/dashboard/${projectId}/i18n/drafts/new`}>
             New draft
           </LinkButton>
         }
@@ -55,7 +60,7 @@ export default async function I18nDraftsPage() {
             title="No drafts in flight"
             description="Drafts appear here when translators (human or AI) propose changes that haven't been published yet."
             action={
-              <LinkButton size="sm" href="/dashboard/i18n/drafts/new">
+              <LinkButton size="sm" href={`/dashboard/${projectId}/i18n/drafts/new`}>
                 New draft
               </LinkButton>
             }

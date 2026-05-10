@@ -21,7 +21,9 @@ const CONFIGS_NAV: NavCase[] = [
     startAt: "/dashboard/e2e-project-id/configs/values",
     label: /^configs$/i,
     url: /\/dashboard\/e2e-project-id\/configs\/values$/,
-    heading: /^dynamic configs$/i,
+    // The configs landing page now leads with the marketing-style hero
+    // heading instead of the old "Dynamic configs" title.
+    heading: /tune your app without redeploying/i,
   },
 ];
 
@@ -46,7 +48,7 @@ async function runNavSuite(page: import("@playwright/test").Page, cases: NavCase
     await expect(sidebar).toBeVisible();
     await sidebar.getByRole("link", { name: c.label }).first().click();
     await expect(page).toHaveURL(c.url);
-    await expect(page.getByRole("heading", { name: c.heading, level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: c.heading })).toBeVisible();
   }
 }
 

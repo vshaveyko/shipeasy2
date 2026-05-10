@@ -101,6 +101,10 @@ export function GatesContent() {
   if (total === 0) {
     return (
       <Page>
+        <PageHeader
+          title="Gates"
+          description="Gates toggle features on and off per user, attribute, or percentage."
+        />
         <PageBody>
           <HeroEmptyState kind="gates" ctaHref={`/dashboard/${projectId}/gates/new`} />
         </PageBody>

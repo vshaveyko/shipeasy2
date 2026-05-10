@@ -1,6 +1,7 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { adminList } from "../admin-list";
+import { setProjectPlan } from "../seed-fixtures";
 
 const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
 const RUN = Date.now();
@@ -8,7 +9,9 @@ const RUN = Date.now();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function expRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..");
+  // Row container is 3 ancestors above the name text:
+  //   name (<a>) → flex container → min-w-0 → row grid (group/row).
+  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
 }
 
 async function getExperimentId(page: Page, name: string): Promise<string> {
@@ -117,8 +120,10 @@ test.describe("Detail page — draft state", () => {
   test("Start Experiment button visible; Stop button is not", async ({ page }) => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-    await expect(page.getByRole("button", { name: /^start experiment$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^stop experiment$/i })).not.toBeVisible();
+    // The detail page header now uses bare "Start" / "Stop" labels; the
+    // legacy "Start Experiment" copy lives only on the list-row buttons.
+    await expect(page.getByRole("button", { name: /^start$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^stop$/i })).not.toBeVisible();
   });
 
   test("Right rail shows the Guardrails section", async ({ page }) => {
@@ -180,8 +185,8 @@ test.describe("Detail page — running state", () => {
   test("Stop Experiment button visible; Start button is not", async ({ page }) => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-    await expect(page.getByRole("button", { name: /^stop experiment$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^start experiment$/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /^stop$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^start$/i })).not.toBeVisible();
   });
 
   test("Verdict is 'Wait' before first analysis", async ({ page }) => {
@@ -237,8 +242,8 @@ test.describe("Detail page — stopped state", () => {
   test("Neither Start nor Stop button is visible once stopped", async ({ page }) => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-    await expect(page.getByRole("button", { name: /^start experiment$/i })).not.toBeVisible();
-    await expect(page.getByRole("button", { name: /^stop experiment$/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /^start$/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /^stop$/i })).not.toBeVisible();
   });
 
   test("admin API confirms status=stopped", async ({ page }) => {
@@ -259,7 +264,8 @@ test.describe("Detail page — sequential testing copy", () => {
     await expect(
       page
         .getByText(/sequential testing unavailable/i)
-        .or(page.getByText(/upgrade to pro for msprt/i)),
+        .or(page.getByText(/upgrade to pro for msprt/i))
+        .first(),
     ).toBeVisible();
   });
 });
@@ -272,6 +278,7 @@ test.describe("Detail page — multi-variant", () => {
   const name = `e2res_mv_${RUN}`;
 
   test.beforeAll(async ({ browser }) => {
+    setProjectPlan("paid");
     const ctx = await browser.newContext({ storageState: AUTH_FILE });
     const p = await ctx.newPage();
     await createDraftViaWizard(p, name, { extraVariants: 1 });
@@ -288,6 +295,7 @@ test.describe("Detail page — multi-variant", () => {
       await expect(p.getByText(name, { exact: true })).not.toBeAttached();
     }
     await ctx.close();
+    setProjectPlan("free");
   });
 
   test("Variants card lists all 3 group names", async ({ page }) => {

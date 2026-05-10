@@ -1,12 +1,25 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { adminList } from "../admin-list";
+import { setProjectPlan } from "../seed-fixtures";
 
 const RUN = Date.now();
+
+// Free plan caps experiments at 1; this spec exercises multiple full
+// lifecycles. Bump to paid for the whole spec.
+test.beforeAll(() => setProjectPlan("paid"));
+test.afterAll(() => setProjectPlan("free"));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function expRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..");
+  // Row layout: grid > [icon, min-w-0 > flex > a(name), status, ...].
+  // Walk up: a → flex → min-w-0 → grid (the row).
+  return page
+    .getByText(name, { exact: true })
+    .locator("..")
+    .locator("..")
+    .locator("..")
+    .locator("..");
 }
 
 async function cleanupExperiment(request: APIRequestContext, name: string) {
@@ -209,7 +222,7 @@ test.describe("Two-variant experiment — full lifecycle", () => {
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
     await expect(page.getByText(/^DRAFT$/)).toBeVisible();
-    await expect(page.getByText(/Two variants\. Default split\./)).toBeVisible();
+    await expect(page.getByText(/Two variants\. Default split\./).first()).toBeVisible();
     await expect(page.getByText(/^users \/ control$/i)).toBeVisible();
     await expect(page.getByText(/^days running$/i)).toBeVisible();
     await expect(page.getByText(/^verdict$/i)).toBeVisible();

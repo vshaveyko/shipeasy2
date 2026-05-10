@@ -1,11 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 
 type Profile = { id: string; name: string };
 
 export function ProfileFilter({ profiles, value }: { profiles: Profile[]; value?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
 
   return (
     <select
@@ -13,7 +17,11 @@ export function ProfileFilter({ profiles, value }: { profiles: Profile[]; value?
       value={value ?? ""}
       onChange={(e) => {
         const v = e.target.value;
-        router.push(v ? `/dashboard/i18n/keys?profile=${v}` : "/dashboard/i18n/keys");
+        router.push(
+          v
+            ? `/dashboard/${projectId}/i18n/keys?profile=${v}`
+            : `/dashboard/${projectId}/i18n/keys`,
+        );
       }}
       className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
     >

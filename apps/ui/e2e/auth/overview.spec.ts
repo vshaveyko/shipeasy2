@@ -31,7 +31,8 @@ test.describe("Overview page", () => {
       .getByRole("link", { name: /configs/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values$/);
+    // /configs/values redirects into the editor when at least one config exists.
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values(\/[^/]+)?$/);
     await page.goBack();
 
     await main

@@ -26,12 +26,15 @@ test.describe("Landing page", () => {
     await expect(page.locator("#faq")).toBeVisible();
   });
 
-  test("nav sign-in link goes to /auth/signin when signed out", async ({ page }) => {
+  test("nav install-with-claude link goes to /auth/signin when signed out", async ({ page }) => {
     await page.goto("/");
 
-    const signIn = page.getByRole("link", { name: /^sign in$/i });
-    await expect(signIn).toBeVisible();
-    await signIn.click();
+    // The nav has a single "Install with Claude" CTA that points to the auth flow.
+    const installLink = page
+      .getByRole("navigation")
+      .getByRole("link", { name: /install with claude/i });
+    await expect(installLink).toBeVisible();
+    await installLink.click();
 
     await expect(page).toHaveURL(/\/auth\/signin$/);
   });

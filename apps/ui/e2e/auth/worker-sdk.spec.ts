@@ -11,6 +11,8 @@
 //   WORKER_BASE_URL=http://localhost:8787 pnpm ...  (use pre-running worker)
 
 import path from "node:path";
+import { execSync } from "node:child_process";
+import { readdirSync } from "node:fs";
 import type { APIRequestContext } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { adminList } from "../admin-list";
@@ -74,6 +76,30 @@ async function adminPatch(req: APIRequestContext, urlPath: string, body: Record<
 
 // ── Global setup: provision SDK keys + seed catalog ───────────────────────────
 
+// Bump the e2e project to the unlimited 'paid' plan for this suite only.
+// Worker-sdk creates many gates/keys/events in series and the free plan caps
+// (3 gates, 5 events_catalog, 3 sdk_keys) collide with the test surface and
+// surface as 429s/422s. We restore 'free' in afterAll so unrelated specs
+// (topbar, plans, billing) continue to assert against the free plan.
+function setProjectPlan(plan: "free" | "paid") {
+  const dbDir = path.join(__dirname, "../../.wrangler/state/v3/d1/miniflare-D1DatabaseObject");
+  let db: string | null = null;
+  try {
+    const files = readdirSync(dbDir).filter(
+      (f) => f.endsWith(".sqlite") && !f.includes("metadata"),
+    );
+    if (files.length > 0) db = path.join(dbDir, files[0]);
+  } catch {
+    return;
+  }
+  if (!db) return;
+  try {
+    execSync(`sqlite3 "${db}" "UPDATE projects SET plan='${plan}' WHERE id='e2e-project-id'"`);
+  } catch {
+    // ignore — best effort
+  }
+}
+
 test.beforeAll(async ({ request }) => {
   // Skip the entire suite if the worker is not reachable.
   let workerUp = false;
@@ -91,12 +117,23 @@ test.beforeAll(async ({ request }) => {
     return;
   }
 
+  setProjectPlan("paid");
+
   // Revoke any leftover keys from previous runs (wrangler locks SQLite so
   // auth.setup.ts cleanup may fail silently; revoked keys don't count toward plan limit).
   const keys = await adminList<{ id: string }>(request, "/api/admin/keys").catch(() => null);
   if (keys) {
     for (const k of keys) {
       await request.post(`/api/admin/keys/${k.id}/revoke`);
+    }
+  }
+
+  // Likewise, sweep leftover gates so the per-suite gate creates don't trip
+  // the (now lifted, but defensive) flags limit.
+  const gates = await adminList<{ id: string }>(request, "/api/admin/gates").catch(() => null);
+  if (gates) {
+    for (const g of gates) {
+      await request.delete(`/api/admin/gates/${g.id}`);
     }
   }
 
@@ -112,6 +149,10 @@ test.beforeAll(async ({ request }) => {
     await request.post("/api/admin/events", { data: { name: evName } });
     // 409 (already exists) is acceptable; any 2xx is fine.
   }
+});
+
+test.afterAll(async () => {
+  setProjectPlan("free");
 });
 
 // ── Worker health ─────────────────────────────────────────────────────────────
@@ -234,7 +275,7 @@ test.describe("Configs → /sdk/flags", () => {
   test("scalar-shaped object config → configs blob has the key with correct shape", async ({
     request,
   }) => {
-    const name = `e2cwrk_str_${RUN}`;
+    const name = `e2cwrk.str_${RUN}`;
     await adminPost(request, "/api/admin/configs", {
       name,
       schema: { type: "object", properties: { value: { type: "string" } } },
@@ -249,7 +290,7 @@ test.describe("Configs → /sdk/flags", () => {
   });
 
   test("numeric-field object config → value preserved", async ({ request }) => {
-    const name = `e2cwrk_num_${RUN}`;
+    const name = `e2cwrk.num_${RUN}`;
     await adminPost(request, "/api/admin/configs", {
       name,
       schema: { type: "object", properties: { value: { type: "number" } } },
@@ -263,7 +304,7 @@ test.describe("Configs → /sdk/flags", () => {
   });
 
   test("boolean-field object config → value preserved", async ({ request }) => {
-    const name = `e2cwrk_bool_${RUN}`;
+    const name = `e2cwrk.bool_${RUN}`;
     await adminPost(request, "/api/admin/configs", {
       name,
       schema: { type: "object", properties: { value: { type: "boolean" } } },
@@ -277,7 +318,7 @@ test.describe("Configs → /sdk/flags", () => {
   });
 
   test("nested object config → value is parsed object", async ({ request }) => {
-    const name = `e2cwrk_obj_${RUN}`;
+    const name = `e2cwrk.obj_${RUN}`;
     const obj = { threshold: 75, label: "beta" };
     await adminPost(request, "/api/admin/configs", {
       name,
@@ -292,7 +333,7 @@ test.describe("Configs → /sdk/flags", () => {
   });
 
   test("array-valued field on object config → value is preserved", async ({ request }) => {
-    const name = `e2cwrk_arr_${RUN}`;
+    const name = `e2cwrk.arr_${RUN}`;
     const arr = ["plan_a", "plan_b"];
     await adminPost(request, "/api/admin/configs", {
       name,
@@ -307,7 +348,7 @@ test.describe("Configs → /sdk/flags", () => {
   });
 
   test("deleting a config → gone from flags blob", async ({ request }) => {
-    const name = `e2cwrk_del_${RUN}`;
+    const name = `e2cwrk.del_${RUN}`;
     const created = await adminPost(request, "/api/admin/configs", {
       name,
       schema: PERMISSIVE_SCHEMA,
@@ -384,7 +425,7 @@ test.describe("User evaluation → /sdk/evaluate", () => {
   });
 
   test("config appears in evaluate response", async ({ request }) => {
-    const name = `e2eval_cfg_${RUN}`;
+    const name = `e2eval.cfg_${RUN}`;
     const value = { variant: "variant-a" };
     await adminPost(request, "/api/admin/configs", {
       name,

@@ -10,7 +10,12 @@ import { LinkButton } from "@/components/ui/link-button";
 
 export const metadata: Metadata = { title: "String Manager" };
 
-export default async function I18nOverviewPage() {
+export default async function I18nOverviewPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   const session = await auth();
   if (!session?.user?.project_id) redirect("/auth/signin");
   const identity = {
@@ -52,21 +57,21 @@ export default async function I18nOverviewPage() {
               icon: FolderTree,
               title: "Profiles",
               desc: "Locale + environment groupings — e.g. en:prod, fr:staging. Each profile has its own chunked manifest.",
-              href: "/dashboard/i18n/profiles",
+              href: `/dashboard/${projectId}/i18n/profiles`,
               cta: "Manage profiles",
             },
             {
               icon: FileText,
               title: "Keys",
               desc: "Declared label keys discovered from your code via the CLI scan or MCP tool. Group by namespace.",
-              href: "/dashboard/i18n/keys",
+              href: `/dashboard/${projectId}/i18n/keys`,
               cta: "Browse keys",
             },
             {
               icon: PencilLine,
               title: "Drafts",
               desc: "In-progress translations awaiting review before publish. Draft merges atomically into the live manifest.",
-              href: "/dashboard/i18n/drafts",
+              href: `/dashboard/${projectId}/i18n/drafts`,
               cta: "Review drafts",
             },
           ].map((c) => (
@@ -106,21 +111,21 @@ export default async function I18nOverviewPage() {
                 n: "01",
                 t: "Create a profile",
                 d: "A profile maps to a locale + environment like `en:prod`.",
-                href: "/dashboard/i18n/profiles/new",
+                href: `/dashboard/${projectId}/i18n/profiles/new`,
                 cta: "New profile",
               },
               {
                 n: "02",
                 t: "Scan your codebase",
                 d: "`shipeasy i18n scan` or the MCP scan tool discovers your strings.",
-                href: "/dashboard/i18n/keys",
+                href: `/dashboard/${projectId}/i18n/keys`,
                 cta: "Browse keys",
               },
               {
                 n: "03",
                 t: "Create a draft",
                 d: "Draft translations, then publish to the live loader manifest.",
-                href: "/dashboard/i18n/drafts/new",
+                href: `/dashboard/${projectId}/i18n/drafts/new`,
                 cta: "New draft",
               },
             ].map((s) => (

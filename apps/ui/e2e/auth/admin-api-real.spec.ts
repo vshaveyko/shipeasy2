@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { setProjectDomain } from "../seed-fixtures";
+
 /**
  * Hits the real /api/admin/* endpoints with no route mocking so sync-vs-async
  * Cloudflare-context issues, missing KV/D1 bindings, and similar "500 in prod,
@@ -23,29 +25,36 @@ async function adminGet(
   return { status: res.status(), body };
 }
 
+function expectPaginated(body: JsonBody) {
+  expect(body && typeof body === "object").toBe(true);
+  const page = body as { data?: unknown; next_cursor?: unknown };
+  expect(Array.isArray(page.data)).toBe(true);
+  expect("next_cursor" in (page as object)).toBe(true);
+}
+
 test.describe("admin API — session-cookie auth (no mocks)", () => {
-  test("GET /api/admin/gates returns 200 with an array", async ({ page }) => {
+  test("GET /api/admin/gates returns 200 with paginated body", async ({ page }) => {
     const { status, body } = await adminGet(page, "/api/admin/gates");
     expect(status).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
+    expectPaginated(body);
   });
 
-  test("GET /api/admin/configs returns 200 with an array", async ({ page }) => {
+  test("GET /api/admin/configs returns 200 with paginated body", async ({ page }) => {
     const { status, body } = await adminGet(page, "/api/admin/configs");
     expect(status).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
+    expectPaginated(body);
   });
 
-  test("GET /api/admin/experiments returns 200 with an array", async ({ page }) => {
+  test("GET /api/admin/experiments returns 200 with paginated body", async ({ page }) => {
     const { status, body } = await adminGet(page, "/api/admin/experiments");
     expect(status).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
+    expectPaginated(body);
   });
 
-  test("GET /api/admin/universes returns 200 with an array", async ({ page }) => {
+  test("GET /api/admin/universes returns 200 with paginated body", async ({ page }) => {
     const { status, body } = await adminGet(page, "/api/admin/universes");
     expect(status).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
+    expectPaginated(body);
   });
 
   test("GET /api/admin/i18n/profiles returns 200 with an array", async ({ page }) => {
@@ -60,14 +69,21 @@ test.describe("admin API — session-cookie auth (no mocks)", () => {
     expect(Array.isArray(body)).toBe(true);
   });
 
-  test("GET /api/admin/i18n/keys returns 200 with an array", async ({ page }) => {
+  test("GET /api/admin/i18n/keys returns 200 with a {keys,total} body", async ({ page }) => {
     const { status, body } = await adminGet(page, "/api/admin/i18n/keys");
     expect(status).toBe(200);
-    expect(Array.isArray(body)).toBe(true);
+    const result = body as { keys?: unknown; total?: unknown };
+    expect(Array.isArray(result.keys)).toBe(true);
+    expect(typeof result.total).toBe("number");
   });
 });
 
 test.describe("admin API — Bearer-token auth (no mocks)", () => {
+  // Approving via /devtools-auth requires the project's domain to match the
+  // requesting origin. Set it transiently for this describe block.
+  test.beforeAll(() => setProjectDomain("e2e.example.com"));
+  test.afterAll(() => setProjectDomain(null));
+
   /**
    * End-to-end: mint an admin SDK key via the /devtools-auth server action,
    * then call /api/admin/gates with Authorization: Bearer <token>. Proves

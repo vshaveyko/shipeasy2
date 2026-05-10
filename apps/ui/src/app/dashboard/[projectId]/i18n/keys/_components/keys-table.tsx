@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback, useTransition, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ChevronRight,
@@ -342,6 +344,8 @@ interface Props {
 
 export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
 
   const [profileId, setProfileId] = useState<string | null>(profiles[0]?.id ?? null);
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -365,6 +369,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [expandAllPending, setExpandAllPending] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searchResults, setSearchResults] = useState<KeyRow[] | null>(null);
@@ -515,6 +520,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       next.has(path) ? next.delete(path) : next.add(path);
       return next;
     });
+    setExpandAllPending(false);
     if (willOpen && isSection) loadSection(path);
   }
 
@@ -537,11 +543,42 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       }
     }
     setExpanded(all);
+    setExpandAllPending(true);
   }
 
   function collapseAll() {
     setExpanded(new Set());
+    setExpandAllPending(false);
   }
+
+  // When Expand all is clicked but section trees haven't loaded yet, union in
+  // every nested folder path as soon as the trees arrive. Cleared on Collapse all
+  // or when the user manually toggles a folder.
+  useEffect(() => {
+    if (!expandAllPending) return;
+    if (!sections.length) return;
+    const allLoaded = sections.every((s) => sectionTrees.has(treeKey(s.prefix)));
+    if (!allLoaded) return;
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      for (const sec of sections) {
+        next.add(sec.prefix);
+        const tree = sectionTrees.get(treeKey(sec.prefix));
+        if (!tree) continue;
+        const cf = (nodes: TreeNode[]) => {
+          for (const n of nodes) {
+            if (n.children.length > 0) {
+              next.add(n.path);
+              cf(n.children);
+            }
+          }
+        };
+        cf(tree);
+      }
+      return next;
+    });
+    setExpandAllPending(false);
+  }, [expandAllPending, sections, sectionTrees, treeKey]);
 
   // ── Editing ────────────────────────────────────────────────────────────────
   function startEdit(leaf: KeyRow) {
@@ -1150,7 +1187,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
       <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] py-12 text-center text-sm text-[var(--se-fg-3)]">
         No profiles yet.{" "}
         <a
-          href="/dashboard/i18n/profiles/new"
+          href={`/dashboard/${projectId}/i18n/profiles/new`}
           className="text-[var(--se-accent)] underline decoration-[var(--se-line-2)] underline-offset-4"
         >
           Create a profile
@@ -1261,7 +1298,13 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
           className="t-mono-xs tracking-[0.02em] text-[var(--se-fg-3)]"
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
-          {sections.reduce((s, sec) => s + sec.count, 0)} keys
+          {(() => {
+            const total =
+              debouncedSearch && searchResults !== null
+                ? searchResults.length
+                : sections.reduce((s, sec) => s + sec.count, 0);
+            return `${total} ${total === 1 ? "key" : "keys"}`;
+          })()}
         </span>
 
         {(loadingSections || searchLoading) && (
@@ -1305,7 +1348,7 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
             live manifest.
           </div>
           <a
-            href="/dashboard/i18n/drafts/new"
+            href={`/dashboard/${projectId}/i18n/drafts/new`}
             className="mt-3 inline-block text-xs text-[var(--se-accent)] hover:underline"
           >
             New draft →

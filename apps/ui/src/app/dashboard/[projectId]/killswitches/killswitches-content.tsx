@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { deleteKillswitch } from "@/actions/killswitches";
 import { KillswitchModal } from "./_components/killswitch-modal";
-import { IntegrationSnippetDialog } from "@/components/integration";
+import { IntegrationSnippetButton, IntegrationSnippetDialog } from "@/components/integration";
 
 type EnvKey = "dev" | "staging" | "prod";
 
@@ -211,7 +211,12 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
                         <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
                           {row.updatedAt.slice(0, 10)}
                         </span>
-                        <div className="flex justify-end">
+                        <div className="flex items-center justify-end gap-1">
+                          <IntegrationSnippetButton
+                            kind="killswitch"
+                            name={row.name}
+                            stopPropagation
+                          />
                           <DropdownMenu>
                             <DropdownMenuTrigger
                               render={

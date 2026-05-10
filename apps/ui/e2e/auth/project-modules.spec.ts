@@ -19,6 +19,7 @@ test.describe("Project module toggles", () => {
     await activeCard.click();
     await page.waitForURL(/\/dashboard\/projects\/[\w-]+$/);
 
+    const main = page.getByRole("main");
     for (const title of [
       "Translations",
       "Configs",
@@ -28,7 +29,7 @@ test.describe("Project module toggles", () => {
       "User",
       "Events",
     ]) {
-      await expect(page.getByText(title, { exact: true })).toBeVisible();
+      await expect(main.getByText(title, { exact: true })).toBeVisible();
     }
 
     const switches = page.getByRole("switch");

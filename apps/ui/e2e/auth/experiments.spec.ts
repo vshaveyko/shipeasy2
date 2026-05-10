@@ -5,8 +5,9 @@ test.describe("Experiments", () => {
     await page.goto("/dashboard/e2e-project-id/experiments");
 
     await expect(page.getByRole("heading", { name: /^experiments$/i, level: 1 })).toBeVisible();
-    // Hero empty-state heading copy
-    await expect(page.getByText(/ship the version that actually wins/i)).toBeVisible();
+    // Redesigned list page leads with a description paragraph instead of the
+    // old "Ship the version that actually wins" hero empty state.
+    await expect(page.getByText(/feature tests with auto-collected metrics/i)).toBeVisible();
   });
 
   test("new-experiment form renders the wizard with basics step fields", async ({ page }) => {

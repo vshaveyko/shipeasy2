@@ -1,8 +1,10 @@
 "use client";
 
 import useSWR from "swr";
+import { usePathname } from "next/navigation";
 import { Languages } from "lucide-react";
 
+import { projectIdFromPathname } from "@/lib/project-path";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
@@ -27,6 +29,8 @@ const fetcher = async <T,>(url: string): Promise<T> => {
 };
 
 export function KeysContent() {
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
   const swrOpts = { dedupingInterval: 0 };
   const profilesQ = useSWR<Profile[]>("/api/admin/i18n/profiles", fetcher, swrOpts);
   const draftsQ = useSWR<Draft[]>("/api/admin/i18n/drafts", fetcher, swrOpts);
@@ -76,7 +80,7 @@ export function KeysContent() {
           title="Label keys"
           description="Manage your translation keys across profiles and drafts."
           actions={
-            <LinkButton size="sm" href="/dashboard/i18n/profiles/new">
+            <LinkButton size="sm" href={`/dashboard/${projectId}/i18n/profiles/new`}>
               New profile
             </LinkButton>
           }
@@ -87,7 +91,7 @@ export function KeysContent() {
             title="No profiles yet"
             description="Create a profile (e.g. en:prod) before pushing keys. Use the CLI or MCP tool to scan your codebase."
             action={
-              <LinkButton size="sm" href="/dashboard/i18n/profiles/new">
+              <LinkButton size="sm" href={`/dashboard/${projectId}/i18n/profiles/new`}>
                 New profile
               </LinkButton>
             }
@@ -104,7 +108,7 @@ export function KeysContent() {
         title="Label keys"
         description="Manage translation keys across profiles and drafts. Click any value to edit inline."
         actions={
-          <LinkButton size="sm" href="/dashboard/i18n/drafts/new">
+          <LinkButton size="sm" href={`/dashboard/${projectId}/i18n/drafts/new`}>
             New draft
           </LinkButton>
         }

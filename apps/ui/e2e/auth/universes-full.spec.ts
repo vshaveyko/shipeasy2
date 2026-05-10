@@ -1,12 +1,39 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { setProjectPlan } from "../seed-fixtures";
+
 const RUN = Date.now();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function uniRow(page: Page, name: string) {
-  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
+  // Row layout: list > row.flex.justify-between > leftDiv > span(name).
+  // Going up 2 lands on the row (the third `..` would be the list, which
+  // contains *every* row's Delete button).
+  return page.getByText(name, { exact: true }).locator("..").locator("..");
 }
+
+// Bump to paid for the whole spec — free caps custom universes at 1, but
+// this spec creates several across serial describe blocks.
+test.beforeAll(() => setProjectPlan("paid"));
+test.afterAll(() => setProjectPlan("free"));
+
+// Stale universes from prior runs keep slots occupied and can break the
+// "create universe" tests with a 4xx. Purge anything that isn't `default`
+// before this file's tests run.
+test.beforeAll(async ({ request }) => {
+  const resp = await request.get("/api/admin/universes").catch(() => null);
+  if (!resp || !resp.ok()) return;
+  const body = (await resp.json().catch(() => null)) as
+    | { id: string; name: string }[]
+    | { data?: { id: string; name: string }[] }
+    | null;
+  const list = Array.isArray(body) ? body : (body?.data ?? []);
+  for (const u of list) {
+    if (u.name === "default") continue;
+    await request.delete(`/api/admin/universes/${u.id}`).catch(() => {});
+  }
+});
 
 // ── Default universe invariants ───────────────────────────────────────────────
 

@@ -414,7 +414,7 @@ export function HeroEmptyState({
           <span style={{ color: "var(--se-fg-3)" }}>{c.eyebrowAside}</span>
         </div>
 
-        <h1 className="hero-empty-title">
+        <h2 className="hero-empty-title">
           <span>{c.title}</span>{" "}
           <span
             style={{
@@ -426,7 +426,7 @@ export function HeroEmptyState({
           >
             {c.titleAccent}
           </span>
-        </h1>
+        </h2>
         <p className="hero-empty-sub">{c.sub}</p>
 
         <div className="hero-empty-terminal">

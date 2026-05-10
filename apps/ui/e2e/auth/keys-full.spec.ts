@@ -87,14 +87,15 @@ test.describe("Server key — create and revoke", () => {
   test("revoke the newly created server key → revoked badge count +1", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/keys");
     const revokeBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
-    const revokedBefore = await page.getByText("revoked").count();
 
     await page
       .getByRole("button", { name: /^revoke$/i })
       .first()
       .click();
     await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(revokeBefore - 1);
-    await expect(page.getByText("revoked")).toHaveCount(revokedBefore + 1);
+    // Revoked rows hide by default; toggle the filter to assert the row badge.
+    await page.goto("/dashboard/e2e-project-id/keys?show=revoked");
+    await expect(page.getByText("revoked", { exact: true }).first()).toBeVisible();
   });
 });
 
@@ -185,7 +186,15 @@ test.describe("Auto-revoke + revoked section", () => {
     page,
   }) => {
     await page.goto("/dashboard/e2e-project-id/keys");
-    // Dismiss empty-state hero (creates the first server key).
+    // Earlier describes in this file leave at most one active key per (type, user).
+    // Revoke whatever is active so the auto-revoke assertion below has a known
+    // starting point (exactly one active key after the empty-state dismiss).
+    while ((await page.getByRole("button", { name: /^revoke$/i }).count()) > 0) {
+      await page
+        .getByRole("button", { name: /^revoke$/i })
+        .first()
+        .click();
+    }
     await dismissKeysEmptyState(page);
     await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(1);
 
@@ -196,8 +205,10 @@ test.describe("Auto-revoke + revoked section", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
     await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(1);
 
-    // The revoked section should now be visible (heading + at least one row)
-    await expect(page.getByText(/^revoked$/i).first()).toBeVisible();
+    // The redesigned page surfaces revoked keys behind a "Show revoked" link
+    // and a "<n> revoked" counter rather than a standalone section heading.
+    await expect(page.getByRole("link", { name: /show revoked/i })).toBeVisible();
+    await expect(page.getByText(/\d+\s*revoked/i).first()).toBeVisible();
 
     // Cleanup: revoke the surviving key
     await page

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { seedI18nFixture } from "../seed-fixtures";
 
@@ -11,6 +11,18 @@ test.beforeEach(() => {
   seedI18nFixture();
 });
 
+/**
+ * The keys page now defaults to the first profile alphabetically, which can
+ * be a different project's seed profile. Tests that target the en:test
+ * fixture must explicitly click that tab.
+ */
+async function selectEnTest(page: Page) {
+  const tab = page.getByRole("tab", { name: "en:test", exact: true });
+  if ((await tab.count()) > 0) {
+    await tab.click();
+  }
+}
+
 // Unique per-run prefix so parallel/repeated runs don't collide.
 const RUN = Date.now();
 
@@ -21,6 +33,7 @@ const RUN = Date.now();
 test.describe("i18n Keys table — smoke", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
   });
 
   test("renders the page heading", async ({ page }) => {
@@ -68,6 +81,7 @@ test.describe("i18n Keys table — search", () => {
 
   test("searching 'auth' narrows count to 3 keys", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByPlaceholder(/filter keys/i).fill("auth");
     // Subtree count is rendered as a badge inside the "auth N" subtree button.
     await expect(page.getByRole("button", { name: /^auth\s+3$/i })).toBeVisible();
@@ -75,6 +89,7 @@ test.describe("i18n Keys table — search", () => {
 
   test("searching 'auth' auto-expands tree and shows leaf values", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByPlaceholder(/filter keys/i).fill("auth");
     await expect(page.getByText("Sign in")).toBeVisible();
     await expect(page.getByText("Welcome back")).toBeVisible();
@@ -83,6 +98,7 @@ test.describe("i18n Keys table — search", () => {
 
   test("searching by value 'Sign in' matches 1 key", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByPlaceholder(/filter keys/i).fill("Sign in");
     await expect(page.getByText("1 key")).toBeVisible();
     await expect(page.getByText("Sign in")).toBeVisible();
@@ -90,12 +106,14 @@ test.describe("i18n Keys table — search", () => {
 
   test("unmatched search shows 'no keys match' message", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByPlaceholder(/filter keys/i).fill("xyzzy-no-match");
     await expect(page.getByText(/no keys match/i)).toBeVisible();
   });
 
   test("clearing search restores all 5 keys", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     const input = page.getByPlaceholder(/filter keys/i);
     await input.fill("auth");
     await expect(page.getByRole("button", { name: /^auth\s+3$/i })).toBeVisible();
@@ -113,6 +131,7 @@ test.describe("i18n Keys table — search", () => {
 test.describe("i18n Keys table — expand collapse", () => {
   test("Expand all reveals all leaf values", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByTitle("Expand all").click();
     await expect(page.getByText("Sign in")).toBeVisible();
     await expect(page.getByText("Welcome back")).toBeVisible();
@@ -122,6 +141,7 @@ test.describe("i18n Keys table — expand collapse", () => {
 
   test("Collapse all hides subtree values after expanding", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByTitle("Expand all").click();
     await expect(page.getByText("Sign in")).toBeVisible();
     // Button text switches to "Collapse" after expand
@@ -131,6 +151,7 @@ test.describe("i18n Keys table — expand collapse", () => {
 
   test("clicking scope button toggles children", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     // "auth" scope has an Expand aria-label button next to it
     await page.getByRole("button", { name: "Expand", exact: true }).first().click();
     // auth's children (login, signup) appear
@@ -166,6 +187,7 @@ test.describe("i18n Keys table — inline editing", () => {
 
   test("pressing Escape on open textarea cancels edit without saving", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByTitle("Expand all").click();
     await page.getByText("Sign in").click();
     const textarea = page.locator("textarea");
@@ -178,6 +200,7 @@ test.describe("i18n Keys table — inline editing", () => {
 
   test("Save and Cancel icon buttons appear while editing", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByTitle("Expand all").click();
     await page.getByText("Sign in").click();
     await expect(page.getByRole("button", { name: /save/i })).toBeVisible();
@@ -190,6 +213,7 @@ test.describe("i18n Keys table — inline editing", () => {
   test("Ctrl+Enter saves the new value and exits edit mode", async ({ page }) => {
     const newValue = `e2e-edited-${RUN}`;
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByTitle("Expand all").click();
     await page.getByText("Sign in").click();
     await page.locator("textarea").fill(newValue);
@@ -201,6 +225,7 @@ test.describe("i18n Keys table — inline editing", () => {
   test("saved value persists after a full page reload", async ({ page }) => {
     const newValue = `e2e-edited-${RUN}`;
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByTitle("Expand all").click();
     await expect(page.getByText(newValue)).toBeVisible();
   });
@@ -209,6 +234,7 @@ test.describe("i18n Keys table — inline editing", () => {
     // Restore to "Sign in" via Save button (undoes the afterAll restoration for isolation)
     const current = `e2e-edited-${RUN}`;
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
+    await selectEnTest(page);
     await page.getByTitle("Expand all").click();
     await page.getByText(current).click();
     await page.locator("textarea").fill("Sign in");
@@ -383,18 +409,18 @@ test.describe("i18n full workflow", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/profiles$/);
 
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await expect(page.getByRole("button", { name: pName, exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: pName, exact: true })).toBeVisible();
   });
 
   test("clicking new profile tab shows 'no keys for this profile'", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await page.getByRole("button", { name: pName, exact: true }).click();
-    await expect(page.getByText(/no keys for this profile/i)).toBeVisible();
+    await page.getByRole("tab", { name: pName, exact: true }).click();
+    await expect(page.getByText(/no keys are published to this profile/i)).toBeVisible();
   });
 
   test("new profile tab shows 0 keys count", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await page.getByRole("button", { name: pName, exact: true }).click();
+    await page.getByRole("tab", { name: pName, exact: true }).click();
     await expect(page.getByText("0 keys")).toBeVisible();
   });
 
@@ -408,7 +434,7 @@ test.describe("i18n full workflow", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/drafts$/);
 
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await page.getByRole("button", { name: pName, exact: true }).click();
+    await page.getByRole("tab", { name: pName, exact: true }).click();
     const draftSelect = page.locator("select").filter({ hasText: dName });
     await expect(draftSelect).toBeVisible();
   });
@@ -436,7 +462,7 @@ test.describe("i18n full workflow", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/drafts$/);
 
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await page.getByRole("button", { name: pName, exact: true }).click();
+    await page.getByRole("tab", { name: pName, exact: true }).click();
     // No open drafts remain → dropdown should not be rendered
     await expect(page.locator("select").filter({ hasText: dName })).toHaveCount(0);
   });
@@ -450,7 +476,7 @@ test.describe("i18n full workflow", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n\/profiles$/);
 
     await page.goto("/dashboard/e2e-project-id/i18n/keys");
-    await expect(page.getByRole("button", { name: pName, exact: true })).not.toBeAttached();
+    await expect(page.getByRole("tab", { name: pName, exact: true })).not.toBeAttached();
   });
 });
 

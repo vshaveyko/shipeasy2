@@ -1,5 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { setProjectPlan } from "../seed-fixtures";
+
+// Free plan caps configs at 1; this spec creates configs + killswitches.
+test.beforeAll(() => setProjectPlan("paid"));
+test.afterAll(() => setProjectPlan("free"));
+
 /**
  * End-to-end coverage for the shared IntegrationSnippetDialog.
  *
@@ -135,7 +141,7 @@ const KINDS: KindSpec[] = [
     defaultSnippetContains: "flags.getConfig",
     altLang: { id: "curl", contains: "api.shipeasy.ai/sdk/config/" },
     seed: async (page) => {
-      const name = `e2e_snip_cfg_${RUN}`;
+      const name = `e2e_snip.cfg_${RUN}`;
       const id = await seedConfig(page, name);
       return { name, cleanup: () => deleteSafe(page, `/api/admin/configs/${id}`) };
     },
@@ -147,7 +153,7 @@ const KINDS: KindSpec[] = [
     defaultSnippetContains: "@shipeasy/sdk/client",
     altLang: { id: "python", contains: "get_killswitch" },
     seed: async (page) => {
-      const name = `e2e_snip_ks_${RUN}`;
+      const name = `e2e_snip.ks_${RUN}`;
       const id = await seedKillswitch(page, name);
       return { name, cleanup: () => deleteSafe(page, `/api/admin/killswitches/${id}`) };
     },
@@ -170,7 +176,7 @@ const KINDS: KindSpec[] = [
     prepareRow: async (page, _name) => {
       // Tabs are profile-named — switch to the seeded profile so its keys show.
       const profileTab = page
-        .getByRole("button", { name: new RegExp(`e2e_snip_i18n_${RUN}`) })
+        .getByRole("tab", { name: new RegExp(`e2e_snip_i18n_${RUN}`) })
         .first();
       if (await profileTab.count()) {
         await profileTab.click();

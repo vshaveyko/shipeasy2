@@ -1,8 +1,15 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
+import { setProjectPlan } from "../seed-fixtures";
+
 const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
 const RUN = Date.now();
+
+// Free plan caps configs/experiments/universes at 1. This spec exercises
+// full lifecycle flows that create several of each — bump to paid.
+test.beforeAll(() => setProjectPlan("paid"));
+test.afterAll(() => setProjectPlan("free"));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,30 +48,33 @@ test.describe("Integration: full experiment lifecycle", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(page.getByText(mName)).toBeVisible();
 
-    // 3. Create experiment (uses seeded default universe)
+    // 3. Create experiment via the 4-step wizard (uses seeded default universe)
     await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page.locator("#exp-key").fill(expKey);
-    await page.getByRole("button", { name: /^save draft$/i }).click();
+    await page.locator("#exp-name").fill(expKey);
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^create experiment$/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(divRow(page, expKey).getByText(/^draft$/i)).toBeVisible();
 
     // 4. Start the experiment
     await divRow(page, expKey)
-      .getByRole("button", { name: /^start$/i })
+      .getByRole("button", { name: /start experiment/i })
       .click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(divRow(page, expKey).getByText(/^running$/i)).toBeVisible();
 
     // 5. Stop the experiment
     await divRow(page, expKey)
-      .getByRole("button", { name: /^stop$/i })
+      .getByRole("button", { name: /stop experiment/i })
       .click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(divRow(page, expKey).getByText(/^stopped$/i)).toBeVisible();
 
     // 6. Delete the stopped experiment
     await divRow(page, expKey)
-      .getByRole("button", { name: /^delete$/i })
+      .getByRole("button", { name: /delete experiment/i })
       .click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(page.getByText(expKey, { exact: true })).not.toBeVisible();
@@ -93,51 +103,61 @@ test.describe("Integration: full experiment lifecycle", () => {
 test.describe("Integration: gate and config for the same feature", () => {
   test.describe.configure({ mode: "serial" });
 
+  // Gates use a single-segment slug; configs require `folder.name` so pair the
+  // gate with a `feature.<slug>` config — same logical "feature" identifier.
   const featureSlug = `e2efeature${RUN}`;
+  const configName = `feature.${featureSlug}`;
 
   test("create gate + config → gate is enabled → delete both", async ({ page }) => {
-    // 1. Create the feature gate
-    await page.goto("/dashboard/e2e-project-id/configs/gates/new");
+    // 1. Create the feature gate. createGateAction redirects to the editor.
+    await page.goto("/dashboard/e2e-project-id/gates/new");
     await page.locator("#gate-key").fill(featureSlug);
     await page.getByRole("button", { name: /^create gate$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/gates$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
+
+    // The list reflects the new gate as enabled.
+    await page.goto("/dashboard/e2e-project-id/gates");
     await expect(divRow(page, featureSlug).getByText("enabled")).toBeVisible();
 
-    // 2. Create the feature config (navigate the 4-step wizard)
+    // 2. Create the feature config (navigate the 4-step wizard).
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
-    await page.locator("#config-key").fill(featureSlug);
+    await page.locator("#config-key").fill(configName);
     await page.getByRole("button", { name: /^continue$/i }).click();
     await page.getByRole("button", { name: /^continue$/i }).click();
     await page.getByRole("button", { name: /^continue$/i }).click();
     await page.getByRole("button", { name: /^create config$/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/]+$/);
-    await expect(page.getByText(featureSlug, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(configName, { exact: true }).first()).toBeVisible();
 
     // 3. Disable then re-enable the gate (test the toggle cycle)
-    await page.goto("/dashboard/e2e-project-id/configs/gates");
+    await page.goto("/dashboard/e2e-project-id/gates");
     await divRow(page, featureSlug)
-      .getByRole("button", { name: /^disable$/i })
+      .getByRole("button", { name: /^disable gate$/i })
       .click();
     await expect(divRow(page, featureSlug).getByText("disabled")).toBeVisible();
     await divRow(page, featureSlug)
-      .getByRole("button", { name: /^enable$/i })
+      .getByRole("button", { name: /^enable gate$/i })
       .click();
     await expect(divRow(page, featureSlug).getByText("enabled")).toBeVisible();
 
-    // 4. Delete the gate
+    // 4. Delete the gate via the per-row dropdown menu + confirm dialog.
     await divRow(page, featureSlug)
-      .getByRole("button", { name: /^delete$/i })
+      .getByRole("button", { name: new RegExp(`Actions for ${featureSlug}`, "i") })
       .click();
-    await expect(page.getByText(featureSlug, { exact: true })).not.toBeVisible();
-
-    // 5. Delete the config
-    await page.goto("/dashboard/e2e-project-id/configs/values");
+    await page.getByRole("menuitem", { name: /^delete gate$/i }).click();
     await page
-      .getByText(featureSlug, { exact: true })
-      .locator("..")
-      .getByRole("button", { name: /^delete$/i })
+      .getByRole("dialog")
+      .getByRole("button", { name: /^delete gate$/i })
       .click();
-    await expect(page.getByText(featureSlug, { exact: true })).not.toBeVisible();
+    // The confirm-dialog still references the gate name during its closing
+    // transition; scope the negative assertion to the list link.
+    await expect(page.locator("main").getByRole("link", { name: featureSlug })).toHaveCount(0);
+
+    // 5. Delete the config from its editor (two-step inline confirm).
+    await page.goto("/dashboard/e2e-project-id/configs/values");
+    await page.getByRole("button", { name: /delete config/i }).click();
+    await page.getByRole("button", { name: /confirm delete/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
   });
 });
 
@@ -294,6 +314,22 @@ test.describe("Integration: attributes and universe as experiment infrastructure
 
   const attrName = `e2eintattr${RUN}`;
   const uniName = `e2eintuniverse${RUN}`;
+
+  // Free plan caps custom universes at 1; clear leftovers so this suite can
+  // create its own.
+  test.beforeAll(async ({ request }) => {
+    const resp = await request.get("/api/admin/universes").catch(() => null);
+    if (!resp || !resp.ok()) return;
+    const body = (await resp.json().catch(() => null)) as
+      | { id: string; name: string }[]
+      | { data?: { id: string; name: string }[] }
+      | null;
+    const list = Array.isArray(body) ? body : (body?.data ?? []);
+    for (const u of list) {
+      if (u.name === "default") continue;
+      await request.delete(`/api/admin/universes/${u.id}`).catch(() => {});
+    }
+  });
 
   test("declare attribute and universe → both appear in their lists", async ({ page }) => {
     // 1. Declare a user attribute

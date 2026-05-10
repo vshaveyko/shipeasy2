@@ -33,7 +33,13 @@ export async function withEdgeCache(
   const cache = getDefaultCache();
   const inm = c.req.header("If-None-Match")?.replace(/^W\//, "");
 
-  if (cache) {
+  // Edge cache is only invalidated by the CF Purge API. If the API isn't
+  // configured (local dev / e2e), skip the cache entirely so admin-write →
+  // SDK-read returns fresh data instead of a stale colo entry that nothing
+  // can flush.
+  const purgeAvailable = !!(c.env.CF_API_TOKEN && c.env.CF_ZONE_ID && c.env.FLAGS_DOMAIN);
+
+  if (cache && purgeAvailable) {
     const host = new URL(c.req.url).host;
     const cacheKey = new Request(sdkCacheUrl(host, key), { method: "GET" });
     const hit = await cache.match(cacheKey);

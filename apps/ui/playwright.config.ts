@@ -65,12 +65,14 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: "auth.setup.ts",
+      use: { channel: "chrome" },
     },
     {
       name: "guest",
       testMatch: "guest/**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
+        channel: "chrome",
         viewport: { width: 1440, height: 900 },
       },
     },
@@ -79,6 +81,7 @@ export default defineConfig({
       testMatch: "auth/**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
+        channel: "chrome",
         viewport: { width: 1440, height: 900 },
         storageState: AUTH_STATE_FILE,
       },

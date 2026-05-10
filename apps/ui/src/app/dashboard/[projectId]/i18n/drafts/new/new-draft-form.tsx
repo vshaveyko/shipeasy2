@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+
+import { projectIdFromPathname } from "@/lib/project-path";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +17,8 @@ interface Props {
 
 export function NewDraftForm({ profiles }: Props) {
   const [name, setName] = useState("");
+  const pathname = usePathname();
+  const projectId = projectIdFromPathname(pathname) ?? "";
 
   return (
     <form action={createDraftAction} className="max-w-lg">
@@ -47,7 +52,7 @@ export function NewDraftForm({ profiles }: Props) {
                   variant="link"
                   size="sm"
                   className="-ml-1 h-auto p-0"
-                  href="/dashboard/i18n/profiles/new"
+                  href={`/dashboard/${projectId}/i18n/profiles/new`}
                 >
                   Create one first
                 </LinkButton>
@@ -73,7 +78,7 @@ export function NewDraftForm({ profiles }: Props) {
                     variant="link"
                     size="sm"
                     className="-ml-1 h-auto p-0 text-xs"
-                    href="/dashboard/i18n/profiles/new"
+                    href={`/dashboard/${projectId}/i18n/profiles/new`}
                   >
                     Create one first
                   </LinkButton>
@@ -83,7 +88,7 @@ export function NewDraftForm({ profiles }: Props) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <LinkButton variant="ghost" size="sm" href="/dashboard/i18n/drafts">
+            <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/i18n/drafts`}>
               Cancel
             </LinkButton>
             <Button size="sm" type="submit" disabled={!name.trim()}>

@@ -6,7 +6,12 @@ import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { createProfileAction } from "../actions";
 
-export default function NewProfilePage() {
+export default async function NewProfilePage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   return (
     <form action={createProfileAction} className="contents">
       <Page>
@@ -46,7 +51,7 @@ export default function NewProfilePage() {
           </Card>
         </PageBody>
         <PageFooter>
-          <LinkButton variant="ghost" size="sm" href="/dashboard/i18n/profiles">
+          <LinkButton variant="ghost" size="sm" href={`/dashboard/${projectId}/i18n/profiles`}>
             Cancel
           </LinkButton>
           <Button size="sm" type="submit">

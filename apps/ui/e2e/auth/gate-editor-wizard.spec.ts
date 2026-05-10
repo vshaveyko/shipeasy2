@@ -13,7 +13,8 @@ async function createGate(page: Page, key: string) {
   await page.goto("/dashboard/e2e-project-id/gates/new");
   await page.locator("#gate-key").fill(key);
   await page.getByRole("button", { name: /^create gate$/i }).click();
-  await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
+  // Server action now lands on the new gatekeeper editor.
+  await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
 }
 
 async function deleteGate(page: Page, name: string) {
@@ -53,12 +54,10 @@ test.describe("Gatekeeper editor — wizard", () => {
 
   test("wizard renders all 3 steps and defaults to Gates", async ({ page }) => {
     await goToEditor(page, key);
-    // The 3 step labels are visible in the stepper.
-    for (const label of ["Details", "Gates", "Review & integrate"]) {
-      await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
-    }
-    // Default step body is the gates list.
-    await expect(page.getByText("Stack the gates")).toBeVisible();
+    // The 3 step labels in the new wizard are: metadata, authoring, publish.
+    await expect(page.getByText(/where does this gatekeeper live/i).first()).toBeVisible();
+    await expect(page.getByText(/stack the gates/i).first()).toBeVisible();
+    await expect(page.getByText(/review and integrate/i).first()).toBeVisible();
   });
 
   test("public floor is present, locked, and labeled", async ({ page }) => {
@@ -98,7 +97,7 @@ test.describe("Gatekeeper editor — wizard", () => {
   test("can navigate to Review step and see SDK preview", async ({ page }) => {
     await goToEditor(page, key);
     await page
-      .getByRole("button", { name: /Next: Review & integrate/i })
+      .getByRole("button", { name: /Next: Review and integrate/i })
       .first()
       .click();
     await expect(page.getByText("Review and integrate")).toBeVisible();
@@ -107,9 +106,9 @@ test.describe("Gatekeeper editor — wizard", () => {
 
   test("Edit details dialog opens from Step 1", async ({ page }) => {
     await goToEditor(page, key);
-    // Switch to Details step.
+    // Stepper button label = STEPS[0].label ("Where does this gatekeeper live?").
     await page
-      .getByRole("button", { name: /^Details$/ })
+      .getByRole("button", { name: /Where does this gatekeeper live\?/i })
       .first()
       .click();
     await expect(page.getByText("Where does this gatekeeper live?")).toBeVisible();

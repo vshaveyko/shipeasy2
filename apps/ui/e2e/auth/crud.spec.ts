@@ -1,10 +1,18 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
+import { setProjectPlan } from "../seed-fixtures";
+
 const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
 
 // Unique per-run prefix so repeated runs don't collide in the shared local DB.
 const RUN = Date.now();
+
+// Free-plan limits (configs:1, gates:3, experiments:1, universes:1, keys:3,
+// metrics:5) collide with serial CRUD describe blocks that each create rows.
+// Bump to paid for the whole spec.
+test.beforeAll(() => setProjectPlan("paid"));
+test.afterAll(() => setProjectPlan("free"));
 
 // ── i18n Profiles ─────────────────────────────────────────────────────────────
 
@@ -153,7 +161,6 @@ test.describe("SDK Keys CRUD", () => {
   test("revoke key → revoked badge appears, Revoke button disappears", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/keys");
     const revokesBefore = await page.getByRole("button", { name: /^revoke$/i }).count();
-    const revokedBefore = await page.getByText("revoked").count();
 
     expect(revokesBefore).toBeGreaterThan(0);
     await page
@@ -163,7 +170,9 @@ test.describe("SDK Keys CRUD", () => {
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/keys/);
     await expect(page.getByRole("button", { name: /^revoke$/i })).toHaveCount(revokesBefore - 1);
-    await expect(page.getByText("revoked")).toHaveCount(revokedBefore + 1);
+    // Revoked rows are hidden by default; flip the toggle to inspect the badge.
+    await page.goto("/dashboard/e2e-project-id/keys?show=revoked");
+    await expect(page.getByText("revoked", { exact: true }).first()).toBeVisible();
   });
 });
 
@@ -224,25 +233,29 @@ test.describe("Feature Gates CRUD", () => {
     await page.locator("#gate-key").fill(gKey);
     await page.getByRole("button", { name: /^create gate$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
+    // createGateAction redirects into the editor for the new gate.
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
+
+    // The list page reflects the new gate as enabled.
+    await page.goto("/dashboard/e2e-project-id/gates");
     await expect(gRow(page).getByText("enabled")).toBeVisible();
   });
 
   test("disable gate → badge changes to disabled, button changes to Enable", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
     await gRow(page)
-      .getByRole("button", { name: /^disable$/i })
+      .getByRole("button", { name: /^disable gate$/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
     await expect(gRow(page).getByText("disabled")).toBeVisible();
-    await expect(gRow(page).getByRole("button", { name: /^enable$/i })).toBeVisible();
+    await expect(gRow(page).getByRole("button", { name: /^enable gate$/i })).toBeVisible();
   });
 
   test("enable gate → badge changes back to enabled", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
     await gRow(page)
-      .getByRole("button", { name: /^enable$/i })
+      .getByRole("button", { name: /^enable gate$/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
@@ -251,12 +264,20 @@ test.describe("Feature Gates CRUD", () => {
 
   test("delete gate → removed from list", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
+    // Open the per-row dropdown menu, click "Delete gate", confirm in dialog.
     await gRow(page)
-      .getByRole("button", { name: /^delete$/i })
+      .getByRole("button", { name: new RegExp(`Actions for ${gKey}`, "i") })
+      .click();
+    await page.getByRole("menuitem", { name: /^delete gate$/i }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^delete gate$/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
-    await expect(page.getByText(gKey, { exact: true })).not.toBeVisible();
+    // Scope to the gates list link so the closing dialog's name copy doesn't
+    // shadow the assertion.
+    await expect(page.locator("main").getByRole("link", { name: gKey })).toHaveCount(0);
   });
 });
 
@@ -265,7 +286,7 @@ test.describe("Feature Gates CRUD", () => {
 test.describe("Configs CRUD", () => {
   test.describe.configure({ mode: "serial" });
 
-  const cKey = `e2ecfg${RUN}`;
+  const cKey = `e2ecfg.k${RUN}`;
   // Configs: span is a direct child of the justify-between row div (1 level up)
   const cRow = (page: Page) => page.getByText(cKey, { exact: true }).locator("..");
 
@@ -285,12 +306,13 @@ test.describe("Configs CRUD", () => {
   });
 
   test("delete config → removed from list", async ({ page }) => {
+    // /configs/values redirects to the editor for the only existing config.
+    // Editor uses a two-step inline confirm: first click reveals "Confirm delete".
     await page.goto("/dashboard/e2e-project-id/configs/values");
-    await cRow(page)
-      .getByRole("button", { name: /^delete$/i })
-      .click();
+    await page.getByRole("button", { name: /delete config/i }).click();
+    await page.getByRole("button", { name: /confirm delete/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
     await expect(page.getByText(cKey, { exact: true })).not.toBeVisible();
   });
 });
@@ -399,8 +421,12 @@ test.describe("Experiments CRUD", () => {
 
   test("create experiment draft → appears in list with draft badge", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page.locator("#exp-key").fill(expKey);
-    await page.getByRole("button", { name: /^save draft$/i }).click();
+    // The new wizard uses #exp-name and a 4-step Continue/Create flow.
+    await page.locator("#exp-name").fill(expKey);
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^create experiment$/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
     await expect(expRow(page).getByText(/^draft$/i)).toBeVisible();
@@ -409,7 +435,7 @@ test.describe("Experiments CRUD", () => {
   test("start experiment → status changes to running", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments");
     await expRow(page)
-      .getByRole("button", { name: /^start$/i })
+      .getByRole("button", { name: /start experiment/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
@@ -419,7 +445,7 @@ test.describe("Experiments CRUD", () => {
   test("stop experiment → status changes to stopped", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments");
     await expRow(page)
-      .getByRole("button", { name: /^stop$/i })
+      .getByRole("button", { name: /stop experiment/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
@@ -429,7 +455,7 @@ test.describe("Experiments CRUD", () => {
   test("delete stopped experiment → removed from list", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments");
     await expRow(page)
-      .getByRole("button", { name: /^delete$/i })
+      .getByRole("button", { name: /delete experiment/i })
       .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
@@ -456,10 +482,10 @@ test.describe("Settings CRUD", () => {
 
   test("restore original project name", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/settings");
-    await page.locator("#project-name").fill("E2E Test Project");
+    await page.locator("#project-name").fill("Default project");
     await page.getByRole("button", { name: /^save$/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/settings$/);
-    await expect(page.locator("#project-name")).toHaveValue("E2E Test Project");
+    await expect(page.locator("#project-name")).toHaveValue("Default project");
   });
 });
