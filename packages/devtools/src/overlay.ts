@@ -11,7 +11,7 @@ import {
   clearI18nLabelOverridesSilently,
   getI18nProfileOverride,
 } from "./overrides";
-import { DevtoolsApi } from "./api";
+import { DevtoolsApi, DEVTOOLS_UNAUTHED_EVENT } from "./api";
 import { renderUserPanel, type UserPanelState } from "./panels/user";
 import { renderGatesPanel } from "./panels/gates";
 import { renderExperimentsPanel } from "./panels/experiments";
@@ -1254,10 +1254,26 @@ export function createOverlay(opts: Required<DevtoolsOptions>): { destroy: () =>
   const onStateUpdate = () => renderTabBody();
   window.addEventListener("se:state:update", onStateUpdate);
 
+  // Any admin request that returns 401 fires this event (see api.ts). The
+  // cached admin SDK key in sessionStorage is stale (revoked, expired, or KV
+  // miss), so drop it and rerender — the unauthed shell prompts the user to
+  // reconnect instead of leaving "Failed to load …" errors in the panels.
+  const onUnauthed = () => {
+    if (!session) return;
+    clearSession();
+    saveCachedProject(null);
+    session = null;
+    project = null;
+    api = null;
+    render();
+  };
+  window.addEventListener(DEVTOOLS_UNAUTHED_EVENT, onUnauthed);
+
   return {
     destroy() {
       window.removeEventListener("resize", onWinResize);
       window.removeEventListener("se:state:update", onStateUpdate);
+      window.removeEventListener(DEVTOOLS_UNAUTHED_EVENT, onUnauthed);
       unsubControls();
       mo.disconnect();
       host.remove();

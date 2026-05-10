@@ -17,6 +17,20 @@ import type {
 } from "./types";
 import { PERMISSIVE_CONFIG_SCHEMA } from "./types";
 
+/** Event name dispatched on `window` when any admin request returns 401, so
+ *  the overlay can drop the cached session and reopen the connect screen. */
+export const DEVTOOLS_UNAUTHED_EVENT = "se:devtools-unauthed";
+
+/** Thrown when an admin request returns 401. Distinct from generic `Error`
+ *  so callers (and the overlay) can branch on it without string-matching. */
+export class AuthError extends Error {
+  readonly status = 401;
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
 export class DevtoolsApi {
   // Per-instance memo cache keyed by `${method}:${args}`. List endpoints in
   // the devtools overlay rarely change between tab switches, so caching the
@@ -51,6 +65,37 @@ export class DevtoolsApi {
    *  hits the panel's refresh button. */
   invalidate(): void {
     this.cache.clear();
+  }
+
+  /** Read the response error body for diagnostics. Tries JSON first, then
+   *  raw text. Best-effort; never throws. */
+  private async readErrorDetail(res: Response): Promise<string> {
+    try {
+      const body = (await res.json()) as { error?: string; detail?: string };
+      return body.detail ?? body.error ?? "";
+    } catch {
+      try {
+        return (await res.text()).slice(0, 200);
+      } catch {
+        return "";
+      }
+    }
+  }
+
+  /** Build the error to throw for a non-2xx admin response. 401 produces an
+   *  `AuthError` and dispatches `DEVTOOLS_UNAUTHED_EVENT` so the overlay can
+   *  drop the stale session and reopen the connect screen instead of leaving
+   *  the user staring at a red "Failed to load …" message. */
+  private async errorForResponse(path: string, res: Response): Promise<Error> {
+    const detail = await this.readErrorDetail(res);
+    const message = `${path} → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`;
+    if (res.status === 401) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(DEVTOOLS_UNAUTHED_EVENT));
+      }
+      return new AuthError(message);
+    }
+    return new Error(message);
   }
 
   project(): Promise<ProjectRecord> {
@@ -93,18 +138,7 @@ export class DevtoolsApi {
     if (!res.ok) {
       // Surface the server's detail field (http.ts errorResponse puts the real
       // exception message here) so users don't just see "HTTP 500" with no clue.
-      let detail = "";
-      try {
-        const body = (await res.json()) as { error?: string; detail?: string };
-        detail = body.detail ?? body.error ?? "";
-      } catch {
-        try {
-          detail = (await res.text()).slice(0, 200);
-        } catch {
-          /* ignore */
-        }
-      }
-      throw new Error(`${path} → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
+      throw await this.errorForResponse(path, res);
     }
     const body = await res.json();
     return (Array.isArray(body) ? body : ((body as { data: T }).data ?? body)) as T;
@@ -124,7 +158,7 @@ export class DevtoolsApi {
       const res = await fetch(`${this.adminUrl}${basePath}${q}`, {
         headers: { Authorization: `Bearer ${this.token}` },
       });
-      if (!res.ok) throw new Error(`${basePath} → HTTP ${res.status}`);
+      if (!res.ok) throw await this.errorForResponse(basePath, res);
       const body = (await res.json()) as T[] | { data: T[]; next_cursor: string | null };
       if (Array.isArray(body)) return body;
       out.push(...body.data);
@@ -209,20 +243,7 @@ export class DevtoolsApi {
       },
       body: JSON.stringify(body),
     });
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const json = (await res.json()) as { error?: string; detail?: string };
-        detail = json.detail ?? json.error ?? "";
-      } catch {
-        try {
-          detail = (await res.text()).slice(0, 200);
-        } catch {
-          /* ignore */
-        }
-      }
-      throw new Error(`${path} → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
-    }
+    if (!res.ok) throw await this.errorForResponse(path, res);
     return (await res.json()) as T;
   }
 
@@ -235,20 +256,7 @@ export class DevtoolsApi {
       },
       body: JSON.stringify(body),
     });
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const json = (await res.json()) as { error?: string; detail?: string };
-        detail = json.detail ?? json.error ?? "";
-      } catch {
-        try {
-          detail = (await res.text()).slice(0, 200);
-        } catch {
-          /* ignore */
-        }
-      }
-      throw new Error(`${path} → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
-    }
+    if (!res.ok) throw await this.errorForResponse(path, res);
     return (await res.json()) as T;
   }
 
@@ -287,13 +295,11 @@ export class DevtoolsApi {
    * the Authorization header — we materialize an object URL on the consumer
    * side and revoke it after preview. */
   async attachmentBlob(id: string): Promise<Blob> {
-    const res = await fetch(
-      `${this.adminUrl}/api/admin/reports/attachments/${encodeURIComponent(id)}`,
-      { headers: { Authorization: `Bearer ${this.token}` } },
-    );
-    if (!res.ok) {
-      throw new Error(`attachment ${id} → HTTP ${res.status}`);
-    }
+    const path = `/api/admin/reports/attachments/${encodeURIComponent(id)}`;
+    const res = await fetch(`${this.adminUrl}${path}`, {
+      headers: { Authorization: `Bearer ${this.token}` },
+    });
+    if (!res.ok) throw await this.errorForResponse(path, res);
     return res.blob();
   }
 
@@ -310,21 +316,13 @@ export class DevtoolsApi {
     fd.append("kind", args.kind);
     fd.append("filename", args.filename);
     fd.append("file", args.blob, args.filename);
-    const res = await fetch(`${this.adminUrl}/api/admin/reports/attachments`, {
+    const path = "/api/admin/reports/attachments";
+    const res = await fetch(`${this.adminUrl}${path}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${this.token}` },
       body: fd,
     });
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const json = (await res.json()) as { error?: string };
-        detail = json.error ?? "";
-      } catch {
-        /* ignore */
-      }
-      throw new Error(`upload failed → HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
-    }
+    if (!res.ok) throw await this.errorForResponse(path, res);
     return (await res.json()) as AttachmentUploadResult;
   }
 
