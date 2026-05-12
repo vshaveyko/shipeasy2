@@ -10,6 +10,10 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildOpenApi } from "../src/openapi/index.js";
 import { gatesResource } from "../src/resources/gates.js";
+import { configsResource } from "../src/resources/configs.js";
+import { experimentsResource } from "../src/resources/experiments.js";
+import { universesResource } from "../src/resources/universes.js";
+import { killswitchesResource } from "../src/resources/killswitches.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,7 +32,13 @@ const doc = buildOpenApi({
     { url: "https://shipeasy.ai", description: "Production" },
     { url: "http://localhost:3000", description: "Local Next.js dev server" },
   ],
-  resources: [gatesResource],
+  resources: [
+    gatesResource,
+    experimentsResource,
+    configsResource,
+    killswitchesResource,
+    universesResource,
+  ],
 });
 
 writeFileSync(OUT, `${JSON.stringify(doc, null, 2)}\n`);
