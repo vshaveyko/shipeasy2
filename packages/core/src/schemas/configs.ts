@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONFIG_ENVS, CONFIG_KINDS } from "../db/schema.js";
+import { CONFIG_ENVS, CONFIG_KINDS } from "../db/schema";
 
 const SEGMENT = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
 // `_default` is the reserved folder for legacy single-segment names.

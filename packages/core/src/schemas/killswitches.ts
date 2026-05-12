@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { configEnvSchema, configNameSchema } from "./configs.js";
+import { configEnvSchema, configNameSchema } from "./configs";
 
 /** A switch key is a single lowercase segment (no dots). */
 export const switchKeySchema = z

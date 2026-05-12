@@ -60,6 +60,12 @@ export async function createGate(identity: AdminIdentity, input: unknown) {
       rolloutPct: parsed.rollout_pct,
       salt,
       enabled: 1,
+      title: parsed.title ?? null,
+      description: parsed.description ?? null,
+      folder: parsed.folder ?? null,
+      groupName: parsed.group ?? null,
+      ownerEmail: parsed.owner_email ?? null,
+      stack: parsed.stack ?? null,
       updatedAt: new Date().toISOString(),
     });
   } catch (err) {
