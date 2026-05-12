@@ -4,10 +4,12 @@ import { Terminal } from "lucide-react";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Logo } from "@shipeasy/shared/Logo";
 import { listAccessibleProjects } from "@shipeasy/core";
 import { getEnvAsync } from "@/lib/env";
-import { approveCliAuthAction } from "./actions";
+import { approveCliAuthAction, createAndApproveCliAuthAction } from "./actions";
 
 interface Props {
   searchParams: Promise<{ state?: string; code_challenge?: string }>;
@@ -21,7 +23,7 @@ export default async function CliAuthPage({ searchParams }: Props) {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-6 text-center">
           <p className="text-muted-foreground text-sm">
-            Invalid link. Run <code className="font-mono">shipeasy auth login</code> again.
+            Invalid link. Run <code className="font-mono">shipeasy login</code> again.
           </p>
         </div>
       </div>
@@ -73,15 +75,15 @@ export default async function CliAuthPage({ searchParams }: Props) {
             <CardTitle>Authorize CLI access</CardTitle>
             <CardDescription>
               The ShipEasy CLI is requesting access as <strong>{email}</strong>. Pick the project
-              this CLI session should bind to.
+              this CLI session should bind to, or create a new one.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {hasProjects ? (
-              <form action={approveCliAuthAction} className="space-y-4">
+          <CardContent className="space-y-6">
+            {hasProjects && (
+              <form action={approveCliAuthAction} className="space-y-3">
                 <input type="hidden" name="state" value={state} />
                 <fieldset className="space-y-2">
-                  <legend className="sr-only">Select a project</legend>
+                  <legend className="text-sm font-medium">Use an existing project</legend>
                   {projects.map((p) => (
                     <label
                       key={p.id}
@@ -107,18 +109,68 @@ export default async function CliAuthPage({ searchParams }: Props) {
                   ))}
                 </fieldset>
                 <Button className="w-full" type="submit">
-                  Approve access
+                  Authorize with selected project
                 </Button>
               </form>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground">
-                You don&apos;t own any projects yet. Create one in the{" "}
-                <Link href="/dashboard" className="underline hover:text-foreground">
-                  dashboard
-                </Link>{" "}
-                first, then re-run <code className="font-mono">shipeasy login</code>.
-              </p>
             )}
+
+            {hasProjects && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center" aria-hidden>
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+            )}
+
+            <form action={createAndApproveCliAuthAction} className="space-y-3">
+              <input type="hidden" name="state" value={state} />
+              <fieldset className="space-y-3">
+                <legend className="text-sm font-medium">Create a new project</legend>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cli-new-domain">Production domain</Label>
+                  <Input
+                    id="cli-new-domain"
+                    name="domain"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="acme.com"
+                    required
+                    minLength={3}
+                    maxLength={253}
+                    pattern="^(?!localhost$)[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
+                    title="Use the production hostname (e.g. acme.com), not localhost."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use the hostname your app runs on in production. Re-running login with the same
+                    domain re-uses the existing project.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cli-new-name">
+                    Project name <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="cli-new-name"
+                    name="name"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Defaults to the domain"
+                    maxLength={100}
+                  />
+                </div>
+              </fieldset>
+              <Button
+                className="w-full"
+                type="submit"
+                variant={hasProjects ? "outline" : "default"}
+              >
+                Create project and authorize
+              </Button>
+            </form>
+
             <p className="text-center text-xs text-muted-foreground">
               Not you?{" "}
               <Link href="/auth/signin" className="underline hover:text-foreground">

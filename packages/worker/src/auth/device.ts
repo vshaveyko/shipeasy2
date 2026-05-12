@@ -127,10 +127,26 @@ export async function deviceComplete(c: DeviceContext) {
     })
     .where(eq(cliAuthSessions.state, body.state));
 
+  // Look up the project's display name so the CLI can use it when it
+  // auto-writes .shipeasy after login. Best-effort: if the lookup fails
+  // we still complete auth — the CLI will bind without a name.
+  let projectName: string | undefined;
+  try {
+    const { findProjectById } = await import("@shipeasy/core");
+    const project = await findProjectById(c.env.DB, body.project_id);
+    if (project?.name) projectName = project.name;
+  } catch {
+    // ignore — auto-bind will fall back to project_id without a name
+  }
+
   if (c.env.CLI_TOKEN_KV) {
     await c.env.CLI_TOKEN_KV.put(
       `cli_token:${body.state}`,
-      JSON.stringify({ token: rawToken, project_id: body.project_id }),
+      JSON.stringify({
+        token: rawToken,
+        project_id: body.project_id,
+        project_name: projectName,
+      }),
       { expirationTtl: TOKEN_TTL_SECONDS },
     );
   }
@@ -176,6 +192,14 @@ export async function devicePoll(c: DeviceContext) {
   if (!payload) return c.text("Token already retrieved or expired", 410);
   await c.env.CLI_TOKEN_KV.delete(`cli_token:${state}`);
 
-  const parsed = JSON.parse(payload) as { token: string; project_id: string };
-  return c.json({ token: parsed.token, project_id: parsed.project_id });
+  const parsed = JSON.parse(payload) as {
+    token: string;
+    project_id: string;
+    project_name?: string;
+  };
+  return c.json({
+    token: parsed.token,
+    project_id: parsed.project_id,
+    ...(parsed.project_name ? { project_name: parsed.project_name } : {}),
+  });
 }
