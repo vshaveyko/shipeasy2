@@ -5,11 +5,11 @@ independent feature plugins. Install any combination — `base` first.
 
 ```bash
 claude plugin marketplace add shipeasy-ai/shipeasy
-claude plugin install shipeasy@base                       # required first
-claude plugin install shipeasy@experiments-metrics        # A/B tests + custom metrics
-claude plugin install shipeasy@configs-gates              # feature gates + dynamic configs + kill switches
-claude plugin install shipeasy@polylang                   # translations (i18n keys + CDN-served labels)
-claude plugin install shipeasy@bugs                       # in-app bug reports + feature requests
+claude plugin install base@shipeasy                       # required first
+claude plugin install experiments-metrics@shipeasy        # A/B tests + custom metrics
+claude plugin install configs-gates@shipeasy              # feature gates + dynamic configs + kill switches
+claude plugin install polylang@shipeasy                   # translations (i18n keys + CDN-served labels)
+claude plugin install bugs@shipeasy                       # in-app bug reports + feature requests
 ```
 
 After each plugin installs, Claude Code picks up its skills + slash
@@ -18,11 +18,11 @@ actual wiring (SDK install for `base`, module enable for the rest):
 
 | After installing               | Run                           | What it does                                                              |
 | ------------------------------ | ----------------------------- | ------------------------------------------------------------------------- |
-| `shipeasy@base`                | `/shipeasy-setup`             | SDK install, auth, project bind, keys, root-layout init, MCP registration |
-| `shipeasy@experiments-metrics` | `/shipeasy-experiments-setup` | Enable `experiments` module; smoke-test `experiments.assign(...)`         |
-| `shipeasy@configs-gates`       | `/shipeasy-flags-setup`       | Enable `gates` + `configs` modules; smoke-test `gates.check(...)`         |
-| `shipeasy@polylang`            | `/shipeasy-polylang-setup`    | Enable `translations` module, create `en:prod` profile, push a smoke key  |
-| `shipeasy@bugs`                | `/shipeasy-bugs-setup`        | Enable `feedback` module; verify the devtools overlay loads               |
+| `base@shipeasy`                | `/shipeasy-setup`             | SDK install, auth, project bind, keys, root-layout init, MCP registration |
+| `experiments-metrics@shipeasy` | `/shipeasy-experiments-setup` | Enable `experiments` module; smoke-test `experiments.assign(...)`         |
+| `configs-gates@shipeasy`       | `/shipeasy-flags-setup`       | Enable `gates` + `configs` modules; smoke-test `gates.check(...)`         |
+| `polylang@shipeasy`            | `/shipeasy-polylang-setup`    | Enable `translations` module, create `en:prod` profile, push a smoke key  |
+| `bugs@shipeasy`                | `/shipeasy-bugs-setup`        | Enable `feedback` module; verify the devtools overlay loads               |
 
 The marketplace source lives at [`marketplace/`](./marketplace/) in this
 repo and is mirrored to the public repo `shipeasy-ai/shipeasy`. The
@@ -47,10 +47,10 @@ in-flight install or debugging a step.
 
 | Plugin                         | Module flipped on  | Skills installed       | Slash commands                                                                 |
 | ------------------------------ | ------------------ | ---------------------- | ------------------------------------------------------------------------------ |
-| `shipeasy@experiments-metrics` | `experiments`      | `shipeasy-experiments` | `/shipeasy-experiments-setup`, `/shipeasy-experiment`                          |
-| `shipeasy@configs-gates`       | `gates`, `configs` | `shipeasy-flags`       | `/shipeasy-flags-setup`, `/shipeasy-flag`                                      |
-| `shipeasy@polylang`            | `translations`     | `shipeasy-i18n`        | `/shipeasy-polylang-setup`, `/shipeasy-i18n-extract`, `/shipeasy-i18n-migrate` |
-| `shipeasy@bugs`                | `feedback`         | `shipeasy-bugs`        | `/shipeasy-bugs-setup`, `/shipeasy-bug`                                        |
+| `experiments-metrics@shipeasy` | `experiments`      | `shipeasy-experiments` | `/shipeasy-experiments-setup`, `/shipeasy-experiment`                          |
+| `configs-gates@shipeasy`       | `gates`, `configs` | `shipeasy-flags`       | `/shipeasy-flags-setup`, `/shipeasy-flag`                                      |
+| `polylang@shipeasy`            | `translations`     | `shipeasy-i18n`        | `/shipeasy-polylang-setup`, `/shipeasy-i18n-extract`, `/shipeasy-i18n-migrate` |
+| `bugs@shipeasy`                | `feedback`         | `shipeasy-bugs`        | `/shipeasy-bugs-setup`, `/shipeasy-bug`                                        |
 
 Modules are per-project flags toggled with
 `shipeasy modules {enable,disable,list} <name>`. They're independent —
@@ -87,7 +87,7 @@ git rev-parse --show-toplevel    # must be inside a repo
 - `403 module not enabled` → run the matching plugin's `*-setup` slash
   command (or `shipeasy modules enable <name>` directly).
 - A feature plugin's setup refuses to run because base is missing → run
-  `claude plugin install shipeasy@base` + `/shipeasy-setup` first.
+  `claude plugin install base@shipeasy` + `/shipeasy-setup` first.
 
 Every skill self-heals once, then escalates to the user. If you hit a
 step twice in a row, stop and ask.

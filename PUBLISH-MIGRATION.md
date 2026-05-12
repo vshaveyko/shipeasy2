@@ -249,7 +249,7 @@ Commit: `chore: migrate cli/mcp/openapi to submodules; drop marketplace from mon
 ```bash
 # As a Claude Code user:
 claude plugin marketplace add shipeasy-ai/shipeasy
-claude plugin install shipeasy@base
+claude plugin install base@shipeasy
 # … then any feature plugins.
 ```
 
