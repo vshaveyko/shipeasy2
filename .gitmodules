@@ -22,3 +22,12 @@
 [submodule "packages/server-sdks/sdk-ruby"]
 	path = packages/server-sdks/sdk-ruby
 	url = https://github.com/shipeasy-ai/sdk-ruby.git
+[submodule "packages/cli"]
+	path = packages/cli
+	url = https://github.com/shipeasy-ai/cli.git
+[submodule "packages/mcp"]
+	path = packages/mcp
+	url = https://github.com/shipeasy-ai/mcp.git
+[submodule "packages/openapi"]
+	path = packages/openapi
+	url = https://github.com/shipeasy-ai/openapi.git
