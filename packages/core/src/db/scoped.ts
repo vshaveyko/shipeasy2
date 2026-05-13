@@ -232,6 +232,29 @@ export async function hasProjectAccess(
 }
 
 /**
+ * Returns projects accessible to BOTH emails — the intersection of each
+ * user's accessible set (owned + active/pending membership). Used to show
+ * "projects in common" on the team page.
+ */
+export async function listSharedProjects(
+  d1: D1Database,
+  emailA: string,
+  emailB: string,
+): Promise<Array<{ id: string; name: string; domain: string | null }>> {
+  const a = emailA.trim().toLowerCase();
+  const b = emailB.trim().toLowerCase();
+  if (!a || !b) return [];
+  const [forA, forB] = await Promise.all([
+    listAccessibleProjects(d1, a),
+    listAccessibleProjects(d1, b),
+  ]);
+  const bIds = new Set(forB.map((p) => p.id));
+  return forA
+    .filter((p) => bIds.has(p.id))
+    .map((p) => ({ id: p.id, name: p.name, domain: p.domain }));
+}
+
+/**
  * Marks all `pending` invitations addressed to this email as `active`. Called
  * on sign-in so users actually become members of the projects they were
  * invited to without needing a separate accept-invite UI.

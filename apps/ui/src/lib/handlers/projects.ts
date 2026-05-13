@@ -19,6 +19,7 @@ import {
   projects as projectsTable,
   projectMembers,
   sdkKeys,
+  type ProjectMemberRole,
 } from "@shipeasy/core/db/schema";
 import {
   projectDomainSchema,
@@ -190,6 +191,104 @@ export async function deleteProject(identity: AdminIdentity, id: string) {
   await db.delete(projectsTable).where(eq(projectsTable.id, id));
 
   return { ok: true, name: project.name, domain: project.domain };
+}
+
+/**
+ * Transfer project ownership to an existing active member. The old owner is
+ * inserted into `project_members` as an `admin` (active), so they keep access
+ * until explicitly removed by the new owner. KV blobs and project-scoped
+ * resources are owner-agnostic (scoped only by `project_id`), so no rebuild
+ * or data migration is needed.
+ */
+const TRANSFER_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function transferOwnership(
+  identity: AdminIdentity,
+  id: string,
+  input: { targetEmail: string; confirmName: string },
+) {
+  if (id !== identity.projectId) throw new ApiError("Forbidden", 403);
+  const env = await getEnvAsync();
+  const db = getDb(env.DB);
+
+  const project = await findProjectById(env.DB, id);
+  if (!project) throw new ApiError("Project not found", 404);
+
+  const oldOwner = project.ownerEmail.trim().toLowerCase();
+  const actor = identity.actorEmail.trim().toLowerCase();
+  if (oldOwner !== actor) {
+    throw new ApiError("Only the current owner can transfer this project", 403);
+  }
+
+  const targetRaw = typeof input.targetEmail === "string" ? input.targetEmail : "";
+  const newOwner = targetRaw.trim().toLowerCase();
+  if (!newOwner || !TRANSFER_EMAIL_RE.test(newOwner)) {
+    throw new ApiError("Invalid target email", 400);
+  }
+  if (newOwner === oldOwner) {
+    throw new ApiError("Target is already the owner", 400);
+  }
+
+  const confirmName = typeof input.confirmName === "string" ? input.confirmName.trim() : "";
+  if (confirmName !== project.name) {
+    throw new ApiError(`Type the project name "${project.name}" to confirm`, 400);
+  }
+
+  // Target must already be an active member — keeps ownership from landing on
+  // someone who hasn't accepted access. Pending invites are not eligible.
+  const targetRows = await db
+    .select()
+    .from(projectMembers)
+    .where(and(eq(projectMembers.projectId, id), eq(projectMembers.email, newOwner))!)
+    .limit(1);
+  const targetRow = targetRows[0];
+  if (!targetRow || targetRow.status !== "active") {
+    throw new ApiError(
+      "Target must already be an active member of this project. Invite and have them accept first.",
+      400,
+    );
+  }
+
+  // (owner_email, domain) is unique — refuse if the new owner already owns
+  // another project on the same domain.
+  if (project.domain) {
+    const collision = await findProjectByOwnerAndDomain(env.DB, newOwner, project.domain);
+    if (collision && collision.id !== id) {
+      throw new ApiError(`${newOwner} already owns a project on domain "${project.domain}"`, 409);
+    }
+  }
+
+  const now = new Date().toISOString();
+  const oldOwnerMemberId = crypto.randomUUID();
+  const role: ProjectMemberRole = "admin";
+
+  // Atomic flip via D1 batch: drop target's member row, drop any stale old-owner
+  // row, insert old owner as admin member, update project.ownerEmail.
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM project_members WHERE project_id = ? AND email = ?").bind(
+      id,
+      newOwner,
+    ),
+    env.DB.prepare("DELETE FROM project_members WHERE project_id = ? AND email = ?").bind(
+      id,
+      oldOwner,
+    ),
+    env.DB.prepare(
+      "INSERT INTO project_members (id, project_id, email, role, status, invited_by_email, invited_at, accepted_at) VALUES (?, ?, ?, ?, 'active', ?, ?, ?)",
+    ).bind(oldOwnerMemberId, id, oldOwner, role, newOwner, now, now),
+    env.DB.prepare("UPDATE projects SET owner_email = ?, updated_at = ? WHERE id = ?").bind(
+      newOwner,
+      now,
+      id,
+    ),
+  ]);
+
+  await writeAudit(identity, "project.transfer_ownership", "project", id, {
+    from: oldOwner,
+    to: newOwner,
+  });
+
+  return { ok: true, from: oldOwner, to: newOwner, projectId: id };
 }
 
 export async function getStorage(identity: AdminIdentity, id: string) {

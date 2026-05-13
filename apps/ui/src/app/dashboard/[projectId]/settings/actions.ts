@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
-import { updateProject } from "@/lib/handlers/projects";
+import { transferOwnership, updateProject } from "@/lib/handlers/projects";
 import { ok, fail } from "@/lib/action-result";
 
 export async function updateProjectAction(formData: FormData) {
@@ -15,5 +15,22 @@ export async function updateProjectAction(formData: FormData) {
     return ok("Settings saved");
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Failed to save settings");
+  }
+}
+
+export async function transferOwnershipAction(formData: FormData) {
+  try {
+    const identity = await getIdentity();
+    const targetEmail = (formData.get("targetEmail") as string | null) ?? "";
+    const confirmName = (formData.get("confirmName") as string | null) ?? "";
+    const result = await transferOwnership(identity, identity.projectId, {
+      targetEmail,
+      confirmName,
+    });
+    revalidatePath("/dashboard/[projectId]/settings", "page");
+    revalidatePath("/dashboard/team");
+    return ok(`Project transferred to ${result.to}`);
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Failed to transfer project");
   }
 }

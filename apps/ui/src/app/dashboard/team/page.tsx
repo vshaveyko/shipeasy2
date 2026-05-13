@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 
 export const metadata: Metadata = { title: "Team" };
 import { listMembers } from "@/lib/handlers/members";
+import { listAccessibleProjects } from "@shipeasy/core";
+import { getEnv } from "@/lib/env";
 import { loadProject } from "@/lib/project";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
@@ -90,10 +92,41 @@ export default async function TeamPage() {
 
   let project: Awaited<ReturnType<typeof loadProject>> | null = null;
   let members: Awaited<ReturnType<typeof listMembers>> = [];
+  let viewerProjects: Awaited<ReturnType<typeof listAccessibleProjects>> = [];
   try {
-    [project, members] = await Promise.all([loadProject(projectId), listMembers(identity)]);
+    const env = getEnv();
+    [project, members, viewerProjects] = await Promise.all([
+      loadProject(projectId),
+      listMembers(identity),
+      listAccessibleProjects(env.DB, sessionEmail),
+    ]);
   } catch {
     // DB unavailable in dev — fall through with empty list
+  }
+
+  // Build "projects in common" map per row email: intersect each member's
+  // accessible projects with the viewer's. Done in a single fan-out so the
+  // page renders one round of D1 queries instead of one per row.
+  const viewerProjectIds = new Set(viewerProjects.map((p) => p.id));
+  const rowEmails = [...members.map((m) => m.email)];
+  if (project?.ownerEmail) rowEmails.push(project.ownerEmail);
+  const otherEmails = Array.from(
+    new Set(rowEmails.map((e) => e.toLowerCase()).filter((e) => e && e !== sessionEmail)),
+  );
+  const sharedByEmail = new Map<string, Array<{ id: string; name: string }>>();
+  try {
+    const env = getEnv();
+    const results = await Promise.all(
+      otherEmails.map((e) => listAccessibleProjects(env.DB, e).then((rows) => [e, rows] as const)),
+    );
+    for (const [email, rows] of results) {
+      const shared = rows
+        .filter((p) => viewerProjectIds.has(p.id))
+        .map((p) => ({ id: p.id, name: p.name }));
+      sharedByEmail.set(email, shared);
+    }
+  } catch {
+    // DB unavailable — leave map empty
   }
 
   const ownerEmail = (project?.ownerEmail ?? sessionEmail).toLowerCase();
@@ -108,6 +141,13 @@ export default async function TeamPage() {
     last: string;
     you: boolean;
     color: string;
+    shared: Array<{ id: string; name: string }>;
+  };
+
+  const sharedFor = (email: string): Array<{ id: string; name: string }> => {
+    const key = email.toLowerCase();
+    if (key === sessionEmail) return [];
+    return sharedByEmail.get(key) ?? [];
   };
 
   const rows: RowMember[] = [];
@@ -120,6 +160,7 @@ export default async function TeamPage() {
     last: ownerEmail === sessionEmail ? "Just now" : "—",
     you: ownerEmail === sessionEmail,
     color: colorFor(ownerEmail),
+    shared: sharedFor(ownerEmail),
   });
   for (const m of members) {
     rows.push({
@@ -131,6 +172,7 @@ export default async function TeamPage() {
       last: timeAgo(m.acceptedAt ?? m.invitedAt),
       you: m.email.toLowerCase() === sessionEmail,
       color: colorFor(m.email),
+      shared: sharedFor(m.email),
     });
   }
 
@@ -208,7 +250,9 @@ export default async function TeamPage() {
             <div
               key={m.id ?? `owner-${m.email}`}
               className="grid items-center gap-3.5 border-b border-[var(--se-line)] px-4 py-3 last:border-0"
-              style={{ gridTemplateColumns: "36px minmax(0,1fr) 140px 110px 130px 32px" }}
+              style={{
+                gridTemplateColumns: "36px minmax(0,1fr) 140px 110px 130px 200px 32px",
+              }}
             >
               {m.status === "pending" ? (
                 <div
@@ -250,6 +294,7 @@ export default async function TeamPage() {
                   ACTIVE
                 </span>
               )}
+              <SharedProjects you={m.you} shared={m.shared} />
               <div className="flex justify-end">
                 {m.status === "owner" || m.you || !m.id || !isOwner ? (
                   <span aria-hidden />
@@ -315,4 +360,43 @@ function RoleStat({ label, v }: { label: string; v: number }) {
 
 function Divider() {
   return <div className="h-8 w-px bg-[var(--se-line)]" aria-hidden />;
+}
+
+function SharedProjects({
+  you,
+  shared,
+}: {
+  you: boolean;
+  shared: Array<{ id: string; name: string }>;
+}) {
+  if (you) {
+    return <span className="text-[12px] text-[var(--se-fg-3)]">—</span>;
+  }
+  if (shared.length === 0) {
+    return (
+      <span className="text-[12px] text-[var(--se-fg-3)]" title="No other shared projects">
+        —
+      </span>
+    );
+  }
+  const visible = shared.slice(0, 2);
+  const extra = shared.length - visible.length;
+  const fullList = shared.map((p) => p.name).join(", ");
+  return (
+    <div className="flex min-w-0 flex-wrap gap-1" title={fullList}>
+      {visible.map((p) => (
+        <span
+          key={p.id}
+          className="truncate rounded-[var(--radius-sm)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-1.5 py-0.5 font-mono text-[10.5px] text-[var(--se-fg-2)]"
+        >
+          {p.name}
+        </span>
+      ))}
+      {extra > 0 ? (
+        <span className="rounded-[var(--radius-sm)] bg-[var(--se-bg-3)] px-1.5 py-0.5 font-mono text-[10.5px] text-[var(--se-fg-3)]">
+          +{extra}
+        </span>
+      ) : null}
+    </div>
+  );
 }

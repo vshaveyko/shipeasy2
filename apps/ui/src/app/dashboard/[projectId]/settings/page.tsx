@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { auth, signOut } from "@/auth";
 import { getProject } from "@/lib/handlers/projects";
+import { listMembers } from "@/lib/handlers/members";
 import { getEffectivePlan } from "@shipeasy/core";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -10,26 +11,39 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProjectSettingsForm } from "./project-settings-form";
+import { TransferOwnershipForm } from "./transfer-ownership-form";
 
 type Project = Awaited<ReturnType<typeof getProject>>;
 
 export default async function SettingsPage() {
   const session = await auth();
   const projectId = session?.user?.project_id;
+  const sessionEmail = (session?.user?.email ?? "").toLowerCase();
 
   let project: Project | null = null;
+  let members: Awaited<ReturnType<typeof listMembers>> = [];
   if (projectId) {
+    const identity = {
+      projectId,
+      actorEmail: session?.user?.email ?? "unknown",
+      source: "jwt" as const,
+    };
     try {
-      project = await getProject(
-        { projectId, actorEmail: session?.user?.email ?? "unknown", source: "jwt" },
-        projectId,
-      );
+      [project, members] = await Promise.all([
+        getProject(identity, projectId),
+        listMembers(identity),
+      ]);
     } catch {
       // DB not available in dev without wrangler
     }
   }
 
   const plan = project ? getEffectivePlan(project) : null;
+  const ownerEmail = (project?.ownerEmail ?? "").toLowerCase();
+  const isOwner = !!ownerEmail && ownerEmail === sessionEmail;
+  const transferTargets = members
+    .filter((m) => m.status === "active" && m.email.toLowerCase() !== ownerEmail)
+    .map((m) => ({ email: m.email, role: m.role }));
 
   return (
     <Page>
@@ -87,6 +101,31 @@ export default async function SettingsPage() {
             </a>
           </CardContent>
         </Card>
+
+        {project && (
+          <Card className="border-[var(--se-danger)]/30">
+            <CardHeader className="border-b border-[var(--se-danger)]/30 pb-4">
+              <CardTitle className="text-[var(--se-danger)]">Danger zone</CardTitle>
+              <CardDescription>
+                Irreversible actions. The new owner inherits billing and member management.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-4">
+              <div className="flex flex-col gap-1">
+                <div className="text-sm font-medium">Transfer ownership</div>
+                <p className="text-xs text-muted-foreground">
+                  Hand this project to another active team member. You stay on as an admin member
+                  until they remove you.
+                </p>
+              </div>
+              <TransferOwnershipForm
+                projectName={project.name}
+                isOwner={isOwner}
+                targets={transferTargets}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="border-b pb-4">
