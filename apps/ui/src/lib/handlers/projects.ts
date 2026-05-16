@@ -47,6 +47,13 @@ export async function updateProject(identity: AdminIdentity, id: string, input: 
   const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (parsed.name !== undefined) patch.name = parsed.name;
   if (parsed.domain !== undefined) patch.domain = parsed.domain;
+  if (parsed.slug !== undefined) patch.slug = parsed.slug;
+  if (parsed.defaultEnv !== undefined) patch.defaultEnv = parsed.defaultEnv;
+  if (parsed.timezone !== undefined) patch.timezone = parsed.timezone;
+  if (parsed.statMethod !== undefined) patch.statMethod = parsed.statMethod;
+  if (parsed.sigThreshold !== undefined) patch.sigThreshold = parsed.sigThreshold;
+  if (parsed.autoRollback !== undefined) patch.autoRollback = parsed.autoRollback;
+  if (parsed.minSampleDays !== undefined) patch.minSampleDays = parsed.minSampleDays;
   if (parsed.moduleTranslations !== undefined) patch.moduleTranslations = parsed.moduleTranslations;
   if (parsed.moduleConfigs !== undefined) patch.moduleConfigs = parsed.moduleConfigs;
   if (parsed.moduleGates !== undefined) patch.moduleGates = parsed.moduleGates;
@@ -143,6 +150,31 @@ export async function updateProjectPlan(identity: AdminIdentity, id: string, inp
   await rebuildExperiments(env, id);
   await writeAudit(identity, "project.plan", "project", id, parsed);
   return getProject(identity, id);
+}
+
+/**
+ * Soft-delete a project. Stamps `deleted_at` so the row stops appearing in
+ * listings but stays recoverable for 14 days; a cleanup job purges expired
+ * rows. Refuses if the caller is not the current owner.
+ */
+export async function softDeleteProject(identity: AdminIdentity, id: string, confirmName: string) {
+  if (id !== identity.projectId) throw new ApiError("Forbidden", 403);
+  const env = await getEnvAsync();
+  const project = await findProjectById(env.DB, id);
+  if (!project) throw new ApiError("Project not found", 404);
+
+  const owner = project.ownerEmail.trim().toLowerCase();
+  const actor = identity.actorEmail.trim().toLowerCase();
+  if (owner !== actor) throw new ApiError("Only the current owner can delete this project", 403);
+
+  if ((confirmName ?? "").trim() !== project.name) {
+    throw new ApiError(`Type the project name "${project.name}" to confirm`, 400);
+  }
+
+  const now = new Date().toISOString();
+  await updateProjectRow(env.DB, id, { deletedAt: now, status: "inactive", updatedAt: now });
+  await writeAudit(identity, "project.soft_delete", "project", id, { name: project.name });
+  return { ok: true, name: project.name, purgeAt: new Date(Date.now() + 14 * 86400_000).toISOString() };
 }
 
 /**

@@ -98,6 +98,21 @@ export const projects = sqliteTable(
     moduleFeedback: integer("module_feedback", { mode: "boolean" }).notNull().default(true),
     moduleUser: integer("module_user", { mode: "boolean" }).notNull().default(true),
     moduleEvents: integer("module_events", { mode: "boolean" }).notNull().default(true),
+    // Workspace identity & experiment defaults — surfaced from the Settings page.
+    slug: text("slug"),
+    defaultEnv: text("default_env", { enum: ["dev", "staging", "prod"] })
+      .notNull()
+      .default("staging"),
+    timezone: text("timezone").notNull().default("UTC"),
+    statMethod: text("stat_method", { enum: ["sequential", "fixed", "bayesian"] })
+      .notNull()
+      .default("sequential"),
+    sigThreshold: text("sig_threshold").notNull().default("0.05"),
+    autoRollback: integer("auto_rollback", { mode: "boolean" }).notNull().default(true),
+    minSampleDays: integer("min_sample_days").notNull().default(14),
+    /** ISO-8601 timestamp the project was soft-deleted. NULL = live. After a
+     *  14-day grace period the project is purged by an external job. */
+    deletedAt: text("deleted_at"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -109,6 +124,60 @@ export const projects = sqliteTable(
     // as distinct under UNIQUE, so multiple no-domain projects per owner are
     // permitted).
     ownerDomainUniq: uniqueIndex("projects_owner_domain_uniq").on(t.ownerEmail, t.domain),
+    slugUniq: uniqueIndex("projects_slug_uniq").on(t.slug),
+  }),
+);
+
+export type NotificationChannel = "email" | "slack" | "claudeDm";
+export type NotificationEventKey =
+  | "experiment.significance"
+  | "guardrail.breached"
+  | "killswitch.flipped"
+  | "config.published.prod"
+  | "team.member.joined"
+  | "digest.weekly";
+
+export const notificationPrefs = sqliteTable(
+  "notification_prefs",
+  {
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    event: text("event").notNull().$type<NotificationEventKey>(),
+    email: integer("email", { mode: "boolean" }).notNull().default(false),
+    slack: integer("slack", { mode: "boolean" }).notNull().default(false),
+    claudeDm: integer("claude_dm", { mode: "boolean" }).notNull().default(false),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.projectId, t.event] }),
+  }),
+);
+
+export type IntegrationKind =
+  | "slack"
+  | "github"
+  | "datadog"
+  | "segment"
+  | "linear"
+  | "pagerduty";
+
+export const integrationSettings = sqliteTable(
+  "integration_settings",
+  {
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().$type<IntegrationKind>(),
+    status: text("status", { enum: ["available", "connected"] })
+      .notNull()
+      .default("available"),
+    config: text("config", { mode: "json" }).$type<Record<string, unknown>>(),
+    connectedAt: text("connected_at"),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.projectId, t.kind] }),
   }),
 );
 

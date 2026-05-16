@@ -55,9 +55,27 @@ export const projectDomainSchema = z
     return host;
   });
 
+// Project slug — URL-safe identifier used in app URLs and SDK config.
+// Lowercase alphanum + hyphen, 2–48 chars, can't start/end with hyphen.
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/;
+export const projectSlugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(2, "Slug must be at least 2 characters")
+  .max(48, "Slug must be at most 48 characters")
+  .regex(SLUG_RE, "Slug must be lowercase letters, numbers, and hyphens");
+
 export const projectUpdateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   domain: projectDomainSchema.optional(),
+  slug: projectSlugSchema.optional(),
+  defaultEnv: z.enum(["dev", "staging", "prod"]).optional(),
+  timezone: z.string().min(1).max(64).optional(),
+  statMethod: z.enum(["sequential", "fixed", "bayesian"]).optional(),
+  sigThreshold: z.enum(["0.01", "0.05", "0.10"]).optional(),
+  autoRollback: z.boolean().optional(),
+  minSampleDays: z.number().int().min(1).max(365).optional(),
   moduleTranslations: z.boolean().optional(),
   moduleConfigs: z.boolean().optional(),
   moduleGates: z.boolean().optional(),
