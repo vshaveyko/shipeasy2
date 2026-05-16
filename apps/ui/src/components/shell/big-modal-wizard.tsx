@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  BeakerIcon,
-  GaugeIcon,
-  PowerIcon,
-  SlidersHorizontalIcon,
-  Wand2Icon,
-  ShieldIcon,
-} from "lucide-react";
+import { BeakerIcon, GaugeIcon, PowerIcon, SlidersHorizontalIcon, ShieldIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
