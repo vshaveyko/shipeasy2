@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ActionForm } from "@/components/ui/action-form";
@@ -22,9 +23,11 @@ import {
 import type { IntegrationRow } from "@/lib/handlers/integrations";
 
 export function IntegrationsList({ initial }: { initial: IntegrationRow[] }) {
+  const router = useRouter();
   const [openKind, setOpenKind] = useState<string | null>(null);
   const { execute: doDisconnect, pending: disconnecting } = useAction(disconnectIntegrationAction, {
     success: "Disconnected",
+    onSuccess: () => router.refresh(),
   });
 
   return (
@@ -104,7 +107,10 @@ export function IntegrationsList({ initial }: { initial: IntegrationRow[] }) {
                 action={connectIntegrationAction}
                 loading="Saving…"
                 success="Saved"
-                onSuccess={() => setOpenKind(null)}
+                onSuccess={() => {
+                  setOpenKind(null);
+                  router.refresh();
+                }}
                 className="space-y-3"
               >
                 <input type="hidden" name="kind" value={row.kind} />

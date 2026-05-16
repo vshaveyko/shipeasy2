@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useAction } from "@/hooks/use-action";
@@ -13,10 +14,13 @@ import type { NotificationPrefRow } from "@/lib/handlers/notifications";
 type Row = NotificationPrefRow;
 
 export function NotificationsForm({ initial }: { initial: Row[] }) {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>(initial);
+  useEffect(() => setRows(initial), [initial]);
   const [pending, startTransition] = useTransition();
   const { execute: doReset, pending: resetting } = useAction(resetNotificationPrefsAction, {
     success: "Notification preferences reset",
+    onSuccess: () => router.refresh(),
   });
 
   function toggle(event: string, channel: "email" | "slack" | "claudeDm") {
