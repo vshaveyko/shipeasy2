@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Plus, Search } from "lucide-react";
 import { auth } from "@/auth";
 
 export const metadata: Metadata = { title: "Projects" };
@@ -8,10 +7,11 @@ import { listProjectsByEmail, findProjectById, getEffectivePlan } from "@shipeas
 import { getEnvAsync } from "@/lib/env";
 import { listAllGates } from "@/lib/handlers/gates";
 import { listAllExperiments } from "@/lib/handlers/experiments";
+import { listMembers } from "@/lib/handlers/members";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
-import { LinkButton } from "@/components/ui/link-button";
 import { selectAndOpenProjectAction } from "./[id]/actions";
-import { projectLabel } from "@/lib/project-label";
+import { createProjectAction } from "./actions";
+import { ProjectsGrid, ProjectsHeaderActions, type ProjectRow } from "./projects-view";
 
 const COLORS = ["#22a06b", "#3b82f6", "#a78bfa", "#f5a623", "#ec4899", "#06b6d4"];
 
@@ -28,14 +28,15 @@ function initialsForName(name: string): string {
   return (parts[0] ?? "P").slice(0, 2).toUpperCase();
 }
 
-function timeAgo(iso: string): string {
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return "—";
-  const sec = Math.max(1, Math.round((Date.now() - t) / 1000));
-  if (sec < 60) return `${sec}s ago`;
-  if (sec < 3600) return `${Math.round(sec / 60)}m ago`;
-  if (sec < 86400) return `${Math.round(sec / 3600)}h ago`;
-  return `${Math.round(sec / 86400)}d ago`;
+function avatarFromEmail(email: string): string {
+  const local = email.split("@")[0] ?? email;
+  return (local[0] ?? "?").toUpperCase();
+}
+
+function descriptionFor(proj: { domain: string | null; name: string }): string {
+  if (proj.domain === "*") return "Any origin — SDK calls accepted from any domain.";
+  if (proj.domain) return proj.domain;
+  return `Workspace for ${proj.name}.`;
 }
 
 export default async function ProjectsPage() {
@@ -43,35 +44,15 @@ export default async function ProjectsPage() {
   const defaultProjectId = session?.user?.project_id;
   const actorEmail = session?.user?.email ?? "unknown";
 
-  // Resolve active project from cookie
   let activeProjectId = defaultProjectId ?? "";
   const cookieStore = await cookies();
   const cookieProjectId = cookieStore.get("active_project_id")?.value;
-
-  type ProjectRow = {
-    id: string;
-    name: string;
-    domain: string | null;
-    plan: string;
-    planLabel: string;
-    updatedAt: string;
-    color: string;
-    mark: string;
-    gateCount: number;
-    expRunning: number;
-    isActive: boolean;
-  };
 
   let items: ProjectRow[] = [];
 
   if (defaultProjectId) {
     try {
       const env = await getEnvAsync();
-      // listProjectsByEmail orders by createdAt — preserve that order in
-      // the rendered list. The previous code pushed into a shared array
-      // from inside Promise.all callbacks, so rows appeared in whichever
-      // order the per-project gate/experiment fetches happened to resolve
-      // — i.e. the list flickered into a different order on every reload.
       const allProjects = await listProjectsByEmail(env.DB, actorEmail);
 
       if (cookieProjectId) {
@@ -84,10 +65,15 @@ export default async function ProjectsPage() {
       items = await Promise.all(
         allProjects.map(async (proj): Promise<ProjectRow> => {
           const identity = { projectId: proj.id, actorEmail, source: "jwt" as const };
-          const [gates, experiments] = await Promise.all([
+          const [gates, experiments, members] = await Promise.all([
             listAllGates(identity).catch(() => []),
             listAllExperiments(identity).catch(() => []),
+            listMembers(identity).catch(() => []),
           ]);
+          const memberEmails = [
+            proj.ownerEmail,
+            ...members.filter((m) => m.email !== proj.ownerEmail).map((m) => m.email),
+          ];
           return {
             id: proj.id,
             name: proj.name,
@@ -97,8 +83,11 @@ export default async function ProjectsPage() {
             updatedAt: proj.updatedAt,
             color: colorForKey(proj.id),
             mark: initialsForName(proj.name),
+            description: descriptionFor(proj),
             gateCount: gates.length,
             expRunning: experiments.filter((e) => e.status === "running").length,
+            members: memberEmails.slice(0, 4).map(avatarFromEmail),
+            memberCount: memberEmails.length,
             isActive: proj.id === activeProjectId,
           };
         }),
@@ -121,113 +110,15 @@ export default async function ProjectsPage() {
         }
         title="Projects"
         description="One project per app, surface, or service. Experiments, gates, configs, and SDK keys live inside a project — switch in the sidebar to scope your view."
-        actions={
-          <LinkButton size="sm" href="/dashboard/projects/new">
-            <Plus className="size-3" /> New project
-          </LinkButton>
-        }
+        actions={<ProjectsHeaderActions createProject={createProjectAction} />}
       />
-      <PageBody className="space-y-6">
-        {items.length > 0 && (
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-[240px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-              <Search className="size-3 text-[var(--se-fg-3)]" />
-              <input
-                placeholder="Find a project"
-                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {items.map((p) => (
-            // The whole card is a single form-submit button — clicking anywhere
-            // sets the active-project cookie and navigates to the project's
-            // module-toggle page in one round trip.
-            <form key={p.id} action={selectAndOpenProjectAction} className="contents">
-              <input type="hidden" name="projectId" value={p.id} />
-              <button
-                type="submit"
-                className="group relative flex w-full cursor-pointer flex-col gap-3.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-5 text-left transition-colors hover:border-[var(--se-line-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <span
-                  aria-hidden
-                  className="absolute inset-y-0 left-0 w-[3px] opacity-70"
-                  style={{ background: p.color }}
-                />
-                <header className="flex items-center gap-2.5">
-                  <div
-                    className="grid size-8 place-items-center rounded-[8px] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] font-mono text-[13px] font-semibold"
-                    style={{ color: p.color }}
-                  >
-                    {p.mark}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3
-                      className="m-0 truncate text-[15px] font-medium tracking-[-0.01em]"
-                      title={projectLabel(p.name, p.domain)}
-                    >
-                      {projectLabel(p.name, p.domain)}
-                    </h3>
-                    <div className="mt-0.5 t-mono-xs dim-2">
-                      {p.planLabel} · updated {timeAgo(p.updatedAt)}
-                    </div>
-                  </div>
-                  {p.isActive ? (
-                    <span className="se-badge se-badge-live">
-                      <span className="dot" />
-                      ACTIVE
-                    </span>
-                  ) : null}
-                </header>
-
-                <div className="grid w-full grid-cols-3 gap-2.5 border-t border-[var(--se-line)] pt-3.5">
-                  <Stat v={String(p.expRunning)} k="Running exps" accent />
-                  <Stat v={String(p.gateCount)} k="Gates" />
-                  <Stat v={p.plan.toUpperCase()} k="Plan" />
-                </div>
-
-                <footer className="flex w-full items-center gap-2 text-[12px] text-[var(--se-fg-3)]">
-                  <span className="t-mono-xs dim-2" title={p.id}>
-                    ID: {p.id.slice(0, 8)}
-                  </span>
-                  <span className="ml-auto text-[12px] text-[var(--se-fg-3)] transition-colors group-hover:text-foreground">
-                    Configure modules →
-                  </span>
-                </footer>
-              </button>
-            </form>
-          ))}
-
-          <a
-            href="/dashboard/projects/new"
-            className="grid min-h-[220px] cursor-pointer place-items-center rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-2)] text-center transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-1)]"
-          >
-            <div className="flex flex-col items-center gap-1.5">
-              <div className="grid size-10 place-items-center rounded-[10px] border border-[var(--se-line-2)] bg-[var(--se-bg-1)]">
-                <Plus className="size-4" />
-              </div>
-              <div className="text-[14px] font-medium text-foreground">New project</div>
-              <div className="text-[12px] text-[var(--se-fg-3)]">Create an isolated workspace</div>
-            </div>
-          </a>
-        </div>
+      <PageBody>
+        <ProjectsGrid
+          items={items}
+          selectAndOpenProject={selectAndOpenProjectAction}
+          createProject={createProjectAction}
+        />
       </PageBody>
     </Page>
-  );
-}
-
-function Stat({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
-  return (
-    <div>
-      <div
-        className="font-mono text-[14px] font-semibold tabular-nums"
-        style={{ color: accent ? "var(--se-accent)" : undefined }}
-      >
-        {v}
-      </div>
-      <div className="t-caps dim-3 mt-0.5 text-[10px]">{k}</div>
-    </div>
   );
 }

@@ -7,8 +7,8 @@ test.describe("Projects page", () => {
     await expect(page.getByRole("heading", { name: /^projects$/i })).toBeVisible();
     await expect(page.getByText(/one project per app/i)).toBeVisible();
 
-    // Should show ACTIVE badge for the current project
-    const activeBadge = page.getByText("ACTIVE", { exact: true });
+    // Should show CURRENT badge for the active project
+    const activeBadge = page.getByText("CURRENT", { exact: true });
     await expect(activeBadge.first()).toBeVisible();
 
     // Card button must use a pointer cursor so users get a click affordance
@@ -19,16 +19,119 @@ test.describe("Projects page", () => {
     await expect(card.getByRole("heading").first()).toHaveText(/^[^:]+(?::[^:]+)?$/);
   });
 
-  test("New project link navigates to the create form", async ({ page }) => {
+  test("New project button opens the create modal", async ({ page }) => {
     await page.goto("/dashboard/projects");
     await page
-      .getByRole("link", { name: /^new project$/i })
+      .getByRole("button", { name: /^new project$/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/projects\/new$/);
-    await expect(page.getByRole("heading", { name: /^new project$/i })).toBeVisible();
-    await expect(page.getByLabel(/display name/i)).toBeVisible();
-    await expect(page.getByLabel(/domain/i)).toBeVisible();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: /^new project$/i })).toBeVisible();
+    await expect(dialog.getByPlaceholder(/my app/i)).toBeVisible();
+    await expect(dialog.getByPlaceholder(/example\.com/i)).toBeVisible();
+  });
+
+  test("dashed New project tile opens the create modal", async ({ page }) => {
+    await page.goto("/dashboard/projects");
+    // The dashed empty-tile sits inside the cards grid. Both the header button
+    // and the tile open the same modal — click the tile (last "New project"
+    // button on the page) and assert the dialog is visible.
+    await page
+      .getByRole("button", { name: /^new project$/i })
+      .last()
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  });
+
+  test("create modal: backdrop click closes without creating", async ({ page }) => {
+    await page.goto("/dashboard/projects");
+    await page
+      .getByRole("button", { name: /^new project$/i })
+      .first()
+      .click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // Click the backdrop (top-left corner is outside the 560px-wide modal).
+    await dialog.click({ position: { x: 5, y: 5 } });
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("create modal: explicit Close + Cancel both dismiss", async ({ page }) => {
+    await page.goto("/dashboard/projects");
+
+    // Close (X) button
+    await page
+      .getByRole("button", { name: /^new project$/i })
+      .first()
+      .click();
+    await page.getByRole("button", { name: /^close$/i }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    // Cancel footer button
+    await page
+      .getByRole("button", { name: /^new project$/i })
+      .first()
+      .click();
+    await page.getByRole("button", { name: /^cancel$/i }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("create modal: submitting creates a project and redirects", async ({ page }) => {
+    await page.goto("/dashboard/projects");
+    await page
+      .getByRole("button", { name: /^new project$/i })
+      .first()
+      .click();
+
+    const dialog = page.getByRole("dialog");
+    const unique = `e2e-modal-${Date.now()}`;
+    await dialog.getByPlaceholder(/my app/i).fill(unique);
+    await dialog.getByPlaceholder(/example\.com/i).fill(`https://${unique}.example.com`);
+    await dialog.getByRole("button", { name: /create project/i }).click();
+
+    // Same redirect contract as the /new page: lands on /dashboard/<projectId>.
+    await expect(page).toHaveURL(/\/dashboard\/[^/]+$/);
+
+    await page.goto("/dashboard/projects");
+    await expect(page.getByText(`${unique}:${unique}.example.com`).first()).toBeVisible();
+  });
+
+  test("create modal: required fields block submit", async ({ page }) => {
+    await page.goto("/dashboard/projects");
+    await page
+      .getByRole("button", { name: /^new project$/i })
+      .first()
+      .click();
+
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: /create project/i }).click();
+    // Native HTML5 required keeps the modal open and the URL unchanged.
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/projects$/);
+  });
+
+  test("projects list: search filters cards by name", async ({ page }) => {
+    // Create a uniquely-named project so the filter has a target row.
+    const unique = `e2e-search-${Date.now()}`;
+    await page.goto("/dashboard/projects/new");
+    await page.getByLabel(/display name/i).fill(unique);
+    await page.getByLabel(/domain/i).fill(`https://${unique}.example.com`);
+    await page.getByRole("button", { name: /create project/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/[^/]+$/);
+
+    await page.goto("/dashboard/projects");
+    const search = page.getByPlaceholder(/find a project/i);
+    await expect(search).toBeVisible();
+
+    // Filter to the unique name — its card stays, others disappear.
+    await search.fill(unique);
+    await expect(page.getByText(`${unique}:${unique}.example.com`).first()).toBeVisible();
+
+    // Bogus query collapses the list to the dashed "New project" tile only.
+    await search.fill("zzz-no-match-zzz");
+    await expect(page.getByText(`${unique}:${unique}.example.com`)).toHaveCount(0);
   });
 
   test("new project form creates a project and redirects to dashboard", async ({ page }) => {
