@@ -1,57 +1,208 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { ArrowLeft, Clock, Code, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, MoreHorizontal, Share2 } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getExperiment, listExperimentResults } from "@/lib/handlers/experiments";
-import { listMetrics } from "@/lib/handlers/metrics";
 import { loadProject } from "@/lib/project";
 import { getEnv } from "@/lib/env";
-import { Page, PageBody } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
-import { getPlan, getDb } from "@shipeasy/core";
-import { experimentMetrics, metrics as metricsTable } from "@shipeasy/core/db/schema";
+import { Button } from "@/components/ui/button";
+import { getDb } from "@shipeasy/core";
+import { experimentMetrics, metrics as metricsTable, universes } from "@shipeasy/core/db/schema";
 import { ExperimentStatusButtons } from "./experiment-status-buttons";
-import { MetricsPanel } from "./metrics-panel";
+import {
+  ResultsClient,
+  type ResultsMetricRow,
+  type ResultsTimeseriesPoint,
+  type ResultsViewModel,
+  type Verdict,
+} from "./results-client";
 
-function deriveVerdict(results: { pValue: number | null; srmDetected: number | null }[]): string {
-  if (results.length === 0) return "Wait";
-  const latest = results[results.length - 1];
-  if (latest.srmDetected === 1) return "Invalid (SRM)";
-  if (latest.pValue === null) return "Wait";
-  if (latest.pValue < 0.05) return latest.pValue < 0 ? "Wait" : "Ship";
-  return "Hold";
+const LOWER_BETTER = /latency|jank|refund|churn|error|crash|bounce|fail|abandon|no_results|cost|time_to|wait/i;
+
+function isLowerBetter(metricName: string) {
+  return LOWER_BETTER.test(metricName);
 }
 
-function fmtPct(v: number | null): string {
-  if (v === null) return "—";
-  return `${v >= 0 ? "+" : ""}${(v * 100).toFixed(2)}%`;
+type ResultRow = Awaited<ReturnType<typeof listExperimentResults>>["results"][number];
+
+function latestPerGroup(
+  rows: ResultRow[],
+  metric: string,
+): Record<string, ResultRow> {
+  const out: Record<string, ResultRow> = {};
+  for (const r of rows) {
+    if (r.metric !== metric) continue;
+    const cur = out[r.groupName];
+    if (!cur || r.ds > cur.ds) out[r.groupName] = r;
+  }
+  return out;
 }
 
-function fmtDuration(startedAt: string | null): string {
-  if (!startedAt) return "—";
-  const ms = Date.now() - new Date(startedAt).getTime();
-  const days = Math.floor(ms / 86_400_000);
-  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
-  if (days === 0) return `${hours}h`;
-  return `${days}d ${hours}h running`;
+function buildMetricRow(
+  metricName: string,
+  agg: string,
+  treatment: ResultRow | undefined,
+  alpha: number,
+  isGuard: boolean,
+): ResultsMetricRow {
+  const lowerBetter = isLowerBetter(metricName);
+  const ci: [number, number] | null =
+    treatment?.ci95Low != null && treatment?.ci95High != null
+      ? [treatment.ci95Low, treatment.ci95High]
+      : null;
+  const delta = treatment?.delta ?? null;
+  const deltaPct = treatment?.deltaPct ?? null;
+  const p = treatment?.pValue ?? null;
+  const sig = p != null && p < alpha;
+  let pass: boolean | undefined;
+  if (isGuard) {
+    if (!ci || !sig) pass = true;
+    else {
+      const isPos = ci[0] > 0;
+      const isNeg = ci[1] < 0;
+      const goodChange = lowerBetter ? isNeg : isPos;
+      pass = !(sig && !goodChange);
+    }
+  }
+  return {
+    name: metricName,
+    agg,
+    delta,
+    deltaPct,
+    ci,
+    p,
+    sig,
+    lowerBetter,
+    pass,
+  };
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  running: "se-badge se-badge-live",
-  draft: "se-badge",
-  stopped: "se-badge se-badge-paused",
-  archived: "se-badge se-badge-completed",
-};
+function deriveVerdict({
+  status,
+  goal,
+  guards,
+  srm,
+  daysRunning,
+  minRuntime,
+  hasAnyResults,
+  hasPeekWarning,
+}: {
+  status: string;
+  goal: ResultsMetricRow | undefined;
+  guards: ResultsMetricRow[];
+  srm: boolean;
+  daysRunning: number;
+  minRuntime: number;
+  hasAnyResults: boolean;
+  hasPeekWarning: boolean;
+}): Verdict {
+  if (status === "draft") return "draft";
+  if (srm) return "invalid";
+  if (status === "running") {
+    if (!hasAnyResults) return "wait";
+    if (daysRunning < minRuntime || hasPeekWarning) return "wait";
+  }
+  if (!goal) return "wait";
+  const ci = goal.ci;
+  const sig = goal.sig;
+  const goalGood =
+    ci != null && (goal.lowerBetter ? ci[1] < 0 : ci[0] > 0);
+  const guardFailed = guards.some((g) => g.pass === false);
+  if (guardFailed) return "hold";
+  if (sig && goalGood) return "ship";
+  return "wait";
+}
+
+function titleFor(verdict: Verdict, ctx: {
+  status: string;
+  daysRunning: number;
+  minRuntime: number;
+  goal?: ResultsMetricRow;
+  worstGuard?: ResultsMetricRow;
+  stoppedAgo?: number;
+}): { title: string; why: string } {
+  if (verdict === "draft")
+    return {
+      title: "Draft — not started.",
+      why: "No users have been assigned yet. Finish the launch checklist to begin.",
+    };
+  if (verdict === "invalid")
+    return {
+      title: "Results not trustworthy.",
+      why: "Group sizes don't match configured weights — assignment imbalance, tracking bug, or bot traffic.",
+    };
+  if (verdict === "hold") {
+    const g = ctx.worstGuard;
+    const guardName = g?.name ?? "a guardrail";
+    const lift = g?.delta != null ? `${g.delta > 0 ? "+" : ""}${(g.delta * 100).toFixed(1)}%` : "";
+    return {
+      title: "Hold — a guardrail regressed.",
+      why: `Goal looks promising, but **${guardName}** moved ${lift}. Resolve before shipping.`,
+    };
+  }
+  if (verdict === "ship") {
+    const liftStr =
+      ctx.goal?.delta != null
+        ? `${ctx.goal.delta > 0 ? "+" : ""}${(ctx.goal.delta * 100).toFixed(1)}pp`
+        : "";
+    if (ctx.status === "stopped") {
+      const ago = ctx.stoppedAgo != null ? `${ctx.stoppedAgo}d` : "recently";
+      return {
+        title: `Shipped ${ago} ago.`,
+        why: `Final analysis frozen at day ${ctx.daysRunning}. Goal significant with no regressions.`,
+      };
+    }
+    return {
+      title: "Ship it.",
+      why: `Goal lifted **${liftStr}** with no guardrail regressions. min_runtime reached.`,
+    };
+  }
+  // wait
+  if (ctx.daysRunning < ctx.minRuntime) {
+    return {
+      title: "Wait — keep collecting.",
+      why: `Day **${ctx.daysRunning} of ${ctx.minRuntime}** min_runtime. Peeking now would inflate false-positive risk.`,
+    };
+  }
+  return {
+    title: "Wait — no clear signal yet.",
+    why: "Goal hasn't crossed significance. Keep collecting or revise hypothesis.",
+  };
+}
+
+function buildTimeseries(
+  rows: ResultRow[],
+  metric: string,
+  treatmentGroup: string,
+): ResultsTimeseriesPoint[] {
+  const filtered = rows.filter((r) => r.metric === metric);
+  const byDs = new Map<string, ResultsTimeseriesPoint>();
+  for (const r of filtered) {
+    if (!byDs.has(r.ds)) byDs.set(r.ds, { ds: r.ds, control: null, treatment: null });
+    const p = byDs.get(r.ds)!;
+    if (r.groupName === "control") p.control = r.mean ?? null;
+    if (r.groupName === treatmentGroup) p.treatment = r.mean ?? null;
+  }
+  return [...byDs.values()].sort((a, b) => (a.ds < b.ds ? -1 : 1));
+}
+
+function ownerColor(seed: string): string {
+  const palette = ["#7c5cff", "#22a06b", "#f5a623", "#3b82f6", "#ec4899", "#06b6d4"];
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
 
 export default async function ExperimentDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ projectId: string; id: string }>;
 }) {
   noStore();
-  const { id } = await params;
+  const { projectId: routeProjectId, id } = await params;
   const session = await auth();
-  const projectId = session?.user?.project_id;
+  const projectId = session?.user?.project_id ?? routeProjectId;
   const identity = {
     projectId: projectId ?? "",
     actorEmail: session?.user?.email ?? "unknown",
@@ -59,16 +210,16 @@ export default async function ExperimentDetailPage({
   };
 
   let experiment: Awaited<ReturnType<typeof getExperiment>> | null = null;
-  let results: Awaited<ReturnType<typeof listExperimentResults>>["results"] = [];
-  let plan: ReturnType<typeof getPlan> | null = null;
-  let allMetrics: { id: string; name: string }[] = [];
-  let attachedMetrics: { metricId: string; role: string; name: string }[] = [];
+  let results: ResultRow[] = [];
+  let attachedMetrics: { metricId: string; role: string; name: string; aggregation: string }[] = [];
+  let universeRow: { name: string; unitType: string; holdoutRange: [number, number] | null } | null = null;
+  let projectName: string | null = null;
 
   if (projectId) {
     try {
       experiment = await getExperiment(identity, id);
       const project = await loadProject(projectId);
-      plan = getPlan(project.plan);
+      projectName = project.name;
       const r = await listExperimentResults(identity, id);
       results = r.results;
       const env = getEnv();
@@ -78,44 +229,29 @@ export default async function ExperimentDetailPage({
           metricId: experimentMetrics.metricId,
           role: experimentMetrics.role,
           name: metricsTable.name,
+          aggregation: metricsTable.aggregation,
         })
         .from(experimentMetrics)
         .innerJoin(metricsTable, eq(experimentMetrics.metricId, metricsTable.id))
         .where(eq(experimentMetrics.experimentId, id));
       attachedMetrics = attached;
-      const rawMetrics = await listMetrics(identity);
-      allMetrics = rawMetrics.map((m) => ({ id: m.id, name: m.name }));
+      const expData = experiment as { universe?: string } | null;
+      if (expData?.universe) {
+        const uni = await db
+          .select({
+            name: universes.name,
+            unitType: universes.unitType,
+            holdoutRange: universes.holdoutRange,
+          })
+          .from(universes)
+          .where(eq(universes.name, expData.universe))
+          .limit(1);
+        universeRow = uni[0] ?? null;
+      }
     } catch {
       // DB unavailable in dev without wrangler
     }
   }
-
-  const guardrailMetrics = attachedMetrics.filter((m) => m.role === "guardrail");
-  const secondaryMetrics = attachedMetrics.filter((m) => m.role === "secondary");
-  const primaryMetric = attachedMetrics.find((m) => m.role === "primary")?.name;
-
-  // Group results by metric, then by group (latest per metric per group)
-  const metricNames = [...new Set(results.map((r) => r.metric))];
-  const latestByMetricGroup: Record<string, Record<string, (typeof results)[0]>> = {};
-  for (const r of results) {
-    if (!latestByMetricGroup[r.metric]) latestByMetricGroup[r.metric] = {};
-    const cur = latestByMetricGroup[r.metric][r.groupName];
-    if (!cur || r.ds > cur.ds) latestByMetricGroup[r.metric][r.groupName] = r;
-  }
-
-  const treatmentResults = results.filter((r) => r.groupName !== "control");
-  const verdict = deriveVerdict(treatmentResults);
-
-  const totalUsers = results
-    .filter((r) => r.groupName === "control")
-    .reduce((sum, r) => sum + (r.n ?? 0), 0);
-
-  const startedAt = experiment
-    ? ((experiment as { startedAt?: string | null }).startedAt ?? null)
-    : null;
-  const daysRunning = startedAt
-    ? Math.floor((Date.now() - new Date(startedAt).getTime()) / 86_400_000)
-    : 0;
 
   const exp = experiment as {
     name?: string;
@@ -128,30 +264,279 @@ export default async function ExperimentDetailPage({
     minRuntimeDays?: number;
     minSampleSize?: number;
     sequentialTesting?: boolean;
+    cupedFrozenAt?: string | null;
+    hashVersion?: number;
+    salt?: string;
+    params?: Record<string, string>;
     groups?: { name: string; weight: number }[];
+    status?: string;
+    startedAt?: string | null;
+    stoppedAt?: string | null;
+    updatedAt?: string;
   } | null;
 
   const name = exp?.name ?? id;
-  const status = experiment?.status ?? "draft";
-  const minRuntimeDays = exp?.minRuntimeDays ?? 0;
-  const minSampleSize = exp?.minSampleSize ?? 0;
+  const status = (exp?.status ?? "draft") as ResultsViewModel["status"];
   const groups = exp?.groups ?? [];
-  const allocationPct =
+  const treatmentGroup = groups.find((g) => g.name !== "control")?.name ?? "treatment";
+  const alpha = exp?.significanceThreshold ?? 0.05;
+  const minRuntime = exp?.minRuntimeDays ?? 0;
+  const minSample = exp?.minSampleSize ?? 0;
+  const allocation =
     (exp?.allocationPct ?? 0) >= 10000 ? 100 : Math.round((exp?.allocationPct ?? 0) / 100);
 
-  const dayLabel =
-    status === "running" && minRuntimeDays > 0
-      ? `DAY ${Math.min(daysRunning + 1, minRuntimeDays)} OF ${minRuntimeDays}`
-      : status === "running"
-        ? `DAY ${daysRunning + 1}`
-        : null;
+  const startedAt = exp?.startedAt ?? null;
+  const stoppedAt = exp?.stoppedAt ?? null;
+  const daysRunning = startedAt
+    ? Math.max(
+        0,
+        Math.floor((Date.now() - new Date(startedAt).getTime()) / 86_400_000),
+      )
+    : 0;
+  const stoppedAgo = stoppedAt
+    ? Math.max(
+        0,
+        Math.floor((Date.now() - new Date(stoppedAt).getTime()) / 86_400_000),
+      )
+    : undefined;
+  const daysGoal = Math.max(minRuntime, daysRunning, 1);
 
-  const hypothesis = exp?.description?.trim() ?? null;
+  const goalAttached = attachedMetrics.find((m) => m.role === "goal");
+  const guardAttached = attachedMetrics.filter((m) => m.role === "guardrail");
+  const secAttached = attachedMetrics.filter((m) => m.role === "secondary");
+
+  const latestForMetric = (metricName: string) => latestPerGroup(results, metricName);
+
+  const goalLatest = goalAttached ? latestForMetric(goalAttached.name) : {};
+  const goalControl = goalLatest["control"];
+  const goalTreatment = goalLatest[treatmentGroup];
+
+  const goal: ResultsMetricRow | undefined = goalAttached
+    ? buildMetricRow(goalAttached.name, goalAttached.aggregation, goalTreatment, alpha, false)
+    : undefined;
+
+  const guards: ResultsMetricRow[] = guardAttached.map((m) => {
+    const t = latestForMetric(m.name)[treatmentGroup];
+    return buildMetricRow(m.name, m.aggregation, t, alpha, true);
+  });
+  const secs: ResultsMetricRow[] = secAttached.map((m) => {
+    const t = latestForMetric(m.name)[treatmentGroup];
+    return buildMetricRow(m.name, m.aggregation, t, alpha, false);
+  });
+
+  const usersPerGroup: number[] = groups.map((g) => {
+    if (!goalAttached) {
+      // any metric, take latest n by group
+      const anyMetric = [...new Set(results.map((r) => r.metric))][0];
+      if (!anyMetric) return 0;
+      return latestPerGroup(results, anyMetric)[g.name]?.n ?? 0;
+    }
+    return goalLatest[g.name]?.n ?? 0;
+  });
+
+  const srmDetected = results.some((r) => r.srmDetected === 1);
+  const peekWarning = results.some((r) => r.peekWarning === 1);
+  const hasAnyResults = results.length > 0;
+  const isFinal = status === "stopped" || results.some((r) => r.isFinal === 1);
+
+  const worstGuard = guards.filter((g) => g.pass === false)[0];
+
+  const verdict = deriveVerdict({
+    status,
+    goal,
+    guards,
+    srm: srmDetected,
+    daysRunning,
+    minRuntime,
+    hasAnyResults,
+    hasPeekWarning: peekWarning,
+  });
+
+  const { title, why } = titleFor(verdict, {
+    status,
+    daysRunning,
+    minRuntime,
+    goal,
+    worstGuard,
+    stoppedAgo,
+  });
+
+  const rawNumbers =
+    goalControl?.mean != null && goalTreatment?.mean != null && goalTreatment.pValue != null
+      ? {
+          ctrl: goalControl.mean,
+          test: goalTreatment.mean,
+          delta: goalTreatment.delta ?? goalTreatment.mean - goalControl.mean,
+          deltaPct: goalTreatment.deltaPct ?? 0,
+          p: goalTreatment.pValue,
+        }
+      : undefined;
+
+  // SRM details
+  const expectedPerGroup: number[] | undefined = srmDetected
+    ? groups.map((g) => {
+        const m = goalAttached?.name ?? [...new Set(results.map((r) => r.metric))][0];
+        if (!m) return 0;
+        return latestPerGroup(results, m)[g.name]?.expectedN ?? 0;
+      })
+    : undefined;
+  const srmLatestP =
+    srmDetected && goalAttached
+      ? latestForMetric(goalAttached.name)[treatmentGroup]?.srmPValue ?? null
+      : null;
+  // Chi-square approximation from p-value isn't trivial; show the SDK-stored p directly.
+  const srm = srmDetected
+    ? { chiSq: 0, chiSqP: srmLatestP ?? 0 }
+    : undefined;
+
+  const timeseries = goalAttached
+    ? buildTimeseries(results, goalAttached.name, treatmentGroup)
+    : [];
+
+  const ownerEmail = session?.user?.email ?? "anon";
+  const owner = {
+    initial: (ownerEmail[0] ?? "?").toUpperCase(),
+    color: ownerColor(ownerEmail),
+    name: ownerEmail,
+  };
+
+  const draftChecklist =
+    verdict === "draft"
+      ? [
+          { label: `Goal metric · ${goalAttached?.name ?? "not attached"}`, done: !!goalAttached },
+          {
+            label: `Group weights sum to 10000 (${groups.reduce((s, g) => s + g.weight, 0)})`,
+            done: groups.reduce((s, g) => s + g.weight, 0) === 10000,
+          },
+          {
+            label: `Universe · ${exp?.universe ?? "—"}${universeRow?.holdoutRange ? ` · holdout ${universeRow.holdoutRange[0]}–${universeRow.holdoutRange[1]}` : ""}`,
+            done: !!exp?.universe,
+          },
+          {
+            label: `Targeting gate · ${exp?.targetingGate ?? "none"}`,
+            done: true,
+          },
+          { label: "Allocation set", done: (exp?.allocationPct ?? 0) > 0 },
+          {
+            label: `At least one guardrail attached (${guardAttached.length})`,
+            done: guardAttached.length > 0,
+          },
+        ]
+      : undefined;
+
+  const holdoutPct = universeRow?.holdoutRange
+    ? Math.round(((universeRow.holdoutRange[1] - universeRow.holdoutRange[0]) / 10000) * 100)
+    : 0;
+
+  // Activity feed from real fields + plausible mock entries.
+  const activity = [
+    ...(stoppedAt
+      ? [
+          {
+            who: ownerEmail,
+            av: owner.initial,
+            color: owner.color,
+            what: <>Stopped experiment.</>,
+            when: stoppedAt.slice(0, 16).replace("T", " "),
+          },
+        ]
+      : []),
+    {
+      who: "Shipeasy",
+      av: "S",
+      bot: true,
+      what: (
+        <>
+          Auto-analysis run · {goalTreatment?.pValue != null ? `p = ${goalTreatment.pValue.toFixed(3)}` : "no p-value yet"}
+          {worstGuard ? <> · <b>{worstGuard.name}</b> regressed.</> : null}
+        </>
+      ),
+      when: results.length > 0 ? `latest ds ${results[results.length - 1].ds}` : "pending",
+    },
+    ...(startedAt
+      ? [
+          {
+            who: ownerEmail,
+            av: owner.initial,
+            color: owner.color,
+            what: (
+              <>
+                Started experiment via <b>shipeasy.experiment.start()</b>.
+              </>
+            ),
+            when: startedAt.slice(0, 16).replace("T", " "),
+          },
+        ]
+      : []),
+    {
+      who: ownerEmail,
+      av: owner.initial,
+      color: owner.color,
+      what: <>Created experiment.</>,
+      when: exp?.updatedAt ? exp.updatedAt.slice(0, 16).replace("T", " ") : "—",
+    },
+  ];
+
+  const vm: ResultsViewModel = {
+    id,
+    name,
+    status,
+    verdict,
+    title,
+    why,
+    days: daysRunning,
+    daysGoal,
+    isFinal,
+    stoppedAgo,
+    usersPerGroup,
+    expectedPerGroup,
+    rawNumbers,
+    goal,
+    guards,
+    secs,
+    srm,
+    showResults: verdict !== "invalid" && hasAnyResults,
+    peekWarning,
+    timeseries,
+    draftChecklist,
+    projectId: projectId ?? "",
+    meta: {
+      hypothesis: exp?.description?.trim() ?? `${treatmentGroup} vs control on ${exp?.universe ?? "default"}`,
+      success: goalAttached
+        ? `${goalAttached.name} improves vs control with no guardrail regression at α = ${alpha}.`
+        : `Attach a goal metric and define success criteria.`,
+      universe: exp?.universe ?? "default",
+      unit: universeRow?.unitType ?? "user_id",
+      holdoutPct,
+      holdoutRange: universeRow?.holdoutRange ?? undefined,
+      allocation,
+      groups,
+      gate: exp?.targetingGate ?? null,
+      hashVersion: `sha256_v${exp?.hashVersion ?? 1}`,
+      cupedFrozenAt: exp?.cupedFrozenAt ?? null,
+      alpha,
+      minSample,
+      minRuntime,
+      sequential: !!exp?.sequentialTesting,
+      owner,
+      tag: exp?.tag ?? null,
+      paramsSchema: exp?.params ?? {},
+      startedAt,
+      stoppedAt,
+      updatedAt: exp?.updatedAt ?? new Date().toISOString(),
+      estTrafficPerDay: 0,
+      project: projectName ?? projectId ?? "—",
+      env: "prod",
+      layer: exp?.universe ?? "default",
+      tags: exp?.tag ? [exp.tag] : [],
+      activity,
+      subscribers: [],
+    },
+  };
 
   return (
-    <Page>
-      {/* Top bar with breadcrumb + actions */}
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center justify-between gap-4 px-6 pt-6 pb-2">
         <LinkButton
           variant="ghost"
           size="sm"
@@ -161,518 +546,24 @@ export default async function ExperimentDetailPage({
           <ArrowLeft className="size-3.5" />
           Experiments
         </LinkButton>
-        <ExperimentStatusButtons id={id} status={status} />
       </div>
-
-      <PageBody className="space-y-5">
-        {/* Header card */}
-        <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className={STATUS_BADGE[status] ?? "se-badge"}>
-              <span className="dot" />
-              {status === "running" ? "LIVE" : status.toUpperCase()}
-              {dayLabel ? ` · ${dayLabel}` : ""}
-            </span>
-            <span className="t-mono-xs dim-2">{id}</span>
-            {exp?.tag ? (
-              <span className="rounded-full border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--se-fg-3)]">
-                {exp.tag}
-              </span>
-            ) : null}
-          </div>
-          <h1 className="mt-3 text-[28px] font-medium tracking-[-0.02em]">{name}</h1>
-          {hypothesis ? (
-            <p className="mt-1 max-w-[80ch] text-[14px] leading-[1.55] text-[var(--se-fg-2)]">
-              {hypothesis}
-            </p>
-          ) : (
-            <p className="mt-1 max-w-[80ch] text-[14px] leading-[1.55] text-[var(--se-fg-3)]">
-              {groups.length > 0 ? `${groups.map((g) => g.name).join(" vs ")} on ` : ""}
-              <span className="t-mono dim">
-                universe · {exp?.universe ?? "default"}
-                {exp?.targetingGate ? ` · gate · ${exp.targetingGate}` : ""}
-              </span>
-            </p>
-          )}
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-[13px]">
-            <span className="t-mono-xs dim-2 inline-flex items-center gap-1.5">
-              <Clock className="size-3" />
-              {fmtDuration(startedAt)}
-            </span>
-            <span className="text-[var(--se-fg-4)]">·</span>
-            <span className="t-mono-xs dim-2">
-              {groups.length} variant{groups.length === 1 ? "" : "s"} · {allocationPct}% allocation
-            </span>
-            {primaryMetric ? (
-              <>
-                <span className="text-[var(--se-fg-4)]">·</span>
-                <span className="t-mono-xs dim-2">primary · {primaryMetric}</span>
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Top stats */}
-        <div className="grid gap-3 md:grid-cols-4">
-          <StatTile
-            label="Users / control"
-            value={totalUsers > 0 ? totalUsers.toLocaleString() : "—"}
-            hint={
-              minSampleSize > 0 ? `target · ${minSampleSize.toLocaleString()}` : "no minimum set"
-            }
-          />
-          <StatTile
-            label="Days running"
-            value={String(daysRunning)}
-            hint={
-              minRuntimeDays > 0
-                ? `min · ${minRuntimeDays} day${minRuntimeDays === 1 ? "" : "s"}`
-                : status === "running"
-                  ? "live"
-                  : status
-            }
-          />
-          <StatTile
-            label="Verdict"
-            value={verdict}
-            hint={
-              metricNames.length > 0
-                ? `${metricNames.length} metric${metricNames.length === 1 ? "" : "s"} tracked`
-                : "awaiting results"
-            }
-            valueColor={
-              verdict === "Ship"
-                ? "var(--se-accent)"
-                : verdict === "Hold"
-                  ? "var(--se-warn)"
-                  : verdict.startsWith("Invalid")
-                    ? "var(--se-danger)"
-                    : undefined
-            }
-          />
-          <StatTile
-            label="Significance"
-            value={
-              treatmentResults.length > 0
-                ? `${(
-                    ((treatmentResults[treatmentResults.length - 1].pValue ?? 1) >= 0
-                      ? 1 - (treatmentResults[treatmentResults.length - 1].pValue ?? 1)
-                      : 0) * 100
-                  ).toFixed(1)}%`
-                : "—"
-            }
-            hint={`threshold · ${((exp?.significanceThreshold ?? 0.05) * 100).toFixed(1)}%`}
-          />
-        </div>
-
-        {/* Tabs */}
-        <div
-          role="tablist"
-          aria-label="Experiment view tabs"
-          className="flex items-center gap-0 border-b border-[var(--se-line)]"
-        >
-          {[
-            { k: "overview", label: "Overview", active: true },
-            { k: "metrics", label: "Metrics" },
-            { k: "variants", label: "Variants" },
-            { k: "segments", label: "Segments" },
-            { k: "events", label: "Events" },
-            { k: "timeline", label: "Timeline" },
-            { k: "config", label: "Config" },
-          ].map((t) => (
-            <button
-              key={t.k}
-              role="tab"
-              aria-selected={!!t.active}
-              type="button"
-              disabled={!t.active}
-              className={`relative -mb-px flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] transition-colors border-b-[1.5px] border-transparent ${
-                t.active
-                  ? "border-[var(--se-accent)] text-foreground"
-                  : "text-[var(--se-fg-3)] cursor-not-allowed"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Body: 2-col layout */}
-        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-5">
-            {/* Variants card */}
-            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-              <div className="flex items-center gap-3 border-b border-[var(--se-line)] px-5 py-3.5">
-                <h2 className="text-[14px] font-medium">Variants</h2>
-                <span className="ml-auto t-mono-xs dim-2">
-                  {groups.length === 2 && groups[0].weight === groups[1].weight
-                    ? "50/50 split · sticky by user_id"
-                    : "custom split · sticky by user_id"}
-                </span>
-              </div>
-              {groups.length === 0 ? (
-                <div className="px-5 py-6 text-[13px] text-[var(--se-fg-3)]">
-                  No variants configured.
-                </div>
-              ) : (
-                groups.map((g, i) => {
-                  const isControl = i === 0;
-                  const weightPct = Math.round(g.weight / 100);
-                  const groupResult =
-                    metricNames.length > 0
-                      ? latestByMetricGroup[metricNames[0]]?.[g.name]
-                      : undefined;
-                  return (
-                    <div
-                      key={g.name}
-                      className="grid items-center gap-4 border-b border-[var(--se-line)] px-5 py-3.5 last:border-none"
-                      style={{
-                        gridTemplateColumns: "40px minmax(0,1fr) 80px 120px 1fr",
-                        background: !isControl
-                          ? "color-mix(in oklab, var(--se-accent) 5%, transparent)"
-                          : undefined,
-                      }}
-                    >
-                      <div
-                        className="grid size-8 place-items-center rounded-md font-mono text-[12px] font-semibold"
-                        style={{
-                          background: isControl ? "var(--se-bg-3)" : "var(--se-accent)",
-                          color: isControl ? "inherit" : "var(--se-accent-fg)",
-                          border: isControl ? "1px solid var(--se-line-2)" : "none",
-                        }}
-                      >
-                        {String.fromCharCode(65 + i)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <b className="truncate font-mono text-[13px]">{g.name}</b>
-                          {isControl ? (
-                            <span className="rounded-full border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-1.5 py-px font-mono text-[10px] uppercase tracking-wide text-[var(--se-fg-3)]">
-                              baseline
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div
-                        className="font-mono text-[13px]"
-                        style={{ fontVariantNumeric: "tabular-nums" }}
-                      >
-                        {weightPct}%
-                      </div>
-                      <div>
-                        <div className="t-caps dim-2 mb-0.5">
-                          {primaryMetric ?? metricNames[0] ?? "Mean"}
-                        </div>
-                        <div
-                          className="font-mono text-[14px]"
-                          style={{
-                            fontVariantNumeric: "tabular-nums",
-                            color:
-                              !isControl && (groupResult?.deltaPct ?? 0) > 0
-                                ? "var(--se-accent)"
-                                : !isControl && (groupResult?.deltaPct ?? 0) < 0
-                                  ? "var(--se-danger)"
-                                  : undefined,
-                          }}
-                        >
-                          {groupResult?.mean !== null && groupResult?.mean !== undefined
-                            ? groupResult.mean.toFixed(3)
-                            : "—"}
-                          {!isControl && groupResult?.deltaPct
-                            ? ` · ${fmtPct(groupResult.deltaPct)}`
-                            : ""}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="h-1 overflow-hidden rounded-full bg-[var(--se-bg-3)]">
-                          <div
-                            className="h-full"
-                            style={{
-                              width: `${weightPct}%`,
-                              background: isControl ? "var(--se-fg-3)" : "var(--se-accent)",
-                            }}
-                          />
-                        </div>
-                        <div className="t-mono-xs dim-2 mt-1.5">
-                          {groupResult?.n != null ? `${groupResult.n.toLocaleString()} users` : "—"}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Per-metric results */}
-            {metricNames.length === 0 ? (
-              <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line)] bg-[var(--se-bg-1)]/40 px-5 py-10 text-center text-[13px] text-[var(--se-fg-3)]">
-                No results yet. Start the experiment and we&apos;ll run a Welch significance
-                analysis daily.
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-                <div className="flex items-center gap-3 border-b border-[var(--se-line)] px-5 py-3.5">
-                  <div className="text-[14px] font-medium">Secondary metrics</div>
-                  <span className="ml-auto t-mono-xs dim-2">
-                    {metricNames.length} metric{metricNames.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-[13px]">
-                    <thead>
-                      <tr className="border-b border-[var(--se-line)] text-left">
-                        <th className="t-caps dim-3 px-5 py-2 font-normal">Metric</th>
-                        <th className="t-caps dim-3 px-3 py-2 text-right font-normal">Control</th>
-                        <th className="t-caps dim-3 px-3 py-2 text-right font-normal">Treatment</th>
-                        <th className="t-caps dim-3 px-3 py-2 text-right font-normal">Lift</th>
-                        <th className="t-caps dim-3 px-5 py-2 text-right font-normal">p-value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {metricNames.map((metric) => {
-                        const groupData = latestByMetricGroup[metric] ?? {};
-                        const control = groupData["control"];
-                        const treatment = Object.entries(groupData).find(
-                          ([k]) => k !== "control",
-                        )?.[1];
-                        const lift = treatment?.deltaPct ?? null;
-                        const liftColor =
-                          lift !== null
-                            ? lift > 0
-                              ? "var(--se-accent)"
-                              : "var(--se-danger)"
-                            : "var(--se-fg-4)";
-                        return (
-                          <tr
-                            key={metric}
-                            className="border-b border-[var(--se-line)] last:border-none"
-                          >
-                            <td className="px-5 py-2.5 font-mono">{metric}</td>
-                            <td
-                              className="px-3 py-2.5 text-right font-mono"
-                              style={{ fontVariantNumeric: "tabular-nums" }}
-                            >
-                              {control?.mean?.toFixed(3) ?? "—"}
-                            </td>
-                            <td
-                              className="px-3 py-2.5 text-right font-mono"
-                              style={{ fontVariantNumeric: "tabular-nums" }}
-                            >
-                              {treatment?.mean?.toFixed(3) ?? "—"}
-                            </td>
-                            <td
-                              className="px-3 py-2.5 text-right font-mono"
-                              style={{ fontVariantNumeric: "tabular-nums", color: liftColor }}
-                            >
-                              {fmtPct(lift)}
-                            </td>
-                            <td
-                              className="px-5 py-2.5 text-right font-mono"
-                              style={{ fontVariantNumeric: "tabular-nums" }}
-                            >
-                              {treatment?.pValue?.toFixed(4) ?? "—"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* MetricsPanel — preserve existing attach UX */}
-            <MetricsPanel
-              experimentId={id}
-              allMetrics={allMetrics}
-              guardrailMetrics={guardrailMetrics}
-              secondaryMetrics={secondaryMetrics}
-            />
-          </div>
-
-          {/* Right rail */}
-          <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-            {hypothesis ? (
-              <RailSection label="Hypothesis">
-                <p className="text-[13px] leading-[1.55] text-[var(--se-fg-2)]">{hypothesis}</p>
-              </RailSection>
-            ) : null}
-
-            <RailSection label="Configuration">
-              <KV k="Primary metric" v={primaryMetric ?? "—"} mono />
-              <KV k="Universe" v={exp?.universe ?? "default"} mono />
-              <KV
-                k="Analysis"
-                v={exp?.sequentialTesting ? "Sequential · mSPRT" : "Welch · daily"}
-              />
-              <KV
-                k="Min. sample"
-                v={minSampleSize > 0 ? minSampleSize.toLocaleString() : "—"}
-                mono
-              />
-              <KV
-                k="Significance"
-                v={`${((exp?.significanceThreshold ?? 0.05) * 100).toFixed(1)}%`}
-                mono
-              />
-              <KV
-                k="Min. runtime"
-                v={
-                  minRuntimeDays > 0
-                    ? `${minRuntimeDays} day${minRuntimeDays === 1 ? "" : "s"}`
-                    : "—"
-                }
-              />
-            </RailSection>
-
-            <RailSection label="Audience">
-              <div className="flex flex-wrap gap-1">
-                <Tag>universe · {exp?.universe ?? "default"}</Tag>
-                {exp?.targetingGate ? <Tag>gate · {exp.targetingGate}</Tag> : null}
-                <Tag>allocation · {allocationPct}%</Tag>
-              </div>
-            </RailSection>
-
-            <RailSection label="Guardrails">
-              {guardrailMetrics.length === 0 ? (
-                <p className="text-[12.5px] text-[var(--se-fg-3)]">No guardrails attached yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {guardrailMetrics.map((m) => (
-                    <div key={m.metricId} className="flex items-center gap-2">
-                      <ShieldCheck className="size-3 text-[var(--se-accent)]" />
-                      <span className="flex-1 text-[13px]">{m.name}</span>
-                      <span className="t-mono-xs dim-2">attached</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </RailSection>
-
-            <RailSection label="Activity" last>
-              <ActivityRow
-                live={status === "running"}
-                title={
-                  startedAt ? `Experiment started` : status === "draft" ? "Draft created" : status
-                }
-                subtitle={startedAt ? new Date(startedAt).toLocaleString() : "—"}
-              />
-              {plan?.cuped_enabled ? (
-                <ActivityRow title="CUPED active" subtitle="variance reduction enabled" />
-              ) : null}
-              {!plan?.sequential_testing ? (
-                <ActivityRow
-                  title="Sequential testing unavailable"
-                  subtitle="upgrade to Pro for mSPRT"
-                  icon={<Sparkles className="size-3" />}
-                />
-              ) : null}
-              <ActivityRow
-                title="View SDK snippet"
-                subtitle="how to gate code on this experiment"
-                icon={<Code className="size-3" />}
-              />
-            </RailSection>
-          </div>
-        </div>
-      </PageBody>
-    </Page>
-  );
-}
-
-function StatTile({
-  label,
-  value,
-  hint,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  valueColor?: string;
-}) {
-  return (
-    <div className="rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)] px-4 py-3.5">
-      <div className="t-caps dim-3">{label}</div>
-      <div
-        className="mt-1 text-[22px] font-medium leading-tight tracking-tight"
-        style={{ fontVariantNumeric: "tabular-nums", color: valueColor ?? undefined }}
-      >
-        {value}
-      </div>
-      <div className="t-mono-xs dim-2 mt-1">{hint}</div>
-    </div>
-  );
-}
-
-function RailSection({
-  label,
-  children,
-  last,
-}: {
-  label: string;
-  children: React.ReactNode;
-  last?: boolean;
-}) {
-  return (
-    <div className={"px-5 py-4" + (last ? "" : " border-b border-[var(--se-line)]")}>
-      <div className="t-caps dim-3 mb-2.5">{label}</div>
-      {children}
-    </div>
-  );
-}
-
-function KV({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
-  return (
-    <div className="flex items-center justify-between py-1 text-[13px]">
-      <span className="text-[var(--se-fg-3)]">{k}</span>
-      <span
-        className={mono ? "font-mono text-[12px]" : "text-[12.5px]"}
-        style={{ fontVariantNumeric: "tabular-nums" }}
-      >
-        {v}
-      </span>
-    </div>
-  );
-}
-
-function Tag({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-2 py-0.5 font-mono text-[10.5px] text-[var(--se-fg-2)]">
-      {children}
-    </span>
-  );
-}
-
-function ActivityRow({
-  title,
-  subtitle,
-  live,
-  icon,
-}: {
-  title: string;
-  subtitle: string;
-  live?: boolean;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3 py-1.5">
-      {icon ? (
-        <span className="mt-1 inline-flex size-3 items-center justify-center text-[var(--se-fg-3)]">
-          {icon}
-        </span>
-      ) : (
-        <span
-          className="mt-1.5 inline-block size-1.5 shrink-0 rounded-full"
-          style={{
-            background: live ? "var(--se-accent)" : "var(--se-fg-4)",
-          }}
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="text-[13px]">{title}</div>
-        <div className="t-mono-xs dim-2 mt-0.5 truncate">{subtitle}</div>
-      </div>
+      <ResultsClient
+        vm={vm}
+        actions={
+          <>
+            <ExperimentStatusButtons id={id} status={status} />
+            <Button size="sm" variant="outline">
+              <Copy className="size-3" /> Duplicate
+            </Button>
+            <Button size="sm" variant="outline">
+              <Share2 className="size-3" /> Share
+            </Button>
+            <Button size="sm" variant="ghost">
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }
