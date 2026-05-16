@@ -187,6 +187,113 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ──────────────────────────────────────────────────────────────
+   Type-scale utilities ported from the design prototype (app.css).
+   Match the visual scale used in standards-list-v2, configs-expanded,
+   experiments-results-v2, home.html. Pair with .dim/.dim-2/.dim-3
+   for foreground hierarchy.
+   ────────────────────────────────────────────────────────────── */
+.t-display {
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.t-h1 {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.t-h2 {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+.t-h3 {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.t-body {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.t-sm {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.t-xs {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Spacing scale (parity with prototype `--s-N`).
+   Use raw values via these vars only when porting prototype CSS
+   verbatim; prefer Tailwind p-/m-/gap- utilities everywhere else.
+   ────────────────────────────────────────────────────────────── */
+:root,
+.dark {
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 56px;
+  --s-10: 72px;
+
+  /* Fold-to-rail animation tokens used by UnifiedList shell.
+     The 280ms duration / cubic-bezier match the prototype timing
+     (unified-list.css .split → .split.open transition). */
+  --ease-fold: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fold: 280ms;
+  --ease-pop: cubic-bezier(0.18, 0.86, 0.22, 1.04);
+  --dur-pop: 220ms;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Striped backgrounds — repeating-linear-gradient helpers.
+   Tailwind has no atomic for this; used by holdout bars +
+   "not-yet-designed" placeholders.
+   ────────────────────────────────────────────────────────────── */
+.bg-stripe {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 5px,
+    rgba(255, 255, 255, 0.03) 5px 10px
+  );
+}
+.bg-stripe-accent {
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in oklab, var(--se-accent) 6%, transparent) 0 5px,
+    color-mix(in oklab, var(--se-accent) 14%, transparent) 5px 10px
+  );
+}
+.bg-stripe-warn {
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in oklab, var(--se-warn) 6%, transparent) 0 5px,
+    color-mix(in oklab, var(--se-warn) 14%, transparent) 5px 10px
+  );
+}
+.bg-stripe-danger {
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in oklab, var(--se-danger) 6%, transparent) 0 5px,
+    color-mix(in oklab, var(--se-danger) 14%, transparent) 5px 10px
+  );
+}
+
 /* Env tabs (used in configs/killswitches topbars) */
 .env-tabs {
   display: inline-flex;
