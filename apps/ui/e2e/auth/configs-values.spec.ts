@@ -156,6 +156,66 @@ test.describe("Object config — create, view in list, delete", () => {
   });
 });
 
+// ── UnifiedList chrome — detail-pane header, filter, standalone link ─────────
+
+test.describe("Configs list — UnifiedList chrome", () => {
+  test.describe.configure({ mode: "serial" });
+  const key = `e2.cfg_chrome_${RUN}`;
+  let id: string;
+
+  test.beforeAll(async ({ request }) => {
+    const resp = await request.post("/api/admin/configs", {
+      data: {
+        name: key,
+        schema: { type: "object", properties: { theme: { type: "string" } } },
+        value: { theme: "dark" },
+        description: "Chrome-coverage fixture",
+      },
+    });
+    expect(resp.ok()).toBe(true);
+    const body = (await resp.json()) as { id?: string };
+    id = body.id ?? "";
+    if (!id) {
+      const list = await adminList<{ id: string; name: string }>(request, "/api/admin/configs");
+      id = list.find((c) => c.name === key)?.id ?? "";
+    }
+    expect(id).not.toBe("");
+  });
+
+  test.afterAll(async ({ request }) => {
+    if (id) await request.delete(`/api/admin/configs/${id}`).catch(() => {});
+  });
+
+  test('detail-pane header exposes "Open standalone" link to /configs/values/<id>', async ({
+    page,
+  }) => {
+    await page.goto(`/dashboard/e2e-project-id/configs/values?open=${id}`);
+    const link = page.getByTestId("config-detail-standalone-link");
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", `/dashboard/e2e-project-id/configs/values/${id}`);
+  });
+
+  test("filter input narrows the closed table and restores on clear", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values");
+    const filter = page.getByPlaceholder(/filter configs/i);
+    await expect(tableRow(page, key)).toBeVisible();
+
+    await filter.fill("zzznomatch");
+    await expect(tableRow(page, key)).toHaveCount(0);
+
+    await filter.fill("");
+    await expect(tableRow(page, key)).toBeVisible();
+  });
+
+  test("ESC closes the detail pane and strips ?open=<id>", async ({ page }) => {
+    await page.goto(`/dashboard/e2e-project-id/configs/values?open=${id}`);
+    const detail = page.locator('[data-slot="detail-pane"]');
+    await expect(detail.getByRole("tab", { name: "prod" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
+  });
+});
+
 // ── Schema-only edits do NOT bump value version ───────────────────────────────
 
 test.describe("Schema vs value separation", () => {

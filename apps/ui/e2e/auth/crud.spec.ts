@@ -437,21 +437,40 @@ test.describe("Universes CRUD", () => {
 test.describe("Experiments CRUD", () => {
   test.describe.configure({ mode: "serial" });
 
+  const uName = `e2euni-exp-${RUN}`;
   const expKey = `e2eexp${RUN}`;
   // Experiments: span → inner flex div → outer justify-between div (2 levels up)
   const expRow = (page: Page) =>
     page.getByText(expKey, { exact: true }).locator("..").locator("..").locator("..");
 
-  test("create experiment draft → appears in list with draft badge", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    // The new wizard uses #exp-name and a 4-step Continue/Create flow.
-    await page.locator("#exp-name").fill(expKey);
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^create experiment$/i }).click();
+  // The /experiments/new page is now a single 10-section form (not a 4-step
+  // wizard). Drive create-draft via the admin REST API — UI coverage for the
+  // form lives in the dedicated experiments specs. Seed the prerequisite
+  // universe inline so the experiment can reference it.
+  test.beforeAll(async ({ request }) => {
+    await request.post("/api/admin/universes", {
+      data: { name: uName, identifier: "user_id", description: null },
+    });
+  });
 
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
+  test.afterAll(async ({ request }) => {
+    await request.delete(`/api/admin/universes/${uName}`).catch(() => {});
+  });
+
+  test("create experiment draft → appears in list with draft badge", async ({ page, request }) => {
+    const res = await request.post("/api/admin/experiments", {
+      data: {
+        name: expKey,
+        universe: uName,
+        groups: [
+          { name: "control", weight: 5000 },
+          { name: "treatment", weight: 5000 },
+        ],
+      },
+    });
+    expect(res.ok(), `experiment seed failed: ${await res.text().catch(() => "")}`).toBeTruthy();
+
+    await page.goto("/dashboard/e2e-project-id/experiments");
     await expect(expRow(page).getByText(/^draft$/i)).toBeVisible();
   });
 
@@ -494,21 +513,24 @@ test.describe("Settings CRUD", () => {
   const newName = `E2E Project ${RUN}`;
 
   test("update project name → reflected on settings page", async ({ page }) => {
+    // Settings page defaults to ?tab=general. The General form renders the
+    // project-name input with aria-label "Project name" and a "Save changes"
+    // submit button.
     await page.goto("/dashboard/e2e-project-id/settings");
-    const input = page.locator("#project-name");
+    const input = page.getByLabel("Project name", { exact: true });
     await input.fill(newName);
-    await page.getByRole("button", { name: /^save$/i }).click();
+    await page.getByRole("button", { name: /^save changes$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/settings$/);
-    await expect(page.locator("#project-name")).toHaveValue(newName);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/settings/);
+    await expect(page.getByLabel("Project name", { exact: true })).toHaveValue(newName);
   });
 
   test("restore original project name", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/settings");
-    await page.locator("#project-name").fill("Default project");
-    await page.getByRole("button", { name: /^save$/i }).click();
+    await page.getByLabel("Project name", { exact: true }).fill("Default project");
+    await page.getByRole("button", { name: /^save changes$/i }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/settings$/);
-    await expect(page.locator("#project-name")).toHaveValue("Default project");
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/settings/);
+    await expect(page.getByLabel("Project name", { exact: true })).toHaveValue("Default project");
   });
 });
