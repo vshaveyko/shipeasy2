@@ -426,6 +426,22 @@
   }
 }
 
+/* Embed mode: lives inside BigModalWizard. Left col scrolls with modal body;
+   right col is sticky to its top edge so the live test panel + attributes
+   stay in view while the user scrolls long stacks. */
+.gke-step2.gke-embed,
+.gke-step2.gke-embed .gke-step2-main {
+  max-height: none;
+  overflow-y: visible;
+}
+.gke-step2.gke-embed .gke-step2-side {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+}
+
 .gke-stephead-desc {
   white-space: nowrap;
   overflow: hidden;

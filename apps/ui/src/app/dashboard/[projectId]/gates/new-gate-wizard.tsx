@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CodeBlock } from "@/components/ui/code-block";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  AddGateDialog,
   StepGatesView,
   initialStack,
   type StackEntry,
@@ -68,6 +69,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
     initialStack({ initialRules: [], initialRolloutPct: 0, publicFloorPct: 0 }),
   );
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showTplPicker, setShowTplPicker] = useState(false);
   const [pending, startTransition] = useTransition();
 
   // Attributes only fetch once the user opens the wizard (Targeting step needs them).
@@ -82,6 +84,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
       setKey("");
       setStack(initialStack({ initialRules: [], initialRolloutPct: 0, publicFloorPct: 0 }));
       setExpandedId(null);
+      setShowTplPicker(false);
     }
     onOpenChange(next);
   }
@@ -148,6 +151,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
       return next;
     });
     setExpandedId(newEntry.id);
+    setShowTplPicker(false);
   }
 
   const steps: WizardStep[] = [
@@ -198,8 +202,8 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
       label: "Targeting",
       hint: (
         <>
-          Stack conditions and rollouts above the public floor. Top → bottom — first match wins.
-          Drag, duplicate, or remove any non-locked entry.
+          If any gate above passes, the gatekeeper returns <b>true</b> · otherwise falls through to{" "}
+          <b>public {(publicFloorPct / 100).toFixed(0)}%</b>
         </>
       ),
       content: attributes ? (
@@ -216,8 +220,10 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
           onDup={dup}
           onRm={rm}
           onUpdEntry={upd}
-          onPickTemplate={() => toast.info("Templates pick up after create — open the editor")}
+          onPickTemplate={() => setShowTplPicker(true)}
           askClaudeEnabled={false}
+          hideEvalFlow
+          className="gke-embed"
         />
       ) : (
         <div className="flex flex-col gap-3">
@@ -312,19 +318,28 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
   }
 
   return (
-    <BigModalWizard
-      open={open}
-      onOpenChange={resetAndClose}
-      kind="gates"
-      title="Name your gatekeeper"
-      eyebrow={{ project: projectId, area: "Gates" }}
-      steps={steps}
-      current={step}
-      onStepChange={setStep}
-      onSubmit={handleSubmit}
-      submitLabel="Create gate"
-      submitting={pending}
-    />
+    <>
+      <BigModalWizard
+        open={open}
+        onOpenChange={resetAndClose}
+        kind="gates"
+        title="Name your gatekeeper"
+        eyebrow={{ project: projectId, area: "Gates" }}
+        steps={steps}
+        current={step}
+        onStepChange={setStep}
+        onSubmit={handleSubmit}
+        submitLabel="Create gate"
+        submitting={pending}
+      />
+      {showTplPicker ? (
+        <AddGateDialog
+          attributes={attrList}
+          onClose={() => setShowTplPicker(false)}
+          onPick={(seed) => addEntry(seed)}
+        />
+      ) : null}
+    </>
   );
 }
 

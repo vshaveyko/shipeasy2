@@ -105,12 +105,16 @@ export function BigModalWizard({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="big-modal" showClose={false}>
-        {/* Eyebrow */}
+        {/* Eyebrow — project crumb + step counter */}
         <div className="flex h-9 items-center justify-between border-b border-[var(--se-line)] px-4 text-[11.5px] text-[var(--se-fg-3)]">
           <div className="t-mono-xs flex items-center gap-1.5 truncate">
             {eyebrow?.project ? <span>{eyebrow.project}</span> : null}
             {eyebrow?.project && eyebrow?.area ? <span className="dim-3">·</span> : null}
             {eyebrow?.area ? <span>{eyebrow.area}</span> : null}
+            <span className="dim-3">·</span>
+            <span>
+              Step {current + 1} of {steps.length} · New {meta.label}
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <Kbd>Esc</Kbd>
@@ -124,7 +128,7 @@ export function BigModalWizard({
           </div>
         </div>
 
-        {/* Head */}
+        {/* Head — step-aware: title + inline description update per step. */}
         <header className="flex shrink-0 items-start gap-3 border-b border-[var(--se-line)] px-5 pb-3.5 pt-4">
           <span
             aria-hidden
@@ -136,8 +140,12 @@ export function BigModalWizard({
             <meta.Icon className="size-4" />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="t-caps dim-2">New {meta.label}</span>
-            <DialogTitle className="t-h2 truncate">{title}</DialogTitle>
+            <DialogTitle className="t-h3 truncate">{step?.label ?? title}</DialogTitle>
+            {step?.hint ? (
+              <DialogDescription className="t-sm dim line-clamp-1 max-w-[80ch]">
+                {step.hint}
+              </DialogDescription>
+            ) : null}
           </div>
           <div className="hidden min-w-[280px] max-w-[420px] flex-1 items-center md:flex">
             <Stepper
@@ -159,11 +167,6 @@ export function BigModalWizard({
             }
           >
             <div className="flex min-w-0 flex-col gap-3">
-              {step?.hint ? (
-                <DialogDescription className="max-w-[80ch] text-[12.5px]">
-                  {step.hint}
-                </DialogDescription>
-              ) : null}
               <div className="flex min-w-0 flex-1 flex-col gap-3">{step?.content}</div>
             </div>
             {step?.aside ? (

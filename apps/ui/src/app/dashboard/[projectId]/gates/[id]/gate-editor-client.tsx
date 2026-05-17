@@ -754,6 +754,8 @@ export function StepGatesView({
   onUpdEntry,
   onPickTemplate,
   askClaudeEnabled = true,
+  hideEvalFlow = false,
+  className,
 }: {
   stack: StackEntry[];
   expandedId: string | null;
@@ -769,9 +771,11 @@ export function StepGatesView({
   onUpdEntry: (id: string, patch: Partial<StackEntry>) => void;
   onPickTemplate: () => void;
   askClaudeEnabled?: boolean;
+  hideEvalFlow?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="gke-step2">
+    <div className={`gke-step2${className ? ` ${className}` : ""}`}>
       <div className="gke-step2-main">
         <div className="gke-card">
           <div className="gke-toolbar">
@@ -865,14 +869,16 @@ export function StepGatesView({
             )}
           </div>
 
-          <div className="gke-evalflow">
-            <ArrowRight className="size-3" />
-            <span>If any gate above passes, the gatekeeper returns </span>
-            <b>true</b>
-            <span className="arrow">·</span>
-            <span>otherwise falls through to </span>
-            <b>public {(publicFloorPct / 100).toFixed(0)}%</b>
-          </div>
+          {hideEvalFlow ? null : (
+            <div className="gke-evalflow">
+              <ArrowRight className="size-3" />
+              <span>If any gate above passes, the gatekeeper returns </span>
+              <b>true</b>
+              <span className="arrow">·</span>
+              <span>otherwise falls through to </span>
+              <b>public {(publicFloorPct / 100).toFixed(0)}%</b>
+            </div>
+          )}
 
           <div className="gke-stack">
             {stack.map((g, idx) => {
@@ -1668,7 +1674,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-function AddGateDialog({
+export function AddGateDialog({
   attributes,
   onClose,
   onPick,
