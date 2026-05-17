@@ -1,63 +1,26 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Gates product", () => {
-  test("gates listing renders empty state with create CTA", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/gates");
-
-    await expect(page.getByRole("heading", { name: /^gates$/i, level: 1 })).toBeVisible();
-    await expect(page.getByRole("link", { name: /define your first gate/i }).first()).toBeVisible();
-  });
-
-  test("new-gate form renders the required fields", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/gates/new");
-
-    await expect(page.getByRole("heading", { name: /^new gatekeeper$/i, level: 1 })).toBeVisible();
-    await expect(page.getByLabel(/^key$/i)).toBeVisible();
-  });
-
-  test("typing into the key field updates the input", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/gates/new");
-
-    const key = page.getByLabel(/^key$/i);
-    await key.fill("new_checkout_flow");
-    await expect(key).toHaveValue("new_checkout_flow");
-  });
-
-  test("cancel link returns to the gates list", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/gates/new");
-    await page
-      .getByRole("link", { name: /^cancel$/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
-  });
-
-  test("submit button is enabled and wired to a server action", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/gates/new");
-    await expect(page.getByRole("button", { name: /^create gate$/i })).toBeEnabled();
-  });
-});
+// Gates product chrome is covered end-to-end by gates.spec.ts (UnifiedList +
+// BigModalWizard). Keep this file focused on the Configs surface.
 
 test.describe("Configs product", () => {
-  test("values landing renders the tree shell with empty state or first config", async ({
-    page,
-  }) => {
+  test("values landing renders the unified-list shell with header", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/configs/values");
-    // Either the empty-state heading (no configs) or a redirect to /values/[id].
-    // The tree + search input is present in both cases.
-    await expect(page.getByPlaceholder(/search configs/i)).toBeVisible();
+
+    await expect(page.getByRole("heading", { name: /^configs$/i, level: 1 })).toBeVisible();
+    // Either the HeroEmptyState (no configs) or the closed-table (some configs)
+    // is rendered. Both paths expose the "New config" CTA.
+    const newButton = page.getByRole("button", { name: /^new config$/i });
+    const heroLink = page.getByRole("link", { name: /define your first config/i });
+    await expect(newButton.or(heroLink).first()).toBeVisible();
   });
 
-  test("new-config form renders and cancels back to values list", async ({ page }) => {
+  test("/configs/values/new redirects into the ?new=1 wizard", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
 
-    await expect(page.getByRole("heading", { name: /^new config$/i, level: 1 })).toBeVisible();
-    await expect(page.getByLabel(/^key$/i)).toBeVisible();
-
-    await page
-      .getByRole("link", { name: /^cancel$/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\?new=1$/);
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByTestId("config-key-input")).toBeVisible();
   });
 });

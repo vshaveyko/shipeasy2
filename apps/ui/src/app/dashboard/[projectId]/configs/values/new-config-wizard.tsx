@@ -2,32 +2,29 @@
 
 import { useMemo, useState, useTransition } from "react";
 import {
-  ArrowRight,
   Braces,
   Check,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   ClipboardPaste,
-  Code,
   Copy,
   Edit3,
   List,
   Plus,
-  Rocket,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 
-import { Page, PageBody } from "@/components/dashboard/page";
+import { BigModalWizard, type WizardStep } from "@/components/shell/big-modal-wizard";
 import { Button } from "@/components/ui/button";
-import { LinkButton } from "@/components/ui/link-button";
+import { CodeBlock } from "@/components/ui/code-block";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { createConfigAction } from "../actions";
-import { EditFieldDialog } from "./edit-field-dialog";
-import { EditValueDialog } from "./edit-value-dialog";
-import { ImportJsonDialog } from "./import-json-dialog";
-import { PasteJsonDialog } from "./paste-json-dialog";
-import { IntegrationSnippetDialog } from "@/components/integration";
+import { createConfigAction } from "./actions";
+import { EditFieldDialog } from "./new/edit-field-dialog";
+import { EditValueDialog } from "./new/edit-value-dialog";
+import { ImportJsonDialog } from "./new/import-json-dialog";
+import { PasteJsonDialog } from "./new/paste-json-dialog";
 import {
   TYPE_OPTS,
   addChild,
@@ -41,38 +38,37 @@ import {
   removeField as removeFieldHelper,
   updateField as updateFieldHelper,
   type WizField,
-} from "./wizard-helpers";
+} from "./new/wizard-helpers";
 
-const STEPS = [
-  { k: "details", label: "Details", tag: "1 · metadata" },
-  { k: "schema", label: "Schema", tag: "2 · structure" },
-  { k: "values", label: "Default values", tag: "3 · prefill" },
-  { k: "review", label: "Review & integrate", tag: "4 · publish" },
-] as const;
+// Match the server-side `configNameSchema` shape: exactly two segments
+// separated by `.`, each `[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?`. The folder
+// segment may also be the reserved `_default` namespace.
+const KEY_PATTERN =
+  /^(?:_default|[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
+
+export interface NewConfigWizardProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  projectId: string;
+  onCreated?: () => void;
+}
 
 export function NewConfigWizard({
+  open,
+  onOpenChange,
   projectId,
-  draftFields,
-}: {
-  projectId: string;
-  draftFields: boolean;
-}) {
-  const cancelHref = `/dashboard/${projectId}/configs/values`;
-
-  const [stepIdx, setStepIdx] = useState(0);
+  onCreated,
+}: NewConfigWizardProps) {
+  const [step, setStep] = useState(0);
   const [key, setKey] = useState("");
   const [description, setDescription] = useState("");
-  const [group, setGroup] = useState("platform");
-  const [owner, setOwner] = useState("");
   const [fields, setFields] = useState<WizField[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [jsonView, setJsonView] = useState(false);
   const [editFieldId, setEditFieldId] = useState<string | null>(null);
   const [editValueId, setEditValueId] = useState<string | null>(null);
-  const [sdkOpen, setSdkOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const editFieldField = useMemo(
@@ -88,136 +84,153 @@ export function NewConfigWizard({
   const missing = useMemo(() => countMissingRequired(fields), [fields]);
   const built = useMemo(() => buildSchemaAndDefault(fields), [fields]);
 
-  const next = () => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1));
-  const prev = () => setStepIdx((i) => Math.max(i - 1, 0));
+  const trimmed = key.trim();
+  const keyValid = KEY_PATTERN.test(trimmed);
+  const displayKey = trimmed || "your_config";
 
-  function publish() {
-    setError(null);
-    if (!key.trim()) {
-      setError("Key is required");
-      setStepIdx(0);
+  function resetAndClose(next: boolean) {
+    if (!next) {
+      setStep(0);
+      setKey("");
+      setDescription("");
+      setFields([]);
+      setExpanded({});
+      setJsonView(false);
+      setEditFieldId(null);
+      setEditValueId(null);
+      setImportOpen(false);
+      setPasteOpen(false);
+    }
+    onOpenChange(next);
+  }
+
+  function handleSubmit() {
+    if (!keyValid) {
+      setStep(0);
       return;
     }
     if (built.error) {
-      setError(built.error);
-      setStepIdx(1);
+      setStep(1);
       return;
     }
     startTransition(async () => {
       try {
         await createConfigAction({
-          name: key,
-          description: description || undefined,
+          name: trimmed,
+          description: description.trim() || undefined,
           schema: built.schema,
           value: built.value,
         });
+        onCreated?.();
       } catch (err) {
-        setError((err as Error).message);
+        const digest = (err as { digest?: string })?.digest;
+        if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) throw err;
+        // Other errors surface via the Server Action redirect chain — list pane refresh handles it.
       }
     });
   }
 
+  const steps: WizardStep[] = [
+    {
+      id: "details",
+      label: "Details",
+      hint: (
+        <>
+          The key is how SDK consumers fetch this config — pick a stable, dot-separated name like{" "}
+          <code className="font-mono text-[var(--se-fg-2)]">features.shipping</code>.
+        </>
+      ),
+      content: (
+        <StepDetails
+          keyValue={key}
+          setKeyValue={setKey}
+          description={description}
+          setDescription={setDescription}
+        />
+      ),
+      aside: (
+        <>
+          <div className="t-caps dim-2">What happens next</div>
+          <ul className="t-sm dim flex flex-col gap-1.5">
+            <li>Schema → field types, descriptions, required flags.</li>
+            <li>Defaults → the value SDK consumers receive on first read.</li>
+            <li>Review → ship to dev/staging/prod from the editor.</li>
+          </ul>
+        </>
+      ),
+      isValid: () => keyValid,
+    },
+    {
+      id: "schema",
+      label: "Schema",
+      hint: <>Click a row to edit it. Defaults come next.</>,
+      content: (
+        <StepSchema
+          fields={fields}
+          setFields={setFields}
+          expanded={expanded}
+          setExpanded={setExpanded}
+          openEditField={setEditFieldId}
+          jsonView={jsonView}
+          setJsonView={setJsonView}
+          openImport={() => setImportOpen(true)}
+        />
+      ),
+      isValid: () => keyValid,
+    },
+    {
+      id: "values",
+      label: "Defaults",
+      hint: (
+        <>
+          These are what consumers receive on the first read. Click any row to open an editor sized
+          to the field type.
+        </>
+      ),
+      content: (
+        <StepValues
+          fields={fields}
+          expanded={expanded}
+          setExpanded={setExpanded}
+          openEditValue={setEditValueId}
+          missing={missing}
+          openPaste={() => setPasteOpen(true)}
+        />
+      ),
+      isValid: () => keyValid && !built.error,
+    },
+    {
+      id: "review",
+      label: "Review",
+      hint: <>Confirm the shape. Submit creates the config and opens the full editor.</>,
+      content: (
+        <StepReview
+          keyValue={trimmed}
+          description={description}
+          fields={fields}
+          built={built}
+          fieldCount={fieldCount}
+        />
+      ),
+      isValid: () => keyValid && !built.error,
+    },
+  ];
+
   return (
-    <Page className="px-6">
-      <PageBody className="space-y-5">
-        <h1 className="sr-only">New config</h1>
-        <Stepper stepIdx={stepIdx} onJump={setStepIdx} />
-
-        {stepIdx === 0 ? (
-          <StepDetails
-            keyValue={key}
-            setKeyValue={setKey}
-            description={description}
-            setDescription={setDescription}
-            group={group}
-            setGroup={setGroup}
-            owner={owner}
-            setOwner={setOwner}
-            draftFields={draftFields}
-          />
-        ) : null}
-
-        {stepIdx === 1 ? (
-          <StepSchema
-            fields={fields}
-            setFields={setFields}
-            expanded={expanded}
-            setExpanded={setExpanded}
-            openEditField={setEditFieldId}
-            jsonView={jsonView}
-            setJsonView={setJsonView}
-            openImport={() => setImportOpen(true)}
-          />
-        ) : null}
-
-        {stepIdx === 2 ? (
-          <StepValues
-            fields={fields}
-            expanded={expanded}
-            setExpanded={setExpanded}
-            openEditValue={setEditValueId}
-            missing={missing}
-            openPaste={() => setPasteOpen(true)}
-          />
-        ) : null}
-
-        {stepIdx === 3 ? (
-          <StepReview
-            keyValue={key}
-            description={description}
-            fields={fields}
-            built={built}
-            openSdk={() => setSdkOpen(true)}
-            draftFields={draftFields}
-          />
-        ) : null}
-
-        {error ? (
-          <div
-            role="alert"
-            className="rounded-[var(--radius-md)] border border-[color-mix(in_oklab,var(--se-danger)_30%,transparent)] bg-[var(--se-danger-soft)] px-4 py-2 text-[13px] text-[var(--se-danger)]"
-          >
-            {error}
-          </div>
-        ) : null}
-
-        <div className="sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-1)] px-5 py-3 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center gap-2 font-mono text-[11.5px] text-[var(--se-fg-3)]">
-            <span>{STEPS[stepIdx].label}</span>
-            <span className="text-[var(--se-fg-4)]">·</span>
-            <span>
-              {fieldCount} field{fieldCount === 1 ? "" : "s"}
-            </span>
-            <span className="text-[var(--se-fg-4)]">·</span>
-            <span>{draftFields ? "draft v3" : "draft"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <LinkButton variant="ghost" size="sm" href={cancelHref}>
-              Cancel
-            </LinkButton>
-            <Button type="button" variant="ghost" size="sm" onClick={prev} disabled={stepIdx === 0}>
-              <ChevronLeft className="size-3" /> Back
-            </Button>
-            {stepIdx < STEPS.length - 1 ? (
-              <Button type="button" size="sm" onClick={next}>
-                Continue <ArrowRight className="size-3" />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                onClick={publish}
-                disabled={pending}
-                data-testid="publish-button"
-              >
-                <Rocket className="size-3" />
-                {pending ? "Creating…" : "Create config"}
-              </Button>
-            )}
-          </div>
-        </div>
-      </PageBody>
-
+    <>
+      <BigModalWizard
+        open={open}
+        onOpenChange={resetAndClose}
+        kind="configs"
+        title="Name your config"
+        eyebrow={{ project: projectId, area: "Configs" }}
+        steps={steps}
+        current={step}
+        onStepChange={setStep}
+        onSubmit={handleSubmit}
+        submitLabel={pending ? "Creating…" : "Create config"}
+        submitting={pending}
+      />
       <EditFieldDialog
         field={editFieldField}
         onClose={() => setEditFieldId(null)}
@@ -228,12 +241,6 @@ export function NewConfigWizard({
         field={editValueField}
         onClose={() => setEditValueId(null)}
         onSave={(id, patch) => setFields((fs) => updateFieldHelper(fs, id, patch))}
-      />
-      <IntegrationSnippetDialog
-        open={sdkOpen}
-        onOpenChange={setSdkOpen}
-        kind="config"
-        name={key || "new_config"}
       />
       <ImportJsonDialog
         open={importOpen}
@@ -246,104 +253,7 @@ export function NewConfigWizard({
         fields={fields}
         onApply={(next) => setFields(next)}
       />
-    </Page>
-  );
-}
-
-// ── Stepper ─────────────────────────────────────────────────────────
-
-function Stepper({ stepIdx, onJump }: { stepIdx: number; onJump: (i: number) => void }) {
-  return (
-    <div
-      role="tablist"
-      aria-label="Wizard steps"
-      className="flex items-center gap-0 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-1)] px-5 py-3.5"
-    >
-      {STEPS.flatMap((s, i) => {
-        const state = i < stepIdx ? "done" : i === stepIdx ? "current" : "idle";
-        const items: React.ReactNode[] = [
-          <button
-            key={s.k}
-            type="button"
-            role="tab"
-            aria-selected={state === "current"}
-            onClick={() => onJump(i)}
-            className={cn(
-              "flex shrink-0 items-center gap-2.5 rounded-[8px] p-2 transition-colors",
-              state === "current" && "text-foreground",
-              state === "done" && "text-[var(--se-fg-2)]",
-              state === "idle" && "text-[var(--se-fg-3)] hover:text-[var(--se-fg-2)]",
-            )}
-          >
-            <span
-              className={cn(
-                "grid size-[26px] shrink-0 place-items-center rounded-full border font-mono text-[12px] font-medium transition-all",
-                state === "done" &&
-                  "border-[var(--se-accent)] bg-[var(--se-accent)] text-[var(--se-accent-fg)]",
-                state === "current" &&
-                  "border-[var(--se-accent)] bg-[var(--se-bg-1)] text-foreground shadow-[0_0_0_3px_color-mix(in_oklab,var(--se-accent)_22%,transparent)]",
-                state === "idle" &&
-                  "border-[var(--se-line-2)] bg-[var(--se-bg-3)] text-[var(--se-fg-3)]",
-              )}
-            >
-              {state === "done" ? <Check className="size-3" /> : i + 1}
-            </span>
-            <span className="flex flex-col items-start leading-[1.2]">
-              <span className="text-[13.5px] font-medium tracking-[-0.005em]">{s.label}</span>
-              <span
-                className={cn(
-                  "mt-0.5 font-mono text-[10px] tracking-[0.06em] uppercase",
-                  state === "current" ? "text-[var(--se-accent)]" : "text-[var(--se-fg-4)]",
-                )}
-              >
-                {s.tag}
-              </span>
-            </span>
-          </button>,
-        ];
-        if (i < STEPS.length - 1) {
-          items.push(
-            <span
-              key={`${s.k}-c`}
-              className={cn(
-                "mx-1.5 h-px min-w-[18px] flex-1",
-                i < stepIdx ? "bg-[var(--se-accent)]" : "bg-[var(--se-line-2)]",
-              )}
-            />,
-          );
-        }
-        return items;
-      })}
-    </div>
-  );
-}
-
-// ── Step head ───────────────────────────────────────────────────────
-
-function StepHead({
-  stem,
-  title,
-  description,
-  right,
-}: {
-  stem: string;
-  title: string;
-  description: string;
-  right?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-end justify-between gap-6 px-1">
-      <div>
-        <div className="font-mono text-[11px] tracking-[0.06em] uppercase text-[var(--se-accent)]">
-          {stem}
-        </div>
-        <h2 className="mt-1.5 mb-1 text-[24px] font-semibold tracking-[-0.015em]">{title}</h2>
-        <p className="m-0 max-w-[64ch] text-[13.5px] leading-[1.55] text-[var(--se-fg-2)]">
-          {description}
-        </p>
-      </div>
-      {right}
-    </div>
+    </>
   );
 }
 
@@ -354,40 +264,15 @@ function StepDetails({
   setKeyValue,
   description,
   setDescription,
-  group,
-  setGroup,
-  owner,
-  setOwner,
-  draftFields,
 }: {
   keyValue: string;
   setKeyValue: (v: string) => void;
   description: string;
   setDescription: (v: string) => void;
-  group: string;
-  setGroup: (v: string) => void;
-  owner: string;
-  setOwner: (v: string) => void;
-  draftFields: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-4">
-      <StepHead
-        stem="step 1 of 4 · metadata"
-        title="Name and describe this config"
-        description="The key is how SDK consumers fetch this config. Description helps your team find and audit it later."
-      />
-
-      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-1)]">
-        <div className="flex items-center gap-3 border-b border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-4 py-3">
-          <span className="text-[13.5px] font-medium tracking-[-0.005em]">
-            Configuration metadata
-          </span>
-          <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase text-[var(--se-fg-3)]">
-            key · description{draftFields ? " · group · owner" : ""}
-          </span>
-        </div>
-
+    <div className="flex flex-col gap-3">
+      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
         <DetailsRow label="Key" required>
           <input
             id="config-key"
@@ -396,6 +281,7 @@ function StepDetails({
             onChange={(e) => setKeyValue(e.target.value)}
             placeholder="features.shipping"
             data-testid="config-key-input"
+            autoFocus
             className="h-9 w-full rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 font-mono text-[13.5px] font-medium outline-none transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] focus:border-[var(--se-accent)] focus:bg-[var(--se-bg-1)]"
           />
           <div className="mt-2 text-[11.5px] leading-[1.55] text-[var(--se-fg-3)]">
@@ -407,52 +293,19 @@ function StepDetails({
           </div>
         </DetailsRow>
 
-        {draftFields ? (
-          <DetailsRow label="Group">
-            <select
-              aria-label="Group"
-              value={group}
-              onChange={(e) => setGroup(e.target.value)}
-              className="h-9 w-full rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 text-[13.5px] outline-none transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] focus:border-[var(--se-accent)] focus:bg-[var(--se-bg-1)]"
-            >
-              <option value="commerce">commerce</option>
-              <option value="platform">platform</option>
-              <option value="ml">ml</option>
-              <option value="growth">growth</option>
-            </select>
-            <div className="mt-2 text-[11.5px] leading-[1.55] text-[var(--se-fg-3)]">
-              Used to organize configs in the dashboard sidebar.
-            </div>
-          </DetailsRow>
-        ) : null}
-
         <DetailsRow label="Description">
           <textarea
+            id="config-description"
             aria-label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What this config does, who owns it, and when to update it."
-            className="min-h-[104px] w-full rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 py-2.5 text-[13.5px] leading-[1.55] outline-none transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] focus:border-[var(--se-accent)] focus:bg-[var(--se-bg-1)]"
+            className="min-h-[88px] w-full rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 py-2.5 text-[13.5px] leading-[1.55] outline-none transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] focus:border-[var(--se-accent)] focus:bg-[var(--se-bg-1)]"
           />
           <div className="mt-2 text-[11.5px] leading-[1.55] text-[var(--se-fg-3)]">
             Surfaces in the configs list and audit log entries.
           </div>
         </DetailsRow>
-
-        {draftFields ? (
-          <DetailsRow label="Owner">
-            <input
-              aria-label="Owner"
-              value={owner}
-              onChange={(e) => setOwner(e.target.value)}
-              placeholder="Growth team"
-              className="h-9 w-full rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 text-[13.5px] outline-none transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] focus:border-[var(--se-accent)] focus:bg-[var(--se-bg-1)]"
-            />
-            <div className="mt-2 text-[11.5px] leading-[1.55] text-[var(--se-fg-3)]">
-              Team or individual responsible. Pinged on validation failures.
-            </div>
-          </DetailsRow>
-        ) : null}
       </div>
     </div>
   );
@@ -468,7 +321,7 @@ function DetailsRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[200px_minmax(0,1fr)] items-start gap-6 border-b border-[var(--se-line)] px-5 py-4 last:border-b-0">
+    <div className="grid grid-cols-[160px_minmax(0,1fr)] items-start gap-5 border-b border-[var(--se-line)] px-4 py-3 last:border-b-0">
       <span className="flex items-center gap-1.5 pt-2.5 font-mono text-[11px] tracking-[0.06em] uppercase text-[var(--se-fg-3)]">
         {label}
         {required ? <span className="text-[var(--se-accent)]">*</span> : null}
@@ -516,18 +369,7 @@ function StepSchema({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <StepHead
-        stem="step 2 of 4 · structure"
-        title="Define the schema"
-        description="Add fields, pick types, and describe what each one controls. Click a row to edit it. Default values come next."
-        right={
-          <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
-            {fieldCount} field{fieldCount === 1 ? "" : "s"}
-          </span>
-        }
-      />
-
+    <div className="flex flex-col gap-3">
       <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-1)]">
         <div className="flex items-center gap-2 border-b border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-4 py-2.5">
           <Button type="button" size="sm" onClick={onAddRoot}>
@@ -536,6 +378,9 @@ function StepSchema({
           <Button type="button" variant="outline" size="sm" onClick={openImport}>
             <Braces className="size-3" /> Import JSON
           </Button>
+          <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
+            {fieldCount} field{fieldCount === 1 ? "" : "s"}
+          </span>
           <div className="flex-1" />
           <div className="flex overflow-hidden rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-1)]">
             <button
@@ -762,7 +607,7 @@ function TypePill({ field }: { field: WizField }) {
   );
 }
 
-// ── Step 3: Values ──────────────────────────────────────────────────
+// ── Step 3: Defaults ────────────────────────────────────────────────
 
 function StepValues({
   fields,
@@ -783,28 +628,21 @@ function StepValues({
   const fieldCount = useMemo(() => countAllFields(fields), [fields]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <StepHead
-        stem="step 3 of 4 · prefill"
-        title="Set default values"
-        description="These are what consumers receive when they fetch this config. Click any row to open an editor sized to the field type."
-        right={
-          <div className="flex items-center gap-2.5">
-            {missing > 0 ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--se-warn)_35%,transparent)] bg-[var(--se-warn-soft)] px-2.5 py-0.5 font-mono text-[10.5px] tracking-[0.04em] uppercase text-[var(--se-warn)]">
-                {missing} required missing
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--se-accent)_35%,transparent)] bg-[var(--se-accent-soft)] px-2.5 py-0.5 font-mono text-[10.5px] tracking-[0.04em] uppercase text-[var(--se-accent)]">
-                <Check className="size-2.5" /> All required set
-              </span>
-            )}
-            <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
-              {fieldCount} field{fieldCount === 1 ? "" : "s"}
-            </span>
-          </div>
-        }
-      />
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2.5">
+        {missing > 0 ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--se-warn)_35%,transparent)] bg-[var(--se-warn-soft)] px-2.5 py-0.5 font-mono text-[10.5px] tracking-[0.04em] uppercase text-[var(--se-warn)]">
+            {missing} required missing
+          </span>
+        ) : fieldCount > 0 ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--se-accent)_35%,transparent)] bg-[var(--se-accent-soft)] px-2.5 py-0.5 font-mono text-[10.5px] tracking-[0.04em] uppercase text-[var(--se-accent)]">
+            <Check className="size-2.5" /> All required set
+          </span>
+        ) : null}
+        <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
+          {fieldCount} field{fieldCount === 1 ? "" : "s"}
+        </span>
+      </div>
 
       <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-1)]">
         <div className="flex items-center gap-2 border-b border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-4 py-2.5">
@@ -826,7 +664,7 @@ function StepValues({
 
         {fields.length === 0 ? (
           <div className="px-6 py-10 text-center text-[13px] text-[var(--se-fg-3)]">
-            Define some fields in Step 2 first.
+            Define some fields in Schema first.
           </div>
         ) : (
           <div className="flex flex-col">
@@ -992,30 +830,21 @@ function ValueSummary({ field }: { field: WizField }) {
   return <span className="text-[var(--se-accent)]">&quot;{String(field.value)}&quot;</span>;
 }
 
-// ── Step 4: Review ──────────────────────────────────────────────────
-
-const VERSIONS = [
-  { v: "v3", state: "draft" as const, who: "You · just now", note: "Initial draft" },
-  { v: "v2", state: "live" as const, who: "Maya Patel · 2h ago", note: "Published · 8 services" },
-  { v: "v1", state: "archived" as const, who: "Jin Kobayashi · 3d ago", note: "Initial schema" },
-];
+// ── Step 4: Review + Integrate ──────────────────────────────────────
 
 function StepReview({
   keyValue,
   description,
   fields,
   built,
-  openSdk,
-  draftFields,
+  fieldCount,
 }: {
   keyValue: string;
   description: string;
   fields: WizField[];
   built: { value: Record<string, unknown>; error: string | null };
-  openSdk: () => void;
-  draftFields: boolean;
+  fieldCount: number;
 }) {
-  const fieldCount = useMemo(() => countAllFields(fields), [fields]);
   const valuesObj = useMemo(() => {
     const o: Record<string, unknown> = {};
     for (const f of fields) o[f.key] = fieldToJson(f);
@@ -1029,28 +858,19 @@ function StepReview({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <StepHead
-        stem="step 4 of 4 · publish"
-        title="Review & integrate"
-        description="Double-check the metadata and values. After publish, the SDK snippet stays available from this config's row in the configs list."
-        right={
-          built.error ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--se-danger)_35%,transparent)] bg-[var(--se-danger-soft)] px-2.5 py-0.5 font-mono text-[10.5px] tracking-[0.04em] uppercase text-[var(--se-danger)]">
-              {built.error}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--se-accent)_35%,transparent)] bg-[var(--se-accent-soft)] px-2.5 py-0.5 font-mono text-[10.5px] tracking-[0.04em] uppercase text-[var(--se-accent)]">
-              <Check className="size-2.5" /> Ready to publish
-            </span>
-          )
-        }
-      />
-
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_1fr]">
-        <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[1.1fr_1fr]">
+        <div className="flex flex-col gap-3">
           <ReviewCard title="Metadata" sub="step 1">
-            <ReviewItem label="Key" value={<span className="font-mono">{keyValue || "—"}</span>} />
+            <ReviewItem
+              label="Key"
+              value={
+                <span className="flex items-center gap-2 font-mono">
+                  <SlidersHorizontal className="size-3.5 text-[var(--se-accent)]" />
+                  {keyValue || "—"}
+                </span>
+              }
+            />
             <ReviewItem
               label="Description"
               value={
@@ -1062,58 +882,6 @@ function StepReview({
               }
             />
           </ReviewCard>
-
-          {draftFields ? (
-            <ReviewCard title="Versions" sub={`${VERSIONS.length} total`}>
-              <div className="flex flex-col">
-                {VERSIONS.map((v, i) => (
-                  <div
-                    key={v.v}
-                    className="relative flex items-start gap-3 border-b border-[var(--se-line)] px-4 py-3 last:border-b-0"
-                  >
-                    <span
-                      className={cn(
-                        "absolute left-[23px] top-0 bottom-0 w-px bg-[var(--se-line-2)]",
-                        i === 0 && "top-[18px]",
-                        i === VERSIONS.length - 1 && "bottom-auto h-[18px]",
-                      )}
-                      aria-hidden
-                    />
-                    <span
-                      className={cn(
-                        "mt-1 size-[9px] shrink-0 rounded-full ring-[3px] ring-[var(--se-bg-1)]",
-                        v.state === "live" &&
-                          "bg-[var(--se-accent)] [box-shadow:0_0_0_5px_color-mix(in_oklab,var(--se-accent)_30%,transparent)]",
-                        v.state === "draft" && "bg-[var(--se-warn)]",
-                        v.state === "archived" && "bg-[var(--se-fg-4)]",
-                      )}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 font-mono text-[13px] font-medium">
-                        <b>{v.v}</b>
-                        {v.state === "live" ? (
-                          <span className="se-badge se-badge-live">
-                            <span className="dot" />
-                            LIVE
-                          </span>
-                        ) : null}
-                        {v.state === "draft" ? (
-                          <span className="se-badge se-badge-paused">
-                            <span className="dot" />
-                            DRAFT
-                          </span>
-                        ) : null}
-                        {v.state === "archived" ? <span className="se-badge">archived</span> : null}
-                      </div>
-                      <div className="mt-0.5 font-mono text-[11px] text-[var(--se-fg-3)]">
-                        {v.who} · {v.note}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ReviewCard>
-          ) : null}
 
           <ReviewCard
             title="Schema"
@@ -1142,7 +910,7 @@ function StepReview({
           </ReviewCard>
         </div>
 
-        <div className="flex flex-col gap-4 lg:sticky lg:top-4">
+        <div className="flex flex-col gap-3 lg:sticky lg:top-2">
           <ReviewCard
             title="Default values · JSON"
             sub="step 3"
@@ -1158,52 +926,66 @@ function StepReview({
               </Button>
             }
           >
-            <pre className="m-0 max-h-[420px] overflow-auto bg-[var(--se-bg-1)] px-4 py-3.5 font-mono text-[12px] leading-[1.65] whitespace-pre text-[var(--se-fg-2)]">
+            {built.error ? (
+              <div className="px-4 py-3 text-[12.5px] text-[var(--se-danger)]">{built.error}</div>
+            ) : null}
+            <pre className="m-0 max-h-[260px] overflow-auto bg-[var(--se-bg-1)] px-4 py-3.5 font-mono text-[12px] leading-[1.65] whitespace-pre text-[var(--se-fg-2)]">
               {JSON.stringify(valuesObj, null, 2)}
             </pre>
           </ReviewCard>
 
-          <div
-            className="overflow-hidden rounded-[var(--radius-md)] border bg-[linear-gradient(180deg,color-mix(in_oklab,var(--se-accent)_8%,var(--se-bg-1)),var(--se-bg-1))]"
-            style={{
-              borderColor: "color-mix(in oklab, var(--se-accent) 35%, var(--se-line-2))",
-            }}
-          >
-            <div
-              className="flex items-center gap-3 border-b px-4 py-3"
-              style={{
-                borderColor: "color-mix(in oklab, var(--se-accent) 25%, var(--se-line-2))",
-              }}
-            >
-              <span className="text-[13.5px] font-medium text-foreground">SDK integration</span>
-              <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase text-[var(--se-fg-3)]">
-                view code in 7 languages
-              </span>
+          <ReviewCard title="SDK integration" sub="step 4">
+            <div className="px-4 py-3.5">
+              <Integrate configKey={keyValue || "your_config"} />
             </div>
-            <div className="flex flex-col gap-3.5 px-5 py-4">
-              <p className="m-0 text-[13.5px] leading-[1.55] text-[var(--se-fg-2)]">
-                After publish, copy a typed SDK snippet for TypeScript, Python, Ruby, Go, Java,
-                Rust, or cURL.
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {["TypeScript", "Python", "Ruby", "Go", "Java", "Rust", "cURL"].map((l) => (
-                  <span
-                    key={l}
-                    className="rounded-[4px] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-0.5 font-mono text-[11px] text-[var(--se-fg-3)]"
-                  >
-                    {l}
-                  </span>
-                ))}
-              </div>
-              <Button type="button" onClick={openSdk} className="justify-center">
-                <Code className="size-3" /> View SDK snippet
-              </Button>
-            </div>
-          </div>
+          </ReviewCard>
         </div>
       </div>
     </div>
   );
+}
+
+function Integrate({ configKey }: { configKey: string }) {
+  const snippets = useMemo(() => buildSnippets(configKey), [configKey]);
+  return (
+    <Tabs defaultValue="ts">
+      <TabsList>
+        <TabsTrigger value="ts">TypeScript</TabsTrigger>
+        <TabsTrigger value="py">Python</TabsTrigger>
+        <TabsTrigger value="go">Go</TabsTrigger>
+        <TabsTrigger value="curl">cURL</TabsTrigger>
+      </TabsList>
+      <TabsContent value="ts" className="mt-3">
+        <CodeBlock language="ts">{snippets.ts}</CodeBlock>
+      </TabsContent>
+      <TabsContent value="py" className="mt-3">
+        <CodeBlock language="py">{snippets.py}</CodeBlock>
+      </TabsContent>
+      <TabsContent value="go" className="mt-3">
+        <CodeBlock language="go">{snippets.go}</CodeBlock>
+      </TabsContent>
+      <TabsContent value="curl" className="mt-3">
+        <CodeBlock language="bash">{snippets.curl}</CodeBlock>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function buildSnippets(key: string) {
+  return {
+    ts: `import { shipeasy } from '@shipeasy/sdk';
+
+const cfg = await shipeasy.getConfig('${key}');
+console.log(cfg);`,
+    py: `from shipeasy import client
+
+cfg = client.get_config("${key}")
+print(cfg)`,
+    go: `cfg, _ := shipeasy.GetConfig(ctx, "${key}")
+fmt.Printf("%+v\\n", cfg)`,
+    curl: `curl -H "Authorization: Bearer $SHIPEASY_KEY" \\
+  https://api.shipeasy.dev/v1/configs/${key}`,
+  };
 }
 
 function ReviewCard({

@@ -89,16 +89,20 @@ test.describe("Killswitches — BigModalWizard create flow", () => {
 
   test("?new=1 deep-link renders the 3-step wizard", async ({ page }) => {
     await page.goto(`/dashboard/${PROJECT}/killswitches?new=1`);
-    const dialog = page.getByRole("dialog", { name: /new killswitch/i });
+    // BigModalWizard's accessible name is the current step.label (not the
+    // wizard `title` prop). Match the dialog without a name and assert
+    // killswitch chrome via the eyebrow.
+    const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/New Killswitch/)).toBeVisible();
     // Stepper (role=list) exposes all three step labels — scope to the list to
     // avoid colliding with the footer's "Step N · <label>" caption.
     const stepper = dialog.getByRole("list");
     await expect(stepper.getByText(/^Details$/)).toBeVisible();
     await expect(stepper.getByText(/Default.*switches/i)).toBeVisible();
     await expect(stepper.getByText(/^Integrate$/)).toBeVisible();
-    // Footer reads "Step 1 of 3 · Details".
-    await expect(dialog.getByText(/Step 1 of 3/i)).toBeVisible();
+    // Eyebrow and footer both expose "Step 1 of 3" — match the first.
+    await expect(dialog.getByText(/Step 1 of 3/i).first()).toBeVisible();
   });
 
   test("wizard happy path: Details → Default & switches → Integrate → create", async ({ page }) => {
@@ -119,7 +123,7 @@ test.describe("Killswitches — BigModalWizard create flow", () => {
     await dialog.getByRole("button", { name: /^next/i }).click();
 
     // Step 2 — Default value + switches
-    await expect(dialog.getByText(/Step 2 of 3/i)).toBeVisible();
+    await expect(dialog.getByText(/Step 2 of 3/i).first()).toBeVisible();
     // Flip default to ON (button label changes from "OFF · feature live" to "ON · killswitch active").
     await dialog.getByRole("button", { name: "Default value" }).click();
     await dialog.getByRole("button", { name: /add switch/i }).click();
@@ -127,7 +131,7 @@ test.describe("Killswitches — BigModalWizard create flow", () => {
     await dialog.getByRole("button", { name: /^next/i }).click();
 
     // Step 3 — Integrate (CodeBlock tabs)
-    await expect(dialog.getByText(/Step 3 of 3/i)).toBeVisible();
+    await expect(dialog.getByText(/Step 3 of 3/i).first()).toBeVisible();
     await expect(dialog.getByRole("tab", { name: /typescript/i })).toBeVisible();
     await expect(dialog.locator('pre[data-slot="code-block"]')).toContainText(fullName);
 
@@ -145,9 +149,10 @@ test.describe("Killswitches — BigModalWizard create flow", () => {
 
   test("ESC on ?new=1 closes the wizard and strips the param", async ({ page }) => {
     await page.goto(`/dashboard/${PROJECT}/killswitches?new=1`);
-    await expect(page.getByRole("dialog", { name: /new killswitch/i })).toBeVisible();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: /new killswitch/i })).toHaveCount(0);
+    await expect(dialog).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp(`/dashboard/${PROJECT}/killswitches$`));
   });
 

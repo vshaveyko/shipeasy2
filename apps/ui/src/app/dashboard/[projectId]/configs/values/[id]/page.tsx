@@ -7,7 +7,7 @@ import {
   type ConfigDetail,
   type ConfigActivity,
 } from "@/lib/handlers/configs";
-import { ConfigEditor } from "./editor";
+import { ConfigEditorBody } from "./editor";
 
 export default async function ConfigDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,5 +32,5 @@ export default async function ConfigDetailPage({ params }: { params: Promise<{ i
 
   if (!detail) notFound();
 
-  return <ConfigEditor initial={detail} initialActivity={activity} />;
+  return <ConfigEditorBody initial={detail} initialActivity={activity} />;
 }

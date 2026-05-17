@@ -349,9 +349,11 @@ test.describe("Gates — BigModalWizard create flow", () => {
   test("legacy /gates/new redirects into the wizard", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates/new");
     await expect(page).toHaveURL(/\/gates\?new=1$/);
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByText("New Gate", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /name your gatekeeper/i })).toBeVisible();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    // BigModalWizard eyebrow reads "Step 1 of N · New Gate" — match the
+    // "New Gate" substring instead of an exact text-node assertion.
+    await expect(dialog.getByText(/New Gate/)).toBeVisible();
   });
 
   test('"New gate" button opens the wizard, full flow lands on the editor', async ({ page }) => {
@@ -369,16 +371,16 @@ test.describe("Gates — BigModalWizard create flow", () => {
 
     // Step 2 — Targeting (stack editor). Skip with defaults (empty stack +
     // locked public floor) — the wizard only requires a valid key.
-    await expect(dialog.getByText(/Step 2 of 4/i)).toBeVisible();
+    await expect(dialog.getByText(/Step 2 of 4/i).first()).toBeVisible();
     await dialog.getByRole("button", { name: /^next\b/i }).click();
 
     // Step 3 — Preview. The key is echoed verbatim in the summary tile.
-    await expect(dialog.getByText(/Step 3 of 4/i)).toBeVisible();
+    await expect(dialog.getByText(/Step 3 of 4/i).first()).toBeVisible();
     await expect(dialog.getByText(key, { exact: true })).toBeVisible();
     await dialog.getByRole("button", { name: /^next\b/i }).click();
 
     // Step 4 — Integrate.
-    await expect(dialog.getByText(/Step 4 of 4/i)).toBeVisible();
+    await expect(dialog.getByText(/Step 4 of 4/i).first()).toBeVisible();
     await dialog.getByRole("button", { name: /create gate/i }).click();
 
     // createGateAction redirects to /gates/<id> (the full editor).

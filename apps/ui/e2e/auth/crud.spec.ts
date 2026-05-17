@@ -1,6 +1,7 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
+import { adminList } from "../admin-list";
 import { setProjectPlan } from "../seed-fixtures";
 
 const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
@@ -303,26 +304,36 @@ test.describe("Configs CRUD", () => {
   const cRow = (page: Page) => page.getByText(cKey, { exact: true }).locator("..");
 
   test("create config → appears in list", async ({ page }) => {
+    // Legacy `/configs/values/new` redirects into the ?new=1 wizard.
     await page.goto("/dashboard/e2e-project-id/configs/values/new");
-    await page.locator("#config-key").fill(cKey);
-    // Walk through the 4-step wizard.
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^create config$/i }).click();
+    await expect(page).toHaveURL(/\/configs\/values\?new=1$/);
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
 
-    // createConfigAction redirects to /values/<new-id>; the new key shows up in
-    // the editor's left-rail tree.
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/]+$/);
+    await dialog.locator("#config-key").fill(cKey);
+    // Walk through the 4-step wizard: Details → Schema → Defaults → Review.
+    await dialog.getByRole("button", { name: /next/i }).click();
+    await dialog.getByRole("button", { name: /next/i }).click();
+    await dialog.getByRole("button", { name: /next/i }).click();
+    await dialog.getByRole("button", { name: /create config/i }).click();
+
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/?]+$/);
     await expect(page.getByText(cKey, { exact: true }).first()).toBeVisible();
   });
 
   test("delete config → removed from list", async ({ page }) => {
-    // /configs/values redirects to the editor for the only existing config.
-    // Editor uses a two-step inline confirm: first click reveals "Confirm delete".
-    await page.goto("/dashboard/e2e-project-id/configs/values");
-    await page.getByRole("button", { name: /delete config/i }).click();
-    await page.getByRole("button", { name: /confirm delete/i }).click();
+    // Look up the row in the UnifiedList closed table, open the detail pane
+    // via ?open=<id>, and delete from the sticky header.
+    const list = await adminList<{ id: string; name: string }>(page.request, "/api/admin/configs");
+    const cfg = list.find((c) => c.name === cKey);
+    if (!cfg) throw new Error(`could not find config ${cKey}`);
+
+    await page.goto(`/dashboard/e2e-project-id/configs/values?open=${cfg.id}`);
+    await page.getByRole("button", { name: /delete config from detail pane/i }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^delete config$/i })
+      .click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
     await expect(page.getByText(cKey, { exact: true })).not.toBeVisible();

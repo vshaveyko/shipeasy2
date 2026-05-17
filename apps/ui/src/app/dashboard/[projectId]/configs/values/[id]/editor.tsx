@@ -15,9 +15,20 @@ import { ValueForm } from "@/components/configs/value-form";
 import { updateConfigSchema as updateConfigSchemaAction } from "@/actions/configs";
 import { formatDistanceToNow } from "./format-time";
 
-type Props = {
+export type ConfigEditorBodyProps = {
   initial: ConfigDetail;
   initialActivity: ConfigActivity[];
+  /**
+   * Hide the top "Configs / name" crumb when embedded in the unified-list
+   * detail pane (the pane already shows the name in its sticky header).
+   */
+  hideCrumb?: boolean;
+  /**
+   * After delete, the embedded variant needs to close the detail pane
+   * instead of routing to `/configs/values`. The list owns URL state, so it
+   * passes a handler that strips `?open=<id>` and re-fetches the list.
+   */
+  onDeleted?: () => void;
 };
 
 function deepEqual(a: unknown, b: unknown): boolean {
@@ -63,7 +74,12 @@ function validateValue(value: unknown, schema: JsonSchema): string | null {
   }
 }
 
-export function ConfigEditor({ initial, initialActivity }: Props) {
+export function ConfigEditorBody({
+  initial,
+  initialActivity,
+  hideCrumb,
+  onDeleted,
+}: ConfigEditorBodyProps) {
   const router = useRouter();
   const [selectedEnv, setSelectedEnv] = useState<ConfigEnv>(
     initial.envs.prod ? "prod" : initial.envs.staging ? "staging" : "dev",
@@ -219,8 +235,12 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
         setConfirmDelete(false);
         return;
       }
-      router.push("/dashboard/configs/values");
-      router.refresh();
+      if (onDeleted) {
+        onDeleted();
+      } else {
+        router.push("/dashboard/configs/values");
+        router.refresh();
+      }
     });
   };
 
@@ -253,12 +273,14 @@ export function ConfigEditor({ initial, initialActivity }: Props) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-[var(--se-line)] bg-[var(--se-bg-1)] px-6 py-3">
-        <div className="crumbs flex items-center gap-2 font-mono text-[13px] text-[var(--se-fg-3)]">
-          <span>Configs</span>
-          <span className="text-[var(--se-fg-4)]">/</span>
-          <span className="text-foreground">{detail.name}</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
+        {hideCrumb ? null : (
+          <div className="crumbs flex items-center gap-2 font-mono text-[13px] text-[var(--se-fg-3)]">
+            <span>Configs</span>
+            <span className="text-[var(--se-fg-4)]">/</span>
+            <span className="text-foreground">{detail.name}</span>
+          </div>
+        )}
+        <div className={hideCrumb ? "flex items-center gap-2" : "ml-auto flex items-center gap-2"}>
           <EnvTabs value={selectedEnv} onChange={handleEnvChange} />
           <Button
             variant="ghost"

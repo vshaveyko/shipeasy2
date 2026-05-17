@@ -11,17 +11,15 @@ test.afterAll(() => setProjectPlan("free"));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function treeItem(page: Page, name: string) {
-  return page
-    .getByRole("link", { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) })
-    .first();
+/**
+ * Row visible in the UnifiedList closed-table. Scope to the full-table pane to
+ * avoid colliding with the rail/detail mirrors of the same name once the row
+ * is opened.
+ */
+function tableRow(page: Page, name: string) {
+  return page.locator('[data-slot="pane-full"]').getByText(name, { exact: true }).first();
 }
 
-/**
- * Create a config via the admin API. The new-config UI is now a schema-driven
- * form — exercising every field type via the UI is covered separately by the
- * "New config form UI" describe. Here we just need rows to operate on.
- */
 async function createConfigViaApi(
   page: Page,
   opts: {
@@ -30,7 +28,7 @@ async function createConfigViaApi(
     value?: unknown;
     description?: string;
   },
-): Promise<void> {
+): Promise<string> {
   const schema = opts.schema ?? {
     type: "object",
     properties: {},
@@ -45,53 +43,84 @@ async function createConfigViaApi(
     },
   });
   expect(resp.ok()).toBe(true);
+  const body = (await resp.json()) as { id?: string; name?: string };
+  if (body?.id) return body.id;
+  const list = await adminList<{ id: string; name: string }>(page.request, "/api/admin/configs");
+  const cfg = list.find((c) => c.name === opts.key);
+  if (!cfg) throw new Error(`Could not resolve id for ${opts.key}`);
+  return cfg.id;
 }
 
 async function deleteActiveConfig(page: Page): Promise<void> {
-  // Editor uses an inline two-step confirm — first click reveals "Confirm delete".
-  await page.getByRole("button", { name: /delete config/i }).click();
-  await page.getByRole("button", { name: /confirm delete/i }).click();
-  await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
+  // DetailPane sticky header exposes a "Delete" button — aria-label
+  // "Delete config from detail pane". Clicking opens a confirm `<Dialog>`
+  // whose submit reads "Delete config".
+  await page.getByRole("button", { name: /delete config from detail pane/i }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /^delete config$/i })
+    .click();
 }
 
-// ── New-config form UI (schema builder + value form) ──────────────────────────
+// ── New-config wizard UI (BigModalWizard) ────────────────────────────────────
 
-test.describe("New config form UI", () => {
-  test("renders the wizard stepper and details step", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/configs/values/new");
-    await expect(page.getByRole("heading", { name: /^new config$/i })).toBeVisible();
-    await expect(page.getByTestId("config-key-input")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^continue$/i })).toBeVisible();
+test.describe("New config wizard UI", () => {
+  test("?new=1 renders the wizard dialog with Details step", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values?new=1");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByTestId("config-key-input")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /next/i })).toBeVisible();
+    // Stepper exposes 4 steps — buttons labelled 1..4 sit alongside their
+    // visible labels.
+    await expect(dialog.getByText(/^details$/i).first()).toBeVisible();
+    await expect(dialog.getByText(/^schema$/i).first()).toBeVisible();
+    await expect(dialog.getByText(/^defaults$/i).first()).toBeVisible();
+    await expect(dialog.getByText(/^review$/i).first()).toBeVisible();
+  });
+
+  test("Next is disabled until a valid key is typed", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values?new=1");
+    const dialog = page.getByRole("dialog");
+    const next = dialog.getByRole("button", { name: /next/i });
+    await expect(next).toBeDisabled();
+    await dialog.getByTestId("config-key-input").fill(`e2.wiz_ok_${RUN}`);
+    await expect(next).toBeEnabled();
   });
 
   test("Schema step exposes Add field which opens the field editor", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/configs/values/new");
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await expect(page.getByRole("button", { name: /add (root )?field/i }).first()).toBeVisible();
-    await page
-      .getByRole("button", { name: /add (root )?field/i })
+    await page.goto("/dashboard/e2e-project-id/configs/values?new=1");
+    const dialog = page.getByRole("dialog");
+    await dialog.getByTestId("config-key-input").fill(`e2.wiz_schema_${RUN}`);
+    await dialog.getByRole("button", { name: /next/i }).click();
+    await expect(dialog.getByRole("button", { name: /^add field$/i }).first()).toBeVisible();
+    await dialog
+      .getByRole("button", { name: /^add field$/i })
       .first()
       .click();
-    // Edit field dialog opens with a Field name input and type picker
-    await expect(page.getByRole("textbox", { name: /field name/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /field type string/i })).toBeVisible();
+    const inner = page.getByRole("dialog").last();
+    await expect(inner.getByRole("textbox", { name: /field name/i })).toBeVisible();
+    await expect(inner.getByRole("button", { name: /field type string/i })).toBeVisible();
   });
 
-  test("Continue button is enabled and key input is editable", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/configs/values/new");
-    await expect(page.getByTestId("config-key-input")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^continue$/i })).toBeEnabled();
+  test("close button strips ?new=1", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/configs/values?new=1");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: /^close$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
   });
 });
 
-// ── Create, view in tree, delete ──────────────────────────────────────────────
+// ── Create, view in list, delete ──────────────────────────────────────────────
 
-test.describe("Object config — create, view, delete", () => {
+test.describe("Object config — create, view in list, delete", () => {
   test.describe.configure({ mode: "serial" });
   const key = `e2.cfg_obj_${RUN}`;
+  let id: string;
 
-  test("create via API and verify tree shows the new key", async ({ page }) => {
-    await createConfigViaApi(page, {
+  test("create via API and verify the row shows up in the closed table", async ({ page }) => {
+    id = await createConfigViaApi(page, {
       key,
       schema: {
         type: "object",
@@ -100,29 +129,28 @@ test.describe("Object config — create, view, delete", () => {
       value: { greeting: "hello" },
     });
     await page.goto("/dashboard/e2e-project-id/configs/values");
-    await expect(treeItem(page, key)).toBeVisible();
+    await expect(tableRow(page, key)).toBeVisible();
+  });
 
-    const configs = await adminList<{ name: string; schema: { type: string } }>(
-      page.request,
-      "/api/admin/configs",
+  test("open detail via ?open=<id> shows env tabs with prod active", async ({ page }) => {
+    await page.goto(`/dashboard/e2e-project-id/configs/values?open=${id}`);
+    const detail = page.locator('[data-slot="detail-pane"]');
+    await expect(detail.getByRole("tab", { name: "prod" })).toHaveAttribute(
+      "aria-selected",
+      "true",
     );
-    const cfg = configs.find((c) => c.name === key);
-    expect(cfg).toBeDefined();
-    expect(cfg!.schema.type).toBe("object");
+    await expect(detail.getByRole("tab", { name: "dev" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
   });
 
-  test("editor shows env tabs and prod is active by default", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/configs/values");
-    await treeItem(page, key).click();
-    await expect(page.getByRole("tab", { name: "prod" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("tab", { name: "dev" })).toHaveAttribute("aria-selected", "false");
-  });
-
-  test("delete from editor removes it from the list", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/configs/values");
-    await treeItem(page, key).click();
+  test("delete from the detail pane removes it from the list", async ({ page }) => {
+    await page.goto(`/dashboard/e2e-project-id/configs/values?open=${id}`);
     await deleteActiveConfig(page);
 
+    // onDeleted strips ?open=<id>; the closed table should no longer carry the row.
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
     const configs = await adminList<{ name: string }>(page.request, "/api/admin/configs");
     expect(configs.some((c) => c.name === key)).toBe(false);
   });
@@ -141,7 +169,6 @@ test.describe("Schema vs value separation", () => {
       value: { a: 1 },
     });
 
-    // Find the new config's id.
     const list = await adminList<{
       id: string;
       name: string;
@@ -151,7 +178,6 @@ test.describe("Schema vs value separation", () => {
     const cfg = list.find((c) => c.name === key)!;
     expect(cfg.envs.prod?.version).toBe(1);
 
-    // PATCH the schema only.
     const patchResp = await page.request.patch(`/api/admin/configs/${cfg.id}`, {
       data: {
         schema: {
@@ -162,7 +188,6 @@ test.describe("Schema vs value separation", () => {
     });
     expect(patchResp.ok()).toBe(true);
 
-    // Version unchanged after schema-only update.
     const after = await adminList<{
       name: string;
       schema: { properties?: Record<string, unknown> };
@@ -177,7 +202,6 @@ test.describe("Schema vs value separation", () => {
     const list = await adminList<{ id: string; name: string }>(page.request, "/api/admin/configs");
     const cfg = list.find((c) => c.name === key)!;
 
-    // Tighten schema: require `b`.
     await page.request.patch(`/api/admin/configs/${cfg.id}`, {
       data: {
         schema: {
@@ -188,18 +212,17 @@ test.describe("Schema vs value separation", () => {
       },
     });
 
-    // Try to publish a draft missing `b`.
     const draftResp = await page.request.put(`/api/admin/configs/${cfg.id}/drafts`, {
       data: { env: "dev", value: { a: 5 } },
     });
-    // Schema validation runs in saveDraft; should fail with 400.
     expect(draftResp.status()).toBe(400);
   });
 
   test("cleanup", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/configs/values");
-    await treeItem(page, key).click();
-    await deleteActiveConfig(page);
+    const list = await adminList<{ id: string; name: string }>(page.request, "/api/admin/configs");
+    const cfg = list.find((c) => c.name === key);
+    if (!cfg) return;
+    await page.request.delete(`/api/admin/configs/${cfg.id}`);
   });
 });
 
@@ -214,8 +237,6 @@ test.describe("Object-only enforcement", () => {
         value: "just a string",
       },
     });
-    // assertValueMatchesSchema throws ApiError(400); Zod-shape failures throw 422.
-    // A non-object top-level value is caught by assertValueMatchesSchema → 400.
     expect(resp.status()).toBe(400);
   });
 });
