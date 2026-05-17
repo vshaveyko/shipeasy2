@@ -236,12 +236,14 @@ test.describe("Feature Gates CRUD", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    // Step 1 — identity.
+    // Step 1 — Details.
     await dialog.locator("#new-gate-key").fill(gKey);
     await dialog.getByRole("button", { name: /^next\b/i }).click();
 
-    // Step 2 — preview + submit.
-    await dialog.getByRole("button", { name: /^create gate\b/i }).click();
+    // Steps 2, 3, 4 — Targeting / Preview / Integrate (skip with defaults).
+    await dialog.getByRole("button", { name: /^next\b/i }).click();
+    await dialog.getByRole("button", { name: /^next\b/i }).click();
+    await dialog.getByRole("button", { name: /create gate/i }).click();
 
     // createGateAction redirects into the editor for the new gate.
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/?#]+$/);

@@ -151,7 +151,13 @@ export function BigModalWizard({
         {/* Body */}
         <div className="relative min-h-0 overflow-hidden">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_-10%,color-mix(in_oklab,var(--se-accent)_3%,transparent)_0%,transparent_60%)]" />
-          <div className="relative grid h-full min-h-0 grid-cols-1 gap-4 overflow-y-auto px-5 py-4 md:grid-cols-[minmax(0,1fr)_320px]">
+          <div
+            className={
+              step?.aside
+                ? "relative grid h-full min-h-0 grid-cols-1 gap-4 overflow-y-auto px-5 py-4 md:grid-cols-[minmax(0,1fr)_320px]"
+                : "relative flex h-full min-h-0 flex-col gap-3 overflow-y-auto px-5 py-4"
+            }
+          >
             <div className="flex min-w-0 flex-col gap-3">
               {step?.hint ? (
                 <DialogDescription className="max-w-[80ch] text-[12.5px]">

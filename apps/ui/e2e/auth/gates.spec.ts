@@ -362,14 +362,24 @@ test.describe("Gates — BigModalWizard create flow", () => {
     await expect(dialog).toBeVisible();
     await expect(page).toHaveURL(/\?new=1/);
 
-    // Step 1 — identity. Next is disabled until the key matches the pattern.
+    // Step 1 — Details. Next is disabled until the key matches the pattern.
     await expect(dialog.getByRole("button", { name: /^next\b/i })).toBeDisabled();
     await dialog.locator("#new-gate-key").fill(key);
     await dialog.getByRole("button", { name: /^next\b/i }).click();
 
-    // Step 2 — preview. The key is echoed verbatim in the summary tile.
+    // Step 2 — Targeting (stack editor). Skip with defaults (empty stack +
+    // locked public floor) — the wizard only requires a valid key.
+    await expect(dialog.getByText(/Step 2 of 4/i)).toBeVisible();
+    await dialog.getByRole("button", { name: /^next\b/i }).click();
+
+    // Step 3 — Preview. The key is echoed verbatim in the summary tile.
+    await expect(dialog.getByText(/Step 3 of 4/i)).toBeVisible();
     await expect(dialog.getByText(key, { exact: true })).toBeVisible();
-    await dialog.getByRole("button", { name: /^create gate\b/i }).click();
+    await dialog.getByRole("button", { name: /^next\b/i }).click();
+
+    // Step 4 — Integrate.
+    await expect(dialog.getByText(/Step 4 of 4/i)).toBeVisible();
+    await dialog.getByRole("button", { name: /create gate/i }).click();
 
     // createGateAction redirects to /gates/<id> (the full editor).
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/?#]+$/i);

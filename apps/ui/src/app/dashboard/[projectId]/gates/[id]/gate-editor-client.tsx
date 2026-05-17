@@ -57,13 +57,13 @@ import "./gate-editor.css";
 
 type Op = "eq" | "neq" | "in" | "not_in" | "gt" | "gte" | "lt" | "lte" | "contains" | "regex";
 
-interface Rule {
+export interface Rule {
   attr: string;
   op: Op;
   value: string;
 }
 
-type ConditionEntry = {
+export type ConditionEntry = {
   id: string;
   type: "condition";
   name?: string;
@@ -72,7 +72,7 @@ type ConditionEntry = {
   rules: Rule[];
   locked?: boolean;
 };
-type RolloutEntry = {
+export type RolloutEntry = {
   id: string;
   type: "rollout";
   name?: string;
@@ -82,8 +82,8 @@ type RolloutEntry = {
   salt?: string;
   locked?: boolean;
 };
-type StackEntry = ConditionEntry | RolloutEntry;
-type StackSeed = Omit<ConditionEntry, "id"> | Omit<RolloutEntry, "id">;
+export type StackEntry = ConditionEntry | RolloutEntry;
+export type StackSeed = Omit<ConditionEntry, "id"> | Omit<RolloutEntry, "id">;
 
 interface Details {
   title: string;
@@ -95,7 +95,7 @@ interface Details {
   owner: string;
 }
 
-interface InitialAttribute {
+export interface InitialAttribute {
   k: string;
   ex: string;
 }
@@ -266,7 +266,7 @@ function evalEntry(entry: StackEntry, user: Record<string, unknown>): boolean {
 
 // ── Initial seed: turn the saved row into an editable stack ───────────────
 
-function initialStack(opts: {
+export function initialStack(opts: {
   initialRules: Rule[];
   initialRolloutPct: number; // 0–10000
   publicFloorPct: number; // 0–10000
@@ -739,7 +739,7 @@ function StepDetailsView({ details, onEdit }: { details: Details; onEdit: () => 
 
 // ── Step 2 — Gates list with inline editor + test panel + attributes ─────
 
-function StepGatesView({
+export function StepGatesView({
   stack,
   expandedId,
   setExpandedId,

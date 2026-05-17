@@ -92,7 +92,32 @@ Type-check clean. 10 gates.spec cases (6 prior + 4 new embed) + 4 Feature Gates 
 
 **Phase 3a — fully complete.** No remaining items.
 
-**Phase 3 (b–h) — NOT STARTED.** Other open items:
+**Phase 3a — wizard flesh-out (2026-05-17).** Gates wizard expanded from 2-step (Identity/Preview) to the 4-step shape the prototype's `buildGatesFlow()` uses: **Details / Targeting / Preview / Integrate**.
+
+- `StepGatesView`, `initialStack`, `StackEntry`, `StackSeed`, `Rule`, `InitialAttribute` are now exported from [gate-editor-client.tsx](apps/ui/src/app/dashboard/[projectId]/gates/[id]/gate-editor-client.tsx) so the same Stack authoring UI lives inside the wizard. The wizard owns its local `stack` state (seeded with the locked public floor) plus `upd/move/dup/rm/addEntry` handlers cloned from `GateEditorBody` — submission JSON-encodes the stack into FormData; [actions.ts](apps/ui/src/app/dashboard/[projectId]/gates/actions.ts) `createGateAction` parses and passes it through `createGate({ stack })`.
+- Targeting step drops the aside so the body grid switches to single-column (`md:grid-cols-[minmax(0,1fr)_320px]` → `flex flex-col` when `step.aside` is undefined) — the embedded Stack editor already has its own 2-col `.gke-step2` split (stack + Test panel).
+- Integrate step is a `<Tabs>` switcher over `<CodeBlock>` snippets (TypeScript / Python / Go / cURL).
+- `crud.spec.ts` Feature Gates CRUD + `gates.spec.ts` wizard happy-path updated to walk 4 steps (Step N of 4) instead of 2.
+
+**Phase 3a — Big-modal Dialog fix.** [dialog.tsx](apps/ui/src/components/ui/dialog.tsx) `size="big-modal"` was `grid-rows-[auto_minmax(0,1fr)_auto]` (3 tracks) while `<BigModalWizard>` renders 4 children (eyebrow + head + body + footer); the body fell through to implicit `auto` and the head got all the slack. Fixed to `grid-rows-[auto_auto_minmax(0,1fr)_auto]` so body takes the 1fr track and content sits at the top of the body.
+
+**Phase 3b — Killswitches → UnifiedList + BigModalWizard — DONE.**
+
+- [killswitches/page.tsx](apps/ui/src/app/dashboard/[projectId]/killswitches/page.tsx) trimmed to a thin server component that fetches `listAllKillswitches` and hands the row array to `<KillswitchesContent>`. No more standalone `NewKillswitchTrigger` / empty-state branch on the server side — the client component owns both states.
+- [killswitches-content.tsx](apps/ui/src/app/dashboard/[projectId]/killswitches/killswitches-content.tsx) rewritten to render through `<UnifiedList<KillswitchRow>>`. Closed-table columns: Killswitch (icon + name + description), Default (ON/OFF status badge — `killed` tone), Switches (count), Updated, snippet button, actions menu. Rail rows: power icon + leaf + ON/OFF + switch count + status dot. URL state mirrors gates: `?open=<id>` for the detail pane, `?new=1` for the wizard. Folder grouping handled by `railGroups` (one group per `<folder>`), preserving the previous folder.leaf semantics. Old confirm-delete dialog kept.
+- [new-killswitch-wizard.tsx](apps/ui/src/app/dashboard/[projectId]/killswitches/new-killswitch-wizard.tsx) — 3-step `<BigModalWizard kind="killswitches">` matching the design's `buildKsFlow()` step count:
+  - **Details**: folder + leaf inputs (immutable after publish), optional description. Validates SEGMENT_RE on both halves. Aside shows the live `folder.leaf` key preview.
+  - **Default & switches**: default value toggle ("OFF · feature live" / "ON · killswitch active"), `<FieldArray>`-like switches list with add/remove + per-row ON/OFF toggle. Aside summarises eval order ("switches[key] matches → use switch · else → use default value") + the "publishes to dev · staging · prod at once" caveat.
+  - **Integrate**: `<Tabs>` over `<CodeBlock>` (TypeScript / Python / Go / cURL). Snippet interpolates the actual key + branches between with-switches and value-only call shape.
+- [embedded-killswitch-editor.tsx](apps/ui/src/app/dashboard/[projectId]/killswitches/embedded-killswitch-editor.tsx) — full edit surface for the detail pane. Env tabs (dev / staging / prod) show the per-env published state read-only (value badge + switch count + version + publishedAt date). Below: description, default value toggle, switches array editor. Save calls `updateKillswitch(id, { description, value, switches })` — writes propagate to all three envs at once (matches the existing handler semantics).
+- Retired [\_components/killswitch-modal.tsx](apps/ui/src/app/dashboard/[projectId]/killswitches/_components/) and `_components/new-killswitch-trigger.tsx` — both removed. No callers left in the codebase.
+- [killswitches.spec.ts](apps/ui/e2e/auth/killswitches.spec.ts) rewritten end-to-end. **20/20 pass locally.** Four describe blocks:
+  1. **Page shell** — heading + sidebar nav.
+  2. **BigModalWizard create flow** — `?new=1` deep-link renders the 3-step wizard with the right step labels in the stepper and "Step 1 of 3" in the footer; happy path drives Details → Default & switches → Integrate → submit and asserts the row lands in `/api/admin/killswitches` with the right value + switches + description; ESC strips `?new=1`; validation rejects uppercase / dots and disables Next.
+  3. **UnifiedList + embedded editor** — row click adds `?open=<id>` and renders the embedded editor with env tabs + seeded description; ESC strips the param; flipping the default toggle + saving persists via admin API (with `expect.poll`); filter input narrows the closed table; delete from the detail-pane header removes the row + the API entry.
+  4. **Per-switch admin endpoints** — unchanged from before (API only, not affected by Phase 3b chrome).
+
+**Phase 3 (c–h) — NOT STARTED.** Other open items:
 
 - Extend `/design-system` showcase with new primitives + shell demos (Phase 1d/2c — deferred; visual diff target).
 - Run full lint + e2e (Phase 1e — deferred until after first feature migration).
