@@ -139,6 +139,15 @@ Type-check clean. 10 gates.spec cases (6 prior + 4 new embed) + 4 Feature Gates 
 
 Type-check clean (`pnpm --filter @shipeasy/ui type-check`). Stale `.next/types/*/configs/values/layout.js` reference cleared by removing `.next/types` + `.next/dev` once before re-checking.
 
+**Follow-up commit `6d612e2` — e2e repair + Phase 3c coverage extension.** After landing 3c, a full e2e sweep surfaced two pre-existing failures in `crud.spec.ts` that predated the redesign:
+
+- **Settings CRUD** — `general-form.tsx` no longer renders an input with `id="project-name"`; the input uses `aria-label="Project name"` and the submit button reads "Save changes" (not "Save"). Spec retargeted via accessible name.
+- **Experiments CRUD** — `/experiments/new` is no longer a 4-step Continue-driven wizard; it's a single 10-section form with "Save as draft" / "Start experiment" buttons. CRUD smoke seeds the experiment via the admin REST API (plus a `beforeAll` universe) and keeps UI coverage for start / stop / delete. End-to-end form coverage lives in the dedicated experiments specs.
+
+Plus a third describe block in [configs-values.spec.ts](apps/ui/e2e/auth/configs-values.spec.ts) — `Configs list — UnifiedList chrome` — covers the detail-pane sticky header surface that the create/delete CRUD pair didn't assert: `Open standalone` link href, filter input narrowing the closed table + restoring on clear, ESC closing the detail pane + stripping `?open=<id>` from the URL.
+
+Full local sweep: `crud.spec.ts` 46/46 pass, `gates.spec.ts` 10/10, `killswitches.spec.ts` 20/20, configs trio 31+ pass, project-wide `pnpm --filter @shipeasy/ui test` reports 475 pass / 45 skipped / 12 pre-existing failures (keys-full, keys-polish, plans, projects-team, settings-interactions, navigation Configs-hero) — all unrelated to Phase 3c work and out of scope here. Navigation `renders Configs product nav items` is sensitive to seed-state leakage from `config-wizard.spec.ts` (no per-test cleanup on the wizard-created configs); track separately.
+
 **Phase 3 (d–h) — NOT STARTED.** Other open items:
 
 - Extend `/design-system` showcase with new primitives + shell demos (Phase 1d/2c — deferred; visual diff target).
