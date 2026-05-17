@@ -407,7 +407,25 @@ function OverflowToolbar({ items, className }: { items: OverflowItem[]; classNam
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export function GateEditorClient({
+export interface GateEditorBodyProps {
+  gateId: string;
+  gateName: string;
+  initialRules: Rule[];
+  /** UI scale 0–100. */
+  initialRolloutPct: number;
+  attributes: InitialAttribute[];
+  initialDetails: Details;
+  initialStack?: StackEntry[] | null;
+  askClaudeEnabled?: boolean;
+}
+
+/**
+ * The gatekeeper editor — extracted so the same JSX renders inside the
+ * /gates/[id] standalone page and inside the UnifiedList detail pane on
+ * /gates. The component owns all of its own state; the embed/standalone
+ * differences live in the chrome around it.
+ */
+export function GateEditorBody({
   gateId,
   gateName,
   initialRules,
@@ -416,16 +434,7 @@ export function GateEditorClient({
   initialDetails,
   initialStack: existingStack,
   askClaudeEnabled = true,
-}: {
-  gateId: string;
-  gateName: string;
-  initialRules: Rule[];
-  initialRolloutPct: number;
-  attributes: InitialAttribute[];
-  initialDetails: Details;
-  initialStack?: StackEntry[] | null;
-  askClaudeEnabled?: boolean;
-}) {
+}: GateEditorBodyProps) {
   const [step, setStep] = useState<StepKey>("gates");
   const [details, setDetails] = useState<Details>(initialDetails);
   const [stack, setStack] = useState<StackEntry[]>(() =>
@@ -590,7 +599,9 @@ export function GateEditorClient({
       {/* Footer */}
       <div className="gke-foot">
         <div className="meta">
-          <span>{stack.length} gates</span>
+          <span>
+            {stack.length} gate{stack.length === 1 ? "" : "s"}
+          </span>
           <span className="sep">·</span>
           <span style={{ color: "var(--se-accent)" }}>{movableCount} editable</span>
         </div>

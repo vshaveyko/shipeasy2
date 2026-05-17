@@ -229,12 +229,22 @@ test.describe("Feature Gates CRUD", () => {
     page.getByText(gKey, { exact: true }).locator("..").locator("..").locator("..");
 
   test("create gate → appears in list with enabled badge", async ({ page }) => {
+    // Phase 3a: /gates/new is now a BigModalWizard that opens over the list
+    // via ?new=1. The legacy route redirects there, so the entry point still
+    // works for deep-links.
     await page.goto("/dashboard/e2e-project-id/gates/new");
-    await page.locator("#gate-key").fill(gKey);
-    await page.getByRole("button", { name: /^create gate$/i }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // Step 1 — identity.
+    await dialog.locator("#new-gate-key").fill(gKey);
+    await dialog.getByRole("button", { name: /^next\b/i }).click();
+
+    // Step 2 — preview + submit.
+    await dialog.getByRole("button", { name: /^create gate\b/i }).click();
 
     // createGateAction redirects into the editor for the new gate.
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/?#]+$/);
 
     // The list page reflects the new gate as enabled.
     await page.goto("/dashboard/e2e-project-id/gates");

@@ -1,10 +1,31 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { listAllGates } from "@/lib/handlers/gates";
 import { listAttributes } from "@/lib/handlers/attributes";
 import { Page, PageBody } from "@/components/dashboard/page";
 import { shipeasy } from "@shipeasy/sdk/server";
-import { GateEditorClient } from "./gate-editor-client";
+import { GateEditorBody } from "./gate-editor-client";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string; id: string }>;
+}): Promise<Metadata> {
+  const { projectId, id } = await params;
+  try {
+    const session = await auth();
+    const gates = await listAllGates({
+      projectId,
+      actorEmail: session?.user?.email ?? "unknown",
+      source: "jwt",
+    });
+    const gate = gates.find((g) => g.id === id);
+    return { title: gate?.name ? `Gate · ${gate.name}` : "Gate editor" };
+  } catch {
+    return { title: "Gate editor" };
+  }
+}
 
 export default async function GateEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -71,7 +92,7 @@ export default async function GateEditorPage({ params }: { params: Promise<{ id:
   return (
     <Page>
       <PageBody className="space-y-5">
-        <GateEditorClient
+        <GateEditorBody
           gateId={gate.id}
           gateName={gate.name}
           initialRules={initialRules}
@@ -79,9 +100,7 @@ export default async function GateEditorPage({ params }: { params: Promise<{ id:
           attributes={attributes.map((a) => ({ k: a.name, ex: "" }))}
           initialDetails={initialDetails}
           initialStack={
-            gate.stack
-              ? (gate.stack as Parameters<typeof GateEditorClient>[0]["initialStack"])
-              : null
+            gate.stack ? (gate.stack as Parameters<typeof GateEditorBody>[0]["initialStack"]) : null
           }
           askClaudeEnabled={askClaudeEnabled}
         />

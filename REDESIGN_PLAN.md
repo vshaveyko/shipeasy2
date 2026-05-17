@@ -43,7 +43,56 @@
 
 **Type-check clean across all changes.** Lint/e2e not re-run yet (additive only, no screen edits).
 
-**Phase 3 (feature migration) — NOT STARTED.** Where to start: recommend **Gates** (smallest blast radius). Other open items:
+**Phase 3a — Gates list → UnifiedList — DONE.** [gates-content.tsx](apps/ui/src/app/dashboard/[projectId]/gates/gates-content.tsx) now renders through `<UnifiedList<GateRow>>`. Closed table = name/rollout/rules/status/toggle/snippet/actions columns. Rail row = shield icon + name + `pct · n rules` + status dot. Detail pane (right) = eyebrow + h2(name) + 3-stat grid (Public rollout / Rules / State) + Enable-Disable card + "Open in full editor" / standalone link + Danger zone delete. Selection state lifts to URL (`?open=<id>`) via `useSearchParams` + `router.replace`, ESC handled by shell. Toolbar slot wires a client-side filter input. Type-check clean.
+
+**Phase 3a e2e — DONE.** New describe block `Gates list — UnifiedList chrome` in [gates.spec.ts](apps/ui/e2e/auth/gates.spec.ts):
+
+- Seeds a gate via `POST /api/admin/gates` using the canonical `gateCreateSchema` shape (`name`, `rollout_pct`, `rules`, `enabled` — snake_case `rollout_pct` matters; camelCase silently strips to default 0%). Captures the returned `id` and uses it for href assertion + cleanup.
+- Scopes interactions to `[data-slot="pane-full"]` so the closed-table click isn't ambiguous against rail/detail mirrors of the same name.
+- Asserts: row click adds `?open=<id>` to URL, detail h2 renders gate name, "Open in full editor" link points at `/gates/<id>`, ESC strips the param and hides the heading, filter input zeroes the closed table and restores it on clear.
+- `afterAll` falls back to scanning `/api/admin/gates` if the seed response didn't return an id (shape drift insurance) and `DELETE`s.
+- All 3 tests pass locally (`pnpm exec playwright test e2e/auth/gates.spec.ts -g "UnifiedList chrome"`). Existing `Feature Gates CRUD` in [crud.spec.ts](apps/ui/e2e/auth/crud.spec.ts) still passes against the new chrome — toggle button aria-labels, status badge text, and `Actions for <name>` dropdown trigger names are unchanged.
+
+**Phase 3a — new-gate wizard — DONE.** `/gates/new` no longer renders its own page chrome — it's a server-component redirect to `/gates?new=1` (preserves the deep-link). The list page opens a 2-step `<BigModalWizard kind="gates">` from the header "New gate" button or the empty-state CTA:
+
+- Step 1 — **Identity**: mono key input with the same `[a-z0-9][a-z0-9_-]{0,59}` pattern as before; Next is gated on `keyValid`. Aside copy explains the editor takes over after creation.
+- Step 2 — **Preview**: summary tile + "Initial rollout 0% / State Paused" pair, plus an aside SDK snippet block that interpolates the entered key into `shipeasy.gate("…")`.
+- Submit calls the existing `createGateAction` via `FormData` (single Server Action, no schema change) → it `redirect()`s into `/gates/[id]` so the editor opens automatically.
+- Wizard state is URL-driven via `?new=1` (parallels the existing `?open=<id>` deep-link). ESC + close button strip the param and reset internal step/key state.
+
+New file: [new-gate-wizard.tsx](apps/ui/src/app/dashboard/[projectId]/gates/new-gate-wizard.tsx). Touched: [gates-content.tsx](apps/ui/src/app/dashboard/[projectId]/gates/gates-content.tsx) (button + URL state + render in populated & empty branches), [new/page.tsx](apps/ui/src/app/dashboard/[projectId]/gates/new/page.tsx) (now a redirect-only server component).
+
+E2E additions in [gates.spec.ts](apps/ui/e2e/auth/gates.spec.ts) under `Gates — BigModalWizard create flow`:
+
+- Legacy `/gates/new` 301s into `/gates?new=1` and the dialog renders with the "New Gate" eyebrow + "Name your gatekeeper" title.
+- Seeds one gate so the populated header renders, clicks "New gate", verifies Next is disabled until a valid key is typed, advances to Preview, submits, and asserts the URL lands on `/gates/<id>` plus the gate exists in `/api/admin/gates` at `rolloutPct: 0`.
+- ESC on `?new=1` closes the dialog and strips the param.
+- `Feature Gates CRUD` in [crud.spec.ts](apps/ui/e2e/auth/crud.spec.ts) updated to drive the wizard (`#new-gate-key`, Next, Create gate) — the rest of the CRUD chain is unchanged.
+
+Type-check clean. All 6 active `gates.spec.ts` cases + 4 `Feature Gates CRUD` cases pass locally.
+
+**Phase 3a — GateEditorBody extract + detail-pane embed — DONE.** The `GateEditorClient` export in [gate-editor-client.tsx](apps/ui/src/app/dashboard/[projectId]/gates/[id]/gate-editor-client.tsx) is now `GateEditorBody` (props lifted to an exported `GateEditorBodyProps` interface for reuse). The /gates/[id] standalone page imports the new name; the body component itself is unchanged (same 3-step authoring + footer + modals).
+
+New embed: [embedded-gate-editor.tsx](apps/ui/src/app/dashboard/[projectId]/gates/embedded-gate-editor.tsx) — client loader that takes the full gate row already cached by the gates-list SWR, fetches `/api/admin/attributes` via SWR, maps the row + attributes into `GateEditorBody`'s shape (0–10000 bp → 0–100 UI scale, `gate.stack` → `initialStack`, locked key), and renders a skeleton while attributes are in flight.
+
+[gates-content.tsx](apps/ui/src/app/dashboard/[projectId]/gates/gates-content.tsx) DetailPane now renders the embedded editor instead of the prior summary/snippet/danger-zone stack. A sticky top header inside the detail pane keeps the chrome the editor itself doesn't own — status badge, enable/disable toggle, integration snippet button, "Open standalone" deep-link (`/gates/<id>`, with `data-testid="gate-detail-standalone-link"` for tests), and delete button. The list-level `GateRow` shape is now `EmbeddedGateRow` (full Drizzle-row fields: `title`, `folder`, `groupName`, `ownerEmail`, `description`, `stack`) so the SWR cache satisfies the editor without a second fetch per row.
+
+E2E updated + extended in [gates.spec.ts](apps/ui/e2e/auth/gates.spec.ts):
+
+- `Gates list — UnifiedList chrome` › row click now scopes assertions to `[data-slot="detail-pane"]`, asserts the embedded editor renders its "Stack the gates" step label, and verifies the renamed "Open standalone" link's href.
+- New describe block `Gates detail pane — embedded editor` covers the embed surface directly:
+  - editor stepper exposes all three step labels (Details / Stack / Review) in the pane;
+  - sticky toggle disables then re-enables the gate, with `expect.poll` against `/api/admin/gates` to ride out the SWR-mutate latency on each write;
+  - "Open standalone" navigates to `/gates/<id>` and the standalone page renders the same body;
+  - "Delete gate from detail pane" opens the confirm dialog, deletes, collapses the detail pane back to `/gates`, and removes the row from the admin API.
+
+Existing CRUD coverage in [crud.spec.ts](apps/ui/e2e/auth/crud.spec.ts) still passes — toggle/badge/dropdown selectors are unchanged.
+
+Type-check clean. 10 gates.spec cases (6 prior + 4 new embed) + 4 Feature Gates CRUD cases all pass locally.
+
+**Phase 3a — fully complete.** No remaining items.
+
+**Phase 3 (b–h) — NOT STARTED.** Other open items:
 
 - Extend `/design-system` showcase with new primitives + shell demos (Phase 1d/2c — deferred; visual diff target).
 - Run full lint + e2e (Phase 1e — deferred until after first feature migration).
