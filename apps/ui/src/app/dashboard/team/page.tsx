@@ -9,6 +9,7 @@ import { getEnv } from "@/lib/env";
 import { loadProject } from "@/lib/project";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { InviteButton } from "./invite-button";
 import { RoleSelect } from "./role-select";
 import { RemoveMemberButton } from "./remove-member-button";
@@ -284,15 +285,9 @@ export default async function TeamPage() {
               )}
               <div className="text-[13px] text-[var(--se-fg-2)]">{m.last}</div>
               {m.status === "pending" ? (
-                <span className="se-badge se-badge-paused">
-                  <span className="dot" />
-                  PENDING
-                </span>
+                <StatusBadge tone="paused">PENDING</StatusBadge>
               ) : (
-                <span className="se-badge se-badge-live">
-                  <span className="dot" />
-                  ACTIVE
-                </span>
+                <StatusBadge tone="live">ACTIVE</StatusBadge>
               )}
               <SharedProjects you={m.you} shared={m.shared} />
               <div className="flex justify-end">

@@ -1,23 +1,17 @@
 import type { Metadata } from "next";
-import {
-  AlertTriangle,
-  BookOpen,
-  Code2,
-  KeyRound,
-  RefreshCw,
-  Shield,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, BookOpen, Code2, KeyRound, RefreshCw, Shield, Zap } from "lucide-react";
 import { auth } from "@/auth";
 import { listAllKeys } from "@/lib/handlers/keys";
 
 export const metadata: Metadata = { title: "SDK Keys" };
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
+import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { Label } from "@/components/ui/label";
 import { createKeyAction } from "./actions";
+import { consumeKeyErrorCookie, consumeNewKeyCookie } from "./new-key-cookie";
 import { CopyKeyButton } from "./copy-key-button";
 import { RevokeKeyButton } from "./revoke-key-button";
 
@@ -51,7 +45,7 @@ function shortDate(value?: string | null) {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function typeAccent(t: string) {
@@ -63,12 +57,14 @@ export default async function KeysPage({
   searchParams,
 }: {
   params: Promise<{ projectId: string }>;
-  searchParams: Promise<{ new_key?: string; show?: string }>;
+  searchParams: Promise<{ show?: string }>;
 }) {
   const session = await auth();
   const projectId = session?.user?.project_id;
   const { projectId: routeProjectId } = await params;
-  const { new_key, show } = await searchParams;
+  const { show } = await searchParams;
+  const new_key = await consumeNewKeyCookie();
+  const new_key_error = await consumeKeyErrorCookie();
   const showRevoked = show === "revoked";
 
   let keys: Awaited<ReturnType<typeof listAllKeys>> = [];
@@ -141,7 +137,7 @@ export default async function KeysPage({
               <Stat label="Admin" value={byType("admin")} accent />
             </div>
             <LinkButton
-              href="/docs/quickstart"
+              href="https://docs.shipeasy.ai/quickstart"
               size="sm"
               variant="secondary"
               className="hidden gap-1.5 md:inline-flex"
@@ -152,36 +148,29 @@ export default async function KeysPage({
         }
       />
       <PageBody className="space-y-6">
+        {new_key_error && (
+          <Banner intent="danger" title="Couldn't create key">
+            {new_key_error}
+          </Banner>
+        )}
         {new_key && (
-          <div
-            className="rounded-[var(--radius-md)] border p-4"
-            style={{
-              background:
-                "linear-gradient(135deg, color-mix(in oklab, var(--se-accent) 18%, var(--se-bg-1)), color-mix(in oklab, var(--se-accent) 6%, var(--se-bg-1)))",
-              borderColor: "color-mix(in oklab, var(--se-accent) 35%, transparent)",
-            }}
-          >
-            <div className="t-caps mb-2 flex items-center gap-2" style={{ color: "var(--se-accent)" }}>
-              <KeyRound className="size-3" />
-              <span>New key created · copy it now, you won&rsquo;t see it again</span>
+          <Banner intent="accent" title="New key created · copy it now, you won't see it again">
+            <div className="mt-1 space-y-3">
+              <div className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--se-line)] bg-[var(--se-bg)] px-3 py-2">
+                <code className="t-mono flex-1 overflow-x-auto text-[13px] text-[var(--se-fg)]">
+                  {new_key}
+                </code>
+                <CopyKeyButton value={new_key} />
+              </div>
+              <div className="flex items-start gap-2 text-[12px] text-[var(--se-warn)]">
+                <AlertTriangle className="mt-px size-3.5 shrink-0" />
+                <span>
+                  Store this in a secret manager. Anyone with this key can read flags, experiments,
+                  and (for server keys) user props.
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--se-line)] bg-[var(--se-bg)] px-3 py-2">
-              <code className="t-mono flex-1 overflow-x-auto text-[13px] text-[var(--se-fg)]">
-                {new_key}
-              </code>
-              <CopyKeyButton value={new_key} />
-            </div>
-            <div
-              className="mt-3 flex items-start gap-2 text-[12px]"
-              style={{ color: "var(--se-warn)" }}
-            >
-              <AlertTriangle className="mt-px size-3.5 shrink-0" />
-              <span>
-                Store this in a secret manager. Anyone with this key can read flags, experiments,
-                and (for server keys) user props.
-              </span>
-            </div>
-          </div>
+          </Banner>
         )}
 
         <div
@@ -256,11 +245,9 @@ export default async function KeysPage({
               No active keys. Use the form above
               {revokedKeys.length > 0 ? (
                 <>
-                  {" "}or{" "}
-                  <a
-                    className="underline"
-                    href={`/dashboard/${routeProjectId}/keys?show=revoked`}
-                  >
+                  {" "}
+                  or{" "}
+                  <a className="underline" href={`/dashboard/${routeProjectId}/keys?show=revoked`}>
                     show revoked
                   </a>
                 </>
@@ -341,18 +328,24 @@ export default async function KeysPage({
               {"\n"}
               <span className="k">import</span>
               {" { shipeasy } "}
-              <span className="k">from</span> <span className="s">{"'@shipeasy/sdk/server'"}</span>;{"\n\n"}
+              <span className="k">from</span> <span className="s">{"'@shipeasy/sdk/server'"}</span>;
+              {"\n\n"}
               <span className="k">await</span> <span className="b">shipeasy</span>
               {"({\n  apiKey: process.env."}
               <span className="s">SHIPEASY_SERVER_KEY</span>
               {",\n});"}
             </pre>
             <div className="flex gap-2">
-              <LinkButton href="/docs/quickstart" size="sm" variant="ghost" className="gap-1.5">
+              <LinkButton
+                href="https://docs.shipeasy.ai/quickstart"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+              >
                 <BookOpen className="size-3" /> All SDKs
               </LinkButton>
               <LinkButton
-                href="/docs/keys"
+                href="https://docs.shipeasy.ai/keys"
                 size="sm"
                 variant="ghost"
                 className="gap-1.5"
@@ -390,16 +383,11 @@ export default async function KeysPage({
         <div className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
           <div className="border-b border-[var(--se-line)] px-5 py-3">
             <div className="text-[14px] font-medium">Key types</div>
-            <div className="t-mono-xs dim-2 mt-1">
-              Scopes and where each type is safe to use.
-            </div>
+            <div className="t-mono-xs dim-2 mt-1">Scopes and where each type is safe to use.</div>
           </div>
           <div className="grid gap-px bg-[var(--se-line)] md:grid-cols-3">
             {KEY_TYPES.map((k) => (
-              <div
-                key={k.type}
-                className="flex flex-col gap-3 bg-[var(--se-bg-1)] p-5"
-              >
+              <div key={k.type} className="flex flex-col gap-3 bg-[var(--se-bg-1)] p-5">
                 <div className="flex items-center gap-2">
                   <KeyRound className="size-3.5" style={{ color: k.accent }} />
                   <span
