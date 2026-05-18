@@ -1,18 +1,10 @@
-import path from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { adminList } from "../admin-list";
 import { setProjectPlan } from "../seed-fixtures";
 
-const AUTH_FILE = path.join(__dirname, "../.auth/user.json");
 const RUN = Date.now();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function expRow(page: Page, name: string) {
-  // Row container is 3 ancestors above the name text:
-  //   name (<a>) → flex container → min-w-0 → row grid (group/row).
-  return page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
-}
 
 async function getExperimentId(page: Page, name: string): Promise<string> {
   const exps = await adminList<{ id: string; name: string }>(
@@ -24,21 +16,60 @@ async function getExperimentId(page: Page, name: string): Promise<string> {
   return exp.id;
 }
 
-async function createDraftViaWizard(
-  page: Page,
+async function seedDraft(
+  request: APIRequestContext,
   name: string,
   opts: { extraVariants?: number } = {},
 ) {
-  await page.goto("/dashboard/e2e-project-id/experiments/new");
-  await page.locator("#exp-name").fill(name);
-  await page.getByRole("button", { name: /^continue$/i }).click();
-  for (let i = 0; i < (opts.extraVariants ?? 0); i++) {
-    await page.getByRole("button", { name: /^add variant$/i }).click();
+  const groups: { name: string; weight: number }[] = [
+    { name: "control", weight: 5000 },
+    { name: "test", weight: 5000 },
+  ];
+  if (opts.extraVariants && opts.extraVariants > 0) {
+    const total = 2 + opts.extraVariants;
+    const base = Math.floor(10000 / total);
+    const remainder = 10000 - base * total;
+    const rebalanced: { name: string; weight: number }[] = [
+      { name: "control", weight: base + remainder },
+      { name: "test", weight: base },
+    ];
+    for (let i = 2; i < total; i++) {
+      rebalanced.push({ name: `variant_${i}`, weight: base });
+    }
+    groups.length = 0;
+    groups.push(...rebalanced);
   }
-  await page.getByRole("button", { name: /^continue$/i }).click();
-  await page.getByRole("button", { name: /^continue$/i }).click();
-  await page.getByRole("button", { name: /^create experiment$/i }).click();
-  await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
+  const res = await request.post("/api/admin/experiments", {
+    data: {
+      name,
+      universe: "default",
+      allocation_pct: 10000,
+      groups,
+    },
+  });
+  if (!res.ok()) {
+    throw new Error(`seed failed: ${res.status()} ${await res.text()}`);
+  }
+}
+
+async function cleanupExperiment(request: APIRequestContext, name: string) {
+  try {
+    const exps = await adminList<{ id: string; name: string; status: string }>(
+      request,
+      "/api/admin/experiments",
+    ).catch(() => null);
+    if (!exps) return;
+    const exp = exps.find((e) => e.name === name);
+    if (!exp) return;
+    if (exp.status === "running") {
+      await request.post(`/api/admin/experiments/${exp.id}/status`, {
+        data: { status: "stopped" },
+      });
+    }
+    await request.delete(`/api/admin/experiments/${exp.id}`);
+  } catch {
+    // best-effort cleanup
+  }
 }
 
 // ── Stat tile labels ─────────────────────────────────────────────────────────
@@ -64,23 +95,12 @@ test.describe("Detail page — draft state", () => {
 
   const name = `e2res_draft_${RUN}`;
 
-  test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await createDraftViaWizard(p, name);
-    await ctx.close();
+  test.beforeAll(async ({ request }) => {
+    await seedDraft(request, name);
   });
 
-  test.afterAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await p.goto("/dashboard/e2e-project-id/experiments");
-    const delBtn = expRow(p, name).getByRole("button", { name: /delete experiment/i });
-    if ((await delBtn.count()) > 0) {
-      await delBtn.click();
-      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
-    }
-    await ctx.close();
+  test.afterAll(async ({ request }) => {
+    await cleanupExperiment(request, name);
   });
 
   test("header card shows the DRAFT badge", async ({ page }) => {
@@ -148,32 +168,17 @@ test.describe("Detail page — running state", () => {
 
   const name = `e2res_run_${RUN}`;
 
-  test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await createDraftViaWizard(p, name);
-    await expRow(p, name)
-      .getByRole("button", { name: /start experiment/i })
-      .click();
-    await expect(expRow(p, name).getByText(/^running$/i)).toBeVisible();
-    await ctx.close();
+  test.beforeAll(async ({ request }) => {
+    await seedDraft(request, name);
+    const exps = await adminList<{ id: string; name: string }>(request, "/api/admin/experiments");
+    const exp = exps.find((e) => e.name === name)!;
+    await request.post(`/api/admin/experiments/${exp.id}/status`, {
+      data: { status: "running" },
+    });
   });
 
-  test.afterAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await p.goto("/dashboard/e2e-project-id/experiments");
-    const row = expRow(p, name);
-    const stopBtn = row.getByRole("button", { name: /stop experiment/i });
-    if ((await stopBtn.count()) > 0) {
-      await stopBtn.click();
-    }
-    const delBtn = expRow(p, name).getByRole("button", { name: /delete experiment/i });
-    if ((await delBtn.count()) > 0) {
-      await delBtn.click();
-      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
-    }
-    await ctx.close();
+  test.afterAll(async ({ request }) => {
+    await cleanupExperiment(request, name);
   });
 
   test("Header badge reads LIVE", async ({ page }) => {
@@ -209,28 +214,20 @@ test.describe("Detail page — stopped state", () => {
 
   const name = `e2res_stop_${RUN}`;
 
-  test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await createDraftViaWizard(p, name);
-    const row = expRow(p, name);
-    await row.getByRole("button", { name: /start experiment/i }).click();
-    await expect(row.getByText(/^running$/i)).toBeVisible();
-    await row.getByRole("button", { name: /stop experiment/i }).click();
-    await expect(row.getByText(/^stopped$/i)).toBeVisible();
-    await ctx.close();
+  test.beforeAll(async ({ request }) => {
+    await seedDraft(request, name);
+    const exps = await adminList<{ id: string; name: string }>(request, "/api/admin/experiments");
+    const exp = exps.find((e) => e.name === name)!;
+    await request.post(`/api/admin/experiments/${exp.id}/status`, {
+      data: { status: "running" },
+    });
+    await request.post(`/api/admin/experiments/${exp.id}/status`, {
+      data: { status: "stopped" },
+    });
   });
 
-  test.afterAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await p.goto("/dashboard/e2e-project-id/experiments");
-    const delBtn = expRow(p, name).getByRole("button", { name: /delete experiment/i });
-    if ((await delBtn.count()) > 0) {
-      await delBtn.click();
-      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
-    }
-    await ctx.close();
+  test.afterAll(async ({ request }) => {
+    await cleanupExperiment(request, name);
   });
 
   test("Header badge reads STOPPED", async ({ page }) => {
@@ -277,31 +274,22 @@ test.describe("Detail page — multi-variant", () => {
 
   const name = `e2res_mv_${RUN}`;
 
-  test.beforeAll(async ({ browser }) => {
+  test.beforeAll(async ({ request }) => {
     setProjectPlan("paid");
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await createDraftViaWizard(p, name, { extraVariants: 1 });
-    await ctx.close();
+    await seedDraft(request, name, { extraVariants: 1 });
   });
 
-  test.afterAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: AUTH_FILE });
-    const p = await ctx.newPage();
-    await p.goto("/dashboard/e2e-project-id/experiments");
-    const delBtn = expRow(p, name).getByRole("button", { name: /delete experiment/i });
-    if ((await delBtn.count()) > 0) {
-      await delBtn.click();
-      await expect(p.getByText(name, { exact: true })).not.toBeAttached();
-    }
-    await ctx.close();
+  test.afterAll(async ({ request }) => {
+    await cleanupExperiment(request, name);
     setProjectPlan("free");
   });
 
   test("Variants card lists all 3 group names", async ({ page }) => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-    await expect(page.getByText(/^control$/)).toBeVisible();
+    // Standalone v2 detail tags the first variant with "· baseline" inside
+    // the same <span>; pin via the meta-variant container instead.
+    await expect(page.locator(".meta-variant.ctrl").getByText("control")).toBeVisible();
     await expect(page.getByText(/^test$/)).toBeVisible();
     await expect(page.getByText(/^variant_2$/)).toBeVisible();
   });

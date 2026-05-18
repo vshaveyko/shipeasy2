@@ -12,14 +12,10 @@ test.afterAll(() => setProjectPlan("free"));
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function expRow(page: Page, name: string) {
-  // Row layout: grid > [icon, min-w-0 > flex > a(name), status, ...].
-  // Walk up: a → flex → min-w-0 → grid (the row).
   return page
+    .locator('[data-slot="pane-full"]')
     .getByText(name, { exact: true })
-    .locator("..")
-    .locator("..")
-    .locator("..")
-    .locator("..");
+    .locator("xpath=ancestor::tr[1]");
 }
 
 async function cleanupExperiment(request: APIRequestContext, name: string) {
@@ -53,8 +49,8 @@ async function getExperimentId(page: Page, name: string): Promise<string> {
 }
 
 /**
- * Drive the 4-step wizard from a clean /experiments/new page through to
- * Create. By default takes the happy-path defaults at every step.
+ * Drive the BigModalWizard (`?new=1`) end-to-end through to Create.
+ * Lands back on `/experiments` after the Server Action redirect.
  */
 async function createViaWizard(
   page: Page,
@@ -63,123 +59,121 @@ async function createViaWizard(
     hypothesis?: string;
     tag?: string;
     extraVariants?: number;
-    /** Allocation 1..100 (default 100) */
-    allocation?: number;
   } = {},
 ) {
-  await page.goto("/dashboard/e2e-project-id/experiments/new");
+  await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
 
-  // Step 1 — Basics
-  await page.locator("#exp-name").fill(name);
+  // Step 1 — Name & describe
+  await dialog.getByTestId("experiment-name-input").fill(name);
   if (opts.hypothesis !== undefined) {
-    await page.locator("#exp-hypothesis").fill(opts.hypothesis);
+    await dialog.locator("#experiment-description").fill(opts.hypothesis);
   }
   if (opts.tag !== undefined) {
-    await page.locator("#exp-tag").selectOption(opts.tag);
+    await dialog.locator("#experiment-tag").fill(opts.tag);
   }
-  await page.getByRole("button", { name: /^continue$/i }).click();
+  await dialog.getByRole("button", { name: /^next/i }).click();
 
-  // Step 2 — Variants
+  // Step 2 — Audience & traffic (keep defaults: default universe, 100%, no gate)
+  await dialog
+    .getByText(/audience & traffic/i)
+    .first()
+    .waitFor();
+  await dialog.getByRole("button", { name: /^next/i }).click();
+
+  // Step 3 — Variants
+  await dialog.getByRole("heading", { name: /^variants$/i }).waitFor();
   for (let i = 0; i < (opts.extraVariants ?? 0); i++) {
-    await page.getByRole("button", { name: /^add variant$/i }).click();
+    await dialog.getByRole("button", { name: /^add variant$/i }).click();
   }
-  if (opts.allocation !== undefined && opts.allocation !== 100) {
-    const slider = page.locator("input#alloc[type=range]");
-    await slider.evaluate((el, value) => {
-      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(
-        el,
-        String(value),
-      );
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    }, opts.allocation);
-  }
-  await page.getByRole("button", { name: /^continue$/i }).click();
+  await dialog.getByRole("button", { name: /^next/i }).click();
 
-  // Step 3 — Audience & sizing (defaults)
-  await page.getByRole("button", { name: /^continue$/i }).click();
+  // Step 4 — Review → submit
+  await dialog.getByRole("heading", { name: /^review$/i }).waitFor();
+  await dialog.getByRole("button", { name: /create experiment/i }).click();
 
-  // Step 4 — Review → publish
-  await page.getByRole("button", { name: /^create experiment$/i }).click();
-  await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
+  // After submit the server action calls redirect() back to /experiments
+  // (no `?new=1`). Wait for the dialog to close + URL to strip the query.
+  await expect(page.getByRole("dialog")).toBeHidden({ timeout: 15_000 });
+  await expect(page).not.toHaveURL(/[?&]new=1\b/);
+  // SWR refetch — pin to the closed-table pane so the rail mirror doesn't
+  // double-match strict-mode.
+  await expect(
+    page.locator('[data-slot="pane-full"]').getByText(name, { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
 }
 
-// ── Wizard UI surface ────────────────────────────────────────────────────────
+// ── Wizard UI surface (BigModalWizard) ──────────────────────────────────────
 
-test.describe("New experiment wizard — UI", () => {
+test.describe("New experiment wizard — BigModalWizard UI", () => {
   test("renders the 4-step stepper", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    for (const label of ["Basics", "Variants", "Audience & sizing", "Review"]) {
-      await expect(page.getByRole("tab", { name: new RegExp(label, "i") })).toBeVisible();
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    // Footer copy: "Step N of M · <label>" — pin to 4 total.
+    await expect(dialog.getByText(/step 1 of 4/i).first()).toBeVisible();
+    for (const label of ["Name & describe", "Audience & traffic", "Variants", "Review"]) {
+      await expect(dialog.getByText(new RegExp(label, "i")).first()).toBeVisible();
     }
   });
 
-  test("Continue is disabled until a valid name is entered", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    const continueBtn = page.getByRole("button", { name: /^continue$/i }).first();
-    await expect(continueBtn).toBeDisabled();
-    await page.locator("#exp-name").fill("checkout_v3");
-    await expect(continueBtn).toBeEnabled();
+  test("Next is disabled until a valid name is entered", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    const next = dialog.getByRole("button", { name: /^next/i });
+    await expect(next).toBeDisabled();
+    await dialog.getByTestId("experiment-name-input").fill("checkout_v3");
+    await expect(next).toBeEnabled();
   });
 
-  test("step 2 starts with control + test variants and an Add variant button", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page.locator("#exp-name").fill("two_variants");
-    await page.getByRole("button", { name: /^continue$/i }).click();
+  test("step 3 starts with control + treatment variants and an Add variant button", async ({
+    page,
+  }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    await dialog.getByTestId("experiment-name-input").fill("two_variants");
+    await dialog.getByRole("button", { name: /^next/i }).click();
+    await dialog.getByRole("button", { name: /^next/i }).click();
 
-    // The first two variant input fields default to control / test.
-    const inputs = page.locator("input[value='control'], input[value='test']");
-    await expect(inputs).toHaveCount(2);
-    await expect(page.getByRole("button", { name: /^add variant$/i })).toBeVisible();
+    await expect(dialog.getByTestId("variant-name-0")).toHaveValue("control");
+    await expect(dialog.getByTestId("variant-name-1")).toHaveValue("treatment");
+    await expect(dialog.getByRole("button", { name: /^add variant$/i })).toBeVisible();
   });
 
   test("Add variant button adds a third variant row and rebalances weights", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page.locator("#exp-name").fill("three_variants");
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^add variant$/i }).click();
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    await dialog.getByTestId("experiment-name-input").fill("three_variants");
+    await dialog.getByRole("button", { name: /^next/i }).click();
+    await dialog.getByRole("button", { name: /^next/i }).click();
+    await dialog.getByRole("button", { name: /^add variant$/i }).click();
 
-    // Third variant input shows up with its default name.
-    await expect(page.locator("input[value='variant_2']")).toBeVisible();
-    // After rebalance, two variants should show 33% (one shows 34%).
-    await expect(page.getByText(/33%/).first()).toBeVisible();
+    await expect(dialog.getByTestId("variant-name-2")).toBeVisible();
+    // After rebalance, weights are 34/33/33 — at least one 33% chip renders.
+    await expect(dialog.getByText(/\b33%\b/).first()).toBeVisible();
   });
 
-  test("allocation slider drives the allocation %", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page.locator("#exp-name").fill("alloc_test");
-    await page.getByRole("button", { name: /^continue$/i }).click();
-
-    const slider = page.locator("input#alloc[type=range]");
-    await slider.evaluate((el) => {
-      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(
-        el,
-        "60",
-      );
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await expect(page.getByText("60%").first()).toBeVisible();
+  test("Esc closes the wizard and strips ?new=1", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page).not.toHaveURL(/[?&]new=1\b/);
   });
 
-  test("Cancel link returns to the experiments list", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page
-      .getByRole("link", { name: /^cancel$/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
-  });
+  test("Review step renders summary cards and a Create button", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    await dialog.getByTestId("experiment-name-input").fill("review_demo");
+    await dialog.getByRole("button", { name: /^next/i }).click();
+    await dialog.getByRole("button", { name: /^next/i }).click();
+    await dialog.getByRole("button", { name: /^next/i }).click();
 
-  test("Review step shows summary and SDK snippet preview", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page.locator("#exp-name").fill("review_demo");
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-
-    await expect(page.getByText(/^summary$/i)).toBeVisible();
-    await expect(page.getByText(/^SDK snippet$/i)).toBeVisible();
-    await expect(page.getByText(/shipeasy\./)).toBeVisible();
-    await expect(page.getByRole("button", { name: /^create experiment$/i })).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: /^review$/i })).toBeVisible();
+    await expect(dialog.getByText(/^name$/i).first()).toBeVisible();
+    await expect(dialog.getByText(/^variants$/i).first()).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /create experiment/i })).toBeVisible();
   });
 });
 
@@ -212,30 +206,9 @@ test.describe("Two-variant experiment — full lifecycle", () => {
     expect(exp).toBeDefined();
     expect(exp!.groups).toHaveLength(2);
     expect(exp!.groups[0].name).toBe("control");
-    expect(exp!.groups[1].name).toBe("test");
+    expect(exp!.groups[1].name).toBe("treatment");
     expect(exp!.status).toBe("draft");
     expect(exp!.description).toContain("Two variants");
-  });
-
-  test("detail page: header shows DRAFT badge, hypothesis, and stat tiles", async ({ page }) => {
-    const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-
-    await expect(page.getByText(/^DRAFT$/)).toBeVisible();
-    await expect(page.getByText(/Two variants\. Default split\./).first()).toBeVisible();
-    await expect(page.getByText(/^users \/ control$/i)).toBeVisible();
-    await expect(page.getByText(/^days running$/i)).toBeVisible();
-    await expect(page.getByText(/^verdict$/i)).toBeVisible();
-    await expect(page.getByText(/^no results yet/i)).toBeVisible();
-  });
-
-  test("detail page: variants card shows control + test rows", async ({ page }) => {
-    const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-
-    await expect(page.getByRole("heading", { name: /^variants$/i })).toBeVisible();
-    await expect(page.getByText(/baseline/i)).toBeVisible();
-    await expect(page.getByText(/^control$/)).toBeVisible();
   });
 
   test("start experiment from list → 'running' badge appears", async ({ page }) => {
@@ -245,15 +218,6 @@ test.describe("Two-variant experiment — full lifecycle", () => {
       .click();
 
     await expect(expRow(page, name).getByText(/^running$/i)).toBeVisible();
-  });
-
-  test("detail page after start: badge is LIVE, days-running stat is 0", async ({ page }) => {
-    const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
-
-    await expect(page.getByText(/^LIVE/)).toBeVisible();
-    // Days running stat tile shows '0' on the day of start.
-    await expect(page.getByText("0").first()).toBeVisible();
   });
 
   test("stop experiment from list → 'stopped' badge", async ({ page }) => {
@@ -271,10 +235,18 @@ test.describe("Two-variant experiment — full lifecycle", () => {
       .getByRole("button", { name: /delete experiment/i })
       .click();
 
-    await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+    // SWR mutate is async; give the refetch a generous window before asserting.
+    // Scope to pane-full to avoid the rail-pane mirror of the same name.
+    await expect(
+      page.locator('[data-slot="pane-full"]').getByText(name, { exact: true }),
+    ).not.toBeVisible({ timeout: 15_000 });
 
-    const exps = await adminList<{ name: string }>(page.request, "/api/admin/experiments");
-    expect(exps.find((e) => e.name === name)).toBeUndefined();
+    await expect
+      .poll(async () => {
+        const exps = await adminList<{ name: string }>(page.request, "/api/admin/experiments");
+        return exps.find((e) => e.name === name);
+      })
+      .toBeUndefined();
   });
 });
 
@@ -309,8 +281,11 @@ test.describe("Multi-variant experiment — 3 groups via wizard", () => {
     const id = await getExperimentId(page, name);
     await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
 
-    await expect(page.getByText(/^control$/)).toBeVisible();
-    await expect(page.getByText(/^test$/)).toBeVisible();
+    // Standalone v2 detail tags the first variant with "· baseline" inside
+    // the same <span>, so /^control$/ as text-content matches the parent;
+    // pin via the meta-variant container instead.
+    await expect(page.locator(".meta-variant.ctrl").getByText("control")).toBeVisible();
+    await expect(page.getByText(/^treatment$/)).toBeVisible();
     await expect(page.getByText(/^variant_2$/)).toBeVisible();
   });
 
@@ -319,46 +294,61 @@ test.describe("Multi-variant experiment — 3 groups via wizard", () => {
     await expRow(page, name)
       .getByRole("button", { name: /delete experiment/i })
       .click();
-    await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+    await expect(
+      page.locator('[data-slot="pane-full"]').getByText(name, { exact: true }),
+    ).not.toBeVisible({ timeout: 15_000 });
   });
 });
 
-// ── Partial-allocation experiment ─────────────────────────────────────────────
+// ── Embedded detail pane (UnifiedList) ───────────────────────────────────────
 
-test.describe("Partial-allocation experiment — 60%", () => {
+test.describe("Experiments detail pane — embedded summary", () => {
   test.describe.configure({ mode: "serial" });
 
-  const name = `e2exp_alloc_${RUN}`;
+  const name = `e2exp_detail_${RUN}`;
+
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext({
+      storageState: require("path").join(__dirname, "../.auth/user.json"),
+    });
+    const p = await ctx.newPage();
+    await createViaWizard(p, name);
+    await ctx.close();
+  });
 
   test.afterAll(async ({ request }) => {
     await cleanupExperiment(request, name);
   });
 
-  test("wizard with 60% allocation → admin API allocation_pct=6000", async ({ page }) => {
-    await createViaWizard(page, name, { allocation: 60 });
-
-    const exps = await adminList<{ name: string; allocationPct: number }>(
-      page.request,
-      "/api/admin/experiments",
-    );
-    const exp = exps.find((e) => e.name === name);
-    expect(exp).toBeDefined();
-    expect(exp!.allocationPct).toBe(6000);
-  });
-
-  test("detail page header shows the 60% allocation chip", async ({ page }) => {
+  test("row click adds ?open=<id> and renders the embedded summary", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
+    await page.goto("/dashboard/e2e-project-id/experiments");
 
-    // "2 variants · 60% allocation" appears in the header runtime line.
-    await expect(page.getByText(/60% allocation/i)).toBeVisible();
+    await expRow(page, name).click();
+    await expect(page).toHaveURL(new RegExp(`[?&]open=${id}\\b`));
+
+    const detail = page.locator('[data-slot="detail-pane"]');
+    await expect(detail).toBeVisible();
+    await expect(detail.getByText(/draft/i).first()).toBeVisible();
+    await expect(detail.getByText(/allocation/i).first()).toBeVisible();
+    await expect(detail.getByText(/variants/i).first()).toBeVisible();
   });
 
-  test("cleanup: delete partial-allocation experiment", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments");
-    await expRow(page, name)
-      .getByRole("button", { name: /delete experiment/i })
-      .click();
-    await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+  test("'Open full view' link points at the standalone detail page", async ({ page }) => {
+    const id = await getExperimentId(page, name);
+    await page.goto(`/dashboard/e2e-project-id/experiments?open=${id}`);
+    const link = page.getByTestId("experiment-detail-fullview-link");
+    await expect(link).toHaveAttribute(
+      "href",
+      new RegExp(`/dashboard/e2e-project-id/experiments/${id}$`),
+    );
+  });
+
+  test("Esc strips ?open and collapses the detail pane", async ({ page }) => {
+    const id = await getExperimentId(page, name);
+    await page.goto(`/dashboard/e2e-project-id/experiments?open=${id}`);
+    await expect(page.locator('[data-slot="detail-pane"]')).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page).not.toHaveURL(/[?&]open=/);
   });
 });

@@ -10,23 +10,13 @@ test.describe("Experiments", () => {
     await expect(page.getByText(/feature tests with auto-collected metrics/i)).toBeVisible();
   });
 
-  test("new-experiment form renders the wizard with basics step fields", async ({ page }) => {
+  test("legacy /experiments/new advanced editor still renders", async ({ page }) => {
+    // The big-modal wizard is the primary create path; the standalone
+    // /experiments/new editor remains as the "Advanced" deep-link.
     await page.goto("/dashboard/e2e-project-id/experiments/new");
-
-    // The wizard renders a sr-only h1 + a visible "Name & hypothesis" step head.
-    await expect(page.getByText(/name & hypothesis/i).first()).toBeVisible();
-    await expect(page.getByLabel(/^name/i)).toBeVisible();
-    await expect(page.getByLabel(/hypothesis/i)).toBeVisible();
-  });
-
-  test("filling basics updates inputs; continue button is enabled", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-
-    const name = page.getByLabel(/^name/i);
-    await name.fill("checkout_redesign_q2");
-    await expect(name).toHaveValue("checkout_redesign_q2");
-
-    await expect(page.getByRole("button", { name: /^continue$/i }).first()).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: /save as draft|start experiment/i }).first(),
+    ).toBeVisible();
   });
 
   test("experiment detail route renders for any id", async ({ page }) => {
@@ -89,14 +79,63 @@ test.describe("Experiments", () => {
     await expect(page.getByText(/no experiments match this filter/i)).toBeVisible();
   });
 
-  test("New experiment button navigates to the wizard", async ({ page }) => {
+  test("New experiment button opens the BigModalWizard via ?new=1", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/experiments");
     await page
-      .getByRole("link", { name: /^new experiment$/i })
+      .getByRole("button", { name: /^new experiment$/i })
       .first()
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/new$/);
-    await expect(page.getByText(/name & hypothesis/i).first()).toBeVisible();
+    await expect(page).toHaveURL(/[?&]new=1\b/);
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/step 1 of 4/i).first()).toBeVisible();
+    await expect(dialog.getByText(/new experiment/i).first()).toBeVisible();
+  });
+
+  test("Advanced wizard link still points to /experiments/new", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments");
+    const link = page.getByRole("link", { name: /^advanced wizard$/i }).first();
+    await expect(link).toHaveAttribute("href", /\/dashboard\/e2e-project-id\/experiments\/new$/);
+  });
+});
+
+test.describe("Experiments — BigModalWizard create flow", () => {
+  test("?new=1 deep-link renders the wizard", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/step 1 of 4/i).first()).toBeVisible();
+    // Step 1 label rendered as the head title.
+    await expect(dialog.getByRole("heading", { name: /name & describe/i })).toBeVisible();
+  });
+
+  test("Next is disabled until a valid name is typed", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    const next = dialog.getByRole("button", { name: /^next/i });
+    await expect(next).toBeDisabled();
+    await dialog.getByTestId("experiment-name-input").fill("checkout_redesign_q2");
+    await expect(next).toBeEnabled();
+  });
+
+  test("Esc closes the wizard and strips ?new=1", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page).not.toHaveURL(/[?&]new=1\b/);
+  });
+
+  test("Back button is disabled on step 1; advances to step 2 with a valid name", async ({
+    page,
+  }) => {
+    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("button", { name: /^back$/i })).toBeDisabled();
+    await dialog.getByTestId("experiment-name-input").fill("checkout_redesign_q2");
+    await dialog.getByRole("button", { name: /^next/i }).click();
+    await expect(dialog.getByText(/step 2 of 4/i).first()).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: /audience & traffic/i })).toBeVisible();
   });
 });
 
@@ -175,7 +214,9 @@ test.describe("Experiment results page (v2)", () => {
   test("metadata sections are collapsible <details> elements", async ({ page }) => {
     await page.goto(url);
 
-    const owners = page.locator(".v2-meta .v2-meta-section").filter({ hasText: /owner & subscribers/i });
+    const owners = page
+      .locator(".v2-meta .v2-meta-section")
+      .filter({ hasText: /owner & subscribers/i });
     await expect(owners).toHaveAttribute("open", "");
     await owners.locator("summary").first().click();
     await expect(owners).not.toHaveAttribute("open", /.*/);
