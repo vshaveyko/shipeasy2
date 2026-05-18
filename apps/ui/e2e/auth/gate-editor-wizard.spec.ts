@@ -10,10 +10,16 @@ import { expect, test, type Page } from "@playwright/test";
 const RUN = Date.now();
 
 async function createGate(page: Page, key: string) {
-  await page.goto("/dashboard/e2e-project-id/gates/new");
-  await page.locator("#gate-key").fill(key);
-  await page.getByRole("button", { name: /^create gate$/i }).click();
-  // Server action now lands on the new gatekeeper editor.
+  await page.goto("/dashboard/e2e-project-id/gates?new=1");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.locator("#new-gate-key").fill(key);
+  // 4-step BigModalWizard — advance Details → Targeting → Preview → Integrate.
+  for (let i = 0; i < 3; i++) {
+    await dialog.getByRole("button", { name: /^next\b/i }).click();
+  }
+  await dialog.getByRole("button", { name: /create gate/i }).click();
+  // Server action lands on the gate editor.
   await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
 }
 
@@ -28,9 +34,12 @@ async function deleteGate(page: Page, name: string) {
 }
 
 async function goToEditor(page: Page, key: string) {
+  // Open the standalone gate editor (3-step wizard) via the list row's
+  // "Open standalone" deep-link in the detail pane.
   await page.goto("/dashboard/e2e-project-id/gates");
-  await page.getByText(key, { exact: true }).click();
-  // Editor route uses gate.id, not name — wait for the wizard stepper to render.
+  await page.locator('[data-slot="pane-full"]').getByText(key, { exact: true }).click();
+  await page.locator('[data-testid="gate-detail-standalone-link"]').click();
+  await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/?#]+$/);
   await expect(page.getByText("Stack the gates")).toBeVisible();
 }
 

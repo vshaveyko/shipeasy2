@@ -44,8 +44,10 @@ async function deleteSafe(page: Page, url: string): Promise<void> {
 }
 
 async function seedGate(page: Page, name: string): Promise<string> {
+  // Schema expects snake_case `rollout_pct` and parses booleans for `enabled`.
+  // Unknown camelCase keys would be stripped silently; use the canonical shape.
   const resp = await page.request.post("/api/admin/gates", {
-    data: { name, rolloutPct: 0, rules: [], enabled: 0 },
+    data: { name, rollout_pct: 0, rules: [], enabled: false },
   });
   expect(resp.ok(), await resp.text()).toBe(true);
   return ((await resp.json()) as { id: string }).id;

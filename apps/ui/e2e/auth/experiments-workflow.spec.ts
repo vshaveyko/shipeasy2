@@ -1,3 +1,4 @@
+import path from "node:path";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { adminList } from "../admin-list";
 import { setProjectPlan } from "../seed-fixtures";
@@ -309,7 +310,7 @@ test.describe("Experiments detail pane — embedded summary", () => {
 
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({
-      storageState: require("path").join(__dirname, "../.auth/user.json"),
+      storageState: path.join(__dirname, "../.auth/user.json"),
     });
     const p = await ctx.newPage();
     await createViaWizard(p, name);

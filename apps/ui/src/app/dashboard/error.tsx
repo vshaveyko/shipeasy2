@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 
 import { Page, PageBody } from "@/components/dashboard/page";
 
@@ -53,12 +54,12 @@ export default function DashboardError({
               >
                 Try again
               </button>
-              <a
+              <Link
                 href="/dashboard"
                 className="rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 py-1.5 text-[13px] hover:bg-[var(--se-bg-3)]"
               >
                 Back to dashboard
-              </a>
+              </Link>
             </div>
           </div>
         </div>

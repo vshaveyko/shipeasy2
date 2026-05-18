@@ -35,7 +35,9 @@ test.describe("/cli-auth — signed-in flow", () => {
     await page.goto(cliAuthUrl());
 
     await expect(page.getByText("Authorize CLI access")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Approve access/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Authorize with selected project/i }),
+    ).toBeVisible();
 
     const radios = page.locator('input[type="radio"][name="project_id"]');
     await expect(radios.first()).toBeVisible();

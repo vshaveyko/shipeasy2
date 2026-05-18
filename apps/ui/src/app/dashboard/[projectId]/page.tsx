@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ArrowRight, Gauge } from "lucide-react";
 
 import { auth } from "@/auth";
@@ -31,8 +32,12 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
     },
   ];
 
-  const scopedHref = (href: string) =>
-    href.startsWith("/dashboard/") ? href.replace("/dashboard/", `/dashboard/${projectId}/`) : href;
+  const scopedHref = (href: string) => {
+    if (!href.startsWith("/dashboard/")) return href;
+    if (href.startsWith(`/dashboard/${projectId}/`) || href === `/dashboard/${projectId}`)
+      return href;
+    return href.replace("/dashboard/", `/dashboard/${projectId}/`);
+  };
 
   let gatesCount = 0;
   let configsCount = 0;
@@ -86,11 +91,11 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
           <StatCard
             label="Published locales"
             value={String(localesCount)}
-            hint="string profiles live"
+            hint={`string profile${localesCount === 1 ? "" : "s"} live`}
           />
-          <a href="/dashboard/billing" className="block">
+          <Link href="/dashboard/billing" className="block">
             <StatCard label="Plan" value={planName} hint="upgrade for more limits" />
-          </a>
+          </Link>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">

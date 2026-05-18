@@ -439,9 +439,13 @@ test.describe("Experiments CRUD", () => {
 
   const uName = `e2euni-exp-${RUN}`;
   const expKey = `e2eexp${RUN}`;
-  // Experiments: span → inner flex div → outer justify-between div (2 levels up)
+  // Experiments list is now a <UnifiedList> closed table — scope to the
+  // closed-pane to dodge the rail-pane mirror and ascend to the parent <tr>.
   const expRow = (page: Page) =>
-    page.getByText(expKey, { exact: true }).locator("..").locator("..").locator("..");
+    page
+      .locator('[data-slot="pane-full"]')
+      .getByText(expKey, { exact: true })
+      .locator("xpath=ancestor::tr[1]");
 
   // The /experiments/new page is now a single 10-section form (not a 4-step
   // wizard). Drive create-draft via the admin REST API — UI coverage for the
@@ -500,8 +504,10 @@ test.describe("Experiments CRUD", () => {
       .getByRole("button", { name: /delete experiment/i })
       .click();
 
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
-    await expect(page.getByText(expKey, { exact: true })).not.toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments(\?.*)?$/);
+    await expect(
+      page.locator('[data-slot="pane-full"]').getByText(expKey, { exact: true }),
+    ).toHaveCount(0);
   });
 });
 

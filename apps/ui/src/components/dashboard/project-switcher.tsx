@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { ChevronDown, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -145,7 +146,7 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
             })}
           </ul>
           <div className="border-t border-[var(--se-line)] p-1">
-            <a
+            <Link
               href="/dashboard/projects/new"
               onClick={() => setOpen(false)}
               className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] text-[var(--se-fg-2)] transition-colors hover:bg-[var(--se-bg-2)]"
@@ -154,7 +155,7 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
                 <Plus className="size-3" />
               </div>
               New project
-            </a>
+            </Link>
           </div>
         </div>
       )}

@@ -4,11 +4,12 @@ import { adminList } from "../admin-list";
 const RUN = Date.now();
 
 function gateRow(page: Page, name: string) {
-  // The row is a CSS grid with className containing "grid"; walk up from the
-  // gate-name link until we reach that container.
+  // Gates list is now a <UnifiedList> closed table — scope to the closed-pane
+  // to dodge the rail-pane mirror and ascend to the parent <tr>.
   return page
-    .getByRole("link", { name, exact: true })
-    .locator("xpath=ancestor::div[contains(@class,'grid')][1]");
+    .locator('[data-slot="pane-full"]')
+    .getByText(name, { exact: true })
+    .locator("xpath=ancestor::tr[1]");
 }
 
 test.describe("Gate editor page", () => {
@@ -17,38 +18,35 @@ test.describe("Gate editor page", () => {
   const key = `e2g_editor_${RUN}`;
 
   test("create a gate so we have one to edit", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/gates/new");
-    await page.locator("#gate-key").fill(key);
-    await page.getByRole("button", { name: /^create gate$/i }).click();
-    // Server action now redirects directly into the new gatekeeper editor.
+    await page.goto("/dashboard/e2e-project-id/gates?new=1");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.locator("#new-gate-key").fill(key);
+    for (let i = 0; i < 3; i++) {
+      await dialog.getByRole("button", { name: /^next\b/i }).click();
+    }
+    await dialog.getByRole("button", { name: /create gate/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
-    // Land back on the list to confirm the row exists.
     await page.goto("/dashboard/e2e-project-id/gates");
     await expect(gateRow(page, key).getByText(/^ENABLED$/i)).toBeVisible();
   });
 
-  test("clicking the gate name navigates to the editor", async ({ page }) => {
+  test("clicking the gate name opens the embedded editor in the detail pane", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
-    await page.getByRole("link", { name: key }).click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
-
-    // The new gatekeeper editor is a 3-step wizard.
-    await expect(page.getByText(/where does this gatekeeper live/i).first()).toBeVisible();
+    await gateRow(page, key).click();
+    await expect(page).toHaveURL(/\?open=/);
     await expect(page.getByText(/stack the gates/i).first()).toBeVisible();
-    await expect(page.getByText(/review and integrate/i).first()).toBeVisible();
   });
 
   // TODO: Rules builder (Add rule, IF row, Save changes) was replaced by the
   // gatekeeper-stack editor. Re-enable once we have stable selectors.
   test.skip("Add rule + Save persists the rule via admin API", async () => {});
 
-  test("Back link returns to the gates list", async ({ page }) => {
+  test("ESC closes the detail pane and returns to the list", async ({ page }) => {
     await page.goto("/dashboard/e2e-project-id/gates");
-    await page.getByRole("link", { name: key }).click();
-    await page
-      .getByRole("link", { name: /^gates$/i })
-      .first()
-      .click();
+    await gateRow(page, key).click();
+    await expect(page).toHaveURL(/\?open=/);
+    await page.keyboard.press("Escape");
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates$/);
   });
 

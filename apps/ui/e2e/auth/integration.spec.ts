@@ -13,11 +13,30 @@ test.afterAll(() => setProjectPlan("free"));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Find a div-row by the exact text of its name span (3 levels up from span,
-// matching the post-redesign label-block layout used by attributes/metrics/
-// universes/events/gate-configs/etc).
+// Row locator for the SelectableList / inline-list pages (attributes /
+// universes / events / metrics). Different pages nest the name <span> at
+// different depths inside the row, so ascend to the nearest container with
+// the `justify-between` row class.
 const divRow = (page: Page, name: string) =>
-  page.getByText(name, { exact: true }).locator("..").locator("..").locator("..");
+  page
+    .getByText(name, { exact: true })
+    .locator("xpath=ancestor::div[contains(@class,'justify-between')][1]");
+
+// Row locator for UnifiedList closed tables (gates / configs / experiments /
+// killswitches / metrics-list). Scope to the closed-pane to dodge the
+// rail-pane mirror and ascend to the parent <tr>.
+const paneRow = (page: Page, name: string) =>
+  page
+    .locator('[data-slot="pane-full"]')
+    .getByText(name, { exact: true })
+    .locator("xpath=ancestor::tr[1]");
+
+async function openNewWizard(page: Page, url: string) {
+  await page.goto(url);
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
 
 // ── Scenario 1: Full experiment lifecycle ─────────────────────────────────────
 // Register an event → create a metric → create an experiment → start → stop → delete.
@@ -48,36 +67,36 @@ test.describe("Integration: full experiment lifecycle", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(page.getByText(mName)).toBeVisible();
 
-    // 3. Create experiment via the 4-step wizard (uses seeded default universe)
-    await page.goto("/dashboard/e2e-project-id/experiments/new");
-    await page.locator("#exp-name").fill(expKey);
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^create experiment$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
-    await expect(divRow(page, expKey).getByText(/^draft$/i)).toBeVisible();
+    // 3. Create experiment via the 4-step BigModalWizard (uses seeded default
+    // universe). The list page opens the wizard via ?new=1.
+    const expDialog = await openNewWizard(page, "/dashboard/e2e-project-id/experiments?new=1");
+    await expDialog.locator("#experiment-name").fill(expKey);
+    for (let i = 0; i < 3; i++) {
+      await expDialog.getByRole("button", { name: /^next\b/i }).click();
+    }
+    await expDialog.getByRole("button", { name: /create experiment/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments(\?.*)?$/);
+    await expect(paneRow(page, expKey).getByText(/^draft$/i)).toBeVisible();
 
     // 4. Start the experiment
-    await divRow(page, expKey)
+    await paneRow(page, expKey)
       .getByRole("button", { name: /start experiment/i })
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
-    await expect(divRow(page, expKey).getByText(/^running$/i)).toBeVisible();
+    await expect(paneRow(page, expKey).getByText(/^running$/i)).toBeVisible();
 
     // 5. Stop the experiment
-    await divRow(page, expKey)
+    await paneRow(page, expKey)
       .getByRole("button", { name: /stop experiment/i })
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
-    await expect(divRow(page, expKey).getByText(/^stopped$/i)).toBeVisible();
+    await expect(paneRow(page, expKey).getByText(/^stopped$/i)).toBeVisible();
 
     // 6. Delete the stopped experiment
-    await divRow(page, expKey)
+    await paneRow(page, expKey)
       .getByRole("button", { name: /delete experiment/i })
       .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
-    await expect(page.getByText(expKey, { exact: true })).not.toBeVisible();
+    await expect(
+      page.locator('[data-slot="pane-full"]').getByText(expKey, { exact: true }),
+    ).not.toBeVisible();
 
     // 7. Clean up: delete metric and event
     await page.goto("/dashboard/e2e-project-id/experiments/metrics");
@@ -109,39 +128,42 @@ test.describe("Integration: gate and config for the same feature", () => {
   const configName = `feature.${featureSlug}`;
 
   test("create gate + config → gate is enabled → delete both", async ({ page }) => {
-    // 1. Create the feature gate. createGateAction redirects to the editor.
-    await page.goto("/dashboard/e2e-project-id/gates/new");
-    await page.locator("#gate-key").fill(featureSlug);
-    await page.getByRole("button", { name: /^create gate$/i }).click();
+    // 1. Create the feature gate via the BigModalWizard (?new=1).
+    const gDialog = await openNewWizard(page, "/dashboard/e2e-project-id/gates?new=1");
+    await gDialog.locator("#new-gate-key").fill(featureSlug);
+    for (let i = 0; i < 3; i++) {
+      await gDialog.getByRole("button", { name: /^next\b/i }).click();
+    }
+    await gDialog.getByRole("button", { name: /create gate/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\/[^/]+$/);
 
-    // The list reflects the new gate as enabled.
+    // The list reflects the new gate as ENABLED.
     await page.goto("/dashboard/e2e-project-id/gates");
-    await expect(divRow(page, featureSlug).getByText("enabled")).toBeVisible();
+    await expect(paneRow(page, featureSlug).getByText(/^ENABLED$/i)).toBeVisible();
 
-    // 2. Create the feature config (navigate the 4-step wizard).
-    await page.goto("/dashboard/e2e-project-id/configs/values/new");
-    await page.locator("#config-key").fill(configName);
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^create config$/i }).click();
+    // 2. Create the feature config via the BigModalWizard.
+    const cDialog = await openNewWizard(page, "/dashboard/e2e-project-id/configs/values?new=1");
+    await cDialog.locator("#config-key").fill(configName);
+    for (let i = 0; i < 3; i++) {
+      await cDialog.getByRole("button", { name: /^next\b/i }).click();
+    }
+    await cDialog.getByRole("button", { name: /create config/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/]+$/);
     await expect(page.getByText(configName, { exact: true }).first()).toBeVisible();
 
     // 3. Disable then re-enable the gate (test the toggle cycle)
     await page.goto("/dashboard/e2e-project-id/gates");
-    await divRow(page, featureSlug)
+    await paneRow(page, featureSlug)
       .getByRole("button", { name: /^disable gate$/i })
       .click();
-    await expect(divRow(page, featureSlug).getByText("disabled")).toBeVisible();
-    await divRow(page, featureSlug)
+    await expect(paneRow(page, featureSlug).getByText(/^DISABLED$/i)).toBeVisible();
+    await paneRow(page, featureSlug)
       .getByRole("button", { name: /^enable gate$/i })
       .click();
-    await expect(divRow(page, featureSlug).getByText("enabled")).toBeVisible();
+    await expect(paneRow(page, featureSlug).getByText(/^ENABLED$/i)).toBeVisible();
 
     // 4. Delete the gate via the per-row dropdown menu + confirm dialog.
-    await divRow(page, featureSlug)
+    await paneRow(page, featureSlug)
       .getByRole("button", { name: new RegExp(`Actions for ${featureSlug}`, "i") })
       .click();
     await page.getByRole("menuitem", { name: /^delete gate$/i }).click();
@@ -149,15 +171,25 @@ test.describe("Integration: gate and config for the same feature", () => {
       .getByRole("dialog")
       .getByRole("button", { name: /^delete gate$/i })
       .click();
-    // The confirm-dialog still references the gate name during its closing
-    // transition; scope the negative assertion to the list link.
-    await expect(page.locator("main").getByRole("link", { name: featureSlug })).toHaveCount(0);
+    await expect(
+      page.locator('[data-slot="pane-full"]').getByText(featureSlug, { exact: true }),
+    ).toHaveCount(0);
 
-    // 5. Delete the config from its editor (two-step inline confirm).
-    await page.goto("/dashboard/e2e-project-id/configs/values");
-    await page.getByRole("button", { name: /delete config/i }).click();
-    await page.getByRole("button", { name: /confirm delete/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
+    // 5. Delete the config from the list detail-pane header.
+    await page.goto(`/dashboard/e2e-project-id/configs/values`);
+    await paneRow(page, configName).click();
+    await expect(page).toHaveURL(/\?open=/);
+    await page
+      .locator('[data-slot="detail-pane"]')
+      .getByRole("button", { name: /delete config from detail pane/i })
+      .click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^delete config$/i })
+      .click();
+    await expect(
+      page.locator('[data-slot="pane-full"]').getByText(configName, { exact: true }),
+    ).toHaveCount(0);
   });
 });
 
