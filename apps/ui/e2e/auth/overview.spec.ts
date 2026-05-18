@@ -1,51 +1,48 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Overview page", () => {
+test.describe("Overview page — home cockpit", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/dashboard");
   });
 
-  test("renders welcome heading with the signed-in user's first name", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: /welcome back, e2e/i, level: 1 })).toBeVisible();
+  test("renders the cockpit with a state discriminator", async ({ page }) => {
+    const cockpit = page.locator('[data-slot="home-cockpit"]');
+    await expect(cockpit).toBeVisible();
+    const stateAttr = await cockpit.getAttribute("data-state");
+    expect(["first-run", "quiet", "busy"]).toContain(stateAttr);
+
+    const hero = page.locator('[data-slot="home-hero"]');
+    await expect(hero).toBeVisible();
+    await expect(hero).toHaveAttribute("data-state", stateAttr ?? "");
   });
 
-  test("shows the four stat cards with default zero values", async ({ page }) => {
-    for (const label of [
-      /gates \+ configs/i,
-      /running experiments/i,
-      /published locales/i,
-      /^plan$/i,
-    ]) {
-      await expect(page.getByText(label).first()).toBeVisible();
+  test("renders the launchpad with quick-create links", async ({ page }) => {
+    const launchpad = page.locator('[data-slot="home-launchpad"]');
+    await expect(launchpad).toBeVisible();
+    await expect(launchpad.getByRole("link", { name: /^new gate$/i })).toBeVisible();
+    await expect(launchpad.getByRole("link", { name: /^new config$/i })).toBeVisible();
+    await expect(launchpad.getByRole("link", { name: /^new experiment$/i })).toBeVisible();
+    await expect(launchpad.getByRole("link", { name: /^new killswitch$/i })).toBeVisible();
+  });
+
+  test("launchpad 'new gate' opens the gates wizard via ?new=1", async ({ page }) => {
+    await page
+      .locator('[data-slot="home-launchpad"]')
+      .getByRole("link", { name: /^new gate$/i })
+      .click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/gates\?new=1$/);
+    await expect(page.getByRole("dialog")).toBeVisible();
+  });
+
+  test("either decisions or onboarding renders, never both", async ({ page }) => {
+    const cockpit = page.locator('[data-slot="home-cockpit"]');
+    const state = await cockpit.getAttribute("data-state");
+    if (state === "first-run") {
+      await expect(page.locator('[data-slot="home-onboarding"]')).toBeVisible();
+      await expect(page.locator('[data-slot="home-decisions"]')).toHaveCount(0);
+    } else {
+      await expect(page.locator('[data-slot="home-decisions"]')).toBeVisible();
+      await expect(page.locator('[data-slot="home-onboarding"]')).toHaveCount(0);
     }
-  });
-
-  test("product cards link to each product root", async ({ page }) => {
-    const main = page.locator("main");
-
-    // Product cards on the overview render the product name + tagline inside
-    // an <a>, so the accessible name is e.g. "Configs Dynamic values & remote
-    // config". Match by substring to find the right card without depending on
-    // marketing copy.
-    await main
-      .getByRole("link", { name: /configs/i })
-      .first()
-      .click();
-    // /configs/values redirects into the editor when at least one config exists.
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values(\/[^/]+)?$/);
-    await page.goBack();
-
-    await main
-      .getByRole("link", { name: /experiments/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments$/);
-    await page.goBack();
-
-    await main
-      .getByRole("link", { name: /string manager/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/i18n$/);
   });
 });

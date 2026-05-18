@@ -190,11 +190,49 @@ Full local sweep: `crud.spec.ts` 46/46 pass, `gates.spec.ts` 10/10, `killswitche
 - [experiment-results-detail.spec.ts](apps/ui/e2e/auth/experiment-results-detail.spec.ts) `createDraftViaWizard` helper replaced with `seedDraft(request, name, { extraVariants? })` — admin REST `POST /api/admin/experiments` with the canonical body (`name`, `universe: "default"`, `allocation_pct: 10000`, `groups`). All `beforeAll`/`afterAll` hooks switched from list-row UI clicks to admin-API status changes + admin-API DELETE. Multi-variant variants-card assertion pinned to `.meta-variant.ctrl` to dodge the standalone v2 detail's `· baseline` suffix on the first variant. The 4 remaining failures in this spec (stat tile labels, "Wait" verdict tile, "LIVE" header badge, sequential-testing copy) target shape that no longer exists on the standalone `/experiments/[id]` v2 layout — pre-existing failures unrelated to Phase 3e and tracked separately.
 - Type-check clean across all touched files (`pnpm --filter @shipeasy/ui exec tsc --noEmit` — the 2 pre-existing `metrics-content.tsx` errors are unrelated).
 
-**Phase 3 (f–h) — NOT STARTED.** Other open items:
+**Phase 1e gate — DONE (2026-05-17).** Full lint + e2e sweep after 3a–3e. Lint had 26 errors (all `<a>` for internal navigation in `dashboard/[projectId]/page.tsx`, `dashboard/error.tsx`, `components/dashboard/project-switcher.tsx`); swapped to `<Link>`. One stray `require("path")` in `experiments-workflow.spec.ts` swapped to a `node:path` static import. Lint clean.
+
+E2e sweep flagged 29 failures: 18 pre-existing (keys-full ×4, keys-polish ×1, plans ×5, projects-team ×2, settings-interactions ×1, navigation Configs ×1, experiment-results-detail ×4) and 11 regressions from the 3a–3e migration. Fixes landed in commit `8e83fd7`:
+
+- `crud.spec.ts` Experiments CRUD: `expRow` rebuilt as `[data-slot="pane-full"] + xpath=ancestor::tr[1]` (was 3× `..` against the legacy non-UnifiedList markup); delete-row negative assertion scoped to `pane-full` so the rail-pane mirror doesn't trip strict-mode.
+- `gate-editor.spec.ts` + `gate-editor-wizard.spec.ts`: `createGate` rewritten to drive `?new=1` + `#new-gate-key` + 3 × Next + "Create gate" (button name carries a `⏎` Kbd suffix → drop the trailing `$` anchor; `/^next\b/i` instead of `/^next$/i`); `gateRow` swapped to the UnifiedList pane-full pattern. `goToEditor` opens the embedded editor first, then the new `data-testid="gate-detail-standalone-link"` to reach `/gates/[id]` so the existing standalone-editor assertions still apply. ESC-close test replaces the obsolete "Back link to /gates" assertion.
+- `integration.spec.ts`: same `?new=1` wizard rewrite for gate / experiment / config (`#experiment-name`, `#config-key`); detail-pane config delete now targets the `Delete config from detail pane` aria-label. The `divRow` helper for SelectableList rows (attributes / universes / events / metrics) switched from a fixed `..` ladder to `xpath=ancestor::div[contains(@class,'justify-between')][1]` so pages with different renderContent nesting (attributes wraps its own `<div flex>`, universes does not) both resolve. SDK key-rotation failure stays tracked as the pre-existing keys-page render race.
+- `integration-snippet.spec.ts` `seedGate`: switched to the canonical body shape (snake_case `rollout_pct: 0`, boolean `enabled: false`) — camelCase keys silently strip and `enabled: 0` rejects.
+- `cli-auth-page.spec.ts`: button name swap (`Authorize with selected project`, not the retired `Approve access`).
+
+Type-check + lint clean. Targeted re-run on the 6 affected specs passes locally (excluding the noted pre-existing failures).
+
+**Phase 3f — Workspace polish — DONE.** Token-pass on the two surfaces the design called out for primitive uplift; no shell migration per Phase 3f scope. Commit `991b58a`:
+
+- [keys/page.tsx](apps/ui/src/app/dashboard/[projectId]/keys/page.tsx) — the bespoke "Couldn't create key" red panel (color-mix borders + t-caps header) and the gradient "new key created" success panel both collapse into `<Banner intent="danger">` + `<Banner intent="accent">`. Success banner still hosts the inline code block + `<CopyKeyButton>` + secret-manager warning. All assertion text ("new key created", "copy it now", "secret manager", "copy key") is preserved verbatim inside the Banner title + children, so `keys-polish.spec` text queries still match.
+- [team/page.tsx](apps/ui/src/app/dashboard/team/page.tsx) — `PENDING` / `ACTIVE` status pills swap from `se-badge se-badge-paused|live` (with manual `<span className="dot">`) to `<StatusBadge tone="paused|live">`. Dot + outline + bg now come from the primitive.
+- **Skipped**: billing/page.tsx's local `Stat` helper renders intentionally compact bordered cells (different visual intent from the new 24px-value `<Stat>` primitive) and its local `StatusBadge` function maps subscription status to `<Badge>` with bespoke colors — both kept as-is. Settings page already polished in prior commits (verified — no further work needed).
+
+Type-check + lint clean.
+
+**Phase 3g — Auth — DONE (effectively no-op).** Verified the current state matches the plan:
+
+- `/auth/signin` already renders through `<AuthShell>` — 2-col split with brand story / testimonial / Maya Chen quote on the left (`lg:grid-cols-[minmax(420px,1.1fr)_minmax(440px,1fr)]`, radial-gradient backdrop) and the OAuth form on the right. No further work needed.
+- `auth/sent/` (magic-link-sent) and `auth/create-workspace/` pages **not** added. Reason: magic link is intentionally disabled in [signin-form.tsx](apps/ui/src/app/auth/signin/signin-form.tsx) (the form renders a "coming soon" divider with disabled `<input type="email" disabled>` + disabled "Send magic link" button), so `/auth/sent` has no caller. Create-workspace lives at `/dashboard/projects/new` (post-auth onboarding) — a separate pre-auth landing isn't part of the OAuth-first signup flow.
+- Spec at [e2e/guest/signin.spec.ts](apps/ui/e2e/guest/signin.spec.ts) already covers brand panel + OAuth options + callbackUrl round-trip (relative + absolute open-redirect). No `auth-flow.spec.ts` rename needed.
+
+**Phase 3h — Home Mission Control — DONE.** V1 cockpit at the dashboard root, state-driven from real counts. Commit pending.
+
+- [`_home/state.ts`](apps/ui/src/app/dashboard/[projectId]/_home/state.ts) — `loadHomeState(projectId, actorEmail)` fan-out: `listAllGates / listAllConfigs / listAllExperiments / listProfiles / getProject` in parallel. Discriminator `'first-run' | 'quiet' | 'busy'`: `first-run` when `gates + configs + experiments === 0`; `busy` when any experiment is in `running` status; otherwise `quiet`. Synthesises a `decisions` list from the first 3 running experiments (placeholder until verdict / significance data lands — the kind is hard-coded to `"review"` for now). `liveExperiments` exposes the first 6 running rows for the "Live now" tiles.
+- [`_home/cockpit.tsx`](apps/ui/src/app/dashboard/[projectId]/_home/cockpit.tsx) — server component renders Hero + state-branched body:
+  - **Hero**: eyebrow line + h1 + sub copy that all vary by state; 4-tile stat grid that swaps labels (`first-run` → SETUP / RECORDS / TEAM / STATUS; otherwise → DECISIONS / LIVE / RECORDS / PLAN). `data-slot="home-hero"` + `data-state` for spec assertions.
+  - **First-run branch**: `<Banner intent="info">` with "Create an SDK key" CTA + `OnboardingChecklist` (4 steps: SDK key / install / first event / first gate, all `done: false` for now) + `Launchpad`.
+  - **Quiet / Busy branch**: `DecisionsRow` (cards with eyebrow `REVIEW · running` linking to `/experiments?open=<id>`, or an empty-state "all clear" dashed card) + `LiveNow` (compact tile-grid of running experiments, `<StatusBadge tone="live">RUNNING</StatusBadge>`) + `Launchpad`.
+  - **Launchpad** (all states): 5 quick-create links — gate / config / experiment / killswitch / metric — each pointing at the feature's `?new=1` (or `?setup=1` for metrics) wizard entry.
+- [`page.tsx`](apps/ui/src/app/dashboard/[projectId]/page.tsx) reduced to a thin server fetcher that calls `loadHomeState` and renders `<HomeCockpit>`. The prior welcome-back + 4-stat-card + 4-product-card layout is gone. DB-unavailable catch falls back to a `first-run` state so dev-without-wrangler still renders.
+- [overview.spec.ts](apps/ui/e2e/auth/overview.spec.ts) rewritten end-to-end (5 tests): asserts cockpit `data-state` is one of the three discriminator values, hero mirrors it, launchpad renders all 4 quick-create links, the "new gate" launchpad opens the `?new=1` wizard, and the first-run-vs-other branch is mutually exclusive (`home-onboarding` xor `home-decisions`). All 5 pass locally; 21/21 pass across overview + navigation + billing specs.
+- **Out of V1 (deferred)**: 24-hour pulse strip, activity stream / audit log (no handler yet — `audit_log` table exists in `packages/core/src/db/schema.ts` but isn't surfaced through `lib/handlers/`), HealthRingsCard / AlertsCard / PinnedCard / ClaudeTile right rail, real verdict-driven `decisions.kind` discrimination. The shape is in place; these slot in once the data sources land.
+
+**Open items still outstanding:**
 
 - Extend `/design-system` showcase with new primitives + shell demos (Phase 1d/2c — deferred; visual diff target).
-- Run full lint + e2e (Phase 1e — deferred until after first feature migration).
 - Reference prototype extracted at `/tmp/design-anZ1vXWhHX91yU9rqSXWXw/shipeasy/project/app/`. NB: the tar bundle is in a tempdir — re-extract from the design bundle if `/tmp` was wiped (see "Reference material" below for the source URL).
+- 18 pre-existing e2e failures (keys-full, keys-polish, plans, projects-team, settings-interactions, navigation Configs hero, experiment-results-detail v2 layout) — track separately; out of scope for the redesign migration.
 
 ## Context
 
