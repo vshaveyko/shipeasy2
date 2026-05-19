@@ -529,12 +529,60 @@ test.describe("DevTools — Feedback panel", () => {
     await expect(root.getByText("Logo stays in place")).toBeVisible();
 
     // Page link — href present, raw URL not rendered as text.
-    const pageLink = root.getByRole("link", { name: /Open page/ });
+    const pageLink = root.getByRole("link", { name: /Page/ });
     await expect(pageLink).toHaveAttribute("href", "https://shouks.com/home");
     await expect(root.getByText("https://shouks.com/home", { exact: true })).toHaveCount(0);
 
     // "Filed" row is gone — duplicates the row's subtitle.
     await expect(root.getByText("filed", { exact: true })).toHaveCount(0);
+
+    // Priority badge editable — caret renders next to current value.
+    const priSlot = root.locator("[data-pri-slot]").first();
+    await expect(priSlot.locator(".se-bdrop-caret")).toBeVisible();
+    await expect(priSlot.getByText("high", { exact: false })).toBeVisible();
+  });
+
+  test("clicking status badge opens dropdown and PATCHes selection", async ({ page }) => {
+    await setup(page);
+    const BUG = {
+      id: "bug_status",
+      title: "Status test",
+      status: "open",
+      priority: null,
+      reporterEmail: null,
+      pageUrl: null,
+      createdAt: new Date().toISOString(),
+    };
+    await page.route("**/api/admin/bugs", (r) => r.fulfill({ json: [BUG] }));
+    let patchedBody: unknown = null;
+    await page.route(/\/api\/admin\/bugs\/[^/?]+$/, async (r) => {
+      if (r.request().method() === "PATCH") {
+        patchedBody = r.request().postDataJSON();
+        return r.fulfill({ json: { ok: true } });
+      }
+      return r.fulfill({
+        json: {
+          ...BUG,
+          stepsToReproduce: "",
+          actualResult: "",
+          expectedResult: "",
+          attachments: [],
+        },
+      });
+    });
+
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "Feedback");
+
+    const root = page.locator("#shipeasy-devtools");
+    const statusSlot = root.locator("[data-bug-status]").first();
+    await statusSlot.click();
+    const menu = root.locator(".se-bdrop-menu");
+    await expect(menu).toBeVisible();
+    await menu.getByRole("option", { name: /resolved/i }).click();
+
+    await expect.poll(() => patchedBody).toMatchObject({ status: "resolved" });
   });
 });
 

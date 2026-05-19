@@ -234,6 +234,19 @@ export class DevtoolsApi {
     return this.memo("drafts", () => this.get("/api/admin/i18n/drafts"));
   }
 
+  private async patch<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(`${this.adminUrl}${path}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw await this.errorForResponse(path, res);
+    return (await res.json()) as T;
+  }
+
   private async put<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${this.adminUrl}${path}`, {
       method: "PUT",
@@ -274,6 +287,15 @@ export class DevtoolsApi {
     return r;
   }
 
+  async updateBug(
+    id: string,
+    patch: { status?: BugRecord["status"]; priority?: BugRecord["priority"] },
+  ): Promise<void> {
+    await this.patch(`/api/admin/bugs/${encodeURIComponent(id)}`, patch);
+    this.cache.delete("bugs");
+    this.cache.delete(`bug:${id}`);
+  }
+
   featureRequests(): Promise<FeatureRequestRecord[]> {
     return this.memo("featureRequests", () => this.get("/api/admin/feature-requests"));
   }
@@ -288,6 +310,18 @@ export class DevtoolsApi {
     const r = await this.post<{ id: string }>("/api/admin/feature-requests", input);
     this.cache.delete("featureRequests");
     return r;
+  }
+
+  async updateFeatureRequest(
+    id: string,
+    patch: {
+      status?: FeatureRequestRecord["status"];
+      importance?: FeatureRequestRecord["importance"];
+    },
+  ): Promise<void> {
+    await this.patch(`/api/admin/feature-requests/${encodeURIComponent(id)}`, patch);
+    this.cache.delete("featureRequests");
+    this.cache.delete(`featureRequest:${id}`);
   }
 
   /** Fetch an attachment file as a Blob via the authenticated stream route.

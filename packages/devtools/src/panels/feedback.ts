@@ -74,6 +74,88 @@ function badge(label: string, cls: string): string {
   return `<span class="badge ${cls}">${escapeHtml(label.replace(/_/g, " "))}</span>`;
 }
 
+interface BadgeOption<T extends string> {
+  value: T;
+  cls: string;
+  label?: string;
+}
+
+// Attach a click-to-edit dropdown to a badge container. `slot` is the element
+// holding the current badge; clicking it opens an inline option strip with
+// every alternative as a badge. Picking one calls `onPick`, swaps the
+// current badge optimistically, and closes. Click-outside closes without
+// applying. Stops propagation so the parent row's expand toggle is unaffected.
+function attachBadgeDropdown<T extends string>(
+  slot: HTMLElement,
+  opts: {
+    current: T;
+    options: ReadonlyArray<BadgeOption<T>>;
+    onPick: (next: T) => Promise<void> | void;
+  },
+): void {
+  slot.classList.add("se-bdrop");
+  slot.setAttribute("role", "button");
+  slot.setAttribute("tabindex", "0");
+  slot.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openMenu();
+  });
+
+  function renderCurrent(value: T): void {
+    const opt = opts.options.find((o) => o.value === value);
+    if (!opt) return;
+    slot.innerHTML = badge(opt.label ?? value, opt.cls) + `<span class="se-bdrop-caret">▾</span>`;
+  }
+
+  function openMenu(): void {
+    if (slot.dataset.open === "1") return;
+    slot.dataset.open = "1";
+    const menu = document.createElement("div");
+    menu.className = "se-bdrop-menu";
+    menu.setAttribute("role", "listbox");
+    menu.addEventListener("click", (ev) => ev.stopPropagation());
+    for (const o of opts.options) {
+      const row = document.createElement("button");
+      const isCurrent = o.value === opts.current;
+      row.type = "button";
+      row.className = `se-bdrop-item${isCurrent ? " is-current" : ""}`;
+      row.setAttribute("role", "option");
+      row.setAttribute("aria-selected", isCurrent ? "true" : "false");
+      row.innerHTML = `<span class="se-bdrop-check" aria-hidden="true">${isCurrent ? "✓" : ""}</span><span class="badge ${o.cls}">${escapeHtml((o.label ?? o.value).replace(/_/g, " "))}</span>`;
+      row.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        close();
+        if (o.value === opts.current) return;
+        opts.current = o.value;
+        renderCurrent(o.value);
+        try {
+          await opts.onPick(o.value);
+        } catch (err) {
+          console.error("Failed to update", err);
+        }
+      });
+      menu.appendChild(row);
+    }
+    slot.appendChild(menu);
+    const onDoc = (ev: Event) => {
+      if (!menu.contains(ev.target as Node) && ev.target !== slot) close();
+    };
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") close();
+    };
+    function close(): void {
+      menu.remove();
+      delete slot.dataset.open;
+      document.removeEventListener("click", onDoc, true);
+      document.removeEventListener("keydown", onKey, true);
+    }
+    setTimeout(() => {
+      document.addEventListener("click", onDoc, true);
+      document.addEventListener("keydown", onKey, true);
+    }, 0);
+  }
+}
+
 export async function renderFeedbackPanel(
   container: HTMLElement,
   api: DevtoolsApi,
@@ -255,16 +337,17 @@ export async function renderFeedbackPanel(
               <div class="row-name">${escapeHtml(b.title)}</div>
               <div class="row-sub">${escapeHtml(timeAgo(b.createdAt))}${b.reporterEmail ? " · " + escapeHtml(b.reporterEmail) : ""}</div>
             </div>
-            ${badge(b.status, BUG_STATUS_CLS[b.status])}
+            <span class="se-bdrop-slot" data-bug-status="${escapeHtml(b.id)}">${badge(b.status, BUG_STATUS_CLS[b.status])}<span class="se-bdrop-caret">▾</span></span>
           </div>
           <div class="se-feedback-detail${expanded.has(b.id) ? " open" : ""}">
             <div class="inner"><div class="pad">
-              <div class="se-fb-meta">
-                <span class="k">page</span>${
+              <div class="se-fb-toprow">
+                ${
                   b.pageUrl
-                    ? `<a class="ibtn" target="_blank" rel="noopener" href="${escapeHtml(b.pageUrl)}">${I.external} Open page</a>`
-                    : `<span>—</span>`
+                    ? `<a class="se-fb-link" target="_blank" rel="noopener" href="${escapeHtml(b.pageUrl)}">Page ${I.external}</a>`
+                    : ""
                 }
+                <span class="se-fb-pri" data-pri-slot="${escapeHtml(b.id)}"></span>
               </div>
               <div class="se-text-slot" data-text-slot="${escapeHtml(b.id)}"></div>
               <div class="se-attach-slot" data-attach-slot="${escapeHtml(b.id)}"></div>
@@ -287,12 +370,47 @@ export async function renderFeedbackPanel(
           paint();
         });
       });
+
+      // Wire status dropdown on every row (collapsed + expanded).
+      listEl.querySelectorAll<HTMLElement>("[data-bug-status]").forEach((slot) => {
+        const id = slot.dataset.bugStatus!;
+        const bug = items.find((x) => x.id === id);
+        if (!bug) return;
+        attachBadgeDropdown(slot, {
+          current: bug.status,
+          options: (Object.keys(BUG_STATUS_CLS) as BugRecord["status"][]).map((v) => ({
+            value: v,
+            cls: BUG_STATUS_CLS[v],
+          })),
+          onPick: async (next) => {
+            bug.status = next;
+            await api.updateBug(id, { status: next });
+          },
+        });
+      });
+
       // Lazy-load attachments + text fields for any rows currently expanded.
       for (const id of expanded) {
         const bug = items.find((x) => x.id === id);
         const detail = ensureBugDetail(id);
+        const pSlot = listEl.querySelector<HTMLElement>(`[data-pri-slot="${id}"]`);
+        if (pSlot && bug) {
+          const current: NonNullable<BugRecord["priority"]> = bug.priority ?? "low";
+          pSlot.innerHTML =
+            badge(current, BUG_PRI_CLS[current]) + `<span class="se-bdrop-caret">▾</span>`;
+          attachBadgeDropdown(pSlot, {
+            current,
+            options: (Object.keys(BUG_PRI_CLS) as NonNullable<BugRecord["priority"]>[]).map(
+              (v) => ({ value: v, cls: BUG_PRI_CLS[v] }),
+            ),
+            onPick: async (next) => {
+              bug.priority = next;
+              await api.updateBug(id, { priority: next });
+            },
+          });
+        }
         const tSlot = listEl.querySelector<HTMLElement>(`[data-text-slot="${id}"]`);
-        if (tSlot) hydrateBugTextSlot(tSlot, detail, bug);
+        if (tSlot) hydrateBugTextSlot(tSlot, detail);
         const aSlot = listEl.querySelector<HTMLElement>(`[data-attach-slot="${id}"]`);
         if (aSlot) hydrateAttachmentSlot(aSlot, detail);
       }
@@ -339,18 +457,16 @@ export async function renderFeedbackPanel(
               <div class="row-name">${escapeHtml(f.title)}</div>
               <div class="row-sub">${escapeHtml(timeAgo(f.createdAt))}${f.reporterEmail ? " · " + escapeHtml(f.reporterEmail) : ""}</div>
             </div>
-            ${badge(f.importance, FR_IMP_CLS[f.importance])}
-            ${badge(f.status, FR_STATUS_CLS[f.status])}
+            <span class="se-bdrop-slot" data-fr-importance="${escapeHtml(f.id)}">${badge(f.importance, FR_IMP_CLS[f.importance])}<span class="se-bdrop-caret">▾</span></span>
+            <span class="se-bdrop-slot" data-fr-status="${escapeHtml(f.id)}">${badge(f.status, FR_STATUS_CLS[f.status])}<span class="se-bdrop-caret">▾</span></span>
           </div>
           <div class="se-feedback-detail${expanded.has(f.id) ? " open" : ""}">
             <div class="inner"><div class="pad">
-              <div class="se-fb-meta">
-                <span class="k">page</span>${
-                  f.pageUrl
-                    ? `<a class="ibtn" target="_blank" rel="noopener" href="${escapeHtml(f.pageUrl)}">${I.external} Open page</a>`
-                    : `<span>—</span>`
-                }
-              </div>
+              ${
+                f.pageUrl
+                  ? `<div class="se-fb-toprow"><a class="se-fb-link" target="_blank" rel="noopener" href="${escapeHtml(f.pageUrl)}">Page ${I.external}</a></div>`
+                  : ""
+              }
               <div class="se-text-slot" data-text-slot="${escapeHtml(f.id)}"></div>
               <div class="se-attach-slot" data-attach-slot="${escapeHtml(f.id)}"></div>
               <div class="se-fb-actions">
@@ -372,6 +488,39 @@ export async function renderFeedbackPanel(
           paint();
         });
       });
+      listEl.querySelectorAll<HTMLElement>("[data-fr-status]").forEach((slot) => {
+        const id = slot.dataset.frStatus!;
+        const fr = items.find((x) => x.id === id);
+        if (!fr) return;
+        attachBadgeDropdown(slot, {
+          current: fr.status,
+          options: (Object.keys(FR_STATUS_CLS) as FeatureRequestRecord["status"][]).map((v) => ({
+            value: v,
+            cls: FR_STATUS_CLS[v],
+          })),
+          onPick: async (next) => {
+            fr.status = next;
+            await api.updateFeatureRequest(id, { status: next });
+          },
+        });
+      });
+      listEl.querySelectorAll<HTMLElement>("[data-fr-importance]").forEach((slot) => {
+        const id = slot.dataset.frImportance!;
+        const fr = items.find((x) => x.id === id);
+        if (!fr) return;
+        attachBadgeDropdown(slot, {
+          current: fr.importance,
+          options: (Object.keys(FR_IMP_CLS) as FeatureRequestImportance[]).map((v) => ({
+            value: v,
+            cls: FR_IMP_CLS[v],
+          })),
+          onPick: async (next) => {
+            fr.importance = next;
+            await api.updateFeatureRequest(id, { importance: next });
+          },
+        });
+      });
+
       for (const id of expanded) {
         const detail = ensureFeatureDetail(id);
         const tSlot = listEl.querySelector<HTMLElement>(`[data-text-slot="${id}"]`);
@@ -383,30 +532,19 @@ export async function renderFeedbackPanel(
     paint();
   }
 
-  function hydrateBugTextSlot(
-    slot: HTMLElement,
-    detailPromise: Promise<BugDetail>,
-    summary: BugRecord | undefined,
-  ): void {
+  function hydrateBugTextSlot(slot: HTMLElement, detailPromise: Promise<BugDetail>): void {
     if (slot.dataset.hydrated === "1") return;
     slot.dataset.hydrated = "1";
     slot.innerHTML = `<div class="se-attach-slot-loading">Loading details…</div>`;
     detailPromise
       .then((d) => {
         if (!slot.isConnected) return;
-        const priority = (d.priority ?? summary?.priority) || null;
-        const parts: string[] = [];
-        if (priority) {
-          parts.push(`<div class="se-fb-section">
-            <div class="lbl">Priority</div>
-            <div>${badge(priority, BUG_PRI_CLS[priority])}</div>
-          </div>`);
-        }
-        parts.push(fieldBlock("Steps to reproduce", d.stepsToReproduce));
-        parts.push(fieldBlock("Actual result", d.actualResult));
-        parts.push(fieldBlock("Expected result", d.expectedResult));
-        const html = parts.filter(Boolean).join("");
-        slot.innerHTML = html;
+        const parts: string[] = [
+          fieldBlock("Steps to reproduce", d.stepsToReproduce),
+          fieldBlock("Actual result", d.actualResult),
+          fieldBlock("Expected result", d.expectedResult),
+        ];
+        slot.innerHTML = parts.filter(Boolean).join("");
       })
       .catch((err) => {
         if (!slot.isConnected) return;
@@ -424,13 +562,10 @@ export async function renderFeedbackPanel(
     detailPromise
       .then((d) => {
         if (!slot.isConnected) return;
-        const parts: string[] = [];
-        parts.push(`<div class="se-fb-section">
-          <div class="lbl">Importance</div>
-          <div>${badge(d.importance, FR_IMP_CLS[d.importance])}</div>
-        </div>`);
-        parts.push(fieldBlock("What would it do?", d.description));
-        parts.push(fieldBlock("Use case", d.useCase));
+        const parts: string[] = [
+          fieldBlock("What would it do?", d.description),
+          fieldBlock("Use case", d.useCase),
+        ];
         slot.innerHTML = parts.filter(Boolean).join("");
       })
       .catch((err) => {
