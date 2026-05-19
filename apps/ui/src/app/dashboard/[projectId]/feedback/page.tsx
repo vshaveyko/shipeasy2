@@ -7,6 +7,7 @@ import { listBugs } from "@/lib/handlers/bugs";
 import { listFeatureRequests } from "@/lib/handlers/feature-requests";
 import { listConnectors } from "@/lib/handlers/connectors";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
+import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import {
   BUG_STATUSES,
   BUG_PRIORITIES,
@@ -40,6 +41,7 @@ const BUG_STATUS_OPTIONS: readonly StatusOption[] = [
   { value: "open", label: "Open", tone: "blue" },
   { value: "triaged", label: "Triaged", tone: "amber" },
   { value: "in_progress", label: "In progress", tone: "violet" },
+  { value: "ready_for_qa", label: "Ready for QA", tone: "cyan" },
   { value: "resolved", label: "Resolved", tone: "green" },
   { value: "wont_fix", label: "Won't fix", tone: "neutral" },
 ] as const;
@@ -160,6 +162,12 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ tab?
     }
   }
   const openBugs = bugs.filter((b) => b.status === "open" || b.status === "triaged").length;
+
+  if (bugs.length === 0 && requests.length === 0) {
+    return (
+      <HeroEmptyState kind="feedback" ctaHref={`/dashboard/${projectId}/feedback?install=1`} />
+    );
+  }
 
   return (
     <Page>

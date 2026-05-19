@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
-import { EmptyState } from "@/components/dashboard/empty-state";
+import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { IntegrationSnippetButton } from "@/components/integration";
 import { deleteKillswitch } from "@/actions/killswitches";
 import { NewKillswitchWizard } from "./new-killswitch-wizard";
@@ -128,25 +128,18 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
 
   if (total === 0) {
     return (
-      <Page>
-        <PageHeader
-          title="Killswitches"
-          description="Static on/off configs delivered as-is to the client. Each can carry per-key overrides that take precedence over the default value."
+      <>
+        <HeroEmptyState
+          kind="killswitches"
+          ctaLabel="Create killswitch"
+          extraAction={
+            <Button size="lg" type="button" onClick={() => setNewWizardOpen(true)}>
+              <Power className="size-3.5" /> Create killswitch
+            </Button>
+          }
         />
-        <PageBody>
-          <EmptyState
-            icon={Power}
-            title="No killswitches yet"
-            description="Killswitches deliver a hardcoded { value, switches } payload through the same edge cache as configs — no eval, no rules."
-            action={
-              <Button size="sm" type="button" onClick={() => setNewWizardOpen(true)}>
-                Create killswitch
-              </Button>
-            }
-          />
-        </PageBody>
         <NewKillswitchWizard open={newOpen} onOpenChange={setNewWizardOpen} projectId={projectId} />
-      </Page>
+      </>
     );
   }
 

@@ -329,40 +329,27 @@ export function ExperimentsContent() {
   );
 
   // Empty state
-  if (!isLoading && experiments.length === 0) {
+  if (experiments.length === 0) {
     return (
-      <Page>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="t-caps dim-2 mb-2">0 running · 0 total</div>
-            <h1 className="text-[24px] font-medium tracking-tight">Experiments</h1>
-            <p className="mt-1 max-w-[60ch] text-[13.5px] text-muted-foreground">
-              Feature tests with auto-collected metrics, traffic allocation, and significance
-              calculated continuously.
-            </p>
-          </div>
-          {headerActions}
-        </div>
-        <PageBody>
-          <HeroEmptyState
-            kind="experiments"
-            extraAction={
-              <div className="flex items-center gap-2">
-                <Button onClick={openWizard} className="h-10 px-4 text-[14px]">
-                  <Plus className="size-3.5" />
-                  New experiment
-                </Button>
-                <LinkButton
-                  variant="ghost"
-                  href={`/dashboard/${projectId}/experiments/new`}
-                  className="h-10 px-4 text-[14px]"
-                >
-                  Advanced wizard
-                </LinkButton>
-              </div>
-            }
-          />
-        </PageBody>
+      <>
+        <HeroEmptyState
+          kind="experiments"
+          extraAction={
+            <div className="flex items-center gap-2">
+              <Button onClick={openWizard} className="h-10 px-4 text-[14px]">
+                <Plus className="size-3.5" />
+                New experiment
+              </Button>
+              <LinkButton
+                variant="ghost"
+                href={`/dashboard/${projectId}/experiments/new`}
+                className="h-10 px-4 text-[14px]"
+              >
+                Advanced wizard
+              </LinkButton>
+            </div>
+          }
+        />
         <NewExperimentWizard
           open={newOpen}
           onOpenChange={(v) => (v ? openWizard() : closeWizard())}
@@ -372,7 +359,7 @@ export function ExperimentsContent() {
             closeWizard();
           }}
         />
-      </Page>
+      </>
     );
   }
 

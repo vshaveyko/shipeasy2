@@ -7,6 +7,7 @@ import { getI18nStats } from "@/lib/handlers/i18n";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { LinkButton } from "@/components/ui/link-button";
+import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 
 export const metadata: Metadata = { title: "String Manager" };
 
@@ -30,6 +31,18 @@ export default async function I18nOverviewPage({
     openDrafts: 0,
     loaderReqDaily: 0,
   }));
+
+  const isFirstRun = stats.profiles === 0 && stats.keys === 0 && stats.openDrafts === 0;
+
+  if (isFirstRun) {
+    return (
+      <HeroEmptyState
+        kind="strings"
+        ctaLabel="Create your first profile"
+        ctaHref={`/dashboard/${projectId}/i18n/profiles/new`}
+      />
+    );
+  }
 
   return (
     <Page>

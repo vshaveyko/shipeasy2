@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import {
   LayoutDashboard,
   FlaskConical,
@@ -81,6 +82,12 @@ function isActive(pathname: string, href: string, exact?: boolean, external?: bo
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function NavLinkPendingIcon() {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return <Loader2 className="size-3 shrink-0 animate-spin text-[var(--se-fg-3)]" />;
+}
+
 function NavLink({ item, href, pathname }: { item: NavItem; href: string; pathname: string }) {
   const active = isActive(pathname, href, item.exact, item.external);
   const Icon = item.icon;
@@ -90,25 +97,24 @@ function NavLink({ item, href, pathname }: { item: NavItem; href: string; pathna
       ? "bg-[color-mix(in_oklab,var(--se-accent)_10%,transparent)] text-foreground"
       : "text-muted-foreground hover:bg-[var(--se-bg-2)] hover:text-foreground",
   );
-  const content = (
-    <>
-      {active && (
-        <span className="absolute -left-[3px] top-1/2 h-3.5 w-[3px] -translate-y-1/2 rounded bg-[var(--se-accent)]" />
-      )}
-      <Icon className="size-3.5 shrink-0" />
-      <span className="flex-1">{item.label}</span>
-    </>
+  const activeBar = active && (
+    <span className="absolute -left-[3px] top-1/2 h-3.5 w-[3px] -translate-y-1/2 rounded bg-[var(--se-accent)]" />
   );
   if (item.external) {
     return (
       <a href={href} className={className} target="_blank" rel="noreferrer">
-        {content}
+        {activeBar}
+        <Icon className="size-3.5 shrink-0" />
+        <span className="flex-1">{item.label}</span>
       </a>
     );
   }
   return (
     <Link href={href} className={className}>
-      {content}
+      {activeBar}
+      <Icon className="size-3.5 shrink-0" />
+      <span className="flex-1">{item.label}</span>
+      <NavLinkPendingIcon />
     </Link>
   );
 }

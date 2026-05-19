@@ -103,40 +103,12 @@ export function GatesContent() {
   const enabledCount = optimisticGates.filter((g) => Boolean(g.enabled)).length;
   const paused = total - enabledCount;
 
-  if (isLoading) {
-    return (
-      <Page>
-        <PageHeader
-          title="Gates"
-          description="Gates toggle features on and off per user, attribute, or percentage."
-        />
-        <PageBody>
-          <UnifiedList<GateRow>
-            items={[]}
-            getId={(g) => g.id}
-            columns={listColumns({ onToggle: () => {}, onDelete: () => {} })}
-            renderRail={() => null}
-            renderDetail={() => null}
-            onSelect={() => {}}
-            loading
-          />
-        </PageBody>
-      </Page>
-    );
-  }
-
   if (total === 0) {
     return (
-      <Page>
-        <PageHeader
-          title="Gates"
-          description="Gates toggle features on and off per user, attribute, or percentage."
-        />
-        <PageBody>
-          <HeroEmptyState kind="gates" ctaHref={`/dashboard/${projectId}/gates?new=1`} />
-        </PageBody>
+      <>
+        <HeroEmptyState kind="gates" ctaHref={`/dashboard/${projectId}/gates?new=1`} />
         <NewGateWizard open={newOpen} onOpenChange={setNewWizardOpen} projectId={projectId} />
-      </Page>
+      </>
     );
   }
 

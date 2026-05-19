@@ -93,25 +93,17 @@ export default async function KeysPage({
 
   if (keys.length === 0 && !new_key) {
     return (
-      <Page>
-        <PageHeader
-          title="SDK Keys"
-          description="Keys authenticate SDKs against your project. We show raw tokens once — store them securely."
-        />
-        <PageBody>
-          <HeroEmptyState
-            kind="keys"
-            extraAction={
-              <form action={createKeyAction}>
-                <input type="hidden" name="type" value="server" />
-                <Button size="lg" type="submit" className="h-10 px-4 text-[14px]">
-                  <Zap className="size-3.5" /> Create your first key
-                </Button>
-              </form>
-            }
-          />
-        </PageBody>
-      </Page>
+      <HeroEmptyState
+        kind="keys"
+        extraAction={
+          <form action={createKeyAction}>
+            <input type="hidden" name="type" value="server" />
+            <Button size="lg" type="submit" className="h-10 px-4 text-[14px]">
+              <Zap className="size-3.5" /> Create your first key
+            </Button>
+          </form>
+        }
+      />
     );
   }
 

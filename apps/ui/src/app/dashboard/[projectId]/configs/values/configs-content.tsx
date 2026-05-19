@@ -159,45 +159,17 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
   const total = rows.length;
   const draftTotal = rows.reduce((acc, r) => acc + draftCountOf(r), 0);
 
-  if (isLoading && total === 0) {
-    return (
-      <Page>
-        <PageHeader
-          title="Configs"
-          description="Schema-driven configuration with per-environment publishing."
-        />
-        <PageBody>
-          <UnifiedList<ConfigRow>
-            items={[]}
-            getId={(r) => r.id}
-            columns={listColumns({ onDelete: () => {} })}
-            renderRail={() => null}
-            renderDetail={() => null}
-            onSelect={() => {}}
-            loading
-          />
-        </PageBody>
-      </Page>
-    );
-  }
-
   if (total === 0) {
     return (
-      <Page>
-        <PageHeader
-          title="Configs"
-          description="Schema-driven configuration with per-environment publishing."
-        />
-        <PageBody>
-          <HeroEmptyState kind="configs" ctaHref={`/dashboard/${projectId}/configs/values?new=1`} />
-        </PageBody>
+      <>
+        <HeroEmptyState kind="configs" ctaHref={`/dashboard/${projectId}/configs/values?new=1`} />
         <NewConfigWizard
           open={newOpen}
           onOpenChange={setNewWizardOpen}
           projectId={projectId}
           onCreated={() => mutate()}
         />
-      </Page>
+      </>
     );
   }
 

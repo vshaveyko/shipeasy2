@@ -57,9 +57,9 @@ const CONFIGS: Record<string, EmptyConfig> = {
   metrics: {
     eyebrow: "METRICS",
     eyebrowAside: "not collecting yet",
-    title: "Track anything you ship,",
-    titleAccent: "in 60 seconds.",
-    sub: "Auto-collect web vitals, errors, and page loads — then layer your own events with a one-line track() call. No schema migrations. No redeploys.",
+    title: "Track anything you ship.",
+    titleAccent: "in 60 seconds",
+    sub: "Auto-collect web vitals, errors, and page loads — then layer your own events with a one-line log() call. No schema migrations. No redeploys.",
     file: "~/your-app · setup.ts",
     code: [
       { type: "cmt", text: "// install" },
@@ -73,26 +73,23 @@ const CONFIGS: Record<string, EmptyConfig> = {
         type: "line",
         tokens: [
           { kind: "kw", text: "import" },
-          " { shipeasy } ",
+          " { init, log } ",
           { kind: "kw", text: "from" },
           " ",
-          { kind: "str", text: "'@shipeasy/sdk/client'" },
+          { kind: "str", text: "'@shipeasy/sdk'" },
           ";",
         ],
       },
       {
         type: "line",
-        tokens: [
-          { kind: "fn", text: "shipeasy" },
-          "({ apiKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY });",
-        ],
+        tokens: [{ kind: "fn", text: "init" }, "({ apiKey: process.env.SHIPEASY_KEY });"],
       },
       { type: "blank" },
       { type: "cmt", text: "// track anything" },
       {
         type: "line",
         tokens: [
-          { kind: "fn", text: "track" },
+          { kind: "fn", text: "log" },
           "(",
           { kind: "str", text: "'user_checkout'" },
           ", { amount: ",
@@ -119,7 +116,7 @@ const CONFIGS: Record<string, EmptyConfig> = {
     eyebrowAside: "no gates defined",
     title: "Decide who sees what,",
     titleAccent: "in microseconds.",
-    sub: "Flag-checks under 5ms, evaluated edge-side. Built-in gates work out of the box. Custom gates run your own predicates on request context.",
+    sub: "Flag-checks under 5ms, evaluated edge-side. Built-in gates work out of the box — is_employee, mobile_only, eu_user. Custom gates run your own predicates on request context.",
     file: "~/your-app · render.tsx",
     code: [
       { type: "cmt", text: "// check a gate" },
@@ -157,6 +154,8 @@ const CONFIGS: Record<string, EmptyConfig> = {
           { kind: "kw", text: "return" },
           " ctx.user.ltv > ",
           { kind: "num", text: "1000" },
+          " || ctx.user.plan === ",
+          { kind: "str", text: "'team'" },
           ";",
         ],
       },
@@ -165,10 +164,11 @@ const CONFIGS: Record<string, EmptyConfig> = {
     stats: [
       { v: "5", l: "built-in gates", d: "employee · mobile · EU · admin · trial" },
       { v: "<5ms", l: "p50 evaluation", d: "edge-cached, 60+ regions" },
-      { v: "0", l: "roundtrips to backend", d: "rules sync via long-poll" },
+      { v: "0", l: "roundtrip to backend", d: "rules sync via long-poll, evaluated locally" },
     ],
     cta: "Define your first gate",
     ctaHref: "/dashboard/gates/new",
+    demo: "Browse built-in gates",
   },
 
   experiments: {
@@ -202,6 +202,10 @@ const CONFIGS: Record<string, EmptyConfig> = {
         ],
       },
       { type: "line", tokens: ["  traffic: ", { kind: "num", text: "0.5" }, ","] },
+      {
+        type: "line",
+        tokens: ["  metric: ", { kind: "str", text: "'revenue_per_visitor'" }, ","],
+      },
       { type: "line", tokens: ["});"] },
       { type: "blank" },
       { type: "cmt", text: "// branch on the assignment" },
@@ -226,6 +230,71 @@ const CONFIGS: Record<string, EmptyConfig> = {
     ],
     cta: "Create first experiment",
     ctaHref: "/dashboard/experiments/new",
+    demo: "See a sample experiment",
+  },
+
+  killswitches: {
+    eyebrow: "KILLSWITCHES",
+    eyebrowAside: "nothing to kill — yet",
+    title: "Hit the brakes",
+    titleAccent: "in under a second.",
+    sub: "Instant feature shutoffs with full audit history. Wrap risky code paths in killswitch() — flip the switch in the dashboard and the change propagates to every region in <1s.",
+    file: "~/your-app · checkout.ts",
+    code: [
+      { type: "cmt", text: "// guard a risky path" },
+      {
+        type: "line",
+        tokens: [
+          { kind: "kw", text: "if" },
+          " (",
+          { kind: "fn", text: "killswitch" },
+          "(",
+          { kind: "str", text: "'new_checkout'" },
+          ").enabled) {",
+        ],
+      },
+      {
+        type: "line",
+        tokens: [
+          "  ",
+          { kind: "kw", text: "await" },
+          " ",
+          { kind: "fn", text: "runNewCheckout" },
+          "();",
+        ],
+      },
+      { type: "line", tokens: ["} ", { kind: "kw", text: "else" }, " {"] },
+      {
+        type: "line",
+        tokens: [
+          "  ",
+          { kind: "kw", text: "await" },
+          " ",
+          { kind: "fn", text: "fallbackCheckout" },
+          "();",
+        ],
+      },
+      { type: "line", tokens: ["}"] },
+      { type: "blank" },
+      { type: "cmt", text: "// flip from CLI in an emergency" },
+      {
+        type: "cmd",
+        tokens: [
+          { kind: "kw", text: "$" },
+          " shipeasy kill new_checkout ",
+          { kind: "str", text: '--reason="p95 spike"' },
+          { kind: "cursor" },
+        ],
+      },
+    ],
+    stats: [
+      { v: "<1s", l: "global propagation", d: "edge-cache invalidated everywhere" },
+      { v: "∞", l: "audit retention", d: "who flipped what, when, and why" },
+      { v: "0", l: "redeploys to recover", d: "undo a bad ship without a rollback" },
+    ],
+    cta: "Wire your first killswitch",
+    ctaHref: "/dashboard/killswitches/new",
+    demo: "See an example incident",
   },
 
   configs: {
@@ -252,15 +321,28 @@ const CONFIGS: Record<string, EmptyConfig> = {
         tokens: ["  model: ", { kind: "str", text: "'claude-haiku-4-5'" }, ","],
       },
       { type: "line", tokens: ["  retries: ", { kind: "num", text: "3" }, ","] },
-      { type: "line", tokens: ["});", { kind: "cursor" }] },
+      { type: "line", tokens: ["});"] },
+      { type: "blank" },
+      { type: "cmt", text: "// values stream in — no restart needed" },
+      {
+        type: "line",
+        tokens: [
+          { kind: "fn", text: "fetch" },
+          "(url, { signal: ",
+          { kind: "fn", text: "AbortSignal.timeout" },
+          "(timeout) });",
+          { kind: "cursor" },
+        ],
+      },
     ],
     stats: [
       { v: "∞", l: "env overrides", d: "dev · staging · prod · per-region" },
-      { v: "0", l: "restarts to apply", d: "polled at your plan interval" },
+      { v: "0ms", l: "restart to apply", d: "changes stream in over web-socket" },
       { v: "TS", l: "type-checked schemas", d: "caught at build time, not 3am" },
     ],
     cta: "Define your first config",
     ctaHref: "/dashboard/configs/new",
+    demo: "Explore example schema",
   },
 
   team: {
@@ -297,6 +379,90 @@ const CONFIGS: Record<string, EmptyConfig> = {
     cta: "Invite your first teammate",
     ctaHref: "#invite",
   },
+  strings: {
+    eyebrow: "STRING MANAGER",
+    eyebrowAside: "no copy shipping yet",
+    title: "Translate without redeploys,",
+    titleAccent: "across every locale.",
+    sub: "Declare keys in your code with t(), scan your repo, attach drafts per locale + env, and publish atomically. The SDK fetches a chunked manifest from the edge — no rebuild, no flash of untranslated content.",
+    file: "~/your-app · header.tsx",
+    code: [
+      { type: "cmt", text: "// declare a key inline" },
+      {
+        type: "line",
+        tokens: [
+          "<h1>{",
+          { kind: "fn", text: "t" },
+          "(",
+          { kind: "str", text: "'hero.cta_label'" },
+          ", ",
+          { kind: "str", text: "'Get started'" },
+          ")}</h1>",
+        ],
+      },
+      { type: "blank" },
+      { type: "cmt", text: "// scan repo to push new keys" },
+      {
+        type: "cmd",
+        tokens: [
+          { kind: "kw", text: "$" },
+          " shipeasy i18n scan ",
+          { kind: "str", text: "--push" },
+          { kind: "cursor" },
+        ],
+      },
+    ],
+    stats: [
+      { v: "∞", l: "locales", d: "one profile per locale × env" },
+      { v: "<50ms", l: "manifest delivery", d: "chunked + edge-cached" },
+      { v: "0", l: "redeploys to retranslate", d: "publish drafts atomically" },
+    ],
+    cta: "Create your first profile",
+    ctaHref: "#profile",
+    demo: "Run a repo scan",
+  },
+
+  feedback: {
+    eyebrow: "FEEDBACK",
+    eyebrowAside: "no reports filed yet",
+    title: "Bug reports + requests",
+    titleAccent: "straight from the page.",
+    sub: "Drop the devtools nub on any page running the SDK. Users capture screenshots and console logs in two clicks — bugs and feature requests land here, routed to Slack or GitHub via connectors.",
+    file: "~/your-app · layout.tsx",
+    code: [
+      { type: "cmt", text: "// mount devtools nub once" },
+      {
+        type: "line",
+        tokens: [
+          { kind: "kw", text: "import" },
+          " { mountDevtools } ",
+          { kind: "kw", text: "from" },
+          " ",
+          { kind: "str", text: "'@shipeasy/devtools'" },
+          ";",
+        ],
+      },
+      {
+        type: "line",
+        tokens: [{ kind: "fn", text: "mountDevtools" }, "({ apiKey: process.env.SHIPEASY_KEY });"],
+      },
+      { type: "blank" },
+      { type: "cmt", text: "// users hit ⌥⇧B to file a bug, ⌥⇧R for a request" },
+      {
+        type: "cmd",
+        tokens: [{ kind: "kw", text: "$" }, " shipeasy feedback.bugs list", { kind: "cursor" }],
+      },
+    ],
+    stats: [
+      { v: "1", l: "line to install", d: "mountDevtools({ apiKey })" },
+      { v: "auto", l: "context capture", d: "screenshot · console · breadcrumbs" },
+      { v: "∞", l: "connectors", d: "Slack · GitHub · Linear · email" },
+    ],
+    cta: "Install the devtools nub",
+    ctaHref: "#install",
+    demo: "See an example report",
+  },
+
   keys: {
     eyebrow: "API KEYS",
     eyebrowAside: "no keys issued",
@@ -387,120 +553,113 @@ export function HeroEmptyState({
   const label = ctaLabel ?? c.cta;
 
   return (
-    <div className="hero-empty-stage">
-      <div className="hero-empty-grid" aria-hidden>
-        <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1200 600">
-          <defs>
-            <pattern
-              id={`hero-empty-grid-${kind}`}
-              width="40"
-              height="40"
-              patternUnits="userSpaceOnUse"
-            >
-              <path d="M40 0 L0 0 0 40" fill="none" stroke="var(--se-line)" strokeWidth="0.5" />
-            </pattern>
-            <radialGradient id={`hero-empty-glow-${kind}`} cx="50%" cy="40%" r="50%">
-              <stop offset="0%" stopColor="var(--se-accent)" stopOpacity="0.18" />
-              <stop offset="60%" stopColor="var(--se-accent)" stopOpacity="0.04" />
-              <stop offset="100%" stopColor="var(--se-accent)" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          <rect width="100%" height="100%" fill={`url(#hero-empty-grid-${kind})`} />
-          <rect width="100%" height="100%" fill={`url(#hero-empty-glow-${kind})`} />
-        </svg>
-        <svg
-          className="hero-empty-scatter"
-          width="100%"
-          height="100%"
-          preserveAspectRatio="none"
-          viewBox="0 0 1200 600"
-        >
-          <polyline
-            points="60,420 220,380 380,330 540,320 700,300 860,240 1020,180 1140,140"
-            fill="none"
-            stroke="var(--se-accent)"
-            strokeWidth="1.5"
-            strokeOpacity=".55"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <polyline
-            points="60,500 220,470 380,455 540,440 700,420 860,395 1020,370 1140,340"
-            fill="none"
-            stroke="var(--se-info)"
-            strokeWidth="1.5"
-            strokeOpacity=".4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-
-      <div className="hero-empty-content">
-        <div className="hero-empty-eyebrow">
-          <span className="dot" />
-          <span>{c.eyebrow}</span>
-          <span className="dim-3">·</span>
-          <span style={{ color: "var(--se-fg-3)" }}>{c.eyebrowAside}</span>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-7">
+      <div className="hero-empty-stage">
+        <div className="hero-empty-grid" aria-hidden>
+          <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1200 600">
+            <defs>
+              <pattern
+                id={`hero-empty-grid-${kind}`}
+                width="40"
+                height="40"
+                patternUnits="userSpaceOnUse"
+              >
+                <path d="M40 0 L0 0 0 40" fill="none" stroke="var(--se-line)" strokeWidth="0.5" />
+              </pattern>
+              <radialGradient id={`hero-empty-glow-${kind}`} cx="50%" cy="40%" r="50%">
+                <stop offset="0%" stopColor="var(--se-accent)" stopOpacity="0.18" />
+                <stop offset="60%" stopColor="var(--se-accent)" stopOpacity="0.04" />
+                <stop offset="100%" stopColor="var(--se-accent)" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#hero-empty-grid-${kind})`} />
+            <rect width="100%" height="100%" fill={`url(#hero-empty-glow-${kind})`} />
+          </svg>
+          <svg
+            className="hero-empty-scatter"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="none"
+            viewBox="0 0 1200 600"
+          >
+            <polyline
+              points="60,420 220,380 380,330 540,320 700,300 860,240 1020,180 1140,140"
+              fill="none"
+              stroke="var(--se-accent)"
+              strokeWidth="1.5"
+              strokeOpacity=".55"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <polyline
+              points="60,500 220,470 380,455 540,440 700,420 860,395 1020,370 1140,340"
+              fill="none"
+              stroke="var(--se-info)"
+              strokeWidth="1.5"
+              strokeOpacity=".4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
 
-        <h2 className="hero-empty-title">
-          <span>{c.title}</span>{" "}
-          <span
-            style={{
-              color: "var(--se-accent)",
-              fontFamily: "var(--se-serif)",
-              fontStyle: "italic",
-              fontWeight: 400,
-            }}
-          >
-            {c.titleAccent}
-          </span>
-        </h2>
-        <p className="hero-empty-sub">{c.sub}</p>
-
-        <div className="hero-empty-terminal">
-          <div className="hero-empty-term-head">
-            <span className="dot r" />
-            <span className="dot y" />
-            <span className="dot g" />
-            <span
-              className="t-mono-xs dim-2"
-              style={{ marginLeft: 8, fontFamily: "var(--se-mono)", fontSize: 11 }}
-            >
-              {c.file}
-            </span>
+        <div className="hero-empty-content">
+          <div className="hero-empty-eyebrow">
+            <span className="dot" />
+            <span>{c.eyebrow}</span>
+            <span className="dim-3">·</span>
+            <span style={{ color: "var(--se-fg-3)" }}>{c.eyebrowAside}</span>
           </div>
-          <div className="hero-empty-term-body">
-            {c.code.map((line, i) => (
-              <CodeLineRow key={i} line={line} n={i + 1} />
+
+          <h2 className="hero-empty-title">
+            <span>{c.title}</span>
+            <span className="accent">{c.titleAccent}</span>
+          </h2>
+          <p className="hero-empty-sub">{c.sub}</p>
+
+          <div className="hero-empty-terminal">
+            <div className="hero-empty-term-head">
+              <span className="dot r" />
+              <span className="dot y" />
+              <span className="dot g" />
+              <span
+                className="t-mono-xs dim-2"
+                style={{ marginLeft: 8, fontFamily: "var(--se-mono)", fontSize: 11 }}
+              >
+                {c.file}
+              </span>
+            </div>
+            <div className="hero-empty-term-body">
+              {c.code.map((line, i) => (
+                <CodeLineRow key={i} line={line} n={i + 1} />
+              ))}
+            </div>
+          </div>
+
+          <div className="hero-empty-cta">
+            {extraAction ? (
+              extraAction
+            ) : (
+              <LinkButton href={href} className="h-10 px-4 text-[14px]">
+                <Zap className="size-3.5" /> {label}
+              </LinkButton>
+            )}
+            {scopedDemoHref ? (
+              <LinkButton variant="ghost" href={scopedDemoHref} className="h-10 px-4 text-[14px]">
+                {demoLabel ?? "Explore demo"} <ArrowRight className="size-3" />
+              </LinkButton>
+            ) : null}
+          </div>
+
+          <div className="hero-empty-stats">
+            {c.stats.map((s, i) => (
+              <div key={i} className="hero-empty-stat">
+                <div className="v">{s.v}</div>
+                <div className="l">{s.l}</div>
+                <div className="d">{s.d}</div>
+              </div>
             ))}
           </div>
-        </div>
-
-        <div className="hero-empty-cta">
-          {extraAction ? (
-            extraAction
-          ) : (
-            <LinkButton href={href} className="h-10 px-4 text-[14px]">
-              <Zap className="size-3.5" /> {label}
-            </LinkButton>
-          )}
-          {scopedDemoHref ? (
-            <LinkButton variant="ghost" href={scopedDemoHref} className="h-10 px-4 text-[14px]">
-              {demoLabel ?? "Explore demo"} <ArrowRight className="size-3" />
-            </LinkButton>
-          ) : null}
-        </div>
-
-        <div className="hero-empty-stats">
-          {c.stats.map((s, i) => (
-            <div key={i} className="hero-empty-stat">
-              <div className="v">{s.v}</div>
-              <div className="l">{s.l}</div>
-              <div className="d">{s.d}</div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

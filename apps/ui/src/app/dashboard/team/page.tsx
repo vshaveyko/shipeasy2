@@ -73,19 +73,7 @@ export default async function TeamPage() {
 
   if (!projectId || !sessionEmail) {
     return (
-      <Page>
-        <PageHeader
-          title="Team"
-          description="Invite people to collaborate on experiments, gates, configs, and metrics."
-        />
-        <PageBody className="space-y-6">
-          <HeroEmptyState
-            kind="team"
-            ctaLabel="Sign in to manage your team"
-            ctaHref="/auth/signin"
-          />
-        </PageBody>
-      </Page>
+      <HeroEmptyState kind="team" ctaLabel="Sign in to manage your team" ctaHref="/auth/signin" />
     );
   }
 
@@ -189,28 +177,15 @@ export default async function TeamPage() {
   // First-run hero: just the owner, no members or pending invites yet.
   if (rows.length === 1 && rows[0]!.status === "owner") {
     return (
-      <Page>
-        <PageHeader
-          title="Team"
-          description="Invite people to collaborate on experiments, gates, configs, and metrics. Workspace members can access every project."
-          actions={
-            <InviteButton
-              disabledReason={isOwner ? undefined : "Only the workspace owner can invite members"}
-            />
-          }
-        />
-        <PageBody className="space-y-6">
-          <HeroEmptyState
-            kind="team"
-            ctaLabel="Invite your first teammate"
-            extraAction={
-              <InviteButton
-                disabledReason={isOwner ? undefined : "Only the workspace owner can invite members"}
-              />
-            }
+      <HeroEmptyState
+        kind="team"
+        ctaLabel="Invite your first teammate"
+        extraAction={
+          <InviteButton
+            disabledReason={isOwner ? undefined : "Only the workspace owner can invite members"}
           />
-        </PageBody>
-      </Page>
+        }
+      />
     );
   }
 

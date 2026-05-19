@@ -77,24 +77,22 @@ export function MetricsContent({ initialView = "empty" }: { initialView?: View }
 
   if (view === "empty") {
     return (
-      <Page>
-        <PageBody>
-          <HeroEmptyState
-            kind="metrics"
-            extraAction={
-              <>
-                <Button variant="ghost" size="sm" onClick={() => setView("list")}>
-                  Skip to demo data <ArrowRight className="size-3" />
-                </Button>
-                <Button size="sm" onClick={() => setSetupOpen(true)}>
-                  <Zap className="size-3.5" /> Start in 60 seconds
-                </Button>
-              </>
-            }
-          />
-        </PageBody>
+      <>
+        <HeroEmptyState
+          kind="metrics"
+          extraAction={
+            <>
+              <Button variant="ghost" size="lg" onClick={() => setView("list")}>
+                Skip to demo data <ArrowRight className="size-3" />
+              </Button>
+              <Button size="lg" onClick={() => setSetupOpen(true)}>
+                <Zap className="size-3.5" /> Start in 60 seconds
+              </Button>
+            </>
+          }
+        />
         {wizard}
-      </Page>
+      </>
     );
   }
 
