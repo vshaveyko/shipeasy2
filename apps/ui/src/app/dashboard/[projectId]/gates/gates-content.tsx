@@ -5,15 +5,15 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 
 import { projectIdFromPathname } from "@/lib/project-path";
-import { ExternalLink, MoreHorizontal, Search, Shield, Trash2 } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
-import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { ActionForm } from "@/components/ui/action-form";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { UnifiedList, type UnifiedListColumn } from "@/components/shell/unified-list";
+import { type UnifiedListColumn } from "@/components/shell/unified-list";
+import { ListPage, type ListPageTab } from "@/components/shell/list-page";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,14 @@ import { NewGateWizard } from "./new-gate-wizard";
 import { EmbeddedGateEditor, type EmbeddedGateRow } from "./embedded-gate-editor";
 
 type GateRow = EmbeddedGateRow;
+
+type GateTabKey = "all" | "enabled" | "paused";
+
+const GATE_TABS: readonly { key: GateTabKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "enabled", label: "Enabled" },
+  { key: "paused", label: "Paused" },
+] as const;
 
 const fetcher = async (url: string): Promise<GateRow[]> => {
   const res = await fetch(url, { credentials: "same-origin" });
@@ -69,6 +77,24 @@ export function GatesContent() {
   });
   const gates = data ?? [];
 
+  // Counts come from the backend (single SQL aggregate) — never iterate rows
+  // on the client to derive totals. Keeps the stat trio + filter tab labels
+  // accurate even when the list is paginated and only a slice is in scope.
+  const { data: countsData, mutate: mutateCounts } = useSWR<{
+    total: number;
+    enabled: number;
+    paused: number;
+  }>(
+    "/api/admin/gates/counts",
+    async (url: string) => {
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      return res.json();
+    },
+    { dedupingInterval: 0 },
+  );
+  const counts = countsData ?? { total: 0, enabled: 0, paused: 0 };
+
   const [optimisticGates, setOptimisticEnabled] = useOptimistic(
     gates,
     (prev, { id, enabled }: { id: string; enabled: boolean }) =>
@@ -77,6 +103,7 @@ export function GatesContent() {
 
   const [, startTransition] = useTransition();
   const [filter, setFilter] = useState("");
+  const [tab, setTab] = useState<GateTabKey>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   function setSelected(id: string | null) {
@@ -91,15 +118,29 @@ export function GatesContent() {
     setNewOpen(open);
   }
 
-  const filtered = filter
-    ? optimisticGates.filter((g) => g.name.toLowerCase().includes(filter.toLowerCase()))
-    : optimisticGates;
+  const total = counts.total;
+  const enabledCount = counts.enabled;
+  const paused = counts.paused;
 
-  const total = optimisticGates.length;
-  const enabledCount = optimisticGates.filter((g) => Boolean(g.enabled)).length;
-  const paused = total - enabledCount;
+  const tabCounts: Record<GateTabKey, number> = {
+    all: total,
+    enabled: enabledCount,
+    paused,
+  };
 
-  if (total === 0) {
+  const filtered = optimisticGates.filter((g) => {
+    if (tab === "enabled" && !g.enabled) return false;
+    if (tab === "paused" && g.enabled) return false;
+    if (filter && !g.name.toLowerCase().includes(filter.toLowerCase())) return false;
+    return true;
+  });
+
+  const tabs: readonly ListPageTab<GateTabKey>[] = GATE_TABS.map((t) => ({
+    ...t,
+    count: tabCounts[t.key],
+  }));
+
+  if (!isLoading && total === 0) {
     return (
       <>
         <HeroEmptyState
@@ -125,7 +166,7 @@ export function GatesContent() {
       if (!result.ok) {
         toast.error(result.error);
       } else {
-        await mutate();
+        await Promise.all([mutate(), mutateCounts()]);
       }
     });
   }
@@ -140,41 +181,36 @@ export function GatesContent() {
     : null;
 
   return (
-    <Page>
-      <PageHeader
-        kicker={`${total} gate${total === 1 ? "" : "s"} · ${enabledCount} enabled · ${paused} paused`}
+    <>
+      <ListPage<GateRow, GateTabKey>
         title="Gates"
         description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
+        stats={[
+          { label: "Total", value: total },
+          { label: "Enabled", value: enabledCount, tone: "accent" },
+          { label: "Paused", value: paused, tone: paused > 0 ? "warn" : "muted" },
+        ]}
         actions={
           <Button size="sm" type="button" onClick={() => setNewWizardOpen(true)}>
             New gate
           </Button>
         }
-      />
-      <PageBody>
-        <UnifiedList<GateRow>
-          items={filtered}
-          getId={(g) => g.id}
-          columns={columns}
-          selectedId={openId}
-          onSelect={setSelected}
-          railHeader="Gates"
-          toolbar={
-            <>
-              <div className="t-caps dim text-[12px]">All gates</div>
-              <div className="ml-auto flex h-8 w-[220px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-                <Search className="size-3 text-[var(--se-fg-3)]" />
-                <input
-                  placeholder="Filter gates"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-                />
-              </div>
-            </>
-          }
-          renderRail={(gate, active) => <RailRow gate={gate} active={active} />}
-          detailHeader={(gate) => (
+        tabs={tabs}
+        tab={tab}
+        onTabChange={setTab}
+        filter={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder="Filter gates"
+        list={{
+          items: filtered,
+          getId: (g) => g.id,
+          columns,
+          selectedId: openId,
+          onSelect: setSelected,
+          loading: isLoading,
+          railHeader: "Gates",
+          renderRail: (gate, active) => <RailRow gate={gate} active={active} />,
+          detailHeader: (gate) => (
             <div className="flex min-w-0 items-center gap-2">
               <Shield
                 className="size-3.5 shrink-0"
@@ -186,17 +222,17 @@ export function GatesContent() {
                 {gate.name}
               </span>
             </div>
-          )}
-          renderDetail={(gate) => (
+          ),
+          renderDetail: (gate) => (
             <DetailPane
               gate={gate}
               projectId={projectId}
               onToggle={toggleGate}
               onDelete={() => setPendingDeleteId(gate.id)}
             />
-          )}
-        />
-      </PageBody>
+          ),
+        }}
+      />
 
       <Dialog
         open={Boolean(pendingDelete)}
@@ -233,6 +269,7 @@ export function GatesContent() {
                   setPendingDeleteId(null);
                   if (openId === pendingDelete.id) setSelected(null);
                   mutate();
+                  mutateCounts();
                 }}
               >
                 <input type="hidden" name="id" value={pendingDelete.id} />
@@ -250,7 +287,7 @@ export function GatesContent() {
       </Dialog>
 
       <NewGateWizard open={newOpen} onOpenChange={setNewWizardOpen} projectId={projectId} />
-    </Page>
+    </>
   );
 }
 

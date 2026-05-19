@@ -3,24 +3,14 @@
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
-import {
-  ExternalLink,
-  Folder,
-  MoreHorizontal,
-  Search,
-  SlidersHorizontal,
-  Trash2,
-} from "lucide-react";
+import { ExternalLink, Folder, MoreHorizontal, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  UnifiedList,
-  type UnifiedListColumn,
-  type UnifiedListGroup,
-} from "@/components/shell/unified-list";
+import { type UnifiedListColumn, type UnifiedListGroup } from "@/components/shell/unified-list";
+import { ListPage, type ListPageTab } from "@/components/shell/list-page";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { IntegrationSnippetButton } from "@/components/integration";
 import type { ConfigSummary } from "@/lib/handlers/configs";
@@ -78,6 +67,15 @@ function fieldCountOf(c: ConfigRow): number {
   return props ? Object.keys(props).length : 0;
 }
 
+type ConfigTabKey = "all" | "live" | "draft" | "empty";
+
+const CONFIG_TABS: readonly { key: ConfigTabKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "live", label: "Live" },
+  { key: "draft", label: "Draft" },
+  { key: "empty", label: "Empty" },
+] as const;
+
 function draftCountOf(c: ConfigRow): number {
   return Object.keys(c.drafts ?? {}).length;
 }
@@ -103,6 +101,7 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
   const rows = data ?? [];
 
   const [filter, setFilter] = useState("");
+  const [tab, setTab] = useState<ConfigTabKey>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, startTransition] = useTransition();
 
@@ -120,9 +119,16 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => r.name.toLowerCase().includes(q));
-  }, [rows, filter]);
+    return rows.filter((r) => {
+      const envs = publishedEnvCount(r);
+      const drafts = draftCountOf(r);
+      if (tab === "live" && envs < 3) return false;
+      if (tab === "draft" && drafts === 0) return false;
+      if (tab === "empty" && envs > 0) return false;
+      if (q && !r.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [rows, filter, tab]);
 
   const railGroups: UnifiedListGroup<ConfigRow>[] = useMemo(() => {
     const m = new Map<string, ConfigRow[]>();
@@ -154,10 +160,39 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
     return groups;
   }, [filtered]);
 
-  const total = rows.length;
-  const draftTotal = rows.reduce((acc, r) => acc + draftCountOf(r), 0);
+  const { data: countsData } = useSWR<{
+    total: number;
+    live: number;
+    draft: number;
+    empty: number;
+  }>(
+    "/api/admin/configs/counts",
+    async (url: string) => {
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      return res.json();
+    },
+    { dedupingInterval: 0 },
+  );
+  const total = countsData?.total ?? 0;
+  const liveCount = countsData?.live ?? 0;
+  const draftTotal = countsData?.draft ?? 0;
+  const emptyCount = countsData?.empty ?? 0;
+  const tabCounts: Record<ConfigTabKey, number> = {
+    all: total,
+    live: liveCount,
+    draft: draftTotal,
+    empty: emptyCount,
+  };
+  const tabs: readonly ListPageTab<ConfigTabKey>[] = CONFIG_TABS.map((t) => ({
+    ...t,
+    count: tabCounts[t.key],
+  }));
 
-  if (total === 0) {
+  // Counts arrive via SWR; the empty-branch decision uses the synchronously
+  // loaded row count (via initial + SWR fallback) so the hero state doesn't
+  // flash on first paint while /api/admin/configs/counts is in flight.
+  if (rows.length === 0 && !isLoading) {
     return (
       <>
         <HeroEmptyState
@@ -198,42 +233,40 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
   const columns = listColumns({ onDelete: (id) => setPendingDeleteId(id) });
 
   return (
-    <Page>
-      <PageHeader
-        kicker={`${total} config${total === 1 ? "" : "s"}${draftTotal ? ` · ${draftTotal} unpublished draft${draftTotal === 1 ? "" : "s"}` : ""}`}
+    <>
+      <ListPage<ConfigRow, ConfigTabKey>
         title="Configs"
         description="Schema-driven configuration with per-environment publishing. Edge-cached — SDK reads hit KV in under 5ms."
+        stats={[
+          { label: "Total", value: total },
+          { label: "Published", value: liveCount, tone: "accent" },
+          {
+            label: "Drafts",
+            value: draftTotal,
+            tone: draftTotal > 0 ? "warn" : "muted",
+          },
+        ]}
         actions={
           <Button size="sm" type="button" onClick={() => setNewWizardOpen(true)}>
             New config
           </Button>
         }
-      />
-      <PageBody>
-        <UnifiedList<ConfigRow>
-          items={filtered}
-          getId={(r) => r.id}
-          columns={columns}
-          selectedId={openId}
-          onSelect={setSelected}
-          railHeader="Configs"
-          railGroups={railGroups}
-          toolbar={
-            <>
-              <div className="t-caps dim text-[12px]">All configs</div>
-              <div className="ml-auto flex h-8 w-[240px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-                <Search className="size-3 text-[var(--se-fg-3)]" />
-                <input
-                  placeholder="Filter configs"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-                />
-              </div>
-            </>
-          }
-          renderRail={(row, active) => <RailRow row={row} active={active} />}
-          detailHeader={(row) => (
+        tabs={tabs}
+        tab={tab}
+        onTabChange={setTab}
+        filter={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder="Filter configs"
+        list={{
+          items: filtered,
+          getId: (r) => r.id,
+          columns,
+          selectedId: openId,
+          onSelect: setSelected,
+          railHeader: "Configs",
+          railGroups,
+          renderRail: (row, active) => <RailRow row={row} active={active} />,
+          detailHeader: (row) => (
             <div className="flex min-w-0 items-center gap-2">
               <SlidersHorizontal
                 className="size-3.5 shrink-0"
@@ -243,8 +276,8 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
               />
               <span className="truncate font-mono text-[13px] text-[var(--se-fg)]">{row.name}</span>
             </div>
-          )}
-          renderDetail={(row) => (
+          ),
+          renderDetail: (row) => (
             <DetailPane
               row={row}
               projectId={projectId}
@@ -254,9 +287,9 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
                 await mutate();
               }}
             />
-          )}
-        />
-      </PageBody>
+          ),
+        }}
+      />
 
       <Dialog
         open={Boolean(pendingDelete)}
@@ -306,7 +339,7 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
         projectId={projectId}
         onCreated={() => mutate()}
       />
-    </Page>
+    </>
   );
 }
 

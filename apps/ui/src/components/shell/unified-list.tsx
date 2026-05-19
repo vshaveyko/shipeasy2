@@ -55,7 +55,7 @@ export function UnifiedList<T>({
   railHeader,
   detailHeader,
   className,
-  minHeight = 640,
+  minHeight,
 }: UnifiedListProps<T>) {
   const open = selectedId != null;
   const selected = React.useMemo(
@@ -82,7 +82,7 @@ export function UnifiedList<T>({
       data-slot="unified-list"
       data-open={open ? "true" : "false"}
       className={cn(
-        "relative flex w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]",
+        "relative flex w-full min-h-0 flex-1 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]",
         className,
       )}
       style={{
@@ -209,13 +209,13 @@ export function UnifiedList<T>({
       <div
         data-slot="detail-pane"
         className={cn(
-          "relative flex min-w-0 flex-1 flex-col overflow-hidden",
-          open ? "opacity-100" : "pointer-events-none opacity-0",
+          "relative flex min-w-0 flex-col overflow-hidden",
+          open ? "flex-1 opacity-100" : "pointer-events-none w-0 flex-none opacity-0",
         )}
         style={{
           transform: open ? "none" : "translateX(24px)",
           transition:
-            "opacity 260ms 160ms ease-out, transform 260ms 160ms cubic-bezier(.2,.7,.2,1)",
+            "opacity 260ms 160ms ease-out, transform 260ms 160ms cubic-bezier(.2,.7,.2,1), width var(--dur-fold) var(--ease-fold)",
         }}
       >
         {open && selected ? (

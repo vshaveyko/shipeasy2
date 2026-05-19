@@ -136,6 +136,28 @@ export async function listAllKillswitches(identity: AdminIdentity): Promise<Kill
   return out;
 }
 
+export interface KillswitchCounts {
+  total: number;
+  on: number;
+  off: number;
+}
+
+/**
+ * Aggregate counts for the killswitches list view. "ON" / "OFF" follows the
+ * UI's `prod ?? staging ?? dev` precedence — whichever env is the
+ * authoritative live value for this killswitch. Computed server-side so the
+ * dashboard never iterates rows to produce the stat trio + tab labels.
+ */
+export async function killswitchCounts(identity: AdminIdentity): Promise<KillswitchCounts> {
+  const rows = await listAllKillswitches(identity);
+  let on = 0;
+  for (const r of rows) {
+    const active = r.envs.prod ?? r.envs.staging ?? r.envs.dev;
+    if (active?.value) on++;
+  }
+  return { total: rows.length, on, off: rows.length - on };
+}
+
 export async function getKillswitch(
   identity: AdminIdentity,
   id: string,

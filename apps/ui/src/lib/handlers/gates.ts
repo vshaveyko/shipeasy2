@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { checkLimit, rebuildFlags, ApiError, getEffectivePlan } from "@shipeasy/core";
 import { gates, experiments } from "@shipeasy/core/db/schema";
 import { gateCreateSchema, gateUpdateSchema } from "@shipeasy/core/schemas/gates";
@@ -164,4 +164,29 @@ export async function bulkDeleteGates(identity: AdminIdentity, ids: string[]) {
     ids: existing.map((g) => g.id),
   });
   return { deleted: existing.length };
+}
+
+export interface GateCounts {
+  total: number;
+  enabled: number;
+  paused: number;
+}
+
+/**
+ * Per-project aggregate counts for the gates list view (stat trio + filter
+ * tabs). Single SQL round-trip — avoids pulling every row to the client just
+ * to bucket it on the dashboard.
+ */
+export async function gateCounts(identity: AdminIdentity): Promise<GateCounts> {
+  const s = scopedDb(identity.projectId);
+  const rows = await s.raw
+    .select({
+      total: sql<number>`count(*)`,
+      enabled: sql<number>`coalesce(sum(case when ${gates.enabled} = 1 then 1 else 0 end), 0)`,
+    })
+    .from(gates)
+    .where(and(eq(gates.projectId, identity.projectId), isNull(gates.deletedAt)));
+  const total = Number(rows[0]?.total ?? 0);
+  const enabled = Number(rows[0]?.enabled ?? 0);
+  return { total, enabled, paused: total - enabled };
 }

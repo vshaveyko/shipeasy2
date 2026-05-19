@@ -2,17 +2,15 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, Folder, MoreHorizontal, Power, Search, Trash2 } from "lucide-react";
+import { ExternalLink, Folder, MoreHorizontal, Power, Trash2 } from "lucide-react";
+import useSWR from "swr";
 import { toast } from "sonner";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  UnifiedList,
-  type UnifiedListColumn,
-  type UnifiedListGroup,
-} from "@/components/shell/unified-list";
+import { type UnifiedListColumn, type UnifiedListGroup } from "@/components/shell/unified-list";
+import { ListPage, type ListPageTab } from "@/components/shell/list-page";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { IntegrationSnippetButton } from "@/components/integration";
 import { deleteKillswitch } from "@/actions/killswitches";
@@ -55,6 +52,14 @@ function splitName(name: string): { folder: string; leaf: string } {
   return { folder: name.slice(0, idx), leaf: name.slice(idx + 1) };
 }
 
+type KsTabKey = "all" | "on" | "off";
+
+const KS_TABS: readonly { key: KsTabKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "on", label: "ON" },
+  { key: "off", label: "OFF" },
+] as const;
+
 function activeEnv(row: KillswitchRow) {
   return row.envs.prod ?? row.envs.staging ?? row.envs.dev;
 }
@@ -70,6 +75,7 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
   const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
   const [filter, setFilter] = useState("");
+  const [tab, setTab] = useState<KsTabKey>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, startTransition] = useTransition();
 
@@ -87,9 +93,14 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return initial;
-    return initial.filter((r) => r.name.toLowerCase().includes(q));
-  }, [initial, filter]);
+    return initial.filter((r) => {
+      const on = Boolean(activeEnv(r)?.value);
+      if (tab === "on" && !on) return false;
+      if (tab === "off" && on) return false;
+      if (q && !r.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [initial, filter, tab]);
 
   const railGroups: UnifiedListGroup<KillswitchRow>[] = useMemo(() => {
     const m = new Map<string, KillswitchRow[]>();
@@ -121,10 +132,27 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
     return groups;
   }, [filtered]);
 
-  const total = initial.length;
-  const onCount = initial.filter((r) => activeEnv(r)?.value).length;
+  const { data: countsData } = useSWR<{ total: number; on: number; off: number }>(
+    "/api/admin/killswitches/counts",
+    async (url: string) => {
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      return res.json();
+    },
+    { dedupingInterval: 0 },
+  );
+  const total = countsData?.total ?? 0;
+  const onCount = countsData?.on ?? 0;
+  const offCount = countsData?.off ?? 0;
+  const tabs: readonly ListPageTab<KsTabKey>[] = KS_TABS.map((t) => ({
+    ...t,
+    count: t.key === "all" ? total : t.key === "on" ? onCount : offCount,
+  }));
 
-  if (total === 0) {
+  // Initial data comes from the server fetch (`initial`); counts arrive via
+  // SWR. Use `initial` for the empty-branch decision so the page doesn't
+  // flash the hero state while counts are still loading.
+  if (initial.length === 0) {
     return (
       <>
         <HeroEmptyState
@@ -160,59 +188,55 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
   const columns = listColumns({ onDelete: (id) => setPendingDeleteId(id) });
 
   return (
-    <Page>
-      <PageHeader
-        kicker={`${total} killswitch${total === 1 ? "" : "es"} · ${onCount} ON · ${total - onCount} OFF`}
+    <>
+      <ListPage<KillswitchRow, KsTabKey>
         title="Killswitches"
         description="Static on/off configs delivered as-is to the client. Each can carry per-key overrides that take precedence over the default value."
+        stats={[
+          { label: "Total", value: total },
+          { label: "ON", value: onCount, tone: onCount > 0 ? "danger" : "muted" },
+          { label: "OFF", value: offCount, tone: "accent" },
+        ]}
         actions={
           <Button size="sm" type="button" onClick={() => setNewWizardOpen(true)}>
             New killswitch
           </Button>
         }
-      />
-      <PageBody>
-        <UnifiedList<KillswitchRow>
-          items={filtered}
-          getId={(r) => r.id}
-          columns={columns}
-          selectedId={openId}
-          onSelect={setSelected}
-          railHeader="Killswitches"
-          railGroups={railGroups}
-          toolbar={
-            <>
-              <div className="t-caps dim text-[12px]">All killswitches</div>
-              <div className="ml-auto flex h-8 w-[240px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-                <Search className="size-3 text-[var(--se-fg-3)]" />
-                <input
-                  placeholder="Filter folder.name"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-                />
-              </div>
-            </>
-          }
-          renderRail={(row, active) => <RailRow row={row} active={active} />}
-          detailHeader={(row) => (
+        tabs={tabs}
+        tab={tab}
+        onTabChange={setTab}
+        filter={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder="Filter folder.name"
+        list={{
+          items: filtered,
+          getId: (r) => r.id,
+          columns,
+          selectedId: openId,
+          onSelect: setSelected,
+          railHeader: "Killswitches",
+          railGroups,
+          renderRail: (row, active) => <RailRow row={row} active={active} />,
+          detailHeader: (row) => (
             <div className="flex min-w-0 items-center gap-2">
               <Power
                 className="size-3.5 shrink-0"
-                style={{ color: activeEnv(row)?.value ? "var(--se-danger)" : "var(--se-fg-4)" }}
+                style={{
+                  color: activeEnv(row)?.value ? "var(--se-danger)" : "var(--se-fg-4)",
+                }}
               />
               <span className="truncate font-mono text-[13px] text-[var(--se-fg)]">{row.name}</span>
             </div>
-          )}
-          renderDetail={(row) => (
+          ),
+          renderDetail: (row) => (
             <DetailPane
               row={row}
               projectId={projectId}
               onDelete={() => setPendingDeleteId(row.id)}
             />
-          )}
-        />
-      </PageBody>
+          ),
+        }}
+      />
 
       <Dialog
         open={Boolean(pendingDelete)}
@@ -257,7 +281,7 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
       </Dialog>
 
       <NewKillswitchWizard open={newOpen} onOpenChange={setNewWizardOpen} projectId={projectId} />
-    </Page>
+    </>
   );
 }
 

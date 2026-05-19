@@ -155,7 +155,16 @@ function autoTitle(g: StackEntry): string {
   const r = g.rules[0];
   if (!r) return g.name || "New condition";
   const opLabel = OP_LABELS[r.op] ?? r.op;
-  const v = (r.value ?? "").trim();
+  // r.value may be string, number, boolean, or array (for `in`/`not_in`). The
+  // editor stores comma-strings for arrays, but seeded/API rows may carry the
+  // raw array — normalize both into the comma-separated string the rest of
+  // this fn assumes.
+  const raw = r.value;
+  let v: string;
+  if (raw == null) v = "";
+  else if (Array.isArray(raw)) v = raw.map((x) => String(x)).join(", ");
+  else v = String(raw);
+  v = v.trim();
   if (!v) return r.attr;
   let shown = v;
   if ((r.op === "in" || r.op === "not_in") && v.includes(",")) {
@@ -266,6 +275,26 @@ function evalEntry(entry: StackEntry, user: Record<string, unknown>): boolean {
 
 // ── Initial seed: turn the saved row into an editable stack ───────────────
 
+/** Coerce a stored rule value (string | number | boolean | array | unknown)
+ *  into the comma-separated string shape the editor expects. The Drizzle
+ *  schema types `value` as `unknown` so the API may legitimately hand back
+ *  arrays for `in`/`not_in`, numbers for `gt`/`lt`, or booleans for `eq` —
+ *  but the inline editor's `<input>` + autoTitle/matchRule helpers all
+ *  assume `string`. Normalize on the way in. */
+function normalizeRuleValue(v: unknown): string {
+  if (v == null) return "";
+  if (Array.isArray(v)) return v.map((x) => String(x)).join(", ");
+  return String(v);
+}
+
+function normalizeRules(rules: Rule[]): Rule[] {
+  return rules.map((r) => ({ ...r, value: normalizeRuleValue(r.value) }));
+}
+
+function normalizeStack(stack: StackEntry[]): StackEntry[] {
+  return stack.map((e) => (e.type === "condition" ? { ...e, rules: normalizeRules(e.rules) } : e));
+}
+
 export function initialStack(opts: {
   initialRules: Rule[];
   initialRolloutPct: number; // 0–10000
@@ -273,7 +302,7 @@ export function initialStack(opts: {
   existingStack?: StackEntry[] | null;
 }): StackEntry[] {
   if (opts.existingStack && opts.existingStack.length > 0) {
-    return opts.existingStack;
+    return normalizeStack(opts.existingStack);
   }
   const stack: StackEntry[] = [];
   if (opts.initialRules.length > 0) {
@@ -282,7 +311,7 @@ export function initialStack(opts: {
       type: "condition",
       name: "Migrated rules",
       pass: "all",
-      rules: opts.initialRules,
+      rules: normalizeRules(opts.initialRules),
     });
   }
   // Always end with the locked public floor — seeded from the legacy rolloutPct

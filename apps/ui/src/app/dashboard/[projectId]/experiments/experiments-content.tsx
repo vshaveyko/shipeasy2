@@ -3,23 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
-import { FlaskConical, Play, Plus, Search, Square, Trash2 } from "lucide-react";
+import { FlaskConical, Play, Plus, Square, Trash2 } from "lucide-react";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
-import { Page, PageBody } from "@/components/dashboard/page";
+import { ListPage, type ListPageTab } from "@/components/shell/list-page";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { ActionForm } from "@/components/ui/action-form";
 import { IntegrationSnippetButton } from "@/components/integration";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  UnifiedList,
-  type UnifiedListColumn,
-  type UnifiedListGroup,
-} from "@/components/shell/unified-list";
+import { type UnifiedListColumn, type UnifiedListGroup } from "@/components/shell/unified-list";
 import { deleteExperimentAction, setExperimentStatusAction } from "./actions";
 import { NewExperimentWizard } from "./new-experiment-wizard";
 import { EmbeddedExperimentSummary } from "./embedded-experiment-summary";
@@ -91,19 +86,25 @@ export function ExperimentsContent() {
   const [tab, setTab] = useState<TabKey>("all");
   const [filter, setFilter] = useState("");
 
-  const counts = useMemo(() => {
-    const c: Record<TabKey, number> = {
-      all: experiments.length,
-      running: 0,
-      draft: 0,
-      stopped: 0,
-      archived: 0,
-    };
-    for (const exp of experiments) {
-      if (exp.status in c) c[exp.status as StatusKey]++;
-    }
-    return c;
-  }, [experiments]);
+  // Counts come from the backend (single GROUP BY) — never iterate rows on
+  // the client to derive totals. Falls back to zeros during the initial
+  // SWR cycle.
+  const { data: countsData } = useSWR<Record<TabKey, number>>(
+    "/api/admin/experiments/counts",
+    async (url: string) => {
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      return res.json();
+    },
+    { dedupingInterval: 0 },
+  );
+  const counts: Record<TabKey, number> = {
+    all: countsData?.all ?? 0,
+    running: countsData?.running ?? 0,
+    draft: countsData?.draft ?? 0,
+    stopped: countsData?.stopped ?? 0,
+    archived: countsData?.archived ?? 0,
+  };
 
   const visible = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -328,8 +329,9 @@ export function ExperimentsContent() {
     </div>
   );
 
-  // Empty state
-  if (experiments.length === 0) {
+  // Empty state — gate on !isLoading so the hero copy doesn't flash before
+  // SWR's first fetch resolves.
+  if (!isLoading && experiments.length === 0) {
     return (
       <>
         <HeroEmptyState
@@ -363,60 +365,44 @@ export function ExperimentsContent() {
     );
   }
 
-  return (
-    <Page>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="t-caps dim-2 mb-2">
-            {counts.running} running · {experiments.length} total
-            {counts.archived > 0 ? ` · ${counts.archived} archived` : ""}
-          </div>
-          <h1 className="text-[24px] font-medium tracking-tight">Experiments</h1>
-          <p className="mt-1 max-w-[60ch] text-[13.5px] text-muted-foreground">
-            Feature tests with auto-collected metrics, traffic allocation, and significance
-            calculated continuously.
-          </p>
-        </div>
-        {headerActions}
-      </div>
+  const tabs: readonly ListPageTab<TabKey>[] = (Object.keys(TAB_LABELS) as TabKey[]).map((k) => ({
+    key: k,
+    label: TAB_LABELS[k],
+    count: counts[k],
+  }));
 
-      <PageBody className="space-y-3">
-        <UnifiedList<ExperimentRow>
-          items={visible}
-          getId={(row) => row.id}
-          columns={columns}
-          loading={isLoading}
-          selectedId={openId}
-          onSelect={handleSelect}
-          railGroups={railGroups}
-          railHeader="Experiments"
-          toolbar={
-            <>
-              <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-                <TabsList>
-                  {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
-                    <TabsTrigger key={k} value={k}>
-                      {TAB_LABELS[k]}
-                      <span className="ml-1 font-mono text-[10.5px] text-[var(--se-fg-4)]">
-                        {counts[k]}
-                      </span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-              <div className="ml-auto flex h-7 w-[260px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-                <Search className="size-3 text-[var(--se-fg-3)]" />
-                <input
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  placeholder="Filter by name, tag, or universe"
-                  aria-label="Filter experiments"
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-                />
-              </div>
-            </>
-          }
-          renderRail={(exp) => (
+  return (
+    <>
+      <ListPage<ExperimentRow, TabKey>
+        title="Experiments"
+        description="Feature tests with auto-collected metrics, traffic allocation, and significance calculated continuously."
+        stats={[
+          {
+            label: "Running",
+            value: counts.running,
+            tone: counts.running > 0 ? "accent" : "muted",
+          },
+          { label: "Drafts", value: counts.draft, tone: counts.draft > 0 ? "warn" : "muted" },
+          { label: "Total", value: counts.all },
+        ]}
+        actions={headerActions}
+        tabs={tabs}
+        tab={tab}
+        onTabChange={setTab}
+        filter={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder="Filter by name, tag, or universe"
+        filterAriaLabel="Filter experiments"
+        list={{
+          items: visible,
+          getId: (row) => row.id,
+          columns,
+          loading: isLoading,
+          selectedId: openId,
+          onSelect: handleSelect,
+          railGroups,
+          railHeader: "Experiments",
+          renderRail: (exp) => (
             <span className="flex w-full min-w-0 items-center gap-2">
               <FlaskConical className="size-3 shrink-0 text-[var(--se-fg-3)]" />
               <span className="min-w-0 flex-1 truncate font-mono text-[12.5px]">{exp.name}</span>
@@ -436,8 +422,8 @@ export function ExperimentsContent() {
                 }}
               />
             </span>
-          )}
-          renderDetail={(exp) => (
+          ),
+          renderDetail: (exp) => (
             <EmbeddedExperimentSummary
               experiment={exp}
               projectId={projectId}
@@ -447,8 +433,8 @@ export function ExperimentsContent() {
               }}
               onMutated={() => void mutate()}
             />
-          )}
-          detailHeader={(exp) => (
+          ),
+          detailHeader: (exp) => (
             <div className="flex min-w-0 items-center gap-3">
               <span className="truncate font-mono text-[13px] font-medium">{exp.name}</span>
               <StatusBadge tone={STATUS_TONE[exp.status] ?? "neutral"}>
@@ -487,14 +473,14 @@ export function ExperimentsContent() {
                 </ActionForm>
               </div>
             </div>
-          )}
-          emptyState={
+          ),
+          emptyState: (
             <div className="dim flex h-full items-center justify-center px-5 py-12 text-center text-[13px]">
               No experiments match this filter.
             </div>
-          }
-        />
-      </PageBody>
+          ),
+        }}
+      />
 
       <NewExperimentWizard
         open={newOpen}
@@ -505,6 +491,6 @@ export function ExperimentsContent() {
           closeWizard();
         }}
       />
-    </Page>
+    </>
   );
 }

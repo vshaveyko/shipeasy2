@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import {
   checkLimit,
   rebuildExperiments,
@@ -56,6 +56,46 @@ export async function listAllExperiments(identity: AdminIdentity): Promise<Exper
     out.push(...page.data);
     cursor = page.next_cursor ?? undefined;
   } while (cursor);
+  return out;
+}
+
+export interface ExperimentCounts {
+  all: number;
+  running: number;
+  draft: number;
+  stopped: number;
+  archived: number;
+}
+
+/**
+ * Aggregate per-status counts for the experiments list view. Single GROUP BY
+ * round-trip — no row data ever leaves the worker. Archived rows are dropped
+ * from the default list view but counted here so the "Archived" filter tab
+ * still surfaces them.
+ */
+export async function experimentCounts(identity: AdminIdentity): Promise<ExperimentCounts> {
+  const s = scopedDb(identity.projectId);
+  const rows = await s.raw
+    .select({
+      status: experiments.status,
+      n: sql<number>`count(*)`,
+    })
+    .from(experiments)
+    .where(eq(experiments.projectId, identity.projectId))
+    .groupBy(experiments.status);
+  const out: ExperimentCounts = { all: 0, running: 0, draft: 0, stopped: 0, archived: 0 };
+  for (const r of rows) {
+    const n = Number(r.n);
+    out.all += n;
+    if (
+      r.status === "running" ||
+      r.status === "draft" ||
+      r.status === "stopped" ||
+      r.status === "archived"
+    ) {
+      out[r.status] = n;
+    }
+  }
   return out;
 }
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Activity, ArrowRight, BookOpen, Plus, Search, Zap } from "lucide-react";
+import { Activity, ArrowRight, BookOpen, Plus, Zap } from "lucide-react";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { NumericDelta } from "@/components/ui/numeric-delta";
 import { Sparkline } from "@/components/ui/sparkline";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { UnifiedList, type UnifiedListColumn } from "@/components/shell/unified-list";
+import { type UnifiedListColumn } from "@/components/shell/unified-list";
+import { ListPage, type ListPageTab } from "@/components/shell/list-page";
 
 import { customEvents, type CustomEvent } from "./mock-data";
 import { MetricsDashboard } from "./dashboard";
@@ -19,6 +20,16 @@ import { EmbeddedEventDetail } from "./embedded-event-detail";
 import { NewMetricWizard } from "./new-metric-wizard";
 
 type View = "empty" | "list" | "dashboard";
+
+type MetricsTabKey = "all" | "conversion" | "funnel" | "event" | "error";
+
+const METRICS_TABS: readonly { key: MetricsTabKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "conversion", label: "Conversion" },
+  { key: "funnel", label: "Funnel" },
+  { key: "event", label: "Event" },
+  { key: "error", label: "Error" },
+] as const;
 
 export function MetricsContent({ initialView = "empty" }: { initialView?: View }) {
   const router = useRouter();
@@ -39,6 +50,7 @@ export function MetricsContent({ initialView = "empty" }: { initialView?: View }
         : "empty";
 
   const [filter, setFilter] = useState("");
+  const [tab, setTab] = useState<MetricsTabKey>("all");
 
   function setParam(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -133,16 +145,34 @@ export function MetricsContent({ initialView = "empty" }: { initialView?: View }
   const events = customEvents;
   const total = events.length;
   const conversions = events.filter((e) => e.kind === "conversion").length;
-  const filtered = filter
-    ? events.filter((e) => e.name.toLowerCase().includes(filter.toLowerCase()))
-    : events;
+  const tabCounts: Record<MetricsTabKey, number> = {
+    all: total,
+    conversion: conversions,
+    funnel: events.filter((e) => e.kind === "funnel").length,
+    event: events.filter((e) => e.kind === "event").length,
+    error: events.filter((e) => e.kind === "error").length,
+  };
+  const metricsTabs: readonly ListPageTab<MetricsTabKey>[] = METRICS_TABS.map((t) => ({
+    ...t,
+    count: tabCounts[t.key],
+  }));
+  const q = filter.trim().toLowerCase();
+  const filtered = events.filter((e) => {
+    if (tab !== "all" && e.kind !== tab) return false;
+    if (q && !e.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
 
   return (
-    <Page>
-      <PageHeader
-        kicker={`${total} custom event${total === 1 ? "" : "s"} · ${conversions} conversions · auto vitals on`}
+    <>
+      <ListPage<CustomEvent, MetricsTabKey>
         title="Metrics"
         description="Custom events you've registered with log(). Auto-collected web vitals + errors stream in parallel — open any event to see its SDK call and trend."
+        stats={[
+          { label: "Events", value: total },
+          { label: "Conversions", value: conversions, tone: conversions > 0 ? "accent" : "muted" },
+          { label: "Auto vitals", value: "ON", tone: "info" },
+        ]}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => setView("dashboard")}>
@@ -156,42 +186,32 @@ export function MetricsContent({ initialView = "empty" }: { initialView?: View }
             </Button>
           </div>
         }
-      />
-      <PageBody>
-        <UnifiedList<CustomEvent>
-          items={filtered}
-          getId={(e) => e.name}
-          columns={listColumns()}
-          selectedId={openName}
-          onSelect={setOpen}
-          railHeader="Events"
-          toolbar={
-            <>
-              <div className="t-caps dim text-[12px]">All events</div>
-              <div className="ml-auto flex h-8 w-[220px] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 text-[13px]">
-                <Search className="size-3 text-[var(--se-fg-3)]" />
-                <input
-                  placeholder="Filter events"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[var(--se-fg-4)]"
-                  aria-label="Filter events"
-                />
-              </div>
-            </>
-          }
-          renderRail={(ev, active) => <RailRow event={ev} active={active} />}
-          detailHeader={(ev) => (
+        tabs={metricsTabs}
+        tab={tab}
+        onTabChange={setTab}
+        filter={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder="Filter events"
+        filterAriaLabel="Filter events"
+        list={{
+          items: filtered,
+          getId: (e) => e.name,
+          columns: listColumns(),
+          selectedId: openName,
+          onSelect: setOpen,
+          railHeader: "Events",
+          renderRail: (ev, active) => <RailRow event={ev} active={active} />,
+          detailHeader: (ev) => (
             <div className="flex min-w-0 items-center gap-2">
               <Activity className="size-3.5 shrink-0" style={{ color: "var(--se-accent)" }} />
               <span className="truncate font-mono text-[13px] text-[var(--se-fg)]">{ev.name}</span>
             </div>
-          )}
-          renderDetail={(ev) => <EmbeddedEventDetail event={ev} />}
-        />
-      </PageBody>
+          ),
+          renderDetail: (ev) => <EmbeddedEventDetail event={ev} />,
+        }}
+      />
       {wizard}
-    </Page>
+    </>
   );
 }
 

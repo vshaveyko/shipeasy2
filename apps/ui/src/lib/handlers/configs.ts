@@ -174,6 +174,37 @@ export async function listAllConfigs(identity: AdminIdentity): Promise<ConfigSum
   return out;
 }
 
+export interface ConfigCounts {
+  total: number;
+  /** Published in every env (currently 3: dev/staging/prod). */
+  live: number;
+  /** At least one open draft across any env. */
+  draft: number;
+  /** Zero published envs. */
+  empty: number;
+}
+
+/**
+ * Aggregate counts for the configs list view. Driven by the same
+ * `publishedEnvCount` / `draftCount` derivations the UI used to compute
+ * client-side — moved here so the stat trio + tabs don't need to walk every
+ * row in the dashboard component.
+ */
+export async function configCounts(identity: AdminIdentity): Promise<ConfigCounts> {
+  const rows = await listAllConfigs(identity);
+  let live = 0;
+  let draft = 0;
+  let empty = 0;
+  for (const r of rows) {
+    const envs = Object.keys(r.envs ?? {}).length;
+    const drafts = Object.keys(r.drafts ?? {}).length;
+    if (envs === 3) live++;
+    if (drafts > 0) draft++;
+    if (envs === 0) empty++;
+  }
+  return { total: rows.length, live, draft, empty };
+}
+
 export async function getConfig(identity: AdminIdentity, id: string): Promise<ConfigDetail> {
   const s = scopedDb(identity.projectId);
   const rows = await s.selectWhere(configs, and(eq(configs.id, id), eq(configs.kind, "config"))!);
