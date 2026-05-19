@@ -1,7 +1,18 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { adminList } from "../admin-list";
+import { setProjectPlan } from "../seed-fixtures";
 
 const RUN = Date.now();
+
+async function deleteGateIfExists(request: APIRequestContext, name: string) {
+  try {
+    const gates = await adminList<{ id: string; name: string }>(request, "/api/admin/gates");
+    const g = gates.find((x) => x.name === name);
+    if (g) await request.delete(`/api/admin/gates/${g.id}`).catch(() => {});
+  } catch {
+    /* best-effort */
+  }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -24,6 +35,111 @@ async function deleteGateViaActions(page: Page, name: string) {
   await dialog.getByRole("button", { name: /^delete( gate)?$/i }).click();
   await dialog.waitFor({ state: "hidden" });
 }
+
+// ── Admin API gate variants (replaces legacy /gates/new skipped specs) ───────
+
+test.describe("Gate variants — admin API CRUD", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test.beforeAll(() => setProjectPlan("paid"));
+  test.afterAll(async ({ request }) => {
+    setProjectPlan("free");
+    // Best-effort cleanup in case any test failed before its inline delete.
+    for (const suffix of ["50", "100", "beta", "patch", "bad"]) {
+      await deleteGateIfExists(request, `e2g_api_${suffix}_${RUN}`);
+    }
+  });
+
+  test("create at 50% rollout — rolloutPct=5000, enabled=1", async ({ request }) => {
+    const name = `e2g_api_50_${RUN}`;
+    const create = await request.post("/api/admin/gates", {
+      data: { name, enabled: true, rollout_pct: 5000 },
+    });
+    expect(create.ok(), await create.text()).toBe(true);
+    const gates = await adminList<{
+      id: string;
+      name: string;
+      rolloutPct: number;
+      enabled: number;
+    }>(request, "/api/admin/gates");
+    const g = gates.find((x) => x.name === name)!;
+    expect(g.rolloutPct).toBe(5000);
+    expect(g.enabled).toBe(1);
+    await request.delete(`/api/admin/gates/${g.id}`);
+  });
+
+  test("create at 100% — rolloutPct=10000", async ({ request }) => {
+    const name = `e2g_api_100_${RUN}`;
+    const create = await request.post("/api/admin/gates", {
+      data: { name, enabled: true, rollout_pct: 10000 },
+    });
+    expect(create.ok()).toBe(true);
+    const gates = await adminList<{ id: string; name: string; rolloutPct: number }>(
+      request,
+      "/api/admin/gates",
+    );
+    const g = gates.find((x) => x.name === name)!;
+    expect(g.rolloutPct).toBe(10000);
+    await request.delete(`/api/admin/gates/${g.id}`);
+  });
+
+  test("create at 0% (Beta-style) then PATCH to disabled", async ({ request }) => {
+    const name = `e2g_api_beta_${RUN}`;
+    // createGate hardcodes enabled=1; disabled state must be reached via PATCH.
+    const create = await request.post("/api/admin/gates", {
+      data: { name, rollout_pct: 0 },
+    });
+    expect(create.ok()).toBe(true);
+    const created = (await create.json()) as { id: string };
+    const patch = await request.patch(`/api/admin/gates/${created.id}`, {
+      data: { enabled: false },
+    });
+    expect(patch.ok(), await patch.text()).toBe(true);
+    const gates = await adminList<{
+      id: string;
+      name: string;
+      rolloutPct: number;
+      enabled: number;
+    }>(request, "/api/admin/gates");
+    const g = gates.find((x) => x.name === name)!;
+    expect(g.rolloutPct).toBe(0);
+    expect(g.enabled).toBe(0);
+    await request.delete(`/api/admin/gates/${created.id}`);
+  });
+
+  test("PATCH rollout 10% → 75% via admin API", async ({ request }) => {
+    const name = `e2g_api_patch_${RUN}`;
+    const create = await request.post("/api/admin/gates", {
+      data: { name, enabled: true, rollout_pct: 1000 },
+    });
+    expect(create.ok()).toBe(true);
+    const created = (await create.json()) as { id: string };
+    const patch = await request.patch(`/api/admin/gates/${created.id}`, {
+      data: { rollout_pct: 7500 },
+    });
+    expect(patch.ok(), await patch.text()).toBe(true);
+    const gates = await adminList<{ id: string; name: string; rolloutPct: number }>(
+      request,
+      "/api/admin/gates",
+    );
+    expect(gates.find((g) => g.name === name)!.rolloutPct).toBe(7500);
+    await request.delete(`/api/admin/gates/${created.id}`);
+  });
+
+  test("PATCH rollout out-of-range (>10000) rejected", async ({ request }) => {
+    const name = `e2g_api_bad_${RUN}`;
+    const create = await request.post("/api/admin/gates", {
+      data: { name, enabled: false, rollout_pct: 0 },
+    });
+    const created = (await create.json()) as { id: string };
+    const patch = await request.patch(`/api/admin/gates/${created.id}`, {
+      data: { rollout_pct: 99999 },
+    });
+    expect(patch.status()).toBeGreaterThanOrEqual(400);
+    expect(patch.status()).toBeLessThan(500);
+    await request.delete(`/api/admin/gates/${created.id}`);
+  });
+});
 
 // ── Quick-profile UI ──────────────────────────────────────────────────────────
 
@@ -403,6 +519,44 @@ test.describe("Gates — BigModalWizard create flow", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/\/gates$/);
+  });
+
+  test("invalid gate key keeps Next disabled — uppercase, dots, leading dash", async ({ page }) => {
+    await page.goto("/dashboard/e2e-project-id/gates?new=1");
+    const dialog = page.getByRole("dialog");
+    const next = dialog.getByRole("button", { name: /^next\b/i });
+    const keyInput = dialog.locator("#new-gate-key");
+
+    // Empty → disabled
+    await expect(next).toBeDisabled();
+
+    // Uppercase → disabled
+    await keyInput.fill("My_Gate");
+    await expect(next).toBeDisabled();
+
+    // Dot → disabled
+    await keyInput.fill("my.gate");
+    await expect(next).toBeDisabled();
+
+    // Leading dash → disabled (pattern requires [a-z0-9] start)
+    await keyInput.fill("-leading");
+    await expect(next).toBeDisabled();
+
+    // Whitespace → disabled
+    await keyInput.fill("with space");
+    await expect(next).toBeDisabled();
+
+    // Valid → enabled
+    await keyInput.fill("valid_gate-name");
+    await expect(next).toBeEnabled();
+  });
+
+  test("admin API rejects gate POST with invalid name", async ({ request }) => {
+    const resp = await request.post("/api/admin/gates", {
+      data: { name: "Bad.Name", enabled: false, rollout_pct: 0 },
+    });
+    expect(resp.status()).toBeGreaterThanOrEqual(400);
+    expect(resp.status()).toBeLessThan(500);
   });
 });
 

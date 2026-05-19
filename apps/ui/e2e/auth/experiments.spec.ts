@@ -66,22 +66,49 @@ test.describe("Experiments", () => {
     }
   });
 
-  // TODO(redesign-followup): UnifiedList renders "No experiments match this
-  // filter." when items.length === 0, but in this test environment the empty
-  // state does not surface after filling an unmatched query — likely because
-  // the filter input + emptyState live in different React subtrees that fall
-  // out of sync. Re-enable once the empty state is reliably rendered.
-  test.skip("list page filter input narrows visible rows", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments");
-    const filter = page.getByPlaceholder(/filter by name, tag, or universe/i);
-    if ((await filter.count()) === 0) {
-      test
-        .info()
-        .annotations.push({ type: "skip", description: "empty list — filter not rendered" });
-      return;
+  test("list page filter input narrows visible rows", async ({ page, request }) => {
+    // Seed one experiment via admin API so the filter input is guaranteed to
+    // render (filter chrome hides when the list is empty).
+    const seededName = `e2exp_filter_${Date.now()}`;
+    const seedResp = await request.post("/api/admin/experiments", {
+      data: {
+        name: seededName,
+        universe: "default",
+        allocation_pct: 10000,
+        groups: [
+          { name: "control", weight: 5000, params: {} },
+          { name: "test", weight: 5000, params: {} },
+        ],
+      },
+    });
+    expect(seedResp.ok(), await seedResp.text()).toBe(true);
+
+    try {
+      await page.goto("/dashboard/e2e-project-id/experiments");
+      // Pin to the closed-table pane to avoid the rail/detail mirror.
+      const pane = page.locator('[data-slot="pane-full"]');
+      await expect(pane.getByText(seededName, { exact: true })).toBeVisible({ timeout: 10_000 });
+
+      const filter = page.getByPlaceholder(/filter by name, tag, or universe/i);
+      await expect(filter).toBeVisible();
+
+      // Narrow to a string that the seeded row does not contain.
+      await filter.fill("__no_match_xyz__");
+      await expect(pane.getByText(seededName, { exact: true })).toBeHidden({ timeout: 5_000 });
+
+      // Clear → row reappears.
+      await filter.fill("");
+      await expect(pane.getByText(seededName, { exact: true })).toBeVisible();
+    } finally {
+      // Cleanup seeded experiment
+      const exps = await request
+        .get("/api/admin/experiments?limit=500")
+        .then((r) => r.json())
+        .catch(() => ({ data: [] }));
+      const list: { id: string; name: string }[] = Array.isArray(exps) ? exps : exps.data;
+      const target = list.find((e) => e.name === seededName);
+      if (target) await request.delete(`/api/admin/experiments/${target.id}`).catch(() => {});
     }
-    await filter.fill("__no_match_xyz__");
-    await expect(page.getByText(/no experiments match this filter/i)).toBeVisible();
   });
 
   test("New experiment button opens the BigModalWizard via ?new=1", async ({ page }) => {

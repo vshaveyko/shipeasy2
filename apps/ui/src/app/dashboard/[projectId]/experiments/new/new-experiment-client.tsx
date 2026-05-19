@@ -495,6 +495,7 @@ export default function NewExperimentClient({
               <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
                 <Field label="Name">
                   <Input
+                    data-testid="new-experiment-name-input"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="three-step-checkout"
@@ -564,6 +565,7 @@ export default function NewExperimentClient({
             <Section num={3} title="Universe" sub="defines the eligible population">
               <Field>
                 <select
+                  data-testid="experiment-universe-select"
                   value={universeName}
                   onChange={(e) => setUniverseName(e.target.value)}
                   className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-transparent px-2.5 text-[13px] outline-none focus:border-[var(--se-line-3)]"
@@ -1761,7 +1763,12 @@ function CreateUniverseModal({
         </DialogHeader>
         <div className="space-y-4">
           <Field label="Name">
-            <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <Input
+              data-testid="universe-name-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
             <Hint
               left={
                 <span>
@@ -1793,6 +1800,7 @@ function CreateUniverseModal({
           <div className="flex items-start gap-3">
             <button
               type="button"
+              data-testid="universe-holdout-toggle"
               onClick={() => setEnableHoldout((s) => !s)}
               disabled={!plan.holdout_groups}
               className={cn(
@@ -1859,7 +1867,12 @@ function CreateUniverseModal({
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={submit} disabled={!ok || pending}>
+          <Button
+            type="button"
+            data-testid="universe-create-submit"
+            onClick={submit}
+            disabled={!ok || pending}
+          >
             <Check className="size-3" /> {pending ? "Creating…" : "Create universe"}
           </Button>
         </DialogFooter>
@@ -2051,6 +2064,7 @@ function CreateMetricModal({
             <div className="space-y-4">
               <Field label="Aggregation">
                 <select
+                  data-testid="metric-agg-select"
                   value={agg}
                   onChange={(e) => setAgg(e.target.value as MetricInfo["aggregation"])}
                   className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-transparent px-2.5 text-[13px] outline-none focus:border-[var(--se-line-3)]"
@@ -2169,7 +2183,12 @@ function CreateMetricModal({
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={submit} disabled={!ok || pending}>
+          <Button
+            type="button"
+            data-testid="metric-attach-submit"
+            onClick={submit}
+            disabled={!ok || pending}
+          >
             <Check className="size-3" /> {pending ? "Creating…" : "Attach metric"}
           </Button>
         </DialogFooter>

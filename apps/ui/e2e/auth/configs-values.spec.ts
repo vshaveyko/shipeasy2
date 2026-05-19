@@ -300,3 +300,57 @@ test.describe("Object-only enforcement", () => {
     expect(resp.status()).toBe(400);
   });
 });
+
+// ── PATCH value republishes across every env ─────────────────────────────────
+
+test.describe("Config value PATCH bumps version on every env", () => {
+  test.describe.configure({ mode: "serial" });
+  const key = `e2.cfg_val_patch_${RUN}`;
+
+  test("PATCH value bumps prod/staging/dev versions in lockstep", async ({ page }) => {
+    await createConfigViaApi(page, {
+      key,
+      schema: { type: "object", properties: { msg: { type: "string" } } },
+      value: { msg: "v1" },
+    });
+
+    const before = await adminList<{
+      id: string;
+      name: string;
+      envs: Record<string, { version: number } | undefined>;
+    }>(page.request, "/api/admin/configs");
+    const cfg = before.find((c) => c.name === key)!;
+    const v0Prod = cfg.envs.prod?.version ?? 0;
+    const v0Stag = cfg.envs.staging?.version ?? 0;
+    const v0Dev = cfg.envs.dev?.version ?? 0;
+
+    const patchResp = await page.request.patch(`/api/admin/configs/${cfg.id}`, {
+      data: { value: { msg: "v2" } },
+    });
+    expect(patchResp.ok(), await patchResp.text()).toBe(true);
+
+    const after = await adminList<{
+      name: string;
+      envs: Record<string, { version: number } | undefined>;
+    }>(page.request, "/api/admin/configs");
+    const updated = after.find((c) => c.name === key)!;
+    expect(updated.envs.prod?.version ?? 0).toBeGreaterThan(v0Prod);
+    expect(updated.envs.staging?.version ?? 0).toBeGreaterThan(v0Stag);
+    expect(updated.envs.dev?.version ?? 0).toBeGreaterThan(v0Dev);
+  });
+
+  test("PATCH value that violates schema returns 400", async ({ page }) => {
+    const list = await adminList<{ id: string; name: string }>(page.request, "/api/admin/configs");
+    const cfg = list.find((c) => c.name === key)!;
+    const resp = await page.request.patch(`/api/admin/configs/${cfg.id}`, {
+      data: { value: { msg: 42 } }, // expects string, sending number
+    });
+    expect(resp.status()).toBe(400);
+  });
+
+  test("cleanup", async ({ page }) => {
+    const list = await adminList<{ id: string; name: string }>(page.request, "/api/admin/configs");
+    const cfg = list.find((c) => c.name === key);
+    if (cfg) await page.request.delete(`/api/admin/configs/${cfg.id}`);
+  });
+});
