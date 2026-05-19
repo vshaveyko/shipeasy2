@@ -19,7 +19,7 @@ export function LandingHero({ stats }: { stats?: HeroStat[] | null }) {
             <span style={{ color: "var(--se-fg-2)" }}>
               {i18n.t(
                 "landing.hero.badge",
-                "Shipeasy speaks MCP — installs in Claude in 12 seconds",
+                "Shipeasy speaks MCP — installs in any AI agent in 12 seconds",
               )}
             </span>
           </span>
@@ -39,8 +39,7 @@ export function LandingHero({ stats }: { stats?: HeroStat[] | null }) {
 
         <div className="lp-hero-cta lp-reveal lp-in lp-d3">
           <Link className="lp-btn lp-btn-primary" href="/auth/signin">
-            <Sparkles className="size-3.5" />{" "}
-            {i18n.t("landing.hero.cta_primary", "Install with Claude")}
+            <Sparkles className="size-3.5" /> {i18n.t("landing.hero.cta_primary", "Get started")}
           </Link>
           <a
             className="lp-btn lp-btn-ghost lp-btn-mono"

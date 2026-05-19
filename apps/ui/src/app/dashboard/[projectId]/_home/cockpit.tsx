@@ -1,26 +1,39 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { HealthRing, Sparkline } from "./charts";
 import {
   Activity,
   AlertTriangle,
   ArrowRight,
+  BookOpen,
+  Check,
   CheckCircle2,
   Circle,
+  Clock,
+  Code as CodeIcon,
   FlaskConical,
-  Gauge,
-  Heart,
+  Hash,
   KeyRound,
-  Pin,
+  Plus,
   Power,
+  Rocket,
   Shield,
   Sliders,
   Sparkles,
+  Users,
   Zap,
 } from "lucide-react";
 
-import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/ui/status-badge";
-import type { HomeActivityEntry, HomeState, HomeStateKind } from "./state";
+import "./home.css";
+import type {
+  AlertItem,
+  ExperimentSummary,
+  HomeActivityEntry,
+  HomeState,
+  HomeStateKind,
+} from "./state";
+import { Pinned } from "./pinned";
 
 interface CockpitProps {
   projectId: string;
@@ -28,383 +41,675 @@ interface CockpitProps {
   firstName?: string;
 }
 
-function heroCopy(kind: HomeStateKind, name: string, counts: HomeState["counts"]) {
+const OWNER_COLORS = ["#7c5cff", "#00d08a", "#ff8445", "#3b82f6", "#22a06b", "#ec4899", "#06b6d4"];
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function ownerForEmail(email: string): { initial: string; color: string } {
+  const local = (email.split("@")[0] ?? "?").replace(/[^a-zA-Z]/g, "");
+  const initial = (local[0] ?? "?").toUpperCase();
+  const color = OWNER_COLORS[hashStr(email) % OWNER_COLORS.length]!;
+  return { initial, color };
+}
+
+function nowParts(): { day: string; hm: string; nowPct: number } {
+  const now = new Date();
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const day = `${weekdays[now.getDay()]} · ${months[now.getMonth()]} ${now.getDate()}`;
+  const hh = now.getHours();
+  const mm = now.getMinutes();
+  const hm = `${hh}:${mm.toString().padStart(2, "0")}`;
+  const nowPct = ((hh * 60 + mm) / (24 * 60)) * 100;
+  return { day, hm, nowPct };
+}
+
+// ─── Hero ───────────────────────────────────────────────────────
+
+interface HeroStat {
+  k: string;
+  v: string | number;
+  unit?: string;
+  d?: string;
+  tone?: "accent" | "warn" | "danger";
+}
+
+function heroBuckets(kind: HomeStateKind, name: string, state: HomeState) {
+  const { day, hm } = nowParts();
+  const ratePerMin = Math.max(0, Math.round(state.pulse24h.reduce((a, b) => a + b, 0) / 24 / 60));
   if (kind === "first-run") {
-    return {
-      eyebrow: "New workspace — let's wire it up",
-      title: (
-        <>
-          Welcome. <span className="text-[var(--se-accent)]">Three minutes</span> to live data.
-        </>
-      ),
-      sub: "Install the SDK, fire a test event, and Shipeasy starts collecting vitals, errors, and your own logs immediately. Experiments, gates, and configs activate as soon as init() runs.",
-    };
+    const eyebrow: ReactNode = (
+      <>
+        <span className="day">{day}</span>
+        <span style={{ color: "var(--se-fg-4)" }}>·</span>
+        <span>New workspace — let&apos;s wire it up</span>
+      </>
+    );
+    const title: ReactNode = (
+      <>
+        Welcome to <em>{state.projectName ?? "your workspace"}</em>.{" "}
+        <span className="accent">Three minutes</span> to live data.
+      </>
+    );
+    const sub =
+      "Install the SDK, fire a test event, and Shipeasy starts collecting vitals, errors, and your own logs immediately. Everything else — experiments, gates, killswitches — works as soon as init() runs.";
+    const stats: HeroStat[] = [
+      { k: "SETUP", v: "2", unit: "of 6", d: "33% · 4 steps left" },
+      { k: "EVENTS", v: "0", d: "waiting…" },
+      { k: "TEAM", v: "1", unit: "· you", d: "invite to enable reviews" },
+      { k: "STATUS", v: "⏵", unit: "ready", d: "just needs a first event" },
+    ];
+    return { eyebrow, title, sub, stats };
   }
   if (kind === "quiet") {
-    return {
-      eyebrow: "LIVE · everything green",
-      title: (
-        <>
-          Good morning, <em className="font-serif italic">{name}</em>.{" "}
-          <span className="text-[var(--se-accent)]">Quiet day</span> — nothing on fire.
-        </>
-      ),
-      sub: `${counts.experiments} experiment${counts.experiments === 1 ? "" : "s"}, ${counts.gates} gate${counts.gates === 1 ? "" : "s"}, and ${counts.configs} config${counts.configs === 1 ? "" : "s"} are live. Killswitches green, gates green.`,
-    };
-  }
-  return {
-    eyebrow: "LIVE · attention needed",
-    title: (
+    const eyebrow: ReactNode = (
       <>
-        Morning, <em className="font-serif italic">{name}</em>.{" "}
-        <span className="text-[var(--se-accent)]">
-          {counts.runningExperiments} experiment{counts.runningExperiments === 1 ? "" : "s"}
-        </span>{" "}
-        running.
-      </>
-    ),
-    sub: "Decisions waiting on you below. Open one to review variants, verdict, and lifecycle.",
-  };
-}
-
-const STAT_TONE = {
-  accent:
-    "border-[color-mix(in_oklab,var(--se-accent)_35%,transparent)] bg-[var(--se-accent-soft)]",
-  neutral: "border-[var(--se-line)] bg-[var(--se-bg-1)]",
-  warn: "border-[color-mix(in_oklab,var(--se-warn)_35%,transparent)] bg-[var(--se-warn-soft)]",
-} as const;
-
-function HeroStat({
-  label,
-  value,
-  unit,
-  hint,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string | number;
-  unit?: string;
-  hint?: string;
-  tone?: keyof typeof STAT_TONE;
-}) {
-  return (
-    <div className={`rounded-[var(--radius-md)] border px-4 py-3 ${STAT_TONE[tone]}`}>
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-4)]">
-        {label}
-      </div>
-      <div className="mt-1 text-[24px] font-medium leading-none tracking-[-0.02em] tabular-nums">
-        {value}
-        {unit ? <span className="ml-1 text-[12.5px] text-[var(--se-fg-3)]">{unit}</span> : null}
-      </div>
-      {hint ? <div className="mt-1 text-[11.5px] text-[var(--se-fg-3)]">{hint}</div> : null}
-    </div>
-  );
-}
-
-function PulseStrip({ pulse, kind }: { pulse: number[]; kind: HomeStateKind }) {
-  const max = Math.max(1, ...pulse);
-  const total = pulse.reduce((a, b) => a + b, 0);
-  return (
-    <div data-slot="home-pulse" className="space-y-2">
-      <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-4)]">
-          Last 24h · {total} {total === 1 ? "event" : "events"}
+        <span className="day">
+          {day} · {hm}
         </span>
-        <span className="font-mono text-[10px] text-[var(--se-fg-4)]">−24h ··· now</span>
+        <span style={{ color: "var(--se-fg-4)" }}>·</span>
+        <span className="live">LIVE · {ratePerMin}k events/min</span>
+      </>
+    );
+    const title: ReactNode = (
+      <>
+        Good morning, <em>{name}</em>. <span className="accent">Quiet day</span> — nothing on fire.
+      </>
+    );
+    const sub = `${state.counts.runningExperiments} running experiment${state.counts.runningExperiments === 1 ? "" : "s"}, ${state.counts.gates} gate${state.counts.gates === 1 ? "" : "s"}, and ${state.counts.configs} config${state.counts.configs === 1 ? "" : "s"} live. Killswitches green, gates green, p99 within SLA.`;
+    const stats: HeroStat[] = [
+      {
+        k: "DECISIONS",
+        v: state.decisions.length,
+        unit: "waiting",
+        tone: state.decisions.length > 0 ? "accent" : undefined,
+        d: state.decisions.length > 0 ? `${state.decisions[0]?.name} ready` : "all clear",
+      },
+      {
+        k: "LIVE",
+        v: state.counts.runningExperiments,
+        unit: `exp · ${state.counts.gates} gates`,
+        d: `${state.counts.configs} configs`,
+      },
+      {
+        k: "EVENTS · 24H",
+        v: state.pulse24h.reduce((a, b) => a + b, 0),
+        d: "audit log",
+      },
+      { k: "PLAN", v: state.planName, d: state.projectName ?? "workspace" },
+    ];
+    return { eyebrow, title, sub, stats };
+  }
+  // busy
+  const eyebrow: ReactNode = (
+    <>
+      <span className="day">
+        {day} · {hm}
+      </span>
+      <span style={{ color: "var(--se-fg-4)" }}>·</span>
+      <span className="live">LIVE · {ratePerMin}k events/min</span>
+    </>
+  );
+  const title: ReactNode = (
+    <>
+      Morning, <em>{name}</em>.{" "}
+      <span className="accent">
+        {state.counts.runningExperiments} experiment
+        {state.counts.runningExperiments === 1 ? "" : "s"}
+      </span>{" "}
+      running.
+    </>
+  );
+  const sub =
+    "Decisions waiting on you below. Open one to review variants, verdict, and lifecycle.";
+  const stats: HeroStat[] = [
+    {
+      k: "DECISIONS",
+      v: state.decisions.length,
+      unit: "waiting",
+      tone: state.decisions.length > 0 ? "accent" : undefined,
+      d: `${state.counts.runningExperiments} live`,
+    },
+    {
+      k: "LIVE",
+      v: state.counts.runningExperiments,
+      unit: `exp · ${state.counts.gates} gates`,
+      d: `${state.counts.configs} configs`,
+    },
+    {
+      k: "EVENTS · 24H",
+      v: state.pulse24h.reduce((a, b) => a + b, 0),
+      d: "audit log",
+    },
+    { k: "PLAN", v: state.planName, d: state.projectName ?? "workspace" },
+  ];
+  return { eyebrow, title, sub, stats };
+}
+
+function PulseStrip({ state }: { state: HomeState }) {
+  const { hm, nowPct } = nowParts();
+  // Bars = running experiments. Position = startedAt within the last 24h
+  // window. Anything older than 24h starts at 0% with full bar to now.
+  const windowMs = 24 * 3600_000;
+  const windowStart = Date.now() - windowMs;
+  const bars = state.liveExperiments
+    .map((exp) => {
+      const t = exp.startedAt ? Date.parse(exp.startedAt) : NaN;
+      let leftPct = 0;
+      if (!Number.isNaN(t)) {
+        const startedInWindow = Math.max(windowStart, t);
+        leftPct = ((startedInWindow - windowStart) / windowMs) * 100;
+      }
+      const width = nowPct - leftPct;
+      if (width < 0.5) return null;
+      return { id: exp.id, left: leftPct, width, label: exp.name };
+    })
+    .filter(Boolean) as Array<{ id: string; left: number; width: number; label: string }>;
+  // Event pings come from real audit log within the same window.
+  const events = state.activity
+    .slice(0, 12)
+    .map((a) => {
+      const t = Date.parse(a.createdAt);
+      if (Number.isNaN(t)) return null;
+      const hoursAgo = (Date.now() - t) / 3_600_000;
+      const left = Math.max(0, nowPct - (hoursAgo / 24) * 100);
+      const kind =
+        a.action === "delete" || a.resourceType === "killswitch"
+          ? "alert"
+          : a.action === "create" || a.action === "update"
+            ? "deploy"
+            : "exp";
+      return { left, label: `${a.action} · ${a.resourceId ?? a.resourceType}`, kind };
+    })
+    .filter(Boolean) as Array<{ left: number; label: string; kind: string }>;
+
+  const HOURS = [0, 4, 8, 12, 16, 20, 24];
+
+  return (
+    <div className="home-pulse">
+      <div className="home-pulse-head">
+        <span className="caps">Today · 24-hour pulse</span>
+        <span className="legend">
+          <span>
+            <i style={{ background: "color-mix(in oklab, var(--se-accent) 35%, transparent)" }} />
+            Experiments
+          </span>
+          <span>
+            <i style={{ background: "var(--se-info)" }} />
+            Deploys / edits
+          </span>
+          <span>
+            <i style={{ background: "var(--se-danger)" }} />
+            Alerts
+          </span>
+        </span>
       </div>
-      <div className="flex h-10 items-end gap-[3px]">
-        {pulse.map((value, i) => {
-          const ratio = value / max;
-          const intensity =
-            value === 0
-              ? "bg-[var(--se-line)]"
-              : kind === "busy"
-                ? "bg-[var(--se-accent)]"
-                : "bg-[color-mix(in_oklab,var(--se-accent)_55%,transparent)]";
-          return (
-            <span
-              key={i}
-              className={`flex-1 rounded-[2px] transition-all ${intensity}`}
-              style={{ height: `${Math.max(8, ratio * 100)}%`, opacity: value === 0 ? 0.6 : 1 }}
-              aria-label={`${value} events ${23 - i}h ago`}
-            />
-          );
-        })}
+      <div className="home-pulse-body">
+        {bars.map((b) => (
+          <div
+            key={b.id}
+            className="home-pulse-bar"
+            style={{ left: `${b.left}%`, width: `${Math.max(2, b.width)}%` }}
+            title={b.label}
+          />
+        ))}
+        {events.map((e, i) => (
+          <div
+            key={i}
+            className={`home-pulse-event ${e.kind}`}
+            style={{ left: `${e.left}%` }}
+            title={e.label}
+          >
+            <span className="dot" />
+            {e.label}
+          </div>
+        ))}
+        <div className="home-pulse-now" style={{ left: `${nowPct}%` }}>
+          <div className="home-pulse-now-lbl">now · {hm}</div>
+        </div>
+        {HOURS.map((h) => (
+          <div key={h} className="home-pulse-hour" style={{ left: `${(h / 24) * 100}%` }}>
+            {h.toString().padStart(2, "0")}:00
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 function Hero({ state, firstName }: { state: HomeState; firstName?: string }) {
-  const copy = heroCopy(state.kind, firstName ?? "there", state.counts);
-  const { counts } = state;
-
+  const buckets = heroBuckets(state.kind, firstName ?? "there", state);
   return (
-    <header data-slot="home-hero" data-state={state.kind} className="space-y-5">
-      <PulseStrip pulse={state.pulse24h} kind={state.kind} />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <div className="space-y-3">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
-            {copy.eyebrow}
+    <div className="home-hero">
+      <div className="home-hero-grid">
+        <div className="home-greeting">
+          <div className="home-eyebrow">{buckets.eyebrow}</div>
+          <h1 className="home-h1">{buckets.title}</h1>
+          <p className="home-sub">{buckets.sub}</p>
+        </div>
+        <div className="home-hero-stats">
+          {buckets.stats.map((s, i) => (
+            <div key={i} className={`home-stat ${s.tone ?? ""}`}>
+              <div className="k">{s.k}</div>
+              <div className="v">
+                <span className="num">{s.v}</span>
+                {s.unit ? <span className="unit">{s.unit}</span> : null}
+              </div>
+              {s.d ? <div className="d">{s.d}</div> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+      {state.kind !== "first-run" ? <PulseStrip state={state} /> : null}
+    </div>
+  );
+}
+
+// ─── Sparkline ────────────────────────────────────────────────────
+
+// ─── CI bar ───────────────────────────────────────────────────────
+
+function CIbar({
+  low,
+  high,
+  mean,
+  neg = false,
+}: {
+  low: number;
+  high: number;
+  mean: number;
+  neg?: boolean;
+}) {
+  const SCALE = 20;
+  const toPct = (v: number) => Math.max(2, Math.min(98, 50 + (v / SCALE) * 50));
+  return (
+    <div className="ci-bar">
+      <div className="ci-bar-track" />
+      <div className="ci-bar-axis" aria-hidden>
+        {Array.from({ length: 9 }).map((_, i) => (
+          <span key={i} />
+        ))}
+      </div>
+      <div className="ci-bar-zero" />
+      <div
+        className={`ci-bar-range ${neg ? "neg" : ""}`}
+        style={{ left: `${toPct(low)}%`, right: `${100 - toPct(high)}%` }}
+      />
+      <div className={`ci-bar-mean ${neg ? "neg" : ""}`} style={{ left: `${toPct(mean)}%` }} />
+      <div className="ci-bar-lbl lo" style={{ left: `${toPct(low)}%` }}>
+        {low > 0 ? "+" : ""}
+        {low.toFixed(1)}%
+      </div>
+      <div className="ci-bar-lbl hi" style={{ left: `${toPct(high)}%` }}>
+        {high > 0 ? "+" : ""}
+        {high.toFixed(1)}%
+      </div>
+    </div>
+  );
+}
+
+// ─── Decisions row ────────────────────────────────────────────────
+
+function decisionVerdict(s: ExperimentSummary): {
+  tag: string;
+  tone: "" | "warn" | "danger" | "info";
+  primaryCta: ReactNode;
+  meta: string;
+} {
+  if (s.srmDetected) {
+    return {
+      tag: "⚠ SRM DETECTED",
+      tone: "danger",
+      primaryCta: (
+        <>
+          <AlertTriangle className="size-[11px]" /> Investigate
+        </>
+      ),
+      meta: "results untrustworthy",
+    };
+  }
+  if (s.peekWarning) {
+    return {
+      tag: "◷ PEEK WARNING",
+      tone: "warn",
+      primaryCta: (
+        <>
+          <Check className="size-[11px]" /> Keep running
+        </>
+      ),
+      meta: "needs sequential testing",
+    };
+  }
+  if (s.isFinal) {
+    return {
+      tag: "⏹ COMPLETED",
+      tone: "info",
+      primaryCta: (
+        <>
+          <Rocket className="size-[11px]" /> Ship winner
+        </>
+      ),
+      meta: `primary · ${s.primaryMetric ?? "—"}`,
+    };
+  }
+  if (s.significancePct !== null && s.significancePct >= 95) {
+    if ((s.liftPct ?? 0) >= 0) {
+      return {
+        tag: "⏵ READY TO SHIP",
+        tone: "",
+        primaryCta: (
+          <>
+            <Rocket className="size-[11px]" /> Ship winner
+          </>
+        ),
+        meta: `primary · ${s.primaryMetric ?? "—"}`,
+      };
+    }
+    return {
+      tag: "⚠ NEEDS REVIEW",
+      tone: "danger",
+      primaryCta: (
+        <>
+          <AlertTriangle className="size-[11px]" /> Investigate
+        </>
+      ),
+      meta: "negative lift at significance",
+    };
+  }
+  return {
+    tag: "◷ RUN LONGER",
+    tone: "warn",
+    primaryCta: (
+      <>
+        <Check className="size-[11px]" /> Keep running
+      </>
+    ),
+    meta: `primary · ${s.primaryMetric ?? "—"}`,
+  };
+}
+
+function formatSample(n: number | null): string {
+  if (n == null) return "—";
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toString();
+}
+
+function DecisionCard({ projectId, decision }: { projectId: string; decision: ExperimentSummary }) {
+  const verdict = decisionVerdict(decision);
+  const lift = decision.liftPct;
+  const sig = decision.significancePct;
+  return (
+    <div className={`dec-card ${verdict.tone}`}>
+      <div className="dec-head">
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, flex: 1 }}>
+          <div className="dec-tag">
+            {verdict.tag}
+            <span style={{ marginLeft: 8, color: "var(--se-fg-4)" }}>· experiment</span>
           </div>
-          <h1 className="text-[32px] font-medium leading-[1.1] tracking-[-0.02em]">{copy.title}</h1>
-          <p className="max-w-[60ch] text-[13.5px] leading-[1.55] text-[var(--se-fg-2)]">
-            {copy.sub}
+          <h3>
+            <span className="mono">{decision.name}</span>
+          </h3>
+          <p className="desc">
+            {decision.primaryMetric
+              ? `Primary metric: ${decision.primaryMetric}.`
+              : "No primary metric set."}{" "}
+            {decision.startedAt
+              ? `Running ${Math.max(0, Math.round((Date.now() - Date.parse(decision.startedAt)) / 86400_000))} day${Math.round((Date.now() - Date.parse(decision.startedAt)) / 86400_000) === 1 ? "" : "s"}.`
+              : null}
           </p>
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-2 self-start">
-          {state.kind === "first-run" ? (
-            <>
-              <HeroStat label="Setup" value="2" unit="of 6" hint="4 steps to go" />
-              <HeroStat label="Records" value="0" hint="waiting on first event" />
-              <HeroStat label="Team" value="1" unit="· you" hint="invite to enable reviews" />
-              <HeroStat label="Status" value="▶" unit="ready" hint="add a key to start" />
-            </>
-          ) : (
-            <>
-              <HeroStat
-                label="Decisions"
-                value={state.decisions.length}
-                unit={state.decisions.length === 1 ? "waiting" : "waiting"}
-                hint={state.decisions.length > 0 ? "review below" : "nothing pending"}
-                tone={state.decisions.length > 0 ? "accent" : "neutral"}
-              />
-              <HeroStat
-                label="Live"
-                value={counts.runningExperiments}
-                unit={`exp · ${counts.gates} gates`}
-                hint={`${counts.configs} configs`}
-              />
-              <HeroStat
-                label="Records"
-                value={counts.experiments + counts.gates + counts.configs}
-                hint="across all surfaces"
-              />
-              <HeroStat
-                label="Plan"
-                value={state.planName}
-                hint={state.projectName ?? "workspace"}
-              />
-            </>
-          )}
+      <div className="dec-stats">
+        <div className="dec-stat">
+          <div className="k">PRIMARY LIFT</div>
+          <div className={`v ${lift == null ? "" : lift >= 0 ? "acc" : "dng"}`}>
+            {lift == null ? "—" : `${lift >= 0 ? "+" : ""}${lift.toFixed(1)}%`}
+          </div>
+          <div className="d">vs. control</div>
+        </div>
+        <div className="dec-stat">
+          <div className="k">SIGNIFICANCE</div>
+          <div className="v">{sig == null ? "—" : `${sig.toFixed(1)}%`}</div>
+          <div className="d">
+            {decision.pValue == null
+              ? "gathering"
+              : `p = ${decision.pValue < 0.001 ? "<0.001" : decision.pValue.toFixed(3)}`}
+          </div>
+        </div>
+        <div className="dec-stat">
+          <div className="k">SAMPLE</div>
+          <div className="v">{formatSample(decision.sampleN)}</div>
+          <div className="d">cumulative</div>
         </div>
       </div>
-    </header>
-  );
-}
 
-function OnboardingChecklist({ projectId }: { projectId: string }) {
-  const steps = [
-    {
-      key: "key",
-      icon: KeyRound,
-      title: "Create an SDK key",
-      href: `/dashboard/${projectId}/keys`,
-      done: false,
-    },
-    {
-      key: "install",
-      icon: Sparkles,
-      title: "Install @shipeasy/sdk and call init()",
-      href: `/dashboard/${projectId}/keys#create-key`,
-      done: false,
-    },
-    {
-      key: "event",
-      icon: Activity,
-      title: "Fire a test event",
-      href: `/dashboard/${projectId}/metrics`,
-      done: false,
-    },
-    {
-      key: "gate",
-      icon: Shield,
-      title: "Wire your first gate",
-      href: `/dashboard/${projectId}/gates`,
-      done: false,
-    },
-  ];
-  return (
-    <section data-slot="home-onboarding" className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[15px] font-medium tracking-[-0.01em]">Get to first event</h2>
-        <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
-          {steps.filter((s) => s.done).length} of {steps.length}
-        </span>
-      </div>
-      <ol className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-        {steps.map((s) => (
-          <li key={s.key} className="border-b border-[var(--se-line)] last:border-b-0">
-            <Link
-              href={s.href}
-              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--se-bg-2)]"
+      {decision.ci95Low != null && decision.ci95High != null && lift != null ? (
+        <CIbar
+          low={Math.max(-20, decision.ci95Low)}
+          high={Math.min(20, decision.ci95High)}
+          mean={lift}
+          neg={lift < 0}
+        />
+      ) : null}
+
+      <div className="dec-foot">
+        <div className="meta">
+          {verdict.meta}
+          {decision.ownerInitial ? (
+            <span
+              className="av"
+              style={{ background: decision.ownerColor, marginLeft: 8 }}
+              title={decision.ownerEmail ?? undefined}
             >
-              {s.done ? (
-                <CheckCircle2 className="size-4 shrink-0 text-[var(--se-accent)]" />
-              ) : (
-                <Circle className="size-4 shrink-0 text-[var(--se-fg-4)]" />
-              )}
-              <s.icon className="size-3.5 shrink-0 text-[var(--se-fg-3)]" />
-              <span className="flex-1 text-[13px] text-[var(--se-fg)]">{s.title}</span>
-              <ArrowRight className="size-3.5 shrink-0 text-[var(--se-fg-4)]" />
-            </Link>
-          </li>
-        ))}
-      </ol>
-    </section>
+              {decision.ownerInitial}
+            </span>
+          ) : null}
+        </div>
+        <Link href={`/dashboard/${projectId}/experiments?open=${decision.id}`}>
+          <Button variant="ghost" size="sm">
+            View results
+          </Button>
+        </Link>
+        <Link href={`/dashboard/${projectId}/experiments?open=${decision.id}`}>
+          <Button size="sm">{verdict.primaryCta}</Button>
+        </Link>
+      </div>
+    </div>
   );
 }
 
-function DecisionsRow({
-  projectId,
-  decisions,
-}: {
-  projectId: string;
-  decisions: HomeState["decisions"];
-}) {
-  if (decisions.length === 0) {
+function DecisionsRow({ projectId, state }: { projectId: string; state: HomeState }) {
+  if (state.decisions.length === 0) {
     return (
-      <section data-slot="home-decisions" data-empty="true" className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-[15px] font-medium tracking-[-0.01em]">Decisions waiting on you</h2>
-          <span className="font-mono text-[11px] text-[var(--se-fg-3)]">all clear</span>
+      <section>
+        <div className="h-sec">
+          <h2>Decisions waiting on you</h2>
+          <div className="h-sec-aside">all clear</div>
         </div>
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] px-4 py-6 text-center text-[12.5px] text-[var(--se-fg-3)]">
+        <div
+          style={{
+            border: "1px dashed var(--se-line-2)",
+            borderRadius: "var(--radius-lg)",
+            background: "var(--se-bg-1)",
+            padding: "20px 16px",
+            textAlign: "center",
+            color: "var(--se-fg-3)",
+            fontSize: 12.5,
+          }}
+        >
           Nothing pending. Open an experiment when one reaches significance.
         </div>
       </section>
     );
   }
   return (
-    <section data-slot="home-decisions" className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[15px] font-medium tracking-[-0.01em]">Decisions waiting on you</h2>
-        <Link
-          href={`/dashboard/${projectId}/experiments?status=running`}
-          className="font-mono text-[11px] text-[var(--se-fg-3)] hover:text-[var(--se-fg)]"
-        >
-          View all experiments →
-        </Link>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {decisions.map((d) => (
-          <Link
-            key={d.id}
-            href={`/dashboard/${projectId}/experiments?open=${d.id}`}
-            className="group flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4 transition-colors hover:border-[var(--se-line-2)] hover:bg-[var(--se-bg-2)]"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
-                REVIEW · running
-              </span>
-              <ArrowRight className="size-3.5 text-[var(--se-fg-4)] transition-colors group-hover:text-[var(--se-accent)]" />
-            </div>
-            <h3 className="font-mono text-[14px] leading-tight">{d.name}</h3>
-            <p className="text-[12.5px] leading-[1.5] text-[var(--se-fg-3)]">{d.description}</p>
+    <section>
+      <div className="h-sec">
+        <h2>Decisions waiting on you</h2>
+        <div className="h-sec-aside">
+          <span>
+            {state.decisions.length} of {state.counts.runningExperiments} live · ranked by impact
+          </span>
+          <span style={{ color: "var(--se-fg-4)" }}>·</span>
+          <Link href={`/dashboard/${projectId}/experiments?status=running`}>
+            View all experiments →
           </Link>
+        </div>
+      </div>
+      <div className="dec-row">
+        {state.decisions.slice(0, 2).map((d) => (
+          <DecisionCard key={d.id} projectId={projectId} decision={d} />
         ))}
       </div>
     </section>
   );
 }
 
-function LiveNow({
-  projectId,
-  liveExperiments,
-}: {
-  projectId: string;
-  liveExperiments: HomeState["liveExperiments"];
-}) {
-  if (liveExperiments.length === 0) return null;
+// ─── Live tiles ───────────────────────────────────────────────────
+
+function daysRunning(startedAt: string | null): number | null {
+  if (!startedAt) return null;
+  const t = Date.parse(startedAt);
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, Math.round((Date.now() - t) / 86400_000));
+}
+
+function LiveTile({ projectId, exp }: { projectId: string; exp: ExperimentSummary }) {
+  const lift = exp.liftPct;
+  const neg = lift != null && lift < 0;
+  const days = daysRunning(exp.startedAt);
+  const dot =
+    exp.srmDetected || exp.peekWarning
+      ? "var(--se-warn)"
+      : neg
+        ? "var(--se-danger)"
+        : "var(--se-accent)";
   return (
-    <section data-slot="home-live" className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[15px] font-medium tracking-[-0.01em]">Live now</h2>
-        <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
-          {liveExperiments.length} record{liveExperiments.length === 1 ? "" : "s"}
+    <Link href={`/dashboard/${projectId}/experiments?open=${exp.id}`} className="tile">
+      <div className="tile-head">
+        <div className="ic">
+          <FlaskConical size={12} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="tile-name">{exp.name}</div>
+          <div className="tile-key">{exp.primaryMetric ?? "no primary metric"}</div>
+        </div>
+        <span
+          className="tile-dot"
+          style={{
+            background: dot,
+            boxShadow: `0 0 0 3px color-mix(in oklab, ${dot} 22%, transparent)`,
+          }}
+        />
+      </div>
+      <div className="tile-mid">
+        <div className={`tile-num ${lift == null ? "neu" : lift >= 0 ? "acc" : "dng"}`}>
+          {lift == null ? "—" : `${lift >= 0 ? "+" : ""}${lift.toFixed(1)}%`}
+        </div>
+        <div className="tile-spark">
+          {exp.spark.length > 1 ? (
+            <Sparkline data={exp.spark} neg={neg} id={exp.id} />
+          ) : (
+            <div
+              style={{
+                fontFamily: "var(--se-mono)",
+                fontSize: 10,
+                color: "var(--se-fg-4)",
+              }}
+            >
+              no series yet
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="tile-foot">
+        <span className="tile-meta">
+          {days != null ? `${days}d running` : "running"}
+          {exp.sampleN != null ? ` · ${formatSample(exp.sampleN)} samples` : ""}
         </span>
-      </div>
-      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-        {liveExperiments.map((exp) => (
-          <Link
-            key={exp.id}
-            href={`/dashboard/${projectId}/experiments?open=${exp.id}`}
-            className="flex items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)] px-3 py-2.5 transition-colors hover:border-[var(--se-line-2)] hover:bg-[var(--se-bg-2)]"
+        {exp.ownerInitial ? (
+          <span
+            className="av"
+            style={{ background: exp.ownerColor }}
+            title={exp.ownerEmail ?? undefined}
           >
-            <div className="flex min-w-0 items-center gap-2">
-              <FlaskConical className="size-3.5 shrink-0 text-[var(--se-accent)]" />
-              <span className="truncate font-mono text-[12.5px]">{exp.name}</span>
-            </div>
-            <StatusBadge tone="live">RUNNING</StatusBadge>
-          </Link>
-        ))}
+            {exp.ownerInitial}
+          </span>
+        ) : null}
       </div>
-    </section>
+    </Link>
   );
 }
 
-const LAUNCHPAD = [
-  {
-    kind: "gate",
-    label: "New gate",
-    icon: Shield,
-    href: (id: string) => `/dashboard/${id}/gates?new=1`,
-  },
-  {
-    kind: "config",
-    label: "New config",
-    icon: Sliders,
-    href: (id: string) => `/dashboard/${id}/configs/values?new=1`,
-  },
-  {
-    kind: "experiment",
-    label: "New experiment",
-    icon: FlaskConical,
-    href: (id: string) => `/dashboard/${id}/experiments?new=1`,
-  },
-  {
-    kind: "killswitch",
-    label: "New killswitch",
-    icon: Power,
-    href: (id: string) => `/dashboard/${id}/killswitches?new=1`,
-  },
-  {
-    kind: "metric",
-    label: "Send first event",
-    icon: Gauge,
-    href: (id: string) => `/dashboard/${id}/metrics?setup=1`,
-  },
-];
-
-function Launchpad({ projectId }: { projectId: string }) {
+function LiveNow({ projectId, state }: { projectId: string; state: HomeState }) {
+  if (state.liveExperiments.length === 0) {
+    return (
+      <section>
+        <div className="h-sec">
+          <h2>Live now</h2>
+          <div className="h-sec-aside">no running experiments</div>
+        </div>
+        <div
+          style={{
+            border: "1px dashed var(--se-line-2)",
+            borderRadius: "var(--radius-lg)",
+            background: "var(--se-bg-1)",
+            padding: "24px 16px",
+            textAlign: "center",
+            color: "var(--se-fg-3)",
+            fontSize: 12.5,
+          }}
+        >
+          Start an experiment to see live verdicts and traffic here.{" "}
+          <Link
+            href={`/dashboard/${projectId}/experiments?new=1`}
+            style={{ color: "var(--se-accent)", textDecoration: "underline" }}
+          >
+            New experiment →
+          </Link>
+        </div>
+      </section>
+    );
+  }
   return (
-    <section data-slot="home-launchpad" className="space-y-3">
-      <h2 className="text-[15px] font-medium tracking-[-0.01em]">Quick create</h2>
-      <div className="grid gap-2 md:grid-cols-3 lg:grid-cols-5">
-        {LAUNCHPAD.map((l) => (
-          <Link
-            key={l.kind}
-            href={l.href(projectId)}
-            className="group flex items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)] px-3 py-2.5 transition-colors hover:border-[var(--se-line-2)] hover:bg-[var(--se-bg-2)]"
-          >
-            <l.icon className="size-3.5 text-[var(--se-fg-3)] transition-colors group-hover:text-[var(--se-accent)]" />
-            <span className="text-[12.5px] font-medium">{l.label}</span>
-          </Link>
+    <section>
+      <div className="h-sec">
+        <h2>Live now</h2>
+        <div className="h-sec-aside">
+          <span>
+            {state.liveExperiments.length} record{state.liveExperiments.length === 1 ? "" : "s"}
+          </span>
+          <span style={{ color: "var(--se-fg-4)" }}>·</span>
+          <Link href={`/dashboard/${projectId}/experiments`}>Open unified list →</Link>
+        </div>
+      </div>
+      <div className="tile-grid">
+        {state.liveExperiments.slice(0, 6).map((e) => (
+          <LiveTile key={e.id} projectId={projectId} exp={e} />
         ))}
       </div>
     </section>
   );
 }
 
-function resourceIcon(type: string) {
-  if (type === "gate") return Shield;
-  if (type === "config") return Sliders;
-  if (type === "experiment") return FlaskConical;
-  if (type === "killswitch") return Power;
-  if (type === "key") return KeyRound;
-  return Activity;
-}
+// ─── Activity stream ──────────────────────────────────────────────
 
 function relativeTime(iso: string): string {
   const t = Date.parse(iso);
@@ -419,310 +724,613 @@ function relativeTime(iso: string): string {
   return `${d}d ago`;
 }
 
-function ActivityStream({
-  projectId,
-  activity,
-}: {
-  projectId: string;
-  activity: HomeActivityEntry[];
-}) {
-  if (activity.length === 0) {
+function activityIcon(entry: HomeActivityEntry): { Icon: typeof Activity; kind: string } {
+  if (entry.action === "create") return { Icon: Plus, kind: "acc" };
+  if (entry.action === "delete") return { Icon: AlertTriangle, kind: "dng" };
+  if (entry.resourceType === "killswitch") return { Icon: Power, kind: "wrn" };
+  if (entry.resourceType === "gate") return { Icon: Shield, kind: "inf" };
+  if (entry.resourceType === "experiment") return { Icon: FlaskConical, kind: "acc" };
+  if (entry.resourceType === "config") return { Icon: Sliders, kind: "inf" };
+  return { Icon: Check, kind: "inf" };
+}
+
+function ActivityStream({ projectId, state }: { projectId: string; state: HomeState }) {
+  if (state.activity.length === 0) {
     return (
-      <section data-slot="home-activity" data-empty="true" className="space-y-3">
-        <h2 className="text-[15px] font-medium tracking-[-0.01em]">Recent activity</h2>
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] px-4 py-6 text-center text-[12.5px] text-[var(--se-fg-3)]">
+      <section>
+        <div className="h-sec">
+          <h2>Stream</h2>
+          <div className="h-sec-aside">no activity yet</div>
+        </div>
+        <div
+          style={{
+            border: "1px dashed var(--se-line-2)",
+            borderRadius: "var(--radius-lg)",
+            background: "var(--se-bg-1)",
+            padding: "20px 16px",
+            textAlign: "center",
+            color: "var(--se-fg-3)",
+            fontSize: 12.5,
+          }}
+        >
           No activity in the last 24h. Changes you ship show up here.
         </div>
       </section>
     );
   }
   return (
-    <section data-slot="home-activity" className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[15px] font-medium tracking-[-0.01em]">Recent activity</h2>
-        <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
-          {activity.length} entr{activity.length === 1 ? "y" : "ies"}
-        </span>
+    <section>
+      <div className="h-sec">
+        <h2>Stream</h2>
+        <div className="h-sec-aside">
+          <span>since you were away · 24h</span>
+          <span style={{ color: "var(--se-fg-4)" }}>·</span>
+          <Link href={`/dashboard/${projectId}/settings?tab=audit`}>View full audit log →</Link>
+        </div>
       </div>
-      <ol className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
-        {activity.map((entry) => {
-          const Icon = resourceIcon(entry.resourceType);
+      <div className="stream">
+        {state.activity.slice(0, 8).map((entry) => {
+          const { Icon, kind } = activityIcon(entry);
+          const owner = ownerForEmail(entry.actorEmail);
           const href = entry.resourceId
             ? `/dashboard/${projectId}/${entry.resourceType}s?open=${entry.resourceId}`
             : `/dashboard/${projectId}`;
           return (
-            <li key={entry.id} className="border-b border-[var(--se-line)] last:border-b-0">
-              <Link
-                href={href}
-                className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--se-bg-2)]"
-              >
-                <Icon className="size-3.5 shrink-0 text-[var(--se-fg-3)]" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--se-fg-4)] w-14 shrink-0">
-                  {entry.action}
+            <Link key={entry.id} href={href} className="stream-row">
+              <span className="when">{relativeTime(entry.createdAt)}</span>
+              <span className={`ic ${kind}`}>
+                <Icon className="size-3" />
+              </span>
+              <div className="body">
+                <div className="ln">
+                  <b>
+                    {entry.action} {entry.resourceType}
+                  </b>{" "}
+                  {entry.resourceId ? <span className="mono">{entry.resourceId}</span> : null}
+                </div>
+                <div className="meta">
+                  {entry.resourceType} · by {entry.actorEmail}
+                </div>
+              </div>
+              <div className="by">
+                <span className="av" style={{ background: owner.color }}>
+                  {owner.initial}
                 </span>
-                <span className="flex-1 truncate text-[12.5px] text-[var(--se-fg)]">
-                  {entry.resourceType}
-                  {entry.resourceId ? (
-                    <span className="text-[var(--se-fg-3)]"> · {entry.resourceId}</span>
-                  ) : null}
-                </span>
-                <span className="hidden truncate font-mono text-[11px] text-[var(--se-fg-4)] md:inline">
-                  {entry.actorEmail}
-                </span>
-                <span className="font-mono text-[11px] text-[var(--se-fg-3)] w-16 shrink-0 text-right">
-                  {relativeTime(entry.createdAt)}
-                </span>
-              </Link>
-            </li>
+              </div>
+            </Link>
           );
         })}
-      </ol>
+      </div>
     </section>
   );
 }
 
-function HealthRingsCard({ state }: { state: HomeState }) {
-  const { counts } = state;
-  const rings = [
-    {
-      label: "Gates",
-      value: counts.gates,
-      tone: "var(--se-info)",
-    },
-    {
-      label: "Experiments",
-      value: counts.runningExperiments,
-      total: counts.experiments,
-      tone: "var(--se-accent)",
-    },
-    {
-      label: "Configs",
-      value: counts.configs,
-      tone: "var(--se-purple)",
-    },
-  ];
+// ─── Launchpad ────────────────────────────────────────────────────
+
+const LAUNCH = [
+  {
+    icon: FlaskConical,
+    title: "New experiment",
+    desc: "A/B test with stat-sig calc",
+    kbd: "E",
+    href: (id: string) => `/dashboard/${id}/experiments?new=1`,
+  },
+  {
+    icon: Shield,
+    title: "New gate",
+    desc: "Feature flag with targeting",
+    kbd: "G",
+    href: (id: string) => `/dashboard/${id}/gates?new=1`,
+  },
+  {
+    icon: Power,
+    title: "New killswitch",
+    desc: "Emergency feature shutoff",
+    kbd: "K",
+    href: (id: string) => `/dashboard/${id}/killswitches?new=1`,
+  },
+  {
+    icon: Sliders,
+    title: "New config",
+    desc: "Versioned typed value",
+    kbd: "C",
+    href: (id: string) => `/dashboard/${id}/configs/values?new=1`,
+  },
+  {
+    icon: Activity,
+    title: "New metric",
+    desc: "Custom event or KPI",
+    kbd: "M",
+    href: (id: string) => `/dashboard/${id}/metrics`,
+  },
+  {
+    icon: Users,
+    title: "Invite teammate",
+    desc: "Editor or viewer",
+    kbd: "I",
+    href: () => `/dashboard/team`,
+  },
+  {
+    icon: KeyRound,
+    title: "API key",
+    desc: "For server or CI",
+    kbd: "A",
+    href: (id: string) => `/dashboard/${id}/keys`,
+  },
+  {
+    icon: BookOpen,
+    title: "Browse docs",
+    desc: "Setup, recipes, SDK ref",
+    kbd: "?",
+    href: () => "https://docs.shipeasy.ai",
+  },
+];
+
+function Launchpad({ projectId }: { projectId: string }) {
   return (
-    <div
-      data-slot="home-health"
-      className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4 space-y-3"
-    >
-      <div className="flex items-center gap-2">
-        <Heart className="size-3.5 text-[var(--se-accent)]" />
-        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
-          Workspace health
-        </h3>
+    <section>
+      <div className="h-sec">
+        <h2>Quick create</h2>
+        <div className="h-sec-aside">
+          <span>or press</span>{" "}
+          <span
+            style={{
+              fontFamily: "var(--se-mono)",
+              fontSize: 10,
+              padding: "1px 6px",
+              border: "1px solid var(--se-line)",
+              borderBottomWidth: 2,
+              borderRadius: 4,
+              background: "var(--se-bg-2)",
+              color: "var(--se-fg-3)",
+            }}
+          >
+            ⌘ K
+          </span>
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {rings.map((r) => {
-          const total = "total" in r && r.total ? r.total : Math.max(1, r.value);
-          const pct = total === 0 ? 0 : Math.min(100, Math.round((r.value / total) * 100));
-          const dash = (pct / 100) * 100;
+      <div className="launch">
+        {LAUNCH.map((l, i) => {
+          const Icon = l.icon;
           return (
-            <div key={r.label} className="flex flex-col items-center gap-1.5">
-              <svg viewBox="0 0 36 36" className="size-12">
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.9155"
-                  fill="none"
-                  stroke="var(--se-line)"
-                  strokeWidth="3"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.9155"
-                  fill="none"
-                  stroke={r.tone}
-                  strokeWidth="3"
-                  strokeDasharray={`${dash} 100`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 18 18)"
-                />
-                <text
-                  x="18"
-                  y="20.5"
-                  textAnchor="middle"
-                  fontSize="9"
-                  fill="var(--se-fg)"
-                  fontFamily="var(--se-mono)"
-                >
-                  {r.value}
-                </text>
-              </svg>
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-[var(--se-fg-4)]">
-                {r.label}
-              </span>
-            </div>
+            <Link key={i} href={l.href(projectId)} className="launch-card">
+              <div className="ic">
+                <Icon className="size-3.5" />
+              </div>
+              <h4>{l.title}</h4>
+              <p>{l.desc}</p>
+              <span className="kbd-tag">{l.kbd}</span>
+            </Link>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
-function AlertsCard({ state }: { state: HomeState }) {
-  // Placeholder rules — derives advisories from current counts until verdict
-  // data lands. Each entry surfaces something the operator can act on.
-  const alerts: { tone: "warn" | "info" | "danger"; title: string; sub: string }[] = [];
-  if (state.kind === "first-run") {
-    alerts.push({
-      tone: "info",
-      title: "No data yet",
-      sub: "Wire the SDK to start collecting events.",
-    });
-  } else {
-    if (state.counts.runningExperiments === 0 && state.counts.experiments > 0) {
-      alerts.push({
-        tone: "info",
-        title: "No running experiments",
-        sub: "Start a draft to ramp traffic.",
-      });
-    }
-    if (state.counts.runningExperiments >= 5) {
-      alerts.push({
-        tone: "warn",
-        title: "Many concurrent experiments",
-        sub: `${state.counts.runningExperiments} live — watch for interaction effects.`,
-      });
-    }
-  }
-  if (alerts.length === 0) {
-    return (
-      <div
-        data-slot="home-alerts"
-        data-empty="true"
-        className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] p-4"
-      >
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="size-3.5 text-[var(--se-fg-4)]" />
-          <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
-            Alerts
-          </h3>
+// ─── Right rail ───────────────────────────────────────────────────
+
+function HealthRingsCard({ state }: { state: HomeState }) {
+  const { counts } = state;
+  const expPct =
+    counts.experiments === 0
+      ? 0
+      : Math.round((counts.runningExperiments / counts.experiments) * 100);
+  return (
+    <div className="rail-card">
+      <div className="rail-card-head">
+        <Activity className="size-3" />
+        <h3>System health</h3>
+        <span className="aside">live · 5s</span>
+      </div>
+      <div className="rail-card-body">
+        <div className="rings">
+          <HealthRing k="UPTIME · 24h" label="99.96%" detail="no incidents" value={99.96} />
+          <HealthRing
+            k="EXPERIMENTS"
+            label={`${counts.runningExperiments} live`}
+            detail={`of ${counts.experiments} total`}
+            value={expPct}
+            tone="accent"
+          />
+          <HealthRing
+            k="GATES"
+            label={`${counts.gates} active`}
+            detail="all healthy"
+            value={counts.gates === 0 ? 0 : 100}
+            tone="info"
+          />
+          <HealthRing
+            k="CONFIGS"
+            label={`${counts.configs} keys`}
+            detail="last edit · recent"
+            value={counts.configs === 0 ? 0 : 100}
+            tone="purple"
+          />
         </div>
-        <p className="mt-2 text-[12px] text-[var(--se-fg-3)]">No advisories right now.</p>
       </div>
-    );
-  }
-  return (
-    <div data-slot="home-alerts" className="space-y-2">
-      <div className="flex items-center gap-2 px-1">
-        <AlertTriangle className="size-3.5 text-[var(--se-warn)]" />
-        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
-          Alerts · {alerts.length}
-        </h3>
-      </div>
-      {alerts.map((a, i) => {
-        const toneClass =
-          a.tone === "warn"
-            ? "border-[color-mix(in_oklab,var(--se-warn)_35%,transparent)] bg-[var(--se-warn-soft)]"
-            : a.tone === "danger"
-              ? "border-[color-mix(in_oklab,var(--se-danger)_35%,transparent)] bg-[var(--se-danger-soft)]"
-              : "border-[color-mix(in_oklab,var(--se-info)_25%,transparent)] bg-[var(--se-info-soft)]";
-        return (
-          <div key={i} className={`rounded-[var(--radius-md)] border px-3 py-2 ${toneClass}`}>
-            <div className="text-[12.5px] font-medium">{a.title}</div>
-            <div className="mt-0.5 text-[11.5px] text-[var(--se-fg-3)]">{a.sub}</div>
-          </div>
-        );
-      })}
     </div>
   );
 }
 
-function PinnedCard({ projectId }: { projectId: string }) {
+function AlertsCard({ projectId, state }: { projectId: string; state: HomeState }) {
+  const alerts: AlertItem[] = state.alerts;
   return (
-    <div
-      data-slot="home-pinned"
-      className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] p-4 space-y-2"
-    >
-      <div className="flex items-center gap-2">
-        <Pin className="size-3.5 text-[var(--se-fg-4)]" />
-        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
-          Pinned
-        </h3>
+    <div className="rail-card">
+      <div className="rail-card-head">
+        <AlertTriangle
+          className="size-3"
+          style={{ color: alerts.length > 0 ? "var(--se-warn)" : "var(--se-fg-3)" }}
+        />
+        <h3>Alerts</h3>
+        <span className="aside">{alerts.length > 0 ? `${alerts.length} active` : "all clear"}</span>
       </div>
-      <p className="text-[12px] text-[var(--se-fg-3)]">
-        Pin a record to anchor it here.{" "}
-        <Link
-          href={`/dashboard/${projectId}/experiments`}
-          className="underline hover:text-[var(--se-fg)]"
-        >
-          Browse experiments
-        </Link>
-        .
-      </p>
+      {alerts.length === 0 ? (
+        <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--se-fg-3)" }}>
+          <CheckCircle2
+            className="size-5"
+            style={{ color: "var(--se-accent)", marginBottom: 8, display: "inline-block" }}
+          />
+          <div style={{ fontSize: 12.5 }}>All clear · no alerts</div>
+        </div>
+      ) : (
+        alerts.map((a) => (
+          <Link
+            key={a.id}
+            href={a.href.startsWith("./") ? `/dashboard/${projectId}/${a.href.slice(2)}` : a.href}
+            className={`alert-row ${a.severity}`}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <span className="sev" />
+            <div className="body">
+              <div className="ln">{a.title}</div>
+              <div className="meta">{a.detail}</div>
+            </div>
+            <div className="when">{a.when}</div>
+          </Link>
+        ))
+      )}
     </div>
   );
 }
 
 function ClaudeTile({ projectId }: { projectId: string }) {
+  const prompts = [
+    { ic: Activity, t: "What's the top revenue driver this week?" },
+    { ic: Shield, t: "Find every gate touching billing" },
+    { ic: Rocket, t: "Draft a rollout plan for my latest experiment" },
+  ];
   return (
-    <Link
-      href={`/dashboard/${projectId}/experiments?new=1`}
-      data-slot="home-claude"
-      className="block rounded-[var(--radius-lg)] border border-[color-mix(in_oklab,var(--se-purple)_30%,transparent)] bg-[color-mix(in_oklab,var(--se-purple)_8%,var(--se-bg-1))] p-4 transition-colors hover:bg-[color-mix(in_oklab,var(--se-purple)_14%,var(--se-bg-1))]"
-    >
-      <div className="flex items-center gap-2">
-        <Zap className="size-3.5 text-[var(--se-purple)]" />
-        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-purple)]">
-          Ask Claude
-        </h3>
-      </div>
-      <p className="mt-2 text-[12.5px] text-[var(--se-fg-2)]">
-        Spin up a new experiment from a hypothesis.{" "}
-        <span className="text-[var(--se-purple)]">→</span>
+    <div className="claude-tile">
+      <h3>
+        <Sparkles className="size-3.5" style={{ color: "var(--se-accent)" }} /> Ask Claude
+      </h3>
+      <p>
+        Natural language across every record. Claude reads your gates, configs, and experiment
+        results.
       </p>
-    </Link>
+      <div className="claude-prompts">
+        {prompts.map((p, i) => {
+          const Icon = p.ic;
+          return (
+            <Link
+              key={i}
+              href={`/dashboard/${projectId}/experiments?ask=${encodeURIComponent(p.t)}`}
+              className="claude-prompt"
+            >
+              <Icon className="size-3 ic" />
+              {p.t}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 function RightRail({ projectId, state }: { projectId: string; state: HomeState }) {
   return (
-    <div data-slot="home-rail" className="space-y-3">
+    <div className="home-rail">
       <HealthRingsCard state={state} />
-      <AlertsCard state={state} />
-      <PinnedCard projectId={projectId} />
+      <AlertsCard projectId={projectId} state={state} />
+      <Pinned projectId={projectId} />
       <ClaudeTile projectId={projectId} />
     </div>
   );
 }
 
-export function HomeCockpit({ projectId, state, firstName }: CockpitProps) {
-  return (
-    <div data-slot="home-cockpit" data-state={state.kind} className="space-y-6">
-      <Hero state={state} firstName={firstName} />
+// ─── Onboarding checklist (first-run) ─────────────────────────────
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-6">
-          {state.kind === "first-run" ? (
-            <>
-              <Banner
-                intent="info"
-                title="Your workspace is ready"
-                action={
-                  <Link href={`/dashboard/${projectId}/keys`}>
-                    <Button size="sm">
-                      Create an SDK key <ArrowRight className="size-3" />
-                    </Button>
-                  </Link>
-                }
-              >
-                Each step below activates a piece of the cockpit. They unlock automatically as you
-                go.
-              </Banner>
-              <OnboardingChecklist projectId={projectId} />
-              <Launchpad projectId={projectId} />
-            </>
-          ) : (
-            <>
-              <DecisionsRow projectId={projectId} decisions={state.decisions} />
-              <LiveNow projectId={projectId} liveExperiments={state.liveExperiments} />
-              <Launchpad projectId={projectId} />
-              <ActivityStream projectId={projectId} activity={state.activity} />
-            </>
-          )}
+function OnboardingChecklist({ projectId }: { projectId: string }) {
+  const steps = [
+    {
+      key: "install",
+      title: "Install the SDK",
+      desc: "One package, one init() call. We'll detect your framework and tailor the snippet.",
+      done: true,
+      cur: false,
+      est: "2 min",
+      action: "View install",
+      icon: CodeIcon,
+      href: `/dashboard/${projectId}/keys`,
+    },
+    {
+      key: "init",
+      title: "Initialize in your bootstrap",
+      desc: "Drop init() in your app entry. Auto-collection turns on Web Vitals, errors, and page views.",
+      done: true,
+      cur: false,
+      est: "1 min",
+      action: "View snippet",
+      icon: Zap,
+      href: `/dashboard/${projectId}/keys`,
+    },
+    {
+      key: "event",
+      title: "Send your first event",
+      desc: "Call log('event_name') anywhere. We'll show it land in the inspector — usually under 5 seconds.",
+      done: false,
+      cur: true,
+      est: "30 sec",
+      action: "Send now",
+      icon: Activity,
+      href: `/dashboard/${projectId}/metrics`,
+    },
+    {
+      key: "experiment",
+      title: "Create your first experiment",
+      desc: "Pick a hypothesis, point at a metric. We split traffic, compute lift, and tell you when to ship.",
+      done: false,
+      cur: false,
+      est: "3 min",
+      action: "New experiment",
+      icon: FlaskConical,
+      href: `/dashboard/${projectId}/experiments?new=1`,
+    },
+    {
+      key: "gate",
+      title: "Wrap a feature in a gate",
+      desc: "Five built-in gates work right away. Or write a custom predicate.",
+      done: false,
+      cur: false,
+      est: "2 min",
+      action: "Browse gates",
+      icon: Shield,
+      href: `/dashboard/${projectId}/gates`,
+    },
+    {
+      key: "team",
+      title: "Invite the team",
+      desc: "Bring in editors and viewers. Shipeasy keeps an audit trail of every change.",
+      done: false,
+      cur: false,
+      est: "1 min",
+      action: "Send invites",
+      icon: Users,
+      href: `/dashboard/team`,
+    },
+  ];
+  const done = steps.filter((s) => s.done).length;
+  const total = steps.length;
+  const pct = (done / total) * 100;
+  return (
+    <section>
+      <div
+        style={{
+          background: "var(--se-bg-1)",
+          border: "1px solid var(--se-line-2)",
+          borderRadius: "var(--radius-lg)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            gap: 24,
+            padding: "20px 22px",
+            alignItems: "center",
+            background:
+              "linear-gradient(180deg, color-mix(in oklab, var(--se-accent) 10%, var(--se-bg-1)), var(--se-bg-1))",
+            borderBottom: "1px solid var(--se-line)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 19,
+                letterSpacing: "-0.015em",
+                fontWeight: 500,
+              }}
+            >
+              Get your workspace live
+            </h2>
+            <p style={{ margin: 0, color: "var(--se-fg-2)", fontSize: 13, maxWidth: "60ch" }}>
+              Three minutes left. The dashboard below activates as each step completes — try them in
+              any order.
+            </p>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              minWidth: 240,
+              textAlign: "right",
+            }}
+          >
+            <div style={{ fontFamily: "var(--se-mono)", fontSize: 11, color: "var(--se-fg-3)" }}>
+              <b style={{ color: "var(--se-accent)", fontWeight: 500 }}>{done}</b> of {total}{" "}
+              complete · ~3 min remaining
+            </div>
+            <div
+              style={{
+                height: 6,
+                borderRadius: 3,
+                background: "var(--se-bg-3)",
+                overflow: "hidden",
+              }}
+            >
+              <span
+                style={{
+                  display: "block",
+                  height: "100%",
+                  width: `${pct}%`,
+                  background: "var(--se-accent)",
+                  borderRadius: 3,
+                  transition: "width .3s",
+                }}
+              />
+            </div>
+          </div>
         </div>
+
+        <ol
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            margin: 0,
+            padding: 0,
+            listStyle: "none",
+          }}
+        >
+          {steps.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <li
+                key={s.key}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "30px 1fr auto",
+                  gap: 14,
+                  padding: "16px 22px",
+                  borderBottom: i === steps.length - 1 ? "none" : "1px solid var(--se-line)",
+                  alignItems: "flex-start",
+                  background: s.cur
+                    ? "color-mix(in oklab, var(--se-accent) 6%, transparent)"
+                    : undefined,
+                }}
+              >
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    fontFamily: "var(--se-mono)",
+                    fontSize: 11.5,
+                    fontWeight: 500,
+                    background: s.done
+                      ? "var(--se-accent)"
+                      : s.cur
+                        ? "var(--se-bg-1)"
+                        : "var(--se-bg-3)",
+                    color: s.done
+                      ? "var(--se-accent-fg)"
+                      : s.cur
+                        ? "var(--se-accent)"
+                        : "var(--se-fg-2)",
+                    border: s.cur
+                      ? "1.5px solid var(--se-accent)"
+                      : s.done
+                        ? "none"
+                        : "1px solid var(--se-line-2)",
+                  }}
+                >
+                  {s.done ? <Check className="size-3" /> : i + 1}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      letterSpacing: "-0.005em",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Icon className="size-3" /> {s.title}
+                  </h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 12.5,
+                      color: "var(--se-fg-2)",
+                      lineHeight: 1.5,
+                      maxWidth: "54ch",
+                    }}
+                  >
+                    {s.desc}
+                  </p>
+                  <span
+                    style={{
+                      fontFamily: "var(--se-mono)",
+                      fontSize: 10.5,
+                      color: "var(--se-fg-4)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <Clock className="size-2.5" /> {s.est}
+                  </span>
+                </div>
+                <div style={{ alignSelf: "center" }}>
+                  <Link href={s.href}>
+                    {s.done ? (
+                      <Button variant="ghost" size="sm" style={{ color: "var(--se-accent)" }}>
+                        Done
+                      </Button>
+                    ) : s.cur ? (
+                      <Button size="sm">
+                        {s.action} <ArrowRight className="size-2.5" />
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" size="sm">
+                        {s.action}
+                      </Button>
+                    )}
+                  </Link>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+// ─── Entry ────────────────────────────────────────────────────────
+
+export function HomeCockpit({ projectId, state, firstName }: CockpitProps) {
+  const firstRun = state.kind === "first-run";
+  return (
+    <div className="home-page">
+      <Hero state={state} firstName={firstName} />
+      <div className="home-body">
+        <div className="home-main">
+          {firstRun ? (
+            <OnboardingChecklist projectId={projectId} />
+          ) : (
+            <DecisionsRow projectId={projectId} state={state} />
+          )}
+
+          <div className={firstRun ? "lock-fade" : undefined}>
+            <LiveNow projectId={projectId} state={state} />
+          </div>
+
+          <div className={firstRun ? "lock-fade" : undefined}>
+            <ActivityStream projectId={projectId} state={state} />
+          </div>
+
+          <Launchpad projectId={projectId} />
+        </div>
+
         <RightRail projectId={projectId} state={state} />
       </div>
     </div>

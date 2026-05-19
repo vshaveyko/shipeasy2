@@ -215,7 +215,7 @@ export function LandingCtaFooter() {
           <p>Install in 12 seconds. Your first experiment before your coffee is cold.</p>
           <div className="lp-hero-cta">
             <Link className="lp-btn lp-btn-primary" href="/auth/signin">
-              Install with Claude <ArrowRight className="size-3.5" />
+              Get started <ArrowRight className="size-3.5" />
             </Link>
             <a
               className="lp-btn lp-btn-ghost"

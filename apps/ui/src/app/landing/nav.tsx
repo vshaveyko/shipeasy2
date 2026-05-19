@@ -62,7 +62,7 @@ export function LandingNav({ showBeta = false }: { showBeta?: boolean }) {
 
         <div className="flex items-center gap-2.5">
           <Link className="lp-btn lp-btn-primary" href="/auth/signin">
-            {i18n.t("landing.nav.cta", "Install with Claude")} <ArrowRight className="size-3.5" />
+            {i18n.t("landing.nav.cta", "Sign in")} <ArrowRight className="size-3.5" />
           </Link>
         </div>
       </div>
