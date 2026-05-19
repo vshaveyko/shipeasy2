@@ -55,6 +55,20 @@ const FR_IMP_CLS: Record<FeatureRequestImportance, string> = {
   important: "badge-run",
   nice_to_have: "badge-draft",
 };
+const BUG_PRI_CLS: Record<NonNullable<BugRecord["priority"]>, string> = {
+  critical: "badge-warn",
+  high: "badge-warn",
+  medium: "badge-run",
+  low: "badge-draft",
+};
+
+function fieldBlock(label: string, value: string | null | undefined): string {
+  if (!value || !value.trim()) return "";
+  return `<div class="se-fb-section">
+    <div class="lbl">${escapeHtml(label)}</div>
+    <div class="se-fb-block">${escapeHtml(value)}</div>
+  </div>`;
+}
 
 function badge(label: string, cls: string): string {
   return `<span class="badge ${cls}">${escapeHtml(label.replace(/_/g, " "))}</span>`;
@@ -246,9 +260,13 @@ export async function renderFeedbackPanel(
           <div class="se-feedback-detail${expanded.has(b.id) ? " open" : ""}">
             <div class="inner"><div class="pad">
               <div class="se-fb-meta">
-                <span class="k">page</span><span>${escapeHtml(b.pageUrl ?? "—")}</span>
-                <span class="k">filed</span><span>${escapeHtml(timeAgo(b.createdAt))}${b.reporterEmail ? " · " + escapeHtml(b.reporterEmail) : ""}</span>
+                <span class="k">page</span>${
+                  b.pageUrl
+                    ? `<a class="ibtn" target="_blank" rel="noopener" href="${escapeHtml(b.pageUrl)}">${I.external} Open page</a>`
+                    : `<span>—</span>`
+                }
               </div>
+              <div class="se-text-slot" data-text-slot="${escapeHtml(b.id)}"></div>
               <div class="se-attach-slot" data-attach-slot="${escapeHtml(b.id)}"></div>
               <div class="se-fb-actions">
                 ${
@@ -269,11 +287,14 @@ export async function renderFeedbackPanel(
           paint();
         });
       });
-      // Lazy-load attachments for any rows that are currently expanded.
+      // Lazy-load attachments + text fields for any rows currently expanded.
       for (const id of expanded) {
-        const slot = listEl.querySelector<HTMLElement>(`[data-attach-slot="${id}"]`);
-        if (!slot) continue;
-        hydrateAttachmentSlot(slot, ensureBugDetail(id));
+        const bug = items.find((x) => x.id === id);
+        const detail = ensureBugDetail(id);
+        const tSlot = listEl.querySelector<HTMLElement>(`[data-text-slot="${id}"]`);
+        if (tSlot) hydrateBugTextSlot(tSlot, detail, bug);
+        const aSlot = listEl.querySelector<HTMLElement>(`[data-attach-slot="${id}"]`);
+        if (aSlot) hydrateAttachmentSlot(aSlot, detail);
       }
     };
     paint();
@@ -324,9 +345,13 @@ export async function renderFeedbackPanel(
           <div class="se-feedback-detail${expanded.has(f.id) ? " open" : ""}">
             <div class="inner"><div class="pad">
               <div class="se-fb-meta">
-                <span class="k">importance</span><span>${escapeHtml(f.importance.replace(/_/g, " "))}</span>
-                <span class="k">filed</span><span>${escapeHtml(timeAgo(f.createdAt))}${f.reporterEmail ? " · " + escapeHtml(f.reporterEmail) : ""}</span>
+                <span class="k">page</span>${
+                  f.pageUrl
+                    ? `<a class="ibtn" target="_blank" rel="noopener" href="${escapeHtml(f.pageUrl)}">${I.external} Open page</a>`
+                    : `<span>—</span>`
+                }
               </div>
+              <div class="se-text-slot" data-text-slot="${escapeHtml(f.id)}"></div>
               <div class="se-attach-slot" data-attach-slot="${escapeHtml(f.id)}"></div>
               <div class="se-fb-actions">
                 ${
@@ -348,12 +373,70 @@ export async function renderFeedbackPanel(
         });
       });
       for (const id of expanded) {
-        const slot = listEl.querySelector<HTMLElement>(`[data-attach-slot="${id}"]`);
-        if (!slot) continue;
-        hydrateAttachmentSlot(slot, ensureFeatureDetail(id));
+        const detail = ensureFeatureDetail(id);
+        const tSlot = listEl.querySelector<HTMLElement>(`[data-text-slot="${id}"]`);
+        if (tSlot) hydrateFeatureTextSlot(tSlot, detail);
+        const aSlot = listEl.querySelector<HTMLElement>(`[data-attach-slot="${id}"]`);
+        if (aSlot) hydrateAttachmentSlot(aSlot, detail);
       }
     };
     paint();
+  }
+
+  function hydrateBugTextSlot(
+    slot: HTMLElement,
+    detailPromise: Promise<BugDetail>,
+    summary: BugRecord | undefined,
+  ): void {
+    if (slot.dataset.hydrated === "1") return;
+    slot.dataset.hydrated = "1";
+    slot.innerHTML = `<div class="se-attach-slot-loading">Loading details…</div>`;
+    detailPromise
+      .then((d) => {
+        if (!slot.isConnected) return;
+        const priority = (d.priority ?? summary?.priority) || null;
+        const parts: string[] = [];
+        if (priority) {
+          parts.push(`<div class="se-fb-section">
+            <div class="lbl">Priority</div>
+            <div>${badge(priority, BUG_PRI_CLS[priority])}</div>
+          </div>`);
+        }
+        parts.push(fieldBlock("Steps to reproduce", d.stepsToReproduce));
+        parts.push(fieldBlock("Actual result", d.actualResult));
+        parts.push(fieldBlock("Expected result", d.expectedResult));
+        const html = parts.filter(Boolean).join("");
+        slot.innerHTML = html;
+      })
+      .catch((err) => {
+        if (!slot.isConnected) return;
+        slot.innerHTML = `<div class="se-attach-slot-loading err">Failed: ${escapeHtml(String(err))}</div>`;
+      });
+  }
+
+  function hydrateFeatureTextSlot(
+    slot: HTMLElement,
+    detailPromise: Promise<FeatureRequestDetail>,
+  ): void {
+    if (slot.dataset.hydrated === "1") return;
+    slot.dataset.hydrated = "1";
+    slot.innerHTML = `<div class="se-attach-slot-loading">Loading details…</div>`;
+    detailPromise
+      .then((d) => {
+        if (!slot.isConnected) return;
+        const parts: string[] = [];
+        parts.push(`<div class="se-fb-section">
+          <div class="lbl">Importance</div>
+          <div>${badge(d.importance, FR_IMP_CLS[d.importance])}</div>
+        </div>`);
+        parts.push(fieldBlock("What would it do?", d.description));
+        parts.push(fieldBlock("Use case", d.useCase));
+        slot.innerHTML = parts.filter(Boolean).join("");
+      })
+      .catch((err) => {
+        if (!slot.isConnected) return;
+        slot.innerHTML = `<div class="se-attach-slot-loading err">Failed: ${escapeHtml(String(err))}</div>`;
+      });
   }
 
   // Renders the attachments grid into a row's expanded detail. The detail

@@ -39,20 +39,31 @@ export async function captureScreenshot(host?: HTMLElement | null): Promise<Blob
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error("Screen capture is not supported in this browser.");
   }
-  // preferCurrentTab collapses the picker to a one-click confirm for the
-  // current tab — by far the right UX for "screenshot this page". Chromium
-  // ignores the rest of the surface options when this is set; we keep them
-  // for browsers that ignore preferCurrentTab but honor the others.
-  const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: { frameRate: 30, displaySurface: "browser" },
-    audio: false,
-    preferCurrentTab: true,
-    selfBrowserSurface: "include",
-    surfaceSwitching: "exclude",
-    systemAudio: "exclude",
-    monitorTypeSurfaces: "exclude",
-  });
+  // Hide the devtools host BEFORE requesting the stream — otherwise the first
+  // few frames the stream emits can still contain the panel (the visibility
+  // change wouldn't have repainted into the capture surface yet by the time
+  // we grab the frame). The picker dialog overlays the page so the user
+  // never sees the page flicker.
   const restore = hideHost(host);
+  let stream: MediaStream;
+  try {
+    // preferCurrentTab collapses the picker to a one-click confirm for the
+    // current tab — by far the right UX for "screenshot this page". Chromium
+    // ignores the rest of the surface options when this is set; we keep them
+    // for browsers that ignore preferCurrentTab but honor the others.
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: 30, displaySurface: "browser" },
+      audio: false,
+      preferCurrentTab: true,
+      selfBrowserSurface: "include",
+      surfaceSwitching: "exclude",
+      systemAudio: "exclude",
+      monitorTypeSurfaces: "exclude",
+    });
+  } catch (err) {
+    restore();
+    throw err;
+  }
   try {
     const video = document.createElement("video");
     video.srcObject = stream;
@@ -107,19 +118,28 @@ export async function startRecording(
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error("Screen capture is not supported in this browser.");
   }
-  // Same one-click confirm UX as the screenshot path — preferCurrentTab
-  // collapses the picker to a single "Share this tab?" prompt for the
-  // current tab. With audio:true Chromium offers the share-tab-audio toggle
-  // inline in that prompt.
-  const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: { frameRate: 30, displaySurface: "browser" },
-    audio: true,
-    preferCurrentTab: true,
-    selfBrowserSurface: "include",
-    surfaceSwitching: "exclude",
-    monitorTypeSurfaces: "exclude",
-  });
+  // Hide BEFORE getDisplayMedia so the first frames the stream emits don't
+  // capture the panel. The picker dialog blocks input while it's open, so
+  // the user doesn't see the hidden state.
   const restore = hideHost(host);
+  let stream: MediaStream;
+  try {
+    // Same one-click confirm UX as the screenshot path — preferCurrentTab
+    // collapses the picker to a single "Share this tab?" prompt for the
+    // current tab. With audio:true Chromium offers the share-tab-audio toggle
+    // inline in that prompt.
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: 30, displaySurface: "browser" },
+      audio: true,
+      preferCurrentTab: true,
+      selfBrowserSurface: "include",
+      surfaceSwitching: "exclude",
+      monitorTypeSurfaces: "exclude",
+    });
+  } catch (err) {
+    restore();
+    throw err;
+  }
   // Let the visibility:hidden repaint reach the capture stream before we
   // start collecting chunks, so the opening frames don't show the panel.
   await new Promise((r) => requestAnimationFrame(() => r(null)));

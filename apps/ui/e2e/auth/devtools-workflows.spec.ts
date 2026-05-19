@@ -491,6 +491,51 @@ test.describe("DevTools — Feedback panel", () => {
     // The panel renders the host's overlay surface — assert it stays mounted.
     await expect(page.locator("#shipeasy-devtools")).toBeAttached();
   });
+
+  test("expanded bug row shows all text fields + page link, no Filed row", async ({ page }) => {
+    await setup(page);
+    const BUG = {
+      id: "bug_1",
+      title: "Header flicker",
+      status: "open",
+      priority: "high",
+      reporterEmail: "user@example.com",
+      pageUrl: "https://shouks.com/home",
+      createdAt: new Date().toISOString(),
+    };
+    const DETAIL = {
+      ...BUG,
+      stepsToReproduce: "1. Load /home\n2. Wait for first paint",
+      actualResult: "Logo jumps left 4px after fonts load",
+      expectedResult: "Logo stays in place",
+      attachments: [],
+    };
+    await page.route("**/api/admin/bugs", (r) => r.fulfill({ json: [BUG] }));
+    await page.route(/\/api\/admin\/bugs\/[^/?]+$/, (r) => r.fulfill({ json: DETAIL }));
+
+    await page.goto("/dashboard?se-devtools");
+    await waitForOverlay(page);
+    await openPanel(page, "Feedback");
+
+    const root = page.locator("#shipeasy-devtools");
+    await root.getByText("Header flicker").click();
+
+    // Text fields hydrate from the detail endpoint.
+    await expect(root.getByText("Steps to reproduce")).toBeVisible();
+    await expect(root.getByText("1. Load /home")).toBeVisible();
+    await expect(root.getByText("Actual result")).toBeVisible();
+    await expect(root.getByText("Logo jumps left 4px after fonts load")).toBeVisible();
+    await expect(root.getByText("Expected result")).toBeVisible();
+    await expect(root.getByText("Logo stays in place")).toBeVisible();
+
+    // Page link — href present, raw URL not rendered as text.
+    const pageLink = root.getByRole("link", { name: /Open page/ });
+    await expect(pageLink).toHaveAttribute("href", "https://shouks.com/home");
+    await expect(root.getByText("https://shouks.com/home", { exact: true })).toHaveCount(0);
+
+    // "Filed" row is gone — duplicates the row's subtitle.
+    await expect(root.getByText("filed", { exact: true })).toHaveCount(0);
+  });
 });
 
 // ── Translations panel (renamed from i18n) ────────────────────────────────────
