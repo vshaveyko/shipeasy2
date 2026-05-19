@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Polylang — Localize, as easy as asking Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<link rel="stylesheet" href="polylang-landing.css" />
+
+<style>
+  /* Polylang-specific additions / overrides */
+  :root{
+    --accent: oklch(0.74 0.17 245); /* default to blue for localize */
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --accent-dim: color-mix(in oklch, var(--accent) 50%, #0a0a0b);
+  }
+
+  /* Inline-edit devtools demo */
+  .ie-stage{
+    position:relative;background:#fafaf9;color:#0a0a0b;
+    border-radius:8px;padding:32px 28px;border:1px solid var(--line);
+    overflow:hidden;
+  }
+  html.light .ie-stage{ background:#ffffff }
+  .ie-mock{display:flex;flex-direction:column;gap:10px}
+  .ie-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:rgba(10,10,11,0.5)}
+  .ie-h{font-size:24px;font-weight:600;letter-spacing:-0.02em;line-height:1.1;
+    color:#0a0a0b}
+  .ie-p{font-size:13px;line-height:1.5;color:rgba(10,10,11,0.7);max-width:36ch}
+  .ie-btn{margin-top:8px;align-self:flex-start;padding:8px 14px;
+    background:#0a0a0b;color:#fff;border-radius:6px;font-size:13px;font-weight:500}
+
+  .ie-string{position:relative;display:inline-block;cursor:default;
+    transition:background .2s}
+  .ie-string.hovered{background:color-mix(in oklab, var(--accent) 15%, transparent);
+    box-shadow:0 0 0 1px color-mix(in oklab, var(--accent) 60%, transparent);
+    border-radius:3px}
+  .ie-string.editing{background:color-mix(in oklab, var(--accent) 22%, transparent);
+    box-shadow:0 0 0 2px var(--accent);border-radius:3px}
+
+  .ie-popover{position:absolute;background:#0a0a0b;color:#f5f5f4;
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:10px;padding:10px 12px;min-width:280px;
+    font-family:var(--sans);font-size:12.5px;
+    box-shadow:0 18px 50px -10px rgba(0,0,0,.45);z-index:5;
+    animation:popIn .25s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes popIn{
+    from{opacity:0;transform:translateY(4px) scale(.97)}
+    to{opacity:1;transform:none}
+  }
+  .ie-popover::before{content:"";position:absolute;top:-6px;left:24px;
+    width:10px;height:10px;background:#0a0a0b;
+    border-left:1px solid rgba(255,255,255,0.14);
+    border-top:1px solid rgba(255,255,255,0.14);
+    transform:rotate(45deg)}
+  .ie-pop-meta{font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    text-transform:uppercase;color:rgba(245,245,244,0.4);margin-bottom:8px;
+    display:flex;align-items:center;gap:8px}
+  .ie-pop-meta .key{padding:2px 6px;background:rgba(255,255,255,0.08);
+    border-radius:4px;color:rgba(245,245,244,0.7)}
+  .ie-pop-input{background:transparent;border:1px solid rgba(255,255,255,0.18);
+    border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:12.5px;
+    color:#f5f5f4;width:100%;font-feature-settings:inherit}
+  .ie-pop-langs{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+  .ie-pop-lang{font-family:var(--mono);font-size:10px;padding:3px 7px;
+    border-radius:4px;background:rgba(255,255,255,0.06);color:rgba(245,245,244,0.6);
+    border:1px solid rgba(255,255,255,0.1);display:inline-flex;align-items:center;gap:4px}
+  .ie-pop-lang .cnt{color:var(--accent)}
+  .ie-pop-actions{display:flex;gap:6px;margin-top:10px;
+    border-top:1px solid rgba(255,255,255,0.08);padding-top:10px}
+  .ie-pop-actions .btn-mini{padding:5px 10px;font-family:var(--mono);
+    font-size:10.5px;border-radius:5px;background:var(--accent);
+    color:#0a0a0b;font-weight:600}
+  .ie-pop-actions .btn-mini.ghost{background:rgba(255,255,255,0.06);
+    color:rgba(245,245,244,0.7);border:1px solid rgba(255,255,255,0.1)}
+
+  /* Auto-translate matrix */
+  .at-matrix{display:flex;flex-direction:column;gap:6px;width:100%;
+    font-family:var(--mono);font-size:11.5px}
+  .at-row{display:grid;grid-template-columns:80px 1fr 60px;gap:10px;
+    align-items:center;padding:7px 12px;background:var(--bg-1);
+    border:1px solid var(--line);border-radius:7px;transition:all .3s}
+  .at-row.translating{background:color-mix(in oklab, var(--accent) 8%, var(--bg-1));
+    border-color:color-mix(in oklab, var(--accent) 35%, transparent)}
+  .at-row.done{border-color:color-mix(in oklab, var(--accent) 25%, transparent)}
+  .at-flag{display:flex;gap:6px;align-items:center;color:var(--fg-2)}
+  .at-text{color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .at-text.pending{color:var(--fg-4)}
+  .at-status{font-size:10px;text-align:right;color:var(--fg-3)}
+  .at-status.ok{color:var(--accent)}
+  .at-progress{height:2px;background:var(--bg-3);border-radius:2px;overflow:hidden;
+    margin-top:10px;position:relative}
+  .at-progress > span{position:absolute;inset:0;background:var(--accent);
+    transition:width .4s ease-out;border-radius:2px}
+  .at-summary{display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:11px;color:var(--fg-3);margin-top:8px}
+  .at-summary b{color:var(--accent)}
+
+  /* Served vs BYOK toggle */
+  .served-toggle{display:flex;gap:0;background:var(--bg-3);border-radius:7px;
+    padding:3px;border:1px solid var(--line);margin-bottom:14px;width:fit-content}
+  .served-toggle button{padding:6px 12px;font-family:var(--mono);font-size:10.5px;
+    border-radius:5px;border:0;background:transparent;color:var(--fg-3);
+    cursor:default;transition:all .2s}
+  .served-toggle button.active{background:var(--bg);color:var(--fg);
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 1px 6px rgba(0,0,0,.2)}
+
+  .served-card{padding:14px;border:1px solid var(--line);border-radius:8px;
+    background:var(--bg-1);display:flex;align-items:center;gap:14px}
+  .served-card .sc-i{width:36px;height:36px;border-radius:8px;
+    background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;flex-shrink:0;
+    border:1px solid color-mix(in oklab, var(--accent) 25%, transparent)}
+  .served-card .sc-h{font-size:14px;font-weight:500;letter-spacing:-0.01em}
+  .served-card .sc-p{font-size:12px;color:var(--fg-2);line-height:1.45;margin-top:3px}
+  .served-card .sc-b{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+    color:var(--accent);padding:4px 8px;border-radius:5px;
+    background:var(--accent-soft);border:1px solid color-mix(in oklab, var(--accent) 25%, transparent)}
+
+  /* Language stack chip strip */
+  .lang-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .lang-chip{display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--mono);font-size:10.5px;padding:4px 9px;border-radius:999px;
+    border:1px solid var(--line-2);color:var(--fg-2);background:var(--bg-2)}
+  .lang-chip .pct{color:var(--accent)}
+
+  /* Code/JSON before-after */
+  .ba-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    background:var(--bg-1)}
+  .ba-grid > div{padding:16px;display:flex;flex-direction:column;gap:8px}
+  .ba-grid > div + div{border-left:1px solid var(--line)}
+  .ba-h{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--fg-4);display:flex;align-items:center;gap:8px}
+  .ba-h .tag{padding:2px 6px;border-radius:4px;background:var(--bg-3);
+    color:var(--fg-3);border:1px solid var(--line)}
+  .ba-h .tag.ok{background:var(--accent-soft);color:var(--accent);
+    border-color:color-mix(in oklab, var(--accent) 25%, transparent)}
+
+  /* lang-grid for hero centerpiece right */
+  .lg-target{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .lg-cell{padding:10px 12px;border:1px solid var(--line);border-radius:7px;
+    background:var(--bg-1);display:flex;flex-direction:column;gap:5px;
+    transition:all .4s;position:relative;overflow:hidden}
+  .lg-cell.streaming::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;
+    background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation:streamLine 1.4s ease-in-out infinite}
+  @keyframes streamLine{
+    0%{transform:translateX(-100%)}100%{transform:translateX(100%)}
+  }
+  .lg-cell.done{border-color:color-mix(in oklab, var(--accent) 28%, transparent);
+    background:color-mix(in oklab, var(--accent) 4%, var(--bg-1))}
+  .lg-flag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--fg-3);display:flex;align-items:center;gap:6px}
+  .lg-flag .ok{color:var(--accent);margin-left:auto;font-size:9px}
+  .lg-text{font-size:13px;line-height:1.4;color:var(--fg);min-height:1em}
+  .lg-text.pending{color:var(--fg-4);font-style:italic}
+  .lg-text.streaming{color:var(--fg)}
+  .lg-text .cur{display:inline-block;width:6px;height:11px;background:var(--accent);
+    vertical-align:-1px;margin-left:2px;animation:blink 1s steps(2) infinite}
+
+  /* Live diff badge */
+  .live-diff{display:inline-flex;align-items:center;gap:5px;
+    padding:2px 7px;border-radius:999px;font-family:var(--mono);
+    font-size:10px;background:var(--accent-soft);color:var(--accent);
+    border:1px solid color-mix(in oklab, var(--accent) 25%, transparent)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div id="app"></div>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="polylang-icons.jsx"></script>
+<script type="text/babel" src="polylang-hero.jsx"></script>
+<script type="text/babel" src="polylang-sections.jsx"></script>
+<script type="text/babel" src="polylang-app.jsx"></script>
+</body>
+</html>

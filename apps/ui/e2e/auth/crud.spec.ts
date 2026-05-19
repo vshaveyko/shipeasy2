@@ -311,11 +311,11 @@ test.describe("Configs CRUD", () => {
     await expect(dialog).toBeVisible();
 
     await dialog.locator("#config-key").fill(cKey);
-    // Walk through the 4-step wizard: Details → Schema → Defaults → Review.
+    // Walk through the 4-step wizard: Details → Schema → Defaults → Integrate.
     await dialog.getByRole("button", { name: /next/i }).click();
     await dialog.getByRole("button", { name: /next/i }).click();
     await dialog.getByRole("button", { name: /next/i }).click();
-    await dialog.getByRole("button", { name: /create config/i }).click();
+    await dialog.getByRole("button", { name: /create & publish v1/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/?]+$/);
     await expect(page.getByText(cKey, { exact: true }).first()).toBeVisible();

@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Team · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=2">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-width:1280px}
+  .mem-row{display:grid;grid-template-columns:36px minmax(0,1fr) 140px 110px 130px 32px;
+    gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+  .mem-row:hover{background:var(--bg-2)}
+  .mem-row:last-child{border-bottom:none}
+  .mem-row .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+    color:#fff;font-family:var(--mono);font-size:13px;font-weight:600}
+  .mem-row .role-pick{height:30px}
+  .mem-row .role-pick select{height:30px;font-size:12px;padding:0 24px 0 10px}
+  .invite-row{display:grid;grid-template-columns:1fr 160px auto;gap:10px;align-items:center;
+    padding:14px 18px;background:var(--bg-2);border-bottom:1px solid var(--line)}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);
+    z-index:50;display:grid;place-items:center}
+  .modal{width:560px;background:var(--bg-1);border:1px solid var(--line-2);
+    border-radius:var(--r-lg);box-shadow:var(--shadow-3);overflow:hidden}
+  .modal .head{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .modal .body{padding:24px;display:flex;flex-direction:column;gap:14px}
+  .modal .foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--bg-2)}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;
+    background:var(--bg-2);border:1px solid var(--line-2);border-radius:999px;
+    font-size:12px;color:var(--fg-2)}
+  .chip button{background:none;border:none;color:var(--fg-3);cursor:pointer;padding:0;display:flex}
+
+  .pending-row{display:grid;grid-template-columns:36px minmax(0,1fr) 110px 130px 90px 32px;
+    gap:14px;align-items:center;padding:12px 18px;border-bottom:1px dashed var(--line);
+    background:color-mix(in oklab, var(--warn) 5%, transparent)}
+  .pending-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+const initialMembers = [
+  { name:'Maya Chen', email:'maya@acme.co', role:'admin', status:'active', last:'Just now',
+    av:'M', color:'#7c5cff', you:true },
+  { name:'Jordan Park', email:'jordan@acme.co', role:'admin', status:'active', last:'12m ago',
+    av:'J', color:'#22a06b' },
+  { name:'Priya Iyer', email:'priya@acme.co', role:'editor', status:'active', last:'1h ago',
+    av:'P', color:'#f5a623' },
+  { name:'Devon Liu', email:'devon@acme.co', role:'editor', status:'active', last:'4h ago',
+    av:'D', color:'#3b82f6' },
+  { name:'Sam Klein', email:'sam@acme.co', role:'viewer', status:'active', last:'2d ago',
+    av:'S', color:'#ec4899' },
+  { name:'Riley Wu', email:'riley@acme.co', role:'viewer', status:'active', last:'8d ago',
+    av:'R', color:'#06b6d4' },
+];
+
+const pending = [
+  { email:'noah@acme.co', role:'editor', invited:'2d ago by Maya' },
+  { email:'tara@acme.co', role:'viewer', invited:'5d ago by Jordan' },
+];
+
+function InviteModal({ open, onClose, onInvite }) {
+  const [emails, setEmails] = useState(['ben@acme.co','elena@acme.co']);
+  const [draft, setDraft] = useState('');
+  function add() {
+    if (!draft) return;
+    setEmails([...emails, draft]);
+    setDraft('');
+  }
+  if (!open) return null;
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="head">
+          <IconUsers size={16}/>
+          <h3 style={{margin:0,fontSize:17,fontWeight:500}}>Invite people</h3>
+          <button className="btn btn-ghost btn-icon btn-sm" style={{marginLeft:'auto'}} onClick={onClose}><IconX size={12}/></button>
+        </div>
+        <div className="body">
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Emails</div>
+            <div className="input" style={{minHeight:48,alignItems:'flex-start',padding:8,
+              flexWrap:'wrap',gap:6}}>
+              {emails.map((e,i)=>(
+                <span key={i} className="chip">
+                  {e}
+                  <button onClick={()=>setEmails(emails.filter((_,j)=>j!==i))}>
+                    <IconX size={10}/>
+                  </button>
+                </span>
+              ))}
+              <input style={{flex:1,minWidth:140,border:'none',background:'none',outline:'none'}}
+                placeholder="email@company.com"
+                value={draft}
+                onChange={e=>setDraft(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();add()}}}/>
+            </div>
+            <div className="t-mono-xs dim-2" style={{marginTop:6}}>
+              Press Enter or comma to add · paste a list to bulk-invite
+            </div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Default role</div>
+            <div className="select"><select defaultValue="editor">
+              <option value="admin">Admin · full access</option>
+              <option value="editor">Editor · create & edit experiments</option>
+              <option value="viewer">Viewer · read-only</option>
+            </select></div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Personal note (optional)</div>
+            <div className="input" style={{height:'auto',padding:'10px 12px'}}>
+              <textarea rows={3} placeholder="Hey — joining the experimentation push…"
+                style={{flex:1,border:'none',background:'none',outline:'none',resize:'vertical',
+                  fontFamily:'inherit',fontSize:13,color:'var(--fg)'}}/>
+            </div>
+          </div>
+          <div style={{padding:'12px 14px',background:'var(--bg-2)',border:'1px solid var(--line)',
+            borderRadius:'var(--r-md)',display:'flex',gap:10,alignItems:'center'}}>
+            <IconKey size={13} style={{color:'var(--fg-3)'}}/>
+            <span className="t-sm dim">Invitees sign in via the same providers as your workspace — GitHub, Google, or magic link.</span>
+          </div>
+        </div>
+        <div className="foot">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={onInvite}>
+            <IconArrowRight size={12}/> Send {emails.length} invite{emails.length===1?'':'s'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamPage() {
+  const [inviting, setInviting] = useState(false);
+  const [members, setMembers] = useState(initialMembers);
+  function remove(email) { setMembers(members.filter(m=>m.email!==email)) }
+  return (
+    <div className="app">
+      <Sidebar active="team"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','Team']}
+          actions={<>
+            <button className="btn btn-secondary"><IconBook size={12}/> Roles</button>
+            <button className="btn btn-primary" onClick={()=>setInviting(true)}>
+              <IconPlus size={12}/> Invite people
+            </button>
+          </>}
+        />
+        <div className="page">
+          <div className="page-head">
+            <div>
+              <div className="t-caps dim-2" style={{marginBottom:8}}>{members.length} members · 2 pending invites · 3 seats remaining</div>
+              <h1>Team</h1>
+              <p>Workspace members can access every project. Use roles to control who can publish to production. Need finer-grained access? Per-project roles roll out next month.</p>
+            </div>
+            <div className="flex gap-3 items-center">
+              <div className="stat-block"><div className="stat-k">Admin</div><div className="stat-v num">2</div></div>
+              <div style={{width:1,background:'var(--line)'}}/>
+              <div className="stat-block"><div className="stat-k">Editor</div><div className="stat-v num">2</div></div>
+              <div style={{width:1,background:'var(--line)'}}/>
+              <div className="stat-block"><div className="stat-k">Viewer</div><div className="stat-v num">2</div></div>
+            </div>
+          </div>
+
+          {pending.length > 0 && <div className="card">
+            <div className="card-head">
+              <div className="card-head-title">Pending invites</div>
+              <span className="ml-auto t-mono-xs dim-2">{pending.length} awaiting acceptance</span>
+            </div>
+            {pending.map((p,i)=>(
+              <div key={i} className="pending-row">
+                <div className="av" style={{width:32,height:32,borderRadius:'50%',background:'var(--bg-3)',
+                  border:'1px dashed var(--line-2)',display:'grid',placeItems:'center'}}>
+                  <IconClock size={12} style={{color:'var(--warn)'}}/>
+                </div>
+                <div>
+                  <b>{p.email}</b>
+                  <div className="t-mono-xs dim-2" style={{marginTop:2}}>invited {p.invited}</div>
+                </div>
+                <span className="tag">{p.role}</span>
+                <span className="badge badge-warn"><span className="dot"/>PENDING</span>
+                <button className="btn btn-ghost btn-sm">Resend</button>
+                <button className="btn btn-ghost btn-icon btn-sm"><IconX size={12}/></button>
+              </div>
+            ))}
+          </div>}
+
+          <div className="card">
+            <div className="card-head">
+              <div className="card-head-title">Members</div>
+              <div className="ml-auto flex gap-2 items-center">
+                <div className="input" style={{width:240}}>
+                  <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+                  <input placeholder="Find by name or email"/>
+                </div>
+                <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Role</button>
+              </div>
+            </div>
+
+            {members.map((m,i)=>(
+              <div key={m.email} className="mem-row">
+                <div className="av" style={{background:m.color}}>{m.av}</div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <b>{m.name}</b>
+                    {m.you && <span className="tag" style={{padding:'1px 6px',fontSize:10.5,
+                      background:'var(--accent-soft)',color:'var(--accent)',
+                      borderColor:'color-mix(in oklab, var(--accent) 30%, transparent)'}}>you</span>}
+                  </div>
+                  <div className="t-mono-xs dim-2" style={{marginTop:2}}>{m.email}</div>
+                </div>
+                <div className="select role-pick">
+                  <select defaultValue={m.role}>
+                    <option value="admin">Admin</option>
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                </div>
+                <div className="t-sm dim">{m.last}</div>
+                <span className="badge badge-live"><span className="dot"/>ACTIVE</span>
+                <button className="btn btn-ghost btn-icon btn-sm" disabled={m.you}
+                  onClick={()=>!m.you && remove(m.email)}
+                  style={{opacity:m.you?.3:1,color:m.you?undefined:'var(--danger)'}}>
+                  <IconX size={12}/>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="card" style={{padding:18}}>
+            <div className="flex items-center gap-3" style={{marginBottom:14}}>
+              <IconShield size={14} style={{color:'var(--accent)'}}/>
+              <b style={{fontSize:14,fontWeight:500}}>What each role can do</b>
+            </div>
+            <div className="grid" style={{gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+              <div>
+                <div className="t-caps" style={{color:'var(--accent)',marginBottom:6}}>Admin</div>
+                <div className="t-sm dim" style={{lineHeight:1.6}}>
+                  Full control. Manage members, billing, API keys. Publish to production.
+                </div>
+              </div>
+              <div>
+                <div className="t-caps dim-2" style={{marginBottom:6}}>Editor</div>
+                <div className="t-sm dim" style={{lineHeight:1.6}}>
+                  Create and edit experiments, gates, and configs. Promote to staging.
+                  Cannot publish to prod or invite members.
+                </div>
+              </div>
+              <div>
+                <div className="t-caps dim-2" style={{marginBottom:6}}>Viewer</div>
+                <div className="t-sm dim" style={{lineHeight:1.6}}>
+                  Read-only. See dashboards, metrics, and experiment results. Useful for stakeholders.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <InviteModal open={inviting} onClose={()=>setInviting(false)}
+        onInvite={()=>setInviting(false)}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<TeamPage/>);
+</script>
+</body>
+</html>

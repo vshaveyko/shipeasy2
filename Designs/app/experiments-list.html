@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Experiments · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<link rel="stylesheet" href="unified-list.css"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-height:100vh}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-top:-4px}
+  .tab{padding:10px 14px;font-size:13px;color:var(--fg-3);cursor:default;
+    border-bottom:1.5px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--fg);border-bottom-color:var(--accent)}
+  .tab .count{margin-left:6px;font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+  .filter-row{display:flex;align-items:center;gap:10px;padding:12px 0}
+  .spark{display:inline-block;width:92px;height:22px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="onboarding.jsx"></script>
+<script type="text/babel" src="empty-states.jsx"></script>
+<script type="text/babel" src="unified-list.jsx"></script>
+<script type="text/babel">
+const { useState: useStateEx } = React;
+
+// ── Data ──────────────────────────────────────────────────────────
+const rows = [
+  { id:'checkout_v3', key:'exp_8f2a21', status:'live',
+    desc:'Test 3-step vs. single-page checkout',
+    tag:'revenue', owner:['M','#7c5cff','Maya Patel'],
+    traffic:50, lift:+8.4, sig:99.2, sample:'14.2k',
+    spark:[30,33,31,37,41,44,49,52,58,62,69,72], days:6 },
+  { id:'welcome_email_5min', key:'exp_9c11a0', status:'live',
+    desc:'5-min vs. 24-hour welcome email delay',
+    tag:'activation', owner:['J','#00d08a','Jiwoo Han'],
+    traffic:20, lift:+6.8, sig:86.0, sample:'4.8k',
+    spark:[20,22,21,25,28,30,34,36,40,42,46,49], days:3 },
+  { id:'pricing_page_headline', key:'exp_a03f2b', status:'live',
+    desc:'Benefit-led vs. feature-led headline',
+    tag:'marketing', owner:['K','#ff8445','Kai Stewart'],
+    traffic:100, lift:+2.1, sig:72.4, sample:'38.1k',
+    spark:[50,51,52,51,52,53,52,54,53,55,54,56], days:11 },
+  { id:'onboarding_wizard_v2', key:'exp_b1cc08', status:'paused',
+    desc:'Personalized vs. generic onboarding',
+    tag:'activation', owner:['R','#3b82f6','Ravi Joshi'],
+    traffic:10, lift:-1.2, sig:40.1, sample:'1.1k',
+    spark:[40,42,39,40,38,38,37,36,35,34,33,32], days:4, neg:true },
+  { id:'dashboard_v2', key:'exp_a70221', status:'draft',
+    desc:'Redesigned metrics dashboard',
+    tag:'engagement', owner:['M','#7c5cff','Maya Patel'],
+    traffic:null, lift:null, sig:null, sample:'—', spark:null },
+  { id:'recommendations_ranker', key:'exp_c4dd91', status:'live',
+    desc:'ML ranker v4 vs. v3',
+    tag:'engagement', owner:['J','#00d08a','Jiwoo Han'],
+    traffic:30, lift:+11.2, sig:99.8, sample:'22.7k',
+    spark:[18,22,28,34,40,48,56,62,70,78,85,94], days:8 },
+  { id:'legacy_uploader', key:'exp_3b2041', status:'killed',
+    desc:'Legacy file uploader (error rate regression)',
+    tag:'stability', owner:['R','#3b82f6','Ravi Joshi'],
+    traffic:0, lift:-3.1, sig:null, sample:'912', killedReason:'p95 +340ms' },
+  { id:'search_typo_tolerance', key:'exp_d87e33', status:'completed',
+    desc:'Fuzzy search with typo tolerance',
+    tag:'search', owner:['K','#ff8445','Kai Stewart'],
+    traffic:100, lift:+4.7, sig:99.9, sample:'201.3k',
+    spark:[40,45,50,57,63,68,72,74,76,77,78,78], days:21, finished:true },
+];
+
+const STATUS = {
+  live:      { cls:'badge-live',      label:'LIVE',      rail:'LIVE',  color:'var(--accent)' },
+  draft:     { cls:'badge-draft',     label:'DRAFT',     rail:'DRAFT', color:'var(--fg-3)' },
+  paused:    { cls:'badge-paused',    label:'PAUSED',    rail:'PAUSE', color:'var(--warn)' },
+  killed:    { cls:'badge-killed',    label:'KILLED',    rail:'KILL',  color:'var(--danger)' },
+  completed: { cls:'badge-completed', label:'COMPLETED', rail:'DONE',  color:'var(--info)' },
+};
+const statusBadge = s => {
+  const m = STATUS[s] || {};
+  return <span className={`badge ${m.cls}`}><span className="dot"/>{m.label}</span>;
+};
+
+// ── Closed-state head cluster ────────────────────────────────────
+function ClosedHead() {
+  return <>
+    <div className="page-head">
+      <div>
+        <div className="t-caps dim-2" style={{marginBottom:8}}>Running · 24 total · 5.2M events / day</div>
+        <h1>Experiments</h1>
+        <p>Feature tests with auto-collected metrics, traffic allocation, and significance calculated continuously.</p>
+      </div>
+      <div className="flex gap-3">
+        <div className="stat-block" style={{textAlign:'right'}}>
+          <div className="stat-k">Running</div>
+          <div className="stat-v num">6</div>
+        </div>
+        <div style={{width:1,background:'var(--line)'}}/>
+        <div className="stat-block" style={{textAlign:'right'}}>
+          <div className="stat-k">Wins (7d)</div>
+          <div className="stat-v num" style={{color:'var(--accent)'}}>4</div>
+        </div>
+        <div style={{width:1,background:'var(--line)'}}/>
+        <div className="stat-block" style={{textAlign:'right'}}>
+          <div className="stat-k">Cum. lift</div>
+          <div className="stat-v num">+18.3%</div>
+        </div>
+      </div>
+    </div>
+    <div className="tabs">
+      <div className="tab active">All <span className="count">24</span></div>
+      <div className="tab">Live <span className="count">6</span></div>
+      <div className="tab">Draft <span className="count">3</span></div>
+      <div className="tab">Paused <span className="count">2</span></div>
+      <div className="tab">Completed <span className="count">12</span></div>
+      <div className="tab">Killed <span className="count">1</span></div>
+    </div>
+    <div className="filter-row" style={{paddingBottom:0}}>
+      <div className="input" style={{width:240}}>
+        <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+        <input placeholder="Filter by name, key, or tag"/>
+      </div>
+      <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Owner</button>
+      <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Tag</button>
+      <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Environment: prod</button>
+      <div className="ml-auto flex gap-2">
+        <button className="btn btn-ghost btn-sm">Sort: Recent</button>
+        <button className="btn btn-secondary btn-sm"><IconCode size={11}/> Export</button>
+      </div>
+    </div>
+  </>;
+}
+
+// ── Full table (closed state) ────────────────────────────────────
+function FullTable({ pressing, onSelect }) {
+  return (
+    <table className="tbl">
+      <thead><tr>
+        <th style={{width:28}}></th>
+        <th>Experiment</th>
+        <th>Status</th>
+        <th style={{textAlign:'right',width:90}}>Traffic</th>
+        <th style={{textAlign:'right',width:110}}>Primary lift</th>
+        <th style={{width:140}}>Trend</th>
+        <th style={{textAlign:'right',width:90}}>Sig.</th>
+        <th style={{textAlign:'right',width:90}}>Sample</th>
+        <th style={{width:80}}>Owner</th>
+        <th style={{width:40}}></th>
+      </tr></thead>
+      <tbody>
+        {rows.map(r => (
+          <tr key={r.id}
+            className={pressing === r.id ? 'row-pressing' : ''}
+            onClick={() => onSelect(r.id)}>
+            <td className="col-icon">
+              <IconFlask size={13} style={{color:STATUS[r.status]?.color}}/>
+            </td>
+            <td>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <b>{r.id}</b>
+                <span className="tag" style={{fontSize:10.5,padding:'1px 6px'}}>{r.tag}</span>
+              </div>
+              <div className="t-mono-xs dim-2" style={{marginTop:2}}>
+                {r.key} · {r.desc}
+              </div>
+            </td>
+            <td>{statusBadge(r.status)}</td>
+            <td className="num">{r.traffic!=null ? r.traffic+'%' : '—'}</td>
+            <td className="num" style={{color:
+              r.lift==null?'var(--fg-4)':r.lift>0?'var(--accent)':'var(--danger)'}}>
+              {r.lift==null ? '—' : (r.lift>0?'+':'')+r.lift.toFixed(1)+'%'}
+            </td>
+            <td>{r.spark && <ULSpark data={r.spark} neg={r.neg}/>}</td>
+            <td className="num">{r.sig==null?'—':r.sig.toFixed(1)+'%'}</td>
+            <td className="num">{r.sample}</td>
+            <td><div className="avatar-sm" style={{background:r.owner[1],
+              color:r.owner[1]==='#00d08a'?'#07120d':'#fff'}}>{r.owner[0]}</div></td>
+            <td><button className="btn btn-ghost btn-icon btn-sm"
+              onClick={e=>e.stopPropagation()}><IconMore size={12}/></button></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+// ── Rail rows (open state) ───────────────────────────────────────
+function RailRows({ openId, onSelect }) {
+  return rows.map(r => (
+    <ULRailRow key={r.id}
+      id={r.id}
+      active={r.id === openId}
+      icon={<IconFlask size={11} style={{color:STATUS[r.status]?.color}}/>}
+      name={r.id}
+      right={<span className="pill" style={{color:STATUS[r.status]?.color}}>
+        {STATUS[r.status]?.rail}
+      </span>}
+      onClick={() => onSelect(r.id)}/>
+  ));
+}
+
+// ── Detail panel — embeds the experiments-results-v2 view ────────
+// The full results readout (verdict + CI bars + time-series + meta
+// rail) is the source of truth for "what does this experiment look
+// like right now". We render it as an iframe inside the unified
+// detail pane so we don't duplicate the layout in two places.
+function ExperimentDetail({ row }) {
+  return (
+    <iframe
+      src={`experiments-results-v2.html?embedded=1&exp=${row.id}`}
+      title={`Results · ${row.id}`}
+      style={{
+        display:'block',
+        width:'100%',
+        height:1620,
+        border:'none',
+        background:'var(--bg)',
+      }}
+    />
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────
+function ExperimentsList() {
+  const [view, setView] = useStateEx(
+    new URLSearchParams(location.search).get('demo') ||
+    new URLSearchParams(location.search).get('open') ? 'list' : 'empty'
+  ); // 'empty' | 'onboarding' | 'list'
+
+  if (view === 'empty') {
+    return (
+      <div className="app">
+        <Sidebar active="experiments"/>
+        <div>
+          <Topbar crumbs={['Acme Co.','Experiments']}
+            actions={<>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setView('list')}>
+                Skip to demo data <IconArrowRight size={11}/>
+              </button>
+              <button className="btn btn-primary" onClick={()=>setView('onboarding')}>
+                <IconZap size={12}/> Start setup
+              </button>
+            </>}
+          />
+          <div style={{padding:28}}>
+            <EmptyState kind="experiments"
+              onStart={()=>setView('onboarding')}
+              onDemo={()=>setView('list')}/>
+          </div>
+        </div>
+        {view === 'onboarding' && (
+          <OnboardingWizard kind="experiments"
+            onClose={()=>setView('empty')}
+            onComplete={()=>setView('list')}/>
+        )}
+      </div>
+    );
+  }
+
+  // ── List branch (unified) ──────────────────────────────────────
+  const u = useUnifiedList({ records: rows });
+
+  return (
+    <UnifiedListShell
+      sidebarActive="experiments"
+      topbarCrumbs={u.crumbs(['Acme Co.','Experiments'])}
+      topbarActions={<>
+        <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+        <button className="btn btn-primary"><IconPlus size={12}/> New experiment</button>
+      </>}
+      isOpen={u.isOpen}
+      close={u.close}
+      railTitle="Experiments"
+      railCount={rows.length}
+      closedHead={<ClosedHead/>}
+      openHead={u.isOpen && (
+        <ULOpenHead
+          name={u.activeRow.id}
+          badges={<>
+            {statusBadge(u.activeRow.status)}
+            <span className="tag" style={{fontSize:10.5,padding:'1px 6px'}}>{u.activeRow.tag}</span>
+          </>}
+          meta={u.activeRow.key}
+          onBack={u.close}
+          backLabel="All experiments"
+          actions={<>
+            <button className="btn btn-ghost btn-sm">
+              <IconPause size={11}/> Pause
+            </button>
+            <button className="btn btn-ghost btn-sm">
+              <IconMore size={11}/>
+            </button>
+            <button className="btn btn-primary btn-sm">
+              <IconRocket size={11}/> Ship winner
+            </button>
+          </>}/>
+      )}
+      fullTable={<FullTable pressing={u.pressing} onSelect={u.selectRow}/>}
+      railRows={<RailRows openId={u.openId} onSelect={u.setOpenId}/>}
+      detail={u.activeRow && <ExperimentDetail row={u.activeRow}/>}
+      paginate={<ULListFootClosed
+        left="8 of 24 shown"
+        right={<>
+          <button className="btn btn-ghost btn-sm">Previous</button>
+          <button className="btn btn-ghost btn-sm">Next</button>
+        </>}/>}/>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<ExperimentsList/>);
+</script>
+</body>
+</html>

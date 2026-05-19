@@ -94,18 +94,13 @@ test.describe("Killswitches — BigModalWizard create flow", () => {
     // killswitch chrome via the eyebrow.
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText(/New Killswitch/)).toBeVisible();
-    // Stepper (role=list) exposes all three step labels — scope to the list to
-    // avoid colliding with the footer's "Step N · <label>" caption.
-    const stepper = dialog.getByRole("list");
-    await expect(stepper.getByText(/^Details$/)).toBeVisible();
-    await expect(stepper.getByText(/Default.*switches/i)).toBeVisible();
-    await expect(stepper.getByText(/^Integrate$/)).toBeVisible();
-    // Eyebrow and footer both expose "Step 1 of 3" — match the first.
-    await expect(dialog.getByText(/Step 1 of 3/i).first()).toBeVisible();
+    await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText(
+      "Identify the killswitch",
+    );
+    await expect(dialog.getByText(/Step 1 of 3 · killswitch/i)).toBeVisible();
   });
 
-  test("wizard happy path: Details → Default & switches → Integrate → create", async ({ page }) => {
+  test("wizard happy path: Details → Scope & fallback → Integrate → create", async ({ page }) => {
     await page.goto(`/dashboard/${PROJECT}/killswitches`);
     // Header CTA on populated list ("New killswitch") or empty-state CTA ("Create killswitch").
     await page
@@ -135,8 +130,8 @@ test.describe("Killswitches — BigModalWizard create flow", () => {
     await expect(dialog.getByRole("tab", { name: /typescript/i })).toBeVisible();
     await expect(dialog.locator('pre[data-slot="code-block"]')).toContainText(fullName);
 
-    // Submit (button accessible name includes the ⏎ kbd hint).
-    await dialog.getByRole("button", { name: /create killswitch/i }).click();
+    // Canonical submit CTA — `Arm killswitch`.
+    await dialog.getByRole("button", { name: /arm killswitch/i }).click();
     await expect(dialog).toHaveCount(0, { timeout: 5000 });
 
     // URL strips ?new=1; killswitch present via admin API.

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Standard · List skeleton · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-height:100vh}
+
+  /* ── Chrome carried from the real list page (kept LIVE)
+     ──────────────────────────────────────────────────────────────
+     Tabs, filter-row, card and table chrome are REAL elements — only
+     their content shimmers. That way the loading state looks like the
+     real page minus values, no layout shift on hydrate. */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-top:-4px}
+  .tab{padding:10px 14px;font-size:13px;color:var(--fg-3);cursor:default;
+    border-bottom:1.5px solid transparent;margin-bottom:-1px;
+    display:flex;align-items:center;gap:8px}
+  .tab.active{color:var(--fg);border-bottom-color:var(--accent)}
+  .filter-row{display:flex;align-items:center;gap:10px;padding:12px 0}
+  .quick-chip{display:inline-flex;align-items:center;gap:6px;
+    height:24px;padding:0 9px;border-radius:999px;
+    border:1px solid var(--line);background:var(--bg-2)}
+
+  /* ── Skeleton primitives ────────────────────────────────────── */
+  @keyframes shimmer{
+    0%   { background-position: -200% 0 }
+    100% { background-position:  200% 0 }
+  }
+  .sk{display:inline-block;background:var(--bg-3);border-radius:4px;
+    background-image:linear-gradient(90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--fg) 5%, transparent) 45%,
+      color-mix(in oklab, var(--fg) 11%, transparent) 50%,
+      color-mix(in oklab, var(--fg) 5%, transparent) 55%,
+      transparent 100%);
+    background-size:200% 100%;
+    background-repeat:no-repeat;
+    animation:shimmer 1.6s linear infinite;
+    background-color:var(--bg-3)}
+  .sk.txt   {height:11px;border-radius:3px}
+  .sk.line  {height:9px; border-radius:3px}
+  .sk.title {height:18px;border-radius:4px}
+  .sk.h1    {height:30px;width:300px;border-radius:6px}
+  .sk.badge {height:18px;width:54px;border-radius:999px}
+  .sk.spark {height:18px;width:90px;border-radius:3px}
+  .sk.avatar{height:22px;width:22px;border-radius:6px}
+  .sk.pill  {height:18px;width:42px;border-radius:4px}
+  .sk.tabpill{height:14px;width:22px;border-radius:3px;
+    background-color:var(--bg-2)}
+  .sk.btn   {height:30px;width:100px;border-radius:6px}
+  .sk.kbd   {height:22px;width:22px;border-radius:5px}
+  .sk.statv {height:26px;width:60px;border-radius:5px}
+
+  .stat-sk{display:flex;flex-direction:column;gap:6px;text-align:right;align-items:flex-end}
+
+  /* Slightly desaturate the whole page during loading */
+  .page-loading{filter:saturate(.85)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+
+// ── Standard skeleton for any list-of-records page ─────────────────
+//
+// What stays REAL (no shimmer):
+//   · sidebar  · topbar  · tabs container
+//   · filter-row container · quick-filter chip outlines
+//   · card outline + table chrome (thead labels are real text)
+//   · pagination footer outline
+//
+// What SHIMMERS:
+//   · all values: title, subtitle, stat values, badges, sparks, avatars
+//   · button labels stay rectangular shimmer rectangles
+//   · row content (icons, names, descriptions, metrics, owners)
+//
+// Why: the chrome being real means there's no layout shift when
+// values arrive, AND the user knows exactly which tab / filter is
+// already applied — that's important context to preserve while
+// content is still in flight.
+
+function SkRow() {
+  return (
+    <tr>
+      <td className="col-icon">
+        <div className="sk" style={{width:13,height:13,borderRadius:3}}/>
+      </td>
+      <td>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <div className="sk title" style={{width:`${130+Math.random()*80}px`}}/>
+          <div className="sk pill"/>
+        </div>
+        <div className="sk line" style={{marginTop:6,width:`${260+Math.random()*120}px`}}/>
+      </td>
+      <td><div className="sk badge"/></td>
+      <td style={{textAlign:'right'}}><div className="sk txt" style={{width:42,marginLeft:'auto'}}/></td>
+      <td style={{textAlign:'right'}}><div className="sk txt" style={{width:54,marginLeft:'auto'}}/></td>
+      <td><div className="sk spark"/></td>
+      <td style={{textAlign:'right'}}><div className="sk txt" style={{width:60,marginLeft:'auto'}}/></td>
+      <td><div className="sk avatar"/></td>
+      <td><div className="sk" style={{width:14,height:14,borderRadius:3}}/></td>
+    </tr>
+  );
+}
+
+function StandardListSkeleton() {
+  // Real labels stay visible so the user can see what they navigated to.
+  // Counts shimmer (they need a fresh fetch).
+  const TABS = ['All','Live','Draft','Paused','Shipped','Archived'];
+
+  return (
+    <div className="app">
+      <Sidebar active=""/>
+      <div>
+        <Topbar crumbs={['Acme Co.','Releases']}
+          actions={<>
+            <div className="sk btn" style={{width:104}}/>
+            <div className="sk btn" style={{width:128}}/>
+          </>}
+        />
+
+        <div className="page page-loading">
+
+          {/* ── page-head ─────────────────────────────────────────
+             eyebrow · h1 · 2-line description · 3 stat blocks */}
+          <div className="page-head">
+            <div>
+              <div className="sk line" style={{width:280,marginBottom:14}}/>
+              <div className="sk h1"/>
+              <div className="sk line" style={{width:460,marginTop:14}}/>
+              <div className="sk line" style={{width:360,marginTop:6}}/>
+            </div>
+            <div className="flex gap-3" style={{alignItems:'flex-end'}}>
+              {[
+                {k:'Live'},{k:'Shipped'},{k:'Avg lift'}
+              ].map((s,i) => (
+                <React.Fragment key={i}>
+                  <div className="stat-sk">
+                    <div className="stat-k" style={{color:'var(--fg-4)'}}>{s.k}</div>
+                    <div className="sk statv" style={{
+                      width: 38 + i*8}}/>
+                  </div>
+                  {i<2 && <div style={{width:1,background:'var(--line)',alignSelf:'stretch'}}/>}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {/* ── tabs ──────────────────────────────────────────────
+             Labels stay real; the count chips shimmer.  Active tab
+             stays underlined so the user keeps their context. */}
+          <div className="tabs">
+            {TABS.map((label,i) => (
+              <div key={label} className={`tab ${i===0?'active':''}`}>
+                <span>{label}</span>
+                <div className="sk tabpill"/>
+              </div>
+            ))}
+          </div>
+
+          {/* ── filter-row ────────────────────────────────────────
+             Search input is real (so keystrokes register before data
+             lands); facet chips and sort/export shimmer. */}
+          <div className="filter-row">
+            <div className="input" style={{width:240}}>
+              <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+              <input placeholder="Filter by name, key, or tag" disabled/>
+            </div>
+
+            <div className="quick-chip">
+              <IconFilter size={11} style={{color:'var(--fg-3)'}}/>
+              <div className="sk line" style={{width:38}}/>
+            </div>
+            <div className="quick-chip">
+              <IconFilter size={11} style={{color:'var(--fg-3)'}}/>
+              <div className="sk line" style={{width:28}}/>
+            </div>
+            <div className="quick-chip">
+              <IconFilter size={11} style={{color:'var(--fg-3)'}}/>
+              <div className="sk line" style={{width:96}}/>
+            </div>
+
+            <div className="ml-auto flex gap-2">
+              <div className="sk btn" style={{width:110,height:26}}/>
+              <div className="sk btn" style={{width:90, height:26}}/>
+            </div>
+          </div>
+
+          {/* ── table ─────────────────────────────────────────────
+             Column headers are real labels — users know the schema
+             of what's loading. Row cells shimmer. */}
+          <div className="card">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th style={{width:28}}></th>
+                  <th>Record</th>
+                  <th>Status</th>
+                  <th style={{textAlign:'right',width:90}}>Primary</th>
+                  <th style={{textAlign:'right',width:110}}>Secondary</th>
+                  <th style={{width:140}}>Trend</th>
+                  <th style={{textAlign:'right',width:110}}>Context</th>
+                  <th style={{width:80}}>Owner</th>
+                  <th style={{width:40}}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({length:6}).map((_,i) => <SkRow key={i}/>)}
+              </tbody>
+            </table>
+            <div className="card-foot">
+              <div className="sk line" style={{width:90}}/>
+              <div className="ml-auto flex gap-2">
+                <div className="sk btn" style={{width:80,height:26}}/>
+                <div className="sk btn" style={{width:60,height:26}}/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<StandardListSkeleton/>);
+</script>
+</body>
+</html>

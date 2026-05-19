@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Standard · Unified list · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-height:100vh}
+
+  /* ── Standard chrome (carried over from v1) ────────────────────── */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-top:-4px}
+  .tab{padding:10px 14px;font-size:13px;color:var(--fg-3);cursor:default;
+    border-bottom:1.5px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--fg);border-bottom-color:var(--accent)}
+  .tab .count{margin-left:6px;font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+  .filter-row{display:flex;align-items:center;gap:10px;padding:12px 0}
+  .spark{display:inline-block;width:92px;height:22px;vertical-align:middle}
+
+  /* ── The unified split: list ⇄ detail ──────────────────────────── */
+  .split{display:flex;gap:0;position:relative;
+    background:var(--bg-1);border:1px solid var(--line);
+    border-radius:var(--r-lg);overflow:hidden;
+    min-height:640px}
+
+  /* List pane — full width when closed, 280px rail when open */
+  .list-pane{flex:1 1 100%;min-width:0;position:relative;
+    transition:flex 360ms cubic-bezier(.32,.72,.35,1.02),
+               max-width 360ms cubic-bezier(.32,.72,.35,1.02),
+               border-right-color 240ms ease}
+  .split.open .list-pane{flex:0 0 280px;max-width:280px;
+    border-right:1px solid var(--line)}
+
+  /* Inside the list pane: two layers swap on open ───────────────── */
+  .pane-layer{position:absolute;inset:0;transition:opacity 200ms ease;
+    overflow:hidden}
+  .pane-layer.full-table{opacity:1;position:relative}
+  .split.open .pane-layer.full-table{opacity:0;pointer-events:none;
+    position:absolute}
+  .pane-layer.rail{opacity:0;pointer-events:none;
+    transition:opacity 200ms 140ms ease}
+  .split.open .pane-layer.rail{opacity:1;pointer-events:auto}
+
+  /* Rail rows — collapsed identity-only display ─────────────────── */
+  .rail-head{padding:11px 14px;border-bottom:1px solid var(--line);
+    background:var(--bg-2);font-family:var(--mono);font-size:10.5px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--fg-4);
+    display:flex;align-items:center;gap:8px}
+  .rail-body{overflow-y:auto;height:calc(100% - 42px)}
+  .rail-row{display:grid;grid-template-columns:14px 1fr auto;gap:8px;
+    align-items:center;padding:10px 14px;cursor:default;
+    border-left:2px solid transparent;
+    transition:background .12s, border-left-color .12s}
+  .rail-row:hover{background:var(--bg-2)}
+  .rail-row.active{background:color-mix(in oklab, var(--accent) 7%, var(--bg-2));
+    border-left-color:var(--accent)}
+  .rail-row .ico{width:14px;height:14px;display:grid;place-items:center}
+  .rail-row .nm{font-family:var(--mono);font-size:12px;color:var(--fg);
+    font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rail-row .pill{font-family:var(--mono);font-size:9.5px;
+    padding:1px 5px;border-radius:3px;background:var(--bg-3);color:var(--fg-3);
+    border:1px solid var(--line-2);letter-spacing:.04em}
+
+  /* Detail pane — slides in from the right on open ──────────────── */
+  .detail-pane{flex:1 1 0;min-width:0;opacity:0;
+    transform:translateX(24px);pointer-events:none;position:relative;
+    transition:opacity 260ms 160ms ease-out,
+               transform 260ms 160ms cubic-bezier(.2,.7,.2,1)}
+  .split.open .detail-pane{opacity:1;transform:none;pointer-events:auto}
+
+  /* ── Close affordances on the slideout ─────────────────────────
+     Persistent X in the top-right of the detail pane + a "Show
+     full table" pill next to the back button. Either click — or
+     Esc — restores the closed (full-table) state. */
+  .pane-close{position:absolute;top:14px;right:14px;z-index:6;
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-1);border:1px solid var(--line-2);
+    color:var(--fg-2);cursor:default;
+    box-shadow:0 1px 2px rgba(0,0,0,.18);
+    opacity:0;transform:scale(.85);
+    transition:opacity 200ms 220ms ease,
+               transform 200ms 220ms cubic-bezier(.2,.7,.2,1),
+               background .12s,color .12s,border-color .12s}
+  .split.open .pane-close{opacity:1;transform:none}
+  .pane-close:hover{background:var(--bg-2);color:var(--fg);
+    border-color:var(--line-3)}
+  .pane-close .kbd-hint{position:absolute;right:calc(100% + 8px);top:50%;
+    transform:translateY(-50%);font-family:var(--mono);font-size:10.5px;
+    color:var(--fg-3);background:var(--bg-1);padding:3px 7px;border-radius:4px;
+    border:1px solid var(--line);white-space:nowrap;opacity:0;
+    pointer-events:none;transition:opacity .15s}
+  .pane-close:hover .kbd-hint{opacity:1}
+
+  .show-full-pill{display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:var(--r-sm);
+    border:1px solid var(--line);background:var(--bg-1);
+    color:var(--fg-2);font-size:12.5px;cursor:default;
+    transition:background .12s,color .12s,border-color .12s}
+  .show-full-pill:hover{background:var(--bg-2);color:var(--fg);
+    border-color:var(--line-2)}
+  .show-full-pill kbd{font-family:var(--mono);font-size:9.5px;
+    padding:1px 5px;background:var(--bg-2);border-radius:3px;
+    border:1px solid var(--line);color:var(--fg-4);margin-left:4px}
+
+  /* ── Page-head cluster collapse animation ──────────────────────
+     The page title / tabs / filter row collapse when a record opens
+     (the topbar carries the active record's name in the crumbs and
+     the open-record card supplies the local context). */
+  .head-cluster{display:grid;grid-template-rows:1fr;
+    transition:grid-template-rows 320ms cubic-bezier(.32,.72,.35,1.02),
+               opacity 200ms ease}
+  .head-cluster > .inner{min-height:0;overflow:hidden;
+    display:flex;flex-direction:column;gap:24px}
+  .head-cluster.collapsed{grid-template-rows:0fr;opacity:0;
+    transition:grid-template-rows 280ms cubic-bezier(.4,0,.2,1),
+               opacity 140ms ease}
+
+  /* ── Open-record local header ──────────────────────────────────
+     Sits above the split when a record is open. Replaces the page
+     title; carries the back action + record key facts + actions. */
+  .open-head{display:flex;align-items:center;gap:14px;
+    opacity:0;transform:translateY(-6px);
+    transition:opacity 220ms 140ms ease, transform 220ms 140ms ease}
+  .split-active + .open-head, /* no-op selector */
+  body.is-open .open-head{opacity:1;transform:none}
+  .open-back{display:flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:var(--r-sm);
+    border:1px solid var(--line);background:var(--bg-1);
+    color:var(--fg-2);font-size:12.5px;cursor:default;
+    transition:background .12s,color .12s,border-color .12s}
+  .open-back:hover{background:var(--bg-2);color:var(--fg);border-color:var(--line-2)}
+  .open-head .name{font-family:var(--mono);font-size:18px;font-weight:500;
+    color:var(--fg);letter-spacing:-0.005em}
+  .open-head .meta{font-family:var(--mono);font-size:11px;color:var(--fg-4)}
+
+  /* ── Detail content blocks ─────────────────────────────────────── */
+  .detail-scroll{padding:24px 28px;display:flex;flex-direction:column;
+    gap:20px;max-height:760px;overflow-y:auto}
+  .det-hero{display:grid;grid-template-columns:1fr 320px;gap:24px;
+    align-items:flex-start}
+  .det-hero h2{margin:0;font-size:22px;font-weight:500;letter-spacing:-0.015em;
+    line-height:1.2}
+  .det-hero p{margin:8px 0 0;font-size:13px;color:var(--fg-2);line-height:1.55;
+    max-width:60ch;text-wrap:pretty}
+  .det-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-top:14px}
+
+  .det-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+    background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--r-md);overflow:hidden}
+  .det-stat{padding:14px 16px;border-right:1px solid var(--line)}
+  .det-stat:last-child{border-right:none}
+  .det-stat .k{font-family:var(--mono);font-size:10px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--fg-4)}
+  .det-stat .v{font-size:22px;font-weight:500;font-family:var(--mono);
+    margin-top:4px;letter-spacing:-0.01em}
+  .det-stat .d{font-family:var(--mono);font-size:10.5px;color:var(--fg-3);margin-top:2px}
+
+  .det-card{background:var(--bg-1);border:1px solid var(--line);
+    border-radius:var(--r-md)}
+  .det-card .hd{padding:12px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:10px;background:var(--bg-2)}
+  .det-card .hd b{font-size:12.5px;font-weight:500}
+  .det-card .bd{padding:14px 16px}
+
+  .chart-box{height:160px;border-radius:var(--r-sm);
+    background:linear-gradient(180deg,
+      color-mix(in oklab, var(--accent) 4%, transparent),
+      transparent);
+    position:relative;overflow:hidden}
+  .chart-box svg{width:100%;height:100%}
+
+  .timeline{display:flex;flex-direction:column;gap:0;font-size:12.5px}
+  .tl-row{display:grid;grid-template-columns:18px 90px 1fr;gap:10px;
+    padding:9px 0;border-bottom:1px dashed var(--line);align-items:center}
+  .tl-row:last-child{border-bottom:none}
+  .tl-row .ico{width:18px;height:18px;border-radius:4px;
+    background:var(--bg-3);display:grid;place-items:center;color:var(--fg-3)}
+  .tl-row .when{font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+  .tl-row .what b{color:var(--fg);font-weight:500}
+
+  /* ── Row click — subtle press-feedback before the fold starts ─── */
+  .tbl tbody tr.row-pressing{
+    background:color-mix(in oklab, var(--accent) 6%, transparent);
+    transform:translateX(2px);
+    transition:transform 80ms ease, background 80ms ease}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ── Demo records (Releases — generic record shape) ────────────────
+const rows = [
+  { id:'rel_checkout_v3', key:'rel_8f2a21', status:'live',
+    desc:'3-step checkout · rolling out to 50% of traffic',
+    tag:'revenue', owner:['M','#7c5cff','Maya Patel'],
+    primary:50, secondary:'+8.4%', metric:'14.2k users',
+    spark:[30,33,31,37,41,44,49,52,58,62,69,72], days:6 },
+  { id:'rel_welcome_email', key:'rel_9c11a0', status:'live',
+    desc:'5-min welcome email · all new signups',
+    tag:'activation', owner:['J','#00d08a','Jiwoo Han'],
+    primary:100, secondary:'+6.8%', metric:'4.8k users',
+    spark:[20,22,21,25,28,30,34,36,40,42,46,49], days:3 },
+  { id:'rel_pricing_v2', key:'rel_a03f2b', status:'live',
+    desc:'New pricing page · benefit-led headline',
+    tag:'marketing', owner:['K','#ff8445','Kai Stewart'],
+    primary:100, secondary:'+2.1%', metric:'38.1k users',
+    spark:[50,51,52,51,52,53,52,54,53,55,54,56], days:11 },
+  { id:'rel_onboarding_v2', key:'rel_b1cc08', status:'paused',
+    desc:'Personalized onboarding · regression in d1 retention',
+    tag:'activation', owner:['R','#3b82f6','Ravi Joshi'],
+    primary:10, secondary:'−1.2%', metric:'1.1k users',
+    spark:[40,42,39,40,38,38,37,36,35,34,33,32], days:4, neg:true },
+  { id:'rel_dashboard_v2', key:'rel_a70221', status:'draft',
+    desc:'Redesigned metrics dashboard · ready for staging',
+    tag:'engagement', owner:['M','#7c5cff','Maya Patel'],
+    primary:null, secondary:'—', metric:'—', spark:null },
+  { id:'rel_ranker_v4', key:'rel_c4dd91', status:'live',
+    desc:'ML ranker v4 · vs. v3 baseline',
+    tag:'engagement', owner:['J','#00d08a','Jiwoo Han'],
+    primary:30, secondary:'+11.2%', metric:'22.7k users',
+    spark:[18,22,28,34,40,48,56,62,70,78,85,94], days:8 },
+  { id:'rel_legacy_uploader', key:'rel_3b2041', status:'killed',
+    desc:'Legacy uploader · archived after p95 regression',
+    tag:'stability', owner:['R','#3b82f6','Ravi Joshi'],
+    primary:0, secondary:'−3.1%', metric:'912 users', archived:true },
+  { id:'rel_typo_search', key:'rel_d87e33', status:'completed',
+    desc:'Fuzzy search · shipped to 100% on May 12',
+    tag:'search', owner:['K','#ff8445','Kai Stewart'],
+    primary:100, secondary:'+4.7%', metric:'201.3k users',
+    spark:[40,45,50,57,63,68,72,74,76,77,78,78], days:21 },
+];
+
+// ── Helpers ────────────────────────────────────────────────────────
+function Spark({ data, color='var(--accent)', neg=false, h=22, w=92 }) {
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v,i) => {
+    const x = (i/(data.length-1))*w;
+    const y = h - ((v-min)/range)*(h-4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"
+    style={{display:'block'}}>
+    <polyline points={pts} fill="none"
+      stroke={neg ? 'var(--danger)' : color}
+      strokeWidth="1.3" strokeLinejoin="round" strokeLinecap="round"/>
+  </svg>;
+}
+
+const statusBadge = s => {
+  const m = { live:['badge-live','LIVE'], draft:['badge-draft','DRAFT'],
+    paused:['badge-paused','PAUSED'], killed:['badge-killed','ARCHIVED'],
+    completed:['badge-completed','SHIPPED'] };
+  const [cls,txt] = m[s] || ['',''];
+  return <span className={`badge ${cls}`}><span className="dot"/>{txt}</span>;
+};
+
+const statusColor = s =>
+  s==='live'?'var(--accent)':s==='paused'?'var(--warn)':
+  s==='killed'?'var(--danger)':s==='completed'?'var(--info)':'var(--fg-3)';
+
+// ── Big chart for the detail view ─────────────────────────────────
+function BigChart({ data, neg=false }) {
+  if (!data) return null;
+  const W = 720, H = 160, pad = 8;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v,i) => {
+    const x = pad + (i/(data.length-1))*(W-pad*2);
+    const y = pad + (1 - (v-min)/range)*(H-pad*2);
+    return [x,y];
+  });
+  const line = pts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const fill = `${pad},${H} ${line} ${W-pad},${H}`;
+  const stroke = neg ? 'var(--danger)' : 'var(--accent)';
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="bcGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.32"/>
+          <stop offset="100%" stopColor={stroke} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      {/* grid */}
+      {[0.25,0.5,0.75].map(t => (
+        <line key={t} x1={pad} x2={W-pad} y1={pad+t*(H-pad*2)} y2={pad+t*(H-pad*2)}
+          stroke="var(--line)" strokeWidth="0.5"/>
+      ))}
+      <polygon points={fill} fill="url(#bcGrad)"/>
+      <polyline points={line} fill="none" stroke={stroke}
+        strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round"/>
+      {pts.map(([x,y],i) => (
+        <circle key={i} cx={x} cy={y} r={i === pts.length-1 ? 3.2 : 0}
+          fill={stroke}/>
+      ))}
+    </svg>
+  );
+}
+
+// ── Detail view (the "fully expanded" record) ─────────────────────
+function Detail({ row }) {
+  return (
+    <div className="detail-scroll">
+
+      {/* Hero — name, status, description, owner row */}
+      <div className="det-hero">
+        <div>
+          <div className="t-caps dim-2" style={{marginBottom:8}}>
+            {row.key} · {row.tag} · last update {row.days||0}d ago
+          </div>
+          <h2>{row.id}</h2>
+          <p>{row.desc}</p>
+          <div className="det-row">
+            {statusBadge(row.status)}
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <div className="avatar-sm" style={{background:row.owner[1],
+                color:row.owner[1]==='#00d08a'?'#07120d':'#fff'}}>{row.owner[0]}</div>
+              <span className="t-sm dim">{row.owner[2]}</span>
+            </div>
+            <span className="t-mono-xs dim-2">·</span>
+            <span className="t-mono-xs dim-2">env · prod</span>
+          </div>
+        </div>
+        <div className="det-card">
+          <div className="hd">
+            <IconCode size={11} style={{color:'var(--fg-3)'}}/>
+            <b>SDK reference</b>
+            <button className="btn btn-ghost btn-icon btn-sm" style={{marginLeft:'auto'}}>
+              <IconCopy size={11}/>
+            </button>
+          </div>
+          <div className="bd" style={{fontFamily:'var(--mono)',fontSize:11.5,
+            color:'var(--fg-2)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>
+{`shipeasy.release(`}<span style={{color:'var(--accent)'}}>"{row.id}"</span>{`)
+  `}<span style={{color:'#a78bfa'}}>.then</span>{`(active => active
+    ? `}<span style={{color:'#74c7ec'}}>renderNew</span>{`()
+    : `}<span style={{color:'#74c7ec'}}>renderControl</span>{`());`}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats strip — 4 numbers */}
+      <div className="det-stats">
+        <div className="det-stat">
+          <div className="k">Rollout</div>
+          <div className="v">{row.primary!=null ? row.primary+'%' : '—'}</div>
+          <div className="d">of eligible traffic</div>
+        </div>
+        <div className="det-stat">
+          <div className="k">Lift</div>
+          <div className="v" style={{color:
+            row.secondary==='—'?'var(--fg-4)':
+            row.secondary.startsWith('−')?'var(--danger)':'var(--accent)'}}>
+            {row.secondary}
+          </div>
+          <div className="d">vs. control</div>
+        </div>
+        <div className="det-stat">
+          <div className="k">Sample</div>
+          <div className="v">{row.metric}</div>
+          <div className="d">cumulative</div>
+        </div>
+        <div className="det-stat">
+          <div className="k">Days running</div>
+          <div className="v">{row.days || 0}</div>
+          <div className="d">since first shipment</div>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="det-card">
+        <div className="hd">
+          <IconChart size={11} style={{color:'var(--fg-3)'}}/>
+          <b>Rollout & impact · last 12d</b>
+          <span className="t-mono-xs dim-2" style={{marginLeft:'auto'}}>
+            primary metric · revenue per visitor
+          </span>
+        </div>
+        <div className="bd" style={{padding:0}}>
+          <div className="chart-box">
+            <BigChart data={row.spark || [50,52,55,58,60,62,64,66,68,70,71,72]}
+              neg={row.neg}/>
+          </div>
+        </div>
+      </div>
+
+      {/* Activity */}
+      <div className="det-card">
+        <div className="hd">
+          <IconClock size={11} style={{color:'var(--fg-3)'}}/>
+          <b>Activity</b>
+          <span className="t-mono-xs dim-2" style={{marginLeft:'auto'}}>4 events</span>
+        </div>
+        <div className="bd">
+          <div className="timeline">
+            <div className="tl-row">
+              <div className="ico"><IconCheck size={10} style={{color:'var(--accent)'}}/></div>
+              <div className="when">38s ago</div>
+              <div className="what"><b>{row.owner[2]}</b> ramped traffic to <b>{row.primary || 0}%</b></div>
+            </div>
+            <div className="tl-row">
+              <div className="ico"><IconEdit size={10} style={{color:'var(--fg-3)'}}/></div>
+              <div className="when">4h ago</div>
+              <div className="what"><b>Kai Stewart</b> updated the description</div>
+            </div>
+            <div className="tl-row">
+              <div className="ico"><IconRocket size={10} style={{color:'var(--accent)'}}/></div>
+              <div className="when">{row.days||1}d ago</div>
+              <div className="what"><b>Maya Patel</b> shipped <b>v1</b> to <b>5% canary</b></div>
+            </div>
+            <div className="tl-row">
+              <div className="ico"><IconPlus size={10} style={{color:'var(--fg-3)'}}/></div>
+              <div className="when">{(row.days||1)+2}d ago</div>
+              <div className="what"><b>Maya Patel</b> created the release from a draft</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────────
+function StandardListV2({ initialOpen=null }) {
+  const [openId, setOpenId] = useState(initialOpen);
+  const [pressing, setPressing] = useState(null);
+  const isOpen = openId !== null;
+  const activeRow = isOpen ? rows.find(r => r.id === openId) : null;
+
+  // Esc to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const h = e => { if (e.key === 'Escape') setOpenId(null); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [isOpen]);
+
+  function selectRow(id) {
+    // tiny press-feedback before the fold starts
+    setPressing(id);
+    setTimeout(() => { setOpenId(id); setPressing(null); }, 60);
+  }
+  function close() { setOpenId(null); }
+
+  return (
+    <div className="app">
+      <Sidebar active=""/>
+      <div>
+        <Topbar
+          crumbs={isOpen
+            ? ['Acme Co.', 'Releases', activeRow.id]
+            : ['Acme Co.', 'Releases']}
+          actions={<>
+            <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+            <button className="btn btn-primary"><IconPlus size={12}/> New release</button>
+          </>}
+        />
+
+        <div className="page">
+
+          {/* ── Closed-state head cluster (collapses on open) ────── */}
+          <div className={`head-cluster ${isOpen?'collapsed':''}`}>
+            <div className="inner">
+              <div className="page-head">
+                <div>
+                  <div className="t-caps dim-2" style={{marginBottom:8}}>
+                    8 active · 41 total · last shipped 6h ago
+                  </div>
+                  <h1>Releases</h1>
+                  <p>Click any row to open it — the list folds into a rail and the record opens in the center. The same shell handles every feature; rows can be custom.</p>
+                </div>
+                <div className="flex gap-3">
+                  <div className="stat-block" style={{textAlign:'right'}}>
+                    <div className="stat-k">Live</div>
+                    <div className="stat-v num">8</div>
+                  </div>
+                  <div style={{width:1,background:'var(--line)'}}/>
+                  <div className="stat-block" style={{textAlign:'right'}}>
+                    <div className="stat-k">Shipped (7d)</div>
+                    <div className="stat-v num" style={{color:'var(--accent)'}}>4</div>
+                  </div>
+                  <div style={{width:1,background:'var(--line)'}}/>
+                  <div className="stat-block" style={{textAlign:'right'}}>
+                    <div className="stat-k">Avg lift</div>
+                    <div className="stat-v num">+5.4%</div>
+                  </div>
+                </div>
+              </div>
+              <div className="tabs">
+                {[
+                  ['All',24],['Live',8],['Draft',3],['Paused',2],
+                  ['Shipped',10],['Archived',1]
+                ].map(([l,n],i) => (
+                  <div key={l} className={`tab ${i===0?'active':''}`}>
+                    {l} <span className="count">{n}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="filter-row" style={{paddingBottom:0}}>
+                <div className="input" style={{width:240}}>
+                  <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+                  <input placeholder="Filter by name, key, or tag"/>
+                </div>
+                <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Owner</button>
+                <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Tag</button>
+                <div className="ml-auto flex gap-2">
+                  <button className="btn btn-ghost btn-sm">Sort: Recent</button>
+                  <button className="btn btn-secondary btn-sm"><IconCode size={11}/> Export</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Open-state local head ──────────────────────────────
+             Appears above the split when a record is open. */}
+          {isOpen && (
+            <div className="open-head" style={{opacity:1,transform:'none'}}>
+              <button className="open-back" onClick={close}>
+                <IconChevronLeft size={12}/> All releases
+              </button>
+              <button className="show-full-pill" onClick={close} title="Show full table">
+                <IconLayers size={11}/> Show full table <kbd>Esc</kbd>
+              </button>
+              <span className="name">{activeRow.id}</span>
+              {statusBadge(activeRow.status)}
+              <span className="meta">{activeRow.key}</span>
+              <div className="ml-auto flex gap-2 items-center">
+                <button className="btn btn-ghost btn-sm">
+                  <IconEdit size={11}/> Edit
+                </button>
+                <button className="btn btn-ghost btn-sm">
+                  <IconMore size={11}/>
+                </button>
+                <button className="btn btn-primary btn-sm">
+                  <IconRocket size={11}/> Publish v2
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Split: full table ⇄ rail · detail ─────────────── */}
+          <div className={`split ${isOpen?'open':'closed'}`}>
+
+            {/* List pane — holds both layers */}
+            <div className="list-pane">
+
+              {/* Layer A · full table (visible when closed) */}
+              <div className="pane-layer full-table">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th style={{width:28}}></th>
+                      <th>Record</th>
+                      <th>Status</th>
+                      <th style={{textAlign:'right',width:90}}>Rollout</th>
+                      <th style={{textAlign:'right',width:110}}>Lift</th>
+                      <th style={{width:140}}>Trend</th>
+                      <th style={{textAlign:'right',width:110}}>Sample</th>
+                      <th style={{width:80}}>Owner</th>
+                      <th style={{width:40}}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(r => (
+                      <tr key={r.id}
+                        className={pressing===r.id ? 'row-pressing' : ''}
+                        onClick={() => selectRow(r.id)}>
+                        <td className="col-icon">
+                          <IconLayers size={13} style={{color:statusColor(r.status)}}/>
+                        </td>
+                        <td>
+                          <div style={{display:'flex',alignItems:'center',gap:8}}>
+                            <b>{r.id}</b>
+                            <span className="tag" style={{fontSize:10.5,padding:'1px 6px'}}>{r.tag}</span>
+                          </div>
+                          <div className="t-mono-xs dim-2" style={{marginTop:2}}>
+                            {r.key} · {r.desc}
+                          </div>
+                        </td>
+                        <td>{statusBadge(r.status)}</td>
+                        <td className="num">{r.primary!=null ? r.primary+'%' : '—'}</td>
+                        <td className="num" style={{color:
+                          r.secondary==='—'?'var(--fg-4)':
+                          r.secondary.startsWith('−')?'var(--danger)':'var(--accent)'}}>
+                          {r.secondary}
+                        </td>
+                        <td>{r.spark && <Spark data={r.spark} neg={r.neg}/>}</td>
+                        <td className="num dim">{r.metric}</td>
+                        <td><div className="avatar-sm" style={{background:r.owner[1],
+                          color:r.owner[1]==='#00d08a'?'#07120d':'#fff'}}>{r.owner[0]}</div></td>
+                        <td><button className="btn btn-ghost btn-icon btn-sm"
+                          onClick={e=>e.stopPropagation()}><IconMore size={12}/></button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Layer B · collapsed rail (visible when open) */}
+              <div className="pane-layer rail">
+                <div className="rail-head">
+                  <span>Releases</span>
+                  <span className="ml-auto" style={{
+                    fontFamily:'var(--mono)',fontSize:9.5,
+                    padding:'1px 5px',background:'var(--bg-3)',
+                    color:'var(--fg-3)',borderRadius:3,border:'1px solid var(--line)'}}>
+                    {rows.length}
+                  </span>
+                </div>
+                <div className="rail-body">
+                  {rows.map(r => (
+                    <div key={r.id}
+                      className={`rail-row ${r.id===openId?'active':''}`}
+                      onClick={() => setOpenId(r.id)}>
+                      <div className="ico">
+                        <IconLayers size={11} style={{color:statusColor(r.status)}}/>
+                      </div>
+                      <div className="nm">{r.id}</div>
+                      <span className="pill" style={{
+                        color: r.status==='live' ? 'var(--accent)' :
+                               r.status==='paused' ? 'var(--warn)' :
+                               r.status==='killed' ? 'var(--danger)' :
+                               r.status==='completed' ? 'var(--info)' : 'var(--fg-3)'
+                      }}>
+                        {r.status==='live'?'LIVE':
+                         r.status==='paused'?'PAUSE':
+                         r.status==='killed'?'ARCH':
+                         r.status==='completed'?'SHIP':
+                         'DRAFT'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Detail pane */}
+            <div className="detail-pane">
+              <button className="pane-close" onClick={close} title="Show full table (Esc)">
+                <IconX size={13}/>
+                <span className="kbd-hint">Show full table · Esc</span>
+              </button>
+              {activeRow && <Detail row={activeRow}/>}
+            </div>
+
+          </div>
+
+          {/* Footer only when closed */}
+          {!isOpen && (
+            <div className="card-foot" style={{
+              border:'1px solid var(--line)',borderTop:'none',
+              borderRadius:'0 0 var(--r-lg) var(--r-lg)',marginTop:-12}}>
+              <span className="t-mono-xs dim-2">8 of 24 shown</span>
+              <div className="ml-auto flex gap-2">
+                <button className="btn btn-ghost btn-sm">Previous</button>
+                <button className="btn btn-ghost btn-sm">Next</button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// URL param: ?open=rel_checkout_v3 → mounts already-open (for matrix view)
+const urlOpen = new URLSearchParams(location.search).get('open');
+ReactDOM.createRoot(document.getElementById('app')).render(
+  <StandardListV2 initialOpen={urlOpen}/>
+);
+</script>
+</body>
+</html>

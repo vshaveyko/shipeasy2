@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Standard · Empty state · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="empty-states.jsx"></script>
+<script type="text/babel">
+
+// ── Standard first-run empty state ────────────────────────────────
+//
+// Used when a feature has zero records and the user hasn't yet wired
+// the SDK. The shared <EmptyState/> component (empty-states.jsx) takes
+// a `kind` (one of: experiments, gates, killswitches, configs, metrics)
+// and renders the matching copy + terminal preview + KPIs.
+//
+// Anatomy:
+//   · eyebrow            — UPPERCASE feature name + dim status note
+//   · headline           — two-line serif/sans pair, accent on second
+//   · sub                — one-paragraph explainer (≤ 220 chars)
+//   · terminal           — copy-pasteable SDK snippet (the value prop)
+//   · CTAs               — primary "Start in 60s" + ghost "See demo data"
+//   · stat strip         — three numbers under the fold
+
+function StandardEmptyState() {
+  const params = new URLSearchParams(location.search);
+  const kind = params.get('kind') || 'experiments';
+  const KIND_TO_NAV = {
+    experiments:'experiments', gates:'gates',
+    killswitches:'killswitches', configs:'configs', metrics:'metrics',
+  };
+  const KIND_TO_LABEL = {
+    experiments:['Experiments','New experiment'],
+    gates:['Gates','New gate'],
+    killswitches:['Killswitches','New killswitch'],
+    configs:['Configs','New config'],
+    metrics:['Metrics','New metric'],
+  };
+  const [crumbLabel, ctaLabel] = KIND_TO_LABEL[kind] || KIND_TO_LABEL.experiments;
+
+  return (
+    <div className="app">
+      <Sidebar active={KIND_TO_NAV[kind] || 'experiments'}/>
+      <div>
+        <Topbar crumbs={['Acme Co.', crumbLabel]}
+          actions={<>
+            <button className="btn btn-ghost btn-sm">
+              Skip to demo data <IconArrowRight size={11}/>
+            </button>
+            <button className="btn btn-primary">
+              <IconZap size={12}/> Start setup
+            </button>
+          </>}
+        />
+        <div style={{padding:28}}>
+          <EmptyState kind={kind}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<StandardEmptyState/>);
+</script>
+</body>
+</html>

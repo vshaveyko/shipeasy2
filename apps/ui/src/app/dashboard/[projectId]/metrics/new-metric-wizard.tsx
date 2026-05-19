@@ -13,6 +13,7 @@ import { Slider } from "@/components/ui/slider";
 import { CodeBlock } from "@/components/ui/code-block";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { FolderNameInput, deriveFolderName } from "@/components/ui/folder-name-input";
 import { createMetric } from "@/actions/metrics";
 
 const NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
@@ -54,11 +55,28 @@ const fetcher = async <T,>(url: string): Promise<T> => {
   return body as T;
 };
 
+export type NewMetricWizardCreated = {
+  id: string;
+  name: string;
+  eventName: string;
+  aggregation: AggregationKey;
+  valuePath: string | null;
+  createdEvents: { name: string }[];
+};
+
 export interface NewMetricWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId?: string;
   onComplete?: () => void;
+  /** When set, the wizard does not close on submit nor surface its own toast.
+   * It hands the created metric (plus any inline-created events) to the
+   * parent so a host wizard can capture and bubble them further. */
+  onCreated?: (metric: NewMetricWizardCreated) => void | Promise<void>;
+  /** Parent record context (e.g. `{kind:"experiment", name:"checkout"}`). */
+  forContext?: { kind: string; name: string };
+  /** Render at the nested wizard size when stacked on top of a host wizard. */
+  nested?: boolean;
 }
 
 export function NewMetricWizard({
@@ -66,9 +84,13 @@ export function NewMetricWizard({
   onOpenChange,
   projectId,
   onComplete,
+  onCreated,
+  forContext,
+  nested = false,
 }: NewMetricWizardProps) {
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
+  const [folder, setFolder] = useState("");
+  const [leaf, setLeaf] = useState("");
   const [description, setDescription] = useState("");
   const [eventName, setEventName] = useState("");
   const [newEventDraft, setNewEventDraft] = useState("");
@@ -78,6 +100,7 @@ export function NewMetricWizard({
   const [winsorize, setWinsorize] = useState<number>(99);
   const [mdePct, setMdePct] = useState<number>(5);
   const [search, setSearch] = useState("");
+  const [inlineEvents, setInlineEvents] = useState<{ name: string }[]>([]);
   const [pending, startTransition] = useTransition();
 
   const { data: events, mutate: refetchEvents } = useSWR<EventRow[]>(
@@ -88,7 +111,8 @@ export function NewMetricWizard({
   useEffect(() => {
     if (!open) {
       setStep(0);
-      setName("");
+      setFolder("");
+      setLeaf("");
       setDescription("");
       setEventName("");
       setNewEventDraft("");
@@ -98,11 +122,13 @@ export function NewMetricWizard({
       setWinsorize(99);
       setMdePct(5);
       setSearch("");
+      setInlineEvents([]);
     }
   }, [open]);
 
-  const trimmed = name.trim();
-  const nameValid = NAME_RE.test(trimmed);
+  const derivedName = deriveFolderName(folder, leaf);
+  const trimmed = derivedName.fullName;
+  const nameValid = derivedName.folderValid && derivedName.leafValid;
   const sourceValid = eventName.length > 0;
   const aggregationMeta = useMemo(
     () => AGGREGATIONS.find((a) => a.k === aggregation) ?? AGGREGATIONS[0],
@@ -137,6 +163,7 @@ export function NewMetricWizard({
       }
       setNewEventDraft("");
       setEventName(n);
+      setInlineEvents((prev) => (prev.some((e) => e.name === n) ? prev : [...prev, { name: n }]));
       await refetchEvents();
       toast.success(`Registered event "${n}"`);
     } catch (e) {
@@ -154,18 +181,20 @@ export function NewMetricWizard({
       content: (
         <div className="flex flex-col gap-4">
           <div>
-            <Label htmlFor="metric-name">Name *</Label>
-            <Input
-              id="metric-name"
-              data-mono
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="checkout_conversion"
-              pattern="[a-z0-9][a-z0-9_-]{0,63}"
+            <Label htmlFor="metric-folder">Name *</Label>
+            <FolderNameInput
+              folder={folder}
+              leaf={leaf}
+              onFolderChange={setFolder}
+              onLeafChange={setLeaf}
+              folderPlaceholder="checkout"
+              leafPlaceholder="conversion"
+              folderId="metric-folder"
+              leafId="metric-name"
             />
             <p className="t-mono-xs dim-2 mt-1">
-              Lowercase letters, digits, _ or -. Max 64 characters.
+              <code className="font-mono">folder.name</code> · lowercase letters, digits,{" "}
+              <code className="font-mono">-</code> or <code className="font-mono">_</code>.
             </p>
           </div>
           <div>
@@ -454,16 +483,28 @@ export function NewMetricWizard({
     }
     startTransition(async () => {
       try {
-        await createMetric({
+        const created = (await createMetric({
           name: trimmed,
           event_name: eventName,
           value_path: valuePathRequired ? valuePath.trim() : null,
           aggregation,
           winsorize_pct: winsorize,
           min_detectable_effect: mdePct / 100,
-        });
-        toast.success(`Registered metric "${trimmed}"`);
-        onComplete?.();
+        })) as { id: string; name: string };
+        if (onCreated) {
+          // Host wizard owns close/toast.
+          await onCreated({
+            id: created.id,
+            name: created.name,
+            eventName,
+            aggregation,
+            valuePath: valuePathRequired ? valuePath.trim() : null,
+            createdEvents: inlineEvents,
+          });
+        } else {
+          toast.success(`Registered metric "${trimmed}"`);
+          onComplete?.();
+        }
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to register metric");
       }
@@ -477,6 +518,8 @@ export function NewMetricWizard({
       kind="metrics"
       title="Register a metric"
       eyebrow={{ project: projectId }}
+      forContext={forContext}
+      nested={nested}
       steps={steps}
       current={step}
       onStepChange={setStep}

@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Shipeasy — Coverage matrix</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  html,body{margin:0;height:100vh;overflow:hidden;
+    font-family:"Geist",ui-sans-serif,system-ui,sans-serif;
+    background:#0a0a0b}
+  .frame{width:100%;height:100%;border:none;display:block;background:#0a0a0b}
+
+  /* ── Placeholder for cells not yet designed ──────────────────── */
+  .tbd{width:100%;height:100%;
+    background:repeating-linear-gradient(135deg,#131316 0 12px,#15151a 12px 24px);
+    border:1px dashed rgba(255,255,255,.08);
+    color:#7a7a82;font-family:"Geist Mono", ui-monospace, monospace;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;text-align:center;padding:32px;box-sizing:border-box}
+  .tbd .badge{display:inline-flex;align-items:center;gap:8px;
+    padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.1);color:#cfcfd6;
+    font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .tbd .badge .dot{width:6px;height:6px;border-radius:50%;background:#c96442}
+  .tbd .title{font-size:22px;font-weight:500;color:#dcdce2;
+    font-family:"Geist", ui-sans-serif, system-ui;letter-spacing:-0.01em}
+  .tbd .copy{font-size:12.5px;max-width:38ch;line-height:1.6;color:#8a8a92}
+  .tbd .meta{font-size:10.5px;color:#5a5a62;margin-top:6px}
+  .tbd.linked{border-color:rgba(255,140,60,.18);
+    background:repeating-linear-gradient(135deg,
+      rgba(201,100,66,.04) 0 12px,rgba(201,100,66,.07) 12px 24px)}
+  .tbd.linked .badge{background:rgba(201,100,66,.12);
+    border-color:rgba(201,100,66,.35);color:#e8a890}
+  .tbd.linked .badge .dot{background:#7c5cff}
+
+  /* ── Section column ruler ────────────────────────────────────── */
+  .legend{display:grid;gap:0;background:#fffaf0;
+    border-radius:10px;padding:14px 18px;
+    border:1px solid rgba(0,0,0,.06);margin-bottom:8px;
+    color:#3a3024;font-family:"Geist Mono", ui-monospace, monospace}
+  .legend-row{display:grid;gap:14px;align-items:center}
+  .legend-row .col{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:rgba(60,50,40,.7);padding:0 12px;border-left:1px dashed rgba(0,0,0,.15)}
+  .legend-row .col:first-child{border-left:none}
+  .legend-row .col b{color:#3a3024;font-weight:500;display:block;font-size:12.5px;
+    text-transform:none;letter-spacing:-0.005em;font-family:"Geist", ui-sans-serif;
+    margin-bottom:2px}
+
+  /* Special legend variant used for the standards row */
+  .legend.amber{background:#fdf6e3;border:1px solid rgba(140,100,30,.18)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="../design-canvas.jsx"></script>
+<script type="text/babel">
+
+function F({ src }) {
+  return <iframe className="frame" src={src} loading="eager"/>;
+}
+
+function TBD({ title='Not yet designed', copy, kind='planned', meta }) {
+  return (
+    <div className={`tbd ${kind==='linked'?'linked':''}`}>
+      <span className="badge"><span className="dot"/>
+        {kind==='linked' ? 'Covered elsewhere' : 'Planned'}
+      </span>
+      <div className="title">{title}</div>
+      {copy && <div className="copy">{copy}</div>}
+      {meta && <div className="meta">{meta}</div>}
+    </div>
+  );
+}
+
+// ── Matrix configuration ────────────────────────────────────────────
+//
+// COLUMNS (left → right, the user journey on a record):
+//   1. Empty          — first-run, zero records, SDK not wired
+//   2. Skeleton       — fetching, list chrome rendered, rows shimmer
+//   3. List · closed  — populated table of records
+//   4. List · open    — one record selected, list folds to rail
+//   5. Create         — new-record flow (wizard, form, or modal)
+//   6. Delete         — destructive confirm modal
+//
+// Unification rule: the same component renders both "list" and
+// "detail" — clicking a row folds the table into a 280px rail and
+// the detail slides into the center. So a feature's "List" cell
+// shows the closed state, and "List · open" shows the open state.
+// "Edit" lives inside the open state's center panel (not a separate
+// screen) for most features.
+
+const CW = 1440;   // canonical cell width — same as a real desktop view
+const CH = 920;    // canonical cell height — clips tall pages; expand to see
+const CH_TALL = 1100; // for the configs-expanded view
+
+const COLUMNS = ['Empty','Skeleton','List · closed','List · open','Create','Delete'];
+
+function ColumnLegend({ amber=false }) {
+  return (
+    <div className={`legend ${amber?'amber':''}`}>
+      <div className="legend-row" style={{
+        gridTemplateColumns:`repeat(${COLUMNS.length}, ${CW}px)`}}>
+        {COLUMNS.map((c,i) => (
+          <div key={c} className="col">
+            <b>{String(i+1).padStart(2,'0')} · {c}</b>
+            {({
+              'Empty':         'First-run · zero records',
+              'Skeleton':      'Loading · chrome real, values shimmer',
+              'List · closed': 'Populated, full-width table',
+              'List · open':   'Record selected · list folds to rail',
+              'Create':        'New-record form or wizard',
+              'Delete':        'Destructive confirm modal',
+            })[c]}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <DesignCanvas
+      title="Shipeasy — coverage matrix"
+      subtitle="One unified list pattern · click a row to fold and open the record · rows × screen-types">
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="intro" title="00 · How to read this"
+        subtitle={<>
+          Standards row defines the canonical layout. Feature rows apply it.
+          The list and detail are the SAME screen — clicking a row folds the
+          table into a rail; the record opens in the center. List·open shows
+          that second state.
+        </>}>
+        <div style={{width:CW*COLUMNS.length, height:120, position:'relative'}}>
+          <ColumnLegend/>
+        </div>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="system" title="01 · Design system"
+        subtitle="Tokens, type, components, full form library — the source of truth.">
+        <DCArtboard id="ds" label="Design system v2 (reference)" width={1180} height={2800}>
+          <F src="design-system-v2.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="home" title="02 · Home · cockpit + onboarding"
+        subtitle={<>
+          Three layouts answering the same brief — "central cockpit + onboarding"
+          — through different organizing logics. Each handles three workspace
+          states (first-run · quiet day · busy day) via the Tweaks panel.
+          <br/><br/>
+          <b>V1 · Mission Control</b> organizes by time and impact — a 24-hour
+          pulse strip ties everything to "today", with a prominent decisions
+          row up top. Best when you monitor many records simultaneously.
+          <br/>
+          <b>V2 · Focus Inbox</b> organizes by priority queue — Linear-inspired,
+          keyboard-driven, with a preview pane. Always one thing to do next.
+          Best for solo PMs / async teams who want zero decision fatigue.
+          <br/>
+          <b>V3 · Instrument Cluster</b> organizes by record-type — four
+          self-contained mini-dashboards (experiments / gates / killswitches /
+          metrics), like a real cockpit panel. Best for ops/SRE thinking.
+        </>}>
+        <DCArtboard id="home-v1" label="V1 · Mission Control · busy day" width={1440} height={2400}>
+          <F src="home.html"/>
+        </DCArtboard>
+        <DCArtboard id="home-v2" label="V2 · Focus Inbox · busy day" width={1440} height={900}>
+          <F src="home-v2.html"/>
+        </DCArtboard>
+        <DCArtboard id="home-v3" label="V3 · Instrument Cluster · busy day" width={1440} height={1400}>
+          <F src="home-v3.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="standards" title="03 · Standards · the unified list"
+        subtitle="One pattern that handles every feature. The closed state is a standard table; clicking a row folds the table to a 280px rail and slides the record into the center. Same shell; rows can be custom (see Metrics).">
+        <DCArtboard id="std-empty" label="Empty · first-run" width={CW} height={CH}>
+          <F src="standards-empty.html?kind=experiments"/>
+        </DCArtboard>
+        <DCArtboard id="std-skel" label="Skeleton · loading" width={CW} height={CH}>
+          <F src="standards-skeleton.html"/>
+        </DCArtboard>
+        <DCArtboard id="std-list-closed" label="List · closed (the standard)" width={CW} height={CH}>
+          <F src="standards-list-v2.html"/>
+        </DCArtboard>
+        <DCArtboard id="std-list-open" label="List · open (click any row)" width={CW} height={CH}>
+          <F src="standards-list-v2.html?open=rel_checkout_v3"/>
+        </DCArtboard>
+        <DCArtboard id="std-create" label="Create · wizard (standard, big modal)" width={CW} height={CH}>
+          <F src="standards-create.html?kind=configs"/>
+        </DCArtboard>
+        <DCArtboard id="std-delete" label="Delete · confirm" width={CW} height={CH}>
+          <F src="standards-delete.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="standards-anatomy" title="02b · Anatomy & specs"
+        subtitle="The v1 list with region labels overlaid, plus the original list reference.">
+        <DCArtboard id="std-list-anat" label="Anatomy overlay" width={CW} height={CH}>
+          <F src="standards-list.html?anat=1"/>
+        </DCArtboard>
+        <DCArtboard id="std-list-v1" label="V1 list (reference only)" width={CW} height={CH}>
+          <F src="standards-list.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="standards-create" title="02c · Standards · the create wizard"
+        subtitle="One big-modal wizard with a shared shell — header, stepper, contextual aside, footer. Per-kind step contents vary (3 to 5 steps). All flows feel identical. Toggle Tweaks inside any artboard to switch kind / step.">
+        <DCArtboard id="cw-configs"      label="Configs · 4 steps" width={CW} height={CH}>
+          <F src="standards-create.html?kind=configs"/>
+        </DCArtboard>
+        <DCArtboard id="cw-gates"        label="Gates · 3 steps" width={CW} height={CH}>
+          <F src="standards-create.html?kind=gates"/>
+        </DCArtboard>
+        <DCArtboard id="cw-ks"           label="Killswitches · 3 steps" width={CW} height={CH}>
+          <F src="standards-create.html?kind=killswitches"/>
+        </DCArtboard>
+        <DCArtboard id="cw-metrics"      label="Metrics · 4 steps" width={CW} height={CH}>
+          <F src="standards-create.html?kind=metrics"/>
+        </DCArtboard>
+        <DCArtboard id="cw-experiments"  label="Experiments · 5 steps" width={CW} height={CH}>
+          <F src="standards-create.html?kind=experiments"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="exp" title="03 · Experiments"
+        subtitle="The core loop. Detail uses the dedicated experiment-detail screen (specialized chart-heavy layout).">
+        <DCArtboard id="exp-empty" label="Empty" width={CW} height={CH}>
+          <F src="experiments-list.html"/>
+        </DCArtboard>
+        <DCArtboard id="exp-skel" label="Skeleton" width={CW} height={CH}>
+          <F src="standards-skeleton.html"/>
+        </DCArtboard>
+        <DCArtboard id="exp-list-closed" label="List · closed" width={CW} height={CH}>
+          <F src="experiments-list.html?demo=1"/>
+        </DCArtboard>
+        <DCArtboard id="exp-list-open" label="List · open (results-v2 embedded)" width={CW} height={1720}>
+          <F src="experiments-list.html?open=checkout_v3"/>
+        </DCArtboard>
+        <DCArtboard id="exp-create" label="Create · big-modal wizard (standard)" width={CW} height={CH}>
+          <F src="standards-create.html?kind=experiments"/>
+        </DCArtboard>
+        <DCArtboard id="exp-create-full" label="Create · full-page wizard (legacy detailed)" width={CW} height={CH}>
+          <F src="experiments-new.html"/>
+        </DCArtboard>
+        <DCArtboard id="exp-delete" label="Delete" width={CW} height={CH}>
+          <F src="standards-delete.html"/>
+        </DCArtboard>
+        <DCArtboard id="exp-deep" label="Deep-dive · experiment-detail.html" width={CW} height={CH}>
+          <F src="experiment-detail.html"/>
+        </DCArtboard>
+        <DCArtboard id="exp-results" label="Results readout (extra)" width={CW} height={CH}>
+          <F src="experiments-results-v2.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="gates" title="04 · Gates"
+        subtitle="Per-user feature gates. Built-in (Shipeasy-provided) and custom rule sets.">
+        <DCArtboard id="gates-empty" label="Empty" width={CW} height={CH}>
+          <F src="gates-list.html"/>
+        </DCArtboard>
+        <DCArtboard id="gates-skel" label="Skeleton" width={CW} height={CH}>
+          <F src="standards-skeleton.html"/>
+        </DCArtboard>
+        <DCArtboard id="gates-list-closed" label="List · closed" width={CW} height={CH}>
+          <F src="gates-list.html?demo=1"/>
+        </DCArtboard>
+        <DCArtboard id="gates-list-open" label="List · open (unified)" width={CW} height={CH}>
+          <F src="gates-list.html?open=premium_features"/>
+        </DCArtboard>
+        <DCArtboard id="gates-create" label="Create · big-modal wizard" width={CW} height={CH}>
+          <F src="standards-create.html?kind=gates"/>
+        </DCArtboard>
+        <DCArtboard id="gates-delete" label="Delete" width={CW} height={CH}>
+          <F src="standards-delete.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="ks" title="05 · Killswitches"
+        subtitle="Emergency feature shutoffs. Simplest record shape — a toggle and a scope.">
+        <DCArtboard id="ks-empty" label="Empty" width={CW} height={CH}>
+          <F src="killswitches.html"/>
+        </DCArtboard>
+        <DCArtboard id="ks-skel" label="Skeleton" width={CW} height={CH}>
+          <F src="standards-skeleton.html"/>
+        </DCArtboard>
+        <DCArtboard id="ks-list-closed" label="List · closed" width={CW} height={CH}>
+          <F src="killswitches.html?demo=1"/>
+        </DCArtboard>
+        <DCArtboard id="ks-list-open" label="List · open (unified)" width={CW} height={CH}>
+          <F src="killswitches.html?open=new_checkout"/>
+        </DCArtboard>
+        <DCArtboard id="ks-create" label="Create · big-modal wizard" width={CW} height={CH}>
+          <F src="standards-create.html?kind=killswitches"/>
+        </DCArtboard>
+        <DCArtboard id="ks-delete" label="Delete" width={CW} height={CH}>
+          <F src="standards-delete.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="cfg" title="06 · Configs"
+        subtitle="Versioned typed key/value configs with environment overrides. Detail = fully expanded schema + value editor with activity feed.">
+        <DCArtboard id="cfg-empty" label="Empty" width={CW} height={CH}>
+          <F src="standards-empty.html?kind=configs"/>
+        </DCArtboard>
+        <DCArtboard id="cfg-skel" label="Skeleton" width={CW} height={CH}>
+          <F src="standards-skeleton.html"/>
+        </DCArtboard>
+        <DCArtboard id="cfg-list-closed" label="List · two-pane (existing)" width={CW} height={CH}>
+          <F src="configs.html"/>
+        </DCArtboard>
+        <DCArtboard id="cfg-list-open" label="Detail · fully expanded" width={CW} height={CH_TALL}>
+          <F src="configs-expanded.html"/>
+        </DCArtboard>
+        <DCArtboard id="cfg-create" label="Create · big-modal wizard (standard)" width={CW} height={CH}>
+          <F src="standards-create.html?kind=configs"/>
+        </DCArtboard>
+        <DCArtboard id="cfg-create-full" label="Create · full-page wizard (existing)" width={CW} height={CH}>
+          <F src="configs-new.html"/>
+        </DCArtboard>
+        <DCArtboard id="cfg-delete" label="Delete" width={CW} height={CH}>
+          <F src="standards-delete.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="metrics" title="07 · Metrics"
+        subtitle="Custom row content — each row has an inline sparkline, current value, delta, SLA bar. Same unified pattern; rows are bespoke.">
+        <DCArtboard id="met-empty" label="Empty" width={CW} height={CH}>
+          <F src="standards-empty.html?kind=metrics"/>
+        </DCArtboard>
+        <DCArtboard id="met-skel" label="Skeleton" width={CW} height={CH}>
+          <F src="standards-skeleton.html"/>
+        </DCArtboard>
+        <DCArtboard id="met-list-closed" label="List · closed · custom rows" width={CW} height={CH}>
+          <F src="metrics-list.html"/>
+        </DCArtboard>
+        <DCArtboard id="met-list-open" label="List · open · timeseries detail" width={CW} height={CH}>
+          <F src="metrics-list.html?open=p99_api_latency"/>
+        </DCArtboard>
+        <DCArtboard id="met-create" label="Create · big-modal wizard (custom event)" width={CW} height={CH}>
+          <F src="standards-create.html?kind=metrics"/>
+        </DCArtboard>
+        <DCArtboard id="met-delete" label="Archive" width={CW} height={CH}>
+          <TBD kind="linked" title="Archive · soft delete"
+            copy="Metrics never hard-delete — the data lives on. Archive hides them from the catalog using the standard confirm dialog."
+            meta="see ← Delete (standards)"/>
+        </DCArtboard>
+        <DCArtboard id="met-original" label="V1 catalog (reference)" width={CW} height={CH_TALL}>
+          <F src="metrics.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="workspace" title="08 · Workspace & access"
+        subtitle="Smaller-shape records that don't fit a 6-column row — kept together as their own group.">
+        <DCArtboard id="ws-projects" label="Projects · list" width={CW} height={CH}>
+          <F src="projects.html"/>
+        </DCArtboard>
+        <DCArtboard id="ws-switcher" label="Project switcher" width={CW} height={CH}>
+          <F src="projects-switcher.html"/>
+        </DCArtboard>
+        <DCArtboard id="ws-team" label="Team · list" width={CW} height={CH}>
+          <F src="team.html"/>
+        </DCArtboard>
+        <DCArtboard id="ws-api" label="API keys · list" width={CW} height={CH}>
+          <F src="api-keys.html"/>
+        </DCArtboard>
+        <DCArtboard id="ws-settings" label="Settings" width={CW} height={CH}>
+          <F src="settings.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="auth" title="09 · Auth"
+        subtitle="Sign in · magic link · create workspace.">
+        <DCArtboard id="auth-signin" label="Sign in" width={1200} height={CH}>
+          <F src="auth-signin.html"/>
+        </DCArtboard>
+        <DCArtboard id="auth-sent" label="Check your email" width={1200} height={CH}>
+          <F src="auth-sent.html"/>
+        </DCArtboard>
+        <DCArtboard id="auth-create" label="Create workspace" width={1200} height={CH}>
+          <F src="auth-create.html"/>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      <DCSection id="devtool" title="10 · DevTool"
+        subtitle="In-browser inspector for gates, experiments, configs.">
+        <DCArtboard id="dt" label="DevTool · full panel" width={1500} height={CH}>
+          <F src="devtool-full.html"/>
+        </DCArtboard>
+      </DCSection>
+
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+</body>
+</html>

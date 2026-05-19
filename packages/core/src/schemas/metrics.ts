@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-export const metricNameSchema = z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/);
+export const metricNameSchema = z
+  .string()
+  .regex(/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)?$/)
+  .max(128);
 
 export const metricCreateSchema = z.object({
   name: metricNameSchema,

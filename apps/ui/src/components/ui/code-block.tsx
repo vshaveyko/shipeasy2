@@ -4,6 +4,7 @@ import * as React from "react";
 import { Check, Copy } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { renderHighlighted } from "@/lib/highlight";
 
 interface CodeBlockProps extends React.ComponentProps<"pre"> {
   /** Language hint for the data attribute (informational). */
@@ -38,6 +39,13 @@ function CodeBlock({
     }
   };
 
+  // Syntax-highlight when (a) a language was passed and (b) the content is a
+  // plain string. Anything else (raw ReactNode, JSON pre-formatted, etc.)
+  // renders verbatim — callers can still get colored output by passing the
+  // string + language explicitly.
+  const highlighted =
+    language && typeof children === "string" ? renderHighlighted(children, language) : children;
+
   return (
     <div className="relative">
       <pre
@@ -45,12 +53,12 @@ function CodeBlock({
         data-slot="code-block"
         data-language={language}
         className={cn(
-          "se-json overflow-x-auto rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-2)] px-4 py-3 font-mono text-[12px] leading-relaxed text-[var(--se-fg-2)]",
+          "se-code overflow-x-auto rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-2)] px-4 py-3 font-mono text-[12px] leading-relaxed text-[var(--se-fg-2)]",
           className,
         )}
         {...props}
       >
-        {children}
+        {highlighted}
       </pre>
       {showCopy ? (
         <button

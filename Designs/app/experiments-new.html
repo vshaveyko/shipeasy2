@@ -1,0 +1,1619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>New experiment · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<link rel="stylesheet" href="shipeasy-experiments.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  /* Inline tweaks for the wizard */
+  .agg-ref{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+    padding:12px;background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--r-md);margin-top:10px}
+  .agg-ref .row{display:flex;gap:8px;align-items:flex-start;font-size:11.5px}
+  .agg-ref .row .k{font-family:var(--mono);color:var(--accent);
+    min-width:96px;flex-shrink:0}
+  .agg-ref .row .v{color:var(--fg-3);line-height:1.5}
+  .metric-chip{display:inline-flex;align-items:center;gap:8px;
+    padding:6px 10px 6px 9px;border-radius:var(--r-md);
+    background:var(--bg-2);border:1px solid var(--line-2);font-size:12px}
+  .metric-chip .ico{flex-shrink:0}
+  .metric-chip .agg{font-family:var(--mono);font-size:10px;
+    padding:1px 5px;border-radius:3px;background:var(--bg-3);color:var(--fg-3)}
+  .metric-chip.goal{border-color:color-mix(in oklab,var(--accent) 30%,transparent);
+    background:color-mix(in oklab,var(--accent) 6%,transparent)}
+  .metric-chip.guard{border-color:color-mix(in oklab,var(--warn) 30%,transparent);
+    background:color-mix(in oklab,var(--warn) 6%,transparent)}
+  .metric-chip.secondary{}
+  .metric-chip .x{cursor:default;color:var(--fg-4);margin-left:4px}
+  .metric-chip .x:hover{color:var(--fg-2)}
+  .power-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:10px}
+  .power-stat{padding:14px;border-radius:var(--r-md);
+    background:var(--bg-2);border:1px solid var(--line)}
+  .power-stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--fg-4)}
+  .power-stat .v{font-size:24px;letter-spacing:-0.015em;font-weight:500;
+    font-variant-numeric:tabular-nums;margin-top:4px}
+  .power-stat .v.warn{color:var(--warn)}
+  .power-stat .v.ok{color:var(--accent)}
+  .power-stat .d{font-family:var(--mono);font-size:10.5px;color:var(--fg-4);margin-top:3px}
+
+  .formula{font-family:var(--mono);font-size:11.5px;color:var(--fg-3);
+    background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:10px 12px;line-height:1.7;margin-top:10px;
+    overflow-x:auto;white-space:nowrap}
+  .formula .v{color:var(--fg)}
+  .formula .o{color:var(--purple)}
+
+  .gate-card{padding:12px 14px;background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--r-md);font-size:12.5px}
+  .gate-card .head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .gate-card .rule{font-family:var(--mono);font-size:11px;color:var(--fg-3);
+    padding:4px 0;display:flex;gap:8px;align-items:center}
+  .gate-card .rule .op{color:var(--purple)}
+
+  .role-card{padding:14px;border:1px solid var(--line);
+    border-radius:var(--r-md);background:var(--bg-2);margin-bottom:10px}
+  .role-card .head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .role-card .head b{font-size:13px;font-weight:500}
+  .role-card .head .badge{font-family:var(--mono);font-size:9.5px}
+  .role-card .explain{font-size:11.5px;color:var(--fg-3);line-height:1.5;
+    margin-bottom:10px}
+  .role-card .chip-row{flex-wrap:wrap}
+  .role-card.goal{border-color:color-mix(in oklab,var(--accent) 25%,transparent);
+    background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 5%,transparent),var(--bg-2))}
+  .role-card.guard{border-color:color-mix(in oklab,var(--warn) 25%,transparent);
+    background:linear-gradient(180deg,color-mix(in oklab,var(--warn) 5%,transparent),var(--bg-2))}
+
+  .summary-bar-row{display:flex;flex-direction:column;gap:8px;
+    margin:8px 0}
+  .summary-bar-row .legend{display:flex;flex-wrap:wrap;gap:8px;
+    font-family:var(--mono);font-size:10px;color:var(--fg-3)}
+  .summary-bar-row .legend > span{display:flex;align-items:center;gap:5px}
+  .summary-bar-row .legend i{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+  .toggle-row{display:flex;align-items:center;gap:12px;padding:10px 0}
+  .toggle-row .lbl{flex:1}
+  .toggle-row .lbl b{font-size:13px;font-weight:500;display:block;margin-bottom:2px}
+  .toggle-row .lbl span{font-size:11.5px;color:var(--fg-3);line-height:1.45}
+  .upgrade-prompt{padding:10px 12px;border-radius:var(--r-sm);
+    background:color-mix(in oklab,var(--purple) 8%,transparent);
+    border:1px solid color-mix(in oklab,var(--purple) 28%,transparent);
+    font-size:12px;color:var(--purple);display:flex;align-items:center;gap:8px;
+    margin-top:8px}
+
+  .advanced-summary{font-size:12px;color:var(--fg-2);cursor:default;
+    list-style:none;padding:8px 0;display:flex;align-items:center;gap:8px}
+  .advanced-summary::-webkit-details-marker{display:none}
+  .advanced-summary .chev{transition:transform .15s}
+  details[open] .advanced-summary .chev{transform:rotate(90deg)}
+
+  .gen-tabs{display:flex;border-radius:var(--r-md) var(--r-md) 0 0;
+    overflow:hidden;background:var(--bg-2);border:1px solid var(--line);
+    border-bottom:none}
+  .gen-tab{padding:8px 14px;font-family:var(--mono);font-size:11.5px;
+    color:var(--fg-3);cursor:default;border-right:1px solid var(--line)}
+  .gen-tab.active{background:var(--bg-1);color:var(--fg);
+    border-bottom:1px solid var(--bg-1);margin-bottom:-1px;position:relative;z-index:1}
+  .gen-tab:last-child{border-right:none}
+  .copy-btn{position:absolute;top:8px;right:8px;padding:4px 10px;
+    background:var(--bg-3);border:1px solid var(--line-2);
+    border-radius:var(--r-sm);font-family:var(--mono);font-size:11px;color:var(--fg-2);
+    display:flex;align-items:center;gap:5px;cursor:default}
+  .copy-btn:hover{background:var(--bg-4);color:var(--fg)}
+
+  .wiz-summary-card{padding:14px 16px;background:var(--bg-2);
+    border:1px solid var(--line);border-radius:var(--r-md);
+    margin:0 20px}
+
+  .chip-input{display:flex;flex-wrap:wrap;gap:6px;padding:6px;
+    border:1px solid var(--line-2);border-radius:var(--r-md);
+    background:var(--bg-2);min-height:38px;align-items:center}
+  .chip-input input{all:unset;flex:1;min-width:140px;font-size:12.5px;
+    padding:4px 6px}
+  .chip-input input::placeholder{color:var(--fg-4)}
+
+/* ── Modal (Create universe / gate) ───────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);
+  z-index:100;display:flex;align-items:center;justify-content:center;
+  padding:40px 20px;backdrop-filter:blur(4px);
+  animation:fadeIn .15s ease-out}
+.modal-overlay > .modal{
+  background:var(--bg-1);border:1px solid var(--line-2);
+  border-radius:var(--r-xl);box-shadow:var(--shadow-pop);
+  width:100%;max-width:640px;max-height:calc(100vh - 80px);
+  display:flex;flex-direction:column;overflow:hidden;
+  animation:popIn .18s cubic-bezier(.2,.8,.2,1)}
+.modal-overlay > .modal.wide{max-width:780px}
+.modal-head{padding:18px 22px 14px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--line)}
+.modal-head h3{margin:0;font-size:16px;font-weight:500;letter-spacing:-0.01em}
+.modal-head .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--fg-4)}
+.modal-body{padding:18px 22px;overflow:auto;flex:1;
+  display:flex;flex-direction:column;gap:14px}
+.modal-foot{padding:12px 22px;border-top:1px solid var(--line);
+  background:var(--bg-2);display:flex;align-items:center;gap:8px}
+.modal-foot .meta{font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+
+/* Holdout band slider preview */
+.holdout-preview{padding:14px;background:var(--bg-2);
+  border:1px solid var(--line);border-radius:var(--r-md)}
+.holdout-bar{position:relative;height:32px;border-radius:var(--r-sm);
+  background:var(--bg-3);overflow:hidden;
+  background-image:repeating-linear-gradient(45deg,
+    transparent,transparent 6px,
+    rgba(255,255,255,0.025) 6px,rgba(255,255,255,0.025) 12px)}
+.holdout-bar .band{position:absolute;top:0;bottom:0;
+  background:color-mix(in oklab,var(--warn) 28%,transparent);
+  border-left:2px solid var(--warn);border-right:2px solid var(--warn)}
+.holdout-bar .tick{position:absolute;top:-3px;height:38px;width:1px;
+  background:var(--line-2)}
+.holdout-bar .tick-label{position:absolute;top:38px;font-family:var(--mono);
+  font-size:9.5px;color:var(--fg-4);transform:translateX(-50%);white-space:nowrap}
+.holdout-readout{display:flex;gap:14px;margin-top:32px;
+  font-family:var(--mono);font-size:11px;color:var(--fg-3)}
+.holdout-readout b{color:var(--fg);font-weight:500}
+
+/* Rule editor (gate modal) */
+.rule-row{display:grid;grid-template-columns:60px 1fr 1fr 1fr 24px;
+  gap:8px;align-items:center;margin-bottom:6px}
+.rule-row .op-tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--fg-4);text-align:right;padding-right:2px}
+.rule-row .input,.rule-row .select select{height:30px;font-size:12.5px}
+.rule-row .rm{display:grid;place-items:center;color:var(--fg-4);cursor:default;
+  border-radius:4px;width:24px;height:24px}
+.rule-row .rm:hover{background:var(--bg-3);color:var(--fg-2)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const INITIAL_UNIVERSES = [
+  { id:'web-users',     unit:'user_id',    holdout:[0,500],  pct:5,
+    hash:'sha256_v2', users:'~28,400/day' },
+  { id:'mobile-users',  unit:'user_id',    holdout:[0,1000], pct:10,
+    hash:'sha256_v2', users:'~12,100/day' },
+  { id:'paid-customers',unit:'customer_id',holdout:[0,200],  pct:2,
+    hash:'sha256_v1', users:'~3,200/day' },
+  { id:'devices',       unit:'device_id',  holdout:[9000,10000], pct:10,
+    hash:'sha256_v2', users:'~41,000/day' },
+];
+const INITIAL_GATES = [
+  { id:'mobile_only', rules:['device.type = "mobile"'] },
+  { id:'us_eu_new_users', rules:['country IN ["US","CA","UK","DE","FR"]','user.created_at >= now - 30d'] },
+];
+
+const PROFILES = [
+  { k:'conversion', name:'Conversion', icon:'IconTarget',
+    desc:'Pre-fills count_users + a conversion goal metric',
+    seed:{ agg:'count_users', mde:0.02, goalLabel:'checkout.completed', mdeUnit:'abs %' } },
+  { k:'revenue', name:'Revenue', icon:'IconPercent',
+    desc:'Pre-fills sum + revenue goal metric',
+    seed:{ agg:'sum', mde:0.03, goalLabel:'order.revenue', mdeUnit:'rel %' } },
+  { k:'retention', name:'Retention', icon:'IconActivity',
+    desc:'Pre-fills retention_7d + activation guardrails',
+    seed:{ agg:'retention_7d', mde:0.015, goalLabel:'user.retained_d7', mdeUnit:'rel %' } },
+  { k:'performance', name:'Performance', icon:'IconCpu',
+    desc:'Pre-fills avg latency, p95 guardrails (winsorized)',
+    seed:{ agg:'avg', mde:0.05, goalLabel:'page.load_ms', mdeUnit:'rel %' } },
+  { k:'onboarding', name:'Onboarding', icon:'IconRocket',
+    desc:'Pre-fills count_users + activation goals',
+    seed:{ agg:'count_users', mde:0.025, goalLabel:'onboarding.completed', mdeUnit:'abs %' } },
+];
+
+const AGG_REF = [
+  ['count_users',  'Was the user ever exposed? 1 / 0 — for conversion'],
+  ['count_events', 'How many times the event fired — for volume'],
+  ['sum',          'Sum of a value path — for revenue, points'],
+  ['avg',          'Mean of value — for load time, durations'],
+  ['retention_7d', 'Active on D+7 from exposure? 1 / 0'],
+  ['retention_30d','Active on D+30 — long-tail engagement'],
+];
+
+/* Helpers */
+function slugify(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48); }
+function CountChars({ value, max }){
+  const n = (value||'').length;
+  const over = n > max;
+  return <span className="counter" style={{color:over?'var(--danger)':'var(--fg-4)'}}>{n}/{max}</span>;
+}
+function Modal({ title, sub, wide, onClose, children, footer }) {
+  React.useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className={"modal" + (wide?" wide":"")} onClick={e=>e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>{title}</h3>
+          {sub && <span className="sub">{sub}</span>}
+          <button className="btn btn-ghost btn-icon btn-sm" style={{marginLeft:'auto'}}
+            onClick={onClose}><IconX size={11}/></button>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-foot">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Create Universe Modal ───────────────────────────────── */
+function CreateUniverseModal({ onClose, onCreate }) {
+  const [name, setName] = React.useState('logged-out users');
+  const [unit, setUnit] = React.useState('user_id');
+  const [hashV, setHashV] = React.useState('sha256_v2');
+  const [desc, setDesc] = React.useState('Anonymous traffic landing on marketing pages, pre-signup.');
+  const [holdLo, setHoldLo] = React.useState(0);
+  const [holdHi, setHoldHi] = React.useState(500);
+  const slug = slugify(name);
+  const slugValid = /^[a-z][a-z0-9-]{2,47}$/.test(slug);
+  const holdPct = (holdHi - holdLo) / 100;
+  const holdValid = holdLo >= 0 && holdHi <= 10000 && holdHi > holdLo;
+  const ok = slugValid && holdValid && unit;
+
+  const ticks = [0, 2500, 5000, 7500, 10000];
+  const pctTicks = ['0%','25%','50%','75%','100%'];
+
+  return (
+    <Modal title="Create universe" sub="defines who · holdout · hash" onClose={onClose}
+      footer={<>
+        <span className="meta">Universes are workspace-scoped · all experiments inside share the same holdout</span>
+        <div className="ml-auto flex gap-2">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className={`btn ${ok?'btn-primary':'btn-secondary'}`} disabled={!ok}
+            onClick={()=>onCreate({ id:slug, unit, holdout:[holdLo,holdHi], pct:holdPct, hash:hashV, users:'—' })}>
+            <IconCheck size={11}/> Create universe
+          </button>
+        </div>
+      </>}>
+      <div className="field">
+        <label>Name</label>
+        <div className="input"><input value={name} onChange={e=>setName(e.target.value)} autoFocus/></div>
+        <div className="hint">
+          <span><span className="dim-3">slug · </span><span className={slugValid?'dim-accent':'dim-danger'}>{slug || 'invalid'}</span></span>
+          <span>{slugValid?'kebab-case · 3-48':'use letters, digits, hyphens'}</span>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="field">
+          <label>Unit type</label>
+          <div className="select">
+            <select value={unit} onChange={e=>setUnit(e.target.value)}>
+              <option value="user_id">user_id <span>· default</span></option>
+              <option value="device_id">device_id</option>
+              <option value="customer_id">customer_id</option>
+              <option value="session_id">session_id</option>
+              <option value="account_id">account_id</option>
+            </select>
+          </div>
+          <div className="hint"><span>used to hash & assign each subject to a group</span><span/></div>
+        </div>
+        <div className="field">
+          <label>Hash version</label>
+          <div className="select">
+            <select value={hashV} onChange={e=>setHashV(e.target.value)}>
+              <option value="sha256_v2">sha256_v2 · recommended</option>
+              <option value="sha256_v1">sha256_v1 · legacy</option>
+            </select>
+          </div>
+          <div className="hint"><span>changing this after launch reshuffles all assignments</span><span/></div>
+        </div>
+      </div>
+
+      <div className="field" style={{marginBottom:0}}>
+        <label className="flex items-center gap-2">
+          Holdout
+          <span className="dim-3" style={{fontWeight:400,fontSize:11}}>· percent of universe permanently held out of every experiment</span>
+        </label>
+
+        <div className="holdout-preview">
+          <div className="holdout-bar">
+            <div className="band" style={{
+              left:`${(holdLo/10000)*100}%`,
+              width:`${((holdHi-holdLo)/10000)*100}%`,
+            }}/>
+            {ticks.map((t,i) => (
+              <React.Fragment key={t}>
+                <span className="tick" style={{left:`${(t/10000)*100}%`}}/>
+                <span className="tick-label" style={{left:`${(t/10000)*100}%`}}>{pctTicks[i]}</span>
+              </React.Fragment>
+            ))}
+          </div>
+          <div className="holdout-readout">
+            <span><b style={{color:'var(--warn)'}}>{holdPct.toFixed(1)}%</b> held out</span>
+            <span>·</span>
+            <span data-tip="Universes split users into 10,000 hash slots (basis points). The holdout is the contiguous range of slots that is excluded.">
+              <span className="help-term">slots <b>{holdLo}</b>–<b>{holdHi}</b></span> of 10,000
+            </span>
+          </div>
+        </div>
+
+        <div className="grid-2" style={{marginTop:10}}>
+          <div className="field" style={{marginBottom:0}}>
+            <label>Start (% of universe)</label>
+            <div className="input mono">
+              <input value={(holdLo/100).toFixed(1)}
+                onChange={e=>setHoldLo(Math.max(0,Math.min(holdHi-1,Math.round((+e.target.value||0)*100))))}/>
+              <span className="suffix">%</span>
+            </div>
+            <div className="hint"><span>slot {holdLo} / 10,000</span><span/></div>
+          </div>
+          <div className="field" style={{marginBottom:0}}>
+            <label>End (% of universe)</label>
+            <div className="input mono">
+              <input value={(holdHi/100).toFixed(1)}
+                onChange={e=>setHoldHi(Math.max(holdLo+1,Math.min(10000,Math.round((+e.target.value||0)*100))))}/>
+              <span className="suffix">%</span>
+            </div>
+            <div className="hint"><span>slot {holdHi} / 10,000</span><span/></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="field">
+        <label>Description (optional)</label>
+        <textarea className="textarea" value={desc} onChange={e=>setDesc(e.target.value)}/>
+      </div>
+
+      <div className="banner info" style={{marginTop:4}}>
+        <IconInfo size={14} style={{color:'var(--info)',flexShrink:0}}/>
+        <div className="body" style={{color:'var(--fg-2)'}}>
+          <strong>Holdout is frozen.</strong>
+          <p>The hash range and unit type can only be changed if no experiment has shipped from this universe yet. Plan it carefully.</p>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── Create Gate Modal ─────────────────────────────────── */
+const GATE_ATTRS = ['country','device.type','plan','user.created_at','locale','app.version','feature_flags','is_employee'];
+const GATE_OPS   = ['=','!=','in','not in','contains','>=','<=','>','<'];
+
+function CreateGateModal({ onClose, onCreate }) {
+  const [title, setTitle] = React.useState('Mobile new users · US/EU');
+  const [desc, setDesc] = React.useState('Users on mobile, created in the last 30 days, in supported launch countries.');
+  const [rules, setRules] = React.useState([
+    { attr:'device.type',     op:'=',  val:'"mobile"' },
+    { attr:'country',         op:'in', val:'["US","CA","UK","DE","FR"]' },
+    { attr:'user.created_at', op:'>=', val:'now - 30d' },
+  ]);
+  const slug = slugify(title);
+  const slugValid = /^[a-z][a-z0-9-]{2,47}$/.test(slug);
+  const rulesValid = rules.length > 0 && rules.every(r => r.attr && r.op && r.val.trim());
+  const ok = slugValid && rulesValid;
+
+  const setRule = (i, k, v) => {
+    const next = rules.slice();
+    next[i] = { ...next[i], [k]:v };
+    setRules(next);
+  };
+  const addRule = () => setRules([...rules, { attr:'country', op:'=', val:'"US"' }]);
+  const rmRule  = (i) => setRules(rules.filter((_,j)=>j!==i));
+
+  return (
+    <Modal title="Create gate" sub="targeting rules · evaluated server-side" onClose={onClose} wide
+      footer={<>
+        <a href="gates-editor.html" className="t-mono-xs" style={{color:'var(--fg-3)',textDecoration:'underline'}}>
+          Open full editor — versioning, templates & rollouts →
+        </a>
+        <div className="ml-auto flex gap-2">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className={`btn ${ok?'btn-primary':'btn-secondary'}`} disabled={!ok}
+            onClick={()=>onCreate({ id:slug, rules:rules.map(r=>`${r.attr} ${r.op} ${r.val}`) })}>
+            <IconCheck size={11}/> Create gate
+          </button>
+        </div>
+      </>}>
+      <div className="grid-2">
+        <div className="field">
+          <label>Title</label>
+          <div className="input"><input value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
+          <div className="hint">
+            <span><span className="dim-3">slug · </span><span className={slugValid?'dim-accent':'dim-danger'}>{slug || 'invalid'}</span></span>
+            <span>frozen after first publish</span>
+          </div>
+        </div>
+        <div className="field">
+          <label>Folder</label>
+          <div className="select">
+            <select defaultValue="experiments">
+              <option>experiments</option>
+              <option>onboarding</option>
+              <option>billing</option>
+              <option>(no folder)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="field">
+        <label>Description</label>
+        <textarea className="textarea" value={desc} onChange={e=>setDesc(e.target.value)}
+          style={{minHeight:54}}/>
+      </div>
+
+      <div className="field" style={{marginBottom:0}}>
+        <label className="flex items-center gap-2">
+          Rules
+          <span className="dim-3" style={{fontWeight:400,fontSize:11}}>· all must match (AND)</span>
+          <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={addRule}>
+            <IconPlus size={10}/> Add rule
+          </button>
+        </label>
+
+        <div style={{padding:'8px 0'}}>
+          {rules.map((r,i) => (
+            <div className="rule-row" key={i}>
+              <span className="op-tag">{i===0?'WHERE':'AND'}</span>
+              <div className="select">
+                <select value={r.attr} onChange={e=>setRule(i,'attr',e.target.value)}>
+                  {GATE_ATTRS.map(a => <option key={a}>{a}</option>)}
+                </select>
+              </div>
+              <div className="select">
+                <select value={r.op} onChange={e=>setRule(i,'op',e.target.value)}>
+                  {GATE_OPS.map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="input mono">
+                <input value={r.val} onChange={e=>setRule(i,'val',e.target.value)}/>
+              </div>
+              {rules.length > 1
+                ? <span className="rm" onClick={()=>rmRule(i)}><IconX size={11}/></span>
+                : <span/>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="banner info">
+        <IconInfo size={14} style={{color:'var(--info)',flexShrink:0}}/>
+        <div className="body" style={{color:'var(--fg-2)'}}>
+          <strong>Preview against current traffic</strong>
+          <p>≈ <b className="num t-mono">2,140</b> matching users / day (12% of universe) · evaluated on the last hour of events.</p>
+        </div>
+        <button className="btn btn-ghost btn-sm">Re-evaluate</button>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── Create Metric Modal ──────────────────────────────────── */
+const EVENT_CATALOG = [
+  { name:'checkout.completed', kind:'conversion', vol:'42k/day' },
+  { name:'order.placed',       kind:'conversion', vol:'24k/day' },
+  { name:'order.refunded',     kind:'conversion', vol:'180/day'  },
+  { name:'order.value',        kind:'value',      vol:'24k/day · sum on .amount' },
+  { name:'page.load_ms',       kind:'value',      vol:'2.1M/day · ms' },
+  { name:'feed.scroll_jank_p95',kind:'value',     vol:'live · ms' },
+  { name:'api.p95_latency_ms', kind:'value',      vol:'8.4M/day · ms' },
+  { name:'signup.completed',   kind:'conversion', vol:'1.2k/day' },
+  { name:'session.length_s',   kind:'value',      vol:'live · s' },
+];
+const AGG_OPTIONS = [
+  { k:'count_users',   l:'count_users',   desc:'1 if user fired event ≥ once (conversion)' },
+  { k:'count_events',  l:'count_events',  desc:'How many times event fired (volume)' },
+  { k:'sum',           l:'sum',           desc:'Sum of a value path · revenue, points' },
+  { k:'avg',           l:'avg',           desc:'Mean of a value · load time, durations' },
+  { k:'retention_7d',  l:'retention_7d',  desc:'Active on D+7 from exposure' },
+  { k:'retention_30d', l:'retention_30d', desc:'Active on D+30 from exposure' },
+];
+
+function CreateMetricModal({ role, onClose, onCreate }) {
+  const roleMeta = {
+    goal:  { label:'Goal',      color:'var(--accent)', desc:'Must improve significantly for the experiment to ship.', icon:<IconTarget size={12}/> },
+    guard: { label:'Guardrail', color:'var(--warn)',   desc:'Any significant regression blocks ship.', icon:<IconShield size={12}/> },
+    sec:   { label:'Secondary', color:'var(--info)',   desc:'Informational only — does not affect the verdict.', icon:<IconChart size={12}/> },
+  }[role];
+
+  const [event, setEvent] = React.useState('checkout.completed');
+  const [agg, setAgg] = React.useState('count_users');
+  const [valuePath, setValuePath] = React.useState('amount');
+  const [winsor, setWinsor] = React.useState(99);
+  const [winsorOn, setWinsorOn] = React.useState(false);
+  const [mde, setMde] = React.useState(0.02);
+  const [direction, setDirection] = React.useState('higher');
+  const [filter, setFilter] = React.useState('');
+
+  const needsPath = ['sum','avg'].includes(agg);
+  const filtered = EVENT_CATALOG.filter(e => !filter || e.name.includes(filter));
+  const pickedEvent = EVENT_CATALOG.find(e => e.name === event);
+  const pending = !pickedEvent;
+  const ok = !!event && !!agg && (!needsPath || valuePath.trim());
+
+  const metricName = needsPath
+    ? `${event}.${slugify(valuePath).replace(/-/g,'_')}`
+    : event;
+
+  return (
+    <Modal title={<>Add <span style={{color:roleMeta.color}}>{roleMeta.label.toLowerCase()}</span> metric</>}
+      sub={`role · ${role}`} onClose={onClose} wide
+      footer={<>
+        <span className="meta">Metrics attach to experiment_metrics.role = {role}</span>
+        <div className="ml-auto flex gap-2">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className={`btn ${ok?'btn-primary':'btn-secondary'}`} disabled={!ok}
+            onClick={()=>onCreate({
+              name:metricName,
+              agg,
+              valuePath: needsPath ? valuePath : null,
+              winsor: winsorOn ? winsor : null,
+              mde: role==='guard' ? mde : null,
+              lowerBetter: direction === 'lower',
+              pending,
+            })}>
+            <IconCheck size={11}/> Attach metric
+          </button>
+        </div>
+      </>}>
+
+      <div className="banner" style={{borderColor:`color-mix(in oklab,${roleMeta.color} 30%,transparent)`,
+        background:`color-mix(in oklab,${roleMeta.color} 6%,transparent)`}}>
+        <span style={{color:roleMeta.color,flexShrink:0,marginTop:1}}>{roleMeta.icon}</span>
+        <div className="body" style={{color:'var(--fg-2)'}}>
+          <strong style={{color:roleMeta.color}}>{roleMeta.label}</strong> · {roleMeta.desc}
+        </div>
+      </div>
+
+      <div className="grid-2">
+        {/* Event picker */}
+        <div className="field" style={{marginBottom:0}}>
+          <label>Event source</label>
+          <div className="input">
+            <IconSearch size={11} style={{color:'var(--fg-3)'}}/>
+            <input placeholder="Search the event catalog…" value={filter}
+              onChange={e=>setFilter(e.target.value)}/>
+          </div>
+          <div style={{marginTop:6,maxHeight:200,overflow:'auto',border:'1px solid var(--line)',
+            borderRadius:'var(--r-sm)',background:'var(--bg-2)'}}>
+            {filtered.map(e => (
+              <div key={e.name} onClick={()=>setEvent(e.name)}
+                style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',
+                  cursor:'default',borderBottom:'1px solid var(--line)',
+                  background:event===e.name?'color-mix(in oklab,var(--accent) 8%,transparent)':'transparent'}}>
+                <span style={{width:6,height:6,borderRadius:50,
+                  background:e.kind==='conversion'?'var(--accent)':'var(--info)'}}/>
+                <span className="t-mono" style={{fontSize:12}}>{e.name}</span>
+                <span className="ml-auto t-mono-xs dim-3">{e.vol}</span>
+                {event===e.name && <IconCheck size={11} style={{color:'var(--accent)'}}/>}
+              </div>
+            ))}
+            {filter && !filtered.find(e=>e.name===filter) && (
+              <div onClick={()=>setEvent(filter)}
+                style={{padding:'8px 10px',display:'flex',gap:8,alignItems:'center',
+                  background:event===filter?'color-mix(in oklab,var(--warn) 10%,transparent)':'transparent'}}>
+                <IconPlus size={11} style={{color:'var(--warn)'}}/>
+                <span className="t-mono" style={{fontSize:12,color:'var(--warn)'}}>{filter}</span>
+                <span className="ml-auto t-mono-xs" style={{color:'var(--warn)'}}>pending — register later</span>
+              </div>
+            )}
+          </div>
+          <div className="hint" style={{marginTop:6}}>
+            <span>{pending ? <span className="dim-warn">pending — will become valid once the event fires</span> : <span className="dim-accent">registered · live</span>}</span>
+            <a href="metrics.html" style={{color:'var(--fg-3)',textDecoration:'underline'}}>Manage events →</a>
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div className="field" style={{marginBottom:0}}>
+            <label>Aggregation</label>
+            <div className="select">
+              <select value={agg} onChange={e=>setAgg(e.target.value)}>
+                {AGG_OPTIONS.map(a => <option key={a.k} value={a.k}>{a.l}</option>)}
+              </select>
+            </div>
+            <div className="hint"><span>{AGG_OPTIONS.find(a=>a.k===agg)?.desc}</span><span/></div>
+          </div>
+
+          {needsPath && (
+            <div className="field" style={{marginBottom:0}}>
+              <label>Value path</label>
+              <div className="input mono">
+                <span className="prefix">event.props.</span>
+                <input value={valuePath} onChange={e=>setValuePath(e.target.value)}/>
+              </div>
+              <div className="hint"><span>e.g. <code className="t-mono-xs">amount</code>, <code className="t-mono-xs">ms</code></span><span/></div>
+            </div>
+          )}
+
+          <div className="field" style={{marginBottom:0}}>
+            <label>Direction</label>
+            <div className="flex gap-2">
+              <button className={`btn ${direction==='higher'?'btn-secondary':'btn-ghost'} btn-sm`}
+                style={{flex:1,justifyContent:'center'}}
+                onClick={()=>setDirection('higher')}>
+                <IconTrendUp size={11}/> Higher is better
+              </button>
+              <button className={`btn ${direction==='lower'?'btn-secondary':'btn-ghost'} btn-sm`}
+                style={{flex:1,justifyContent:'center'}}
+                onClick={()=>setDirection('lower')}>
+                <IconTrendDown size={11}/> Lower is better
+              </button>
+            </div>
+          </div>
+
+          <div className="field" style={{marginBottom:0}}>
+            <label className="flex gap-2 items-center">
+              <span className={`toggle ${winsorOn?'on':''}`} style={{width:24,height:14}}
+                onClick={()=>setWinsorOn(s=>!s)}/>
+              Winsorize <span className="dim-3" style={{fontWeight:400}}>· cap outliers at percentile</span>
+            </label>
+            {winsorOn && (
+              <div className="flex gap-2 items-center" style={{marginTop:6}}>
+                <input type="range" className="range" min="80" max="99" value={winsor}
+                  onChange={e=>setWinsor(+e.target.value)} style={{flex:1}}/>
+                <div className="input mono" style={{width:74}}>
+                  <input value={winsor} onChange={e=>setWinsor(Math.max(1,Math.min(99,+e.target.value||99)))}/>
+                  <span className="suffix">pct</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {role === 'guard' && (
+            <div className="field" style={{marginBottom:0}}>
+              <label>MDE for regression alert</label>
+              <div className="input mono">
+                <input value={(mde*100).toFixed(1)}
+                  onChange={e=>setMde(Math.max(0,(+e.target.value||0)/100))}/>
+                <span className="suffix">%</span>
+              </div>
+              <div className="hint"><span>regressions smaller than this won't trip the verdict</span><span/></div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{padding:'10px 12px',borderRadius:'var(--r-sm)',
+        background:'var(--bg-2)',border:'1px solid var(--line)',
+        fontFamily:'var(--mono)',fontSize:11.5,color:'var(--fg-2)',
+        display:'flex',alignItems:'center',gap:8}}>
+        <IconCpu size={12} style={{color:'var(--info)'}}/>
+        <span className="dim-3">stored as</span>
+        <span style={{color:'var(--fg)'}}>{metricName}</span>
+        <span className="dim-3">·</span>
+        <span style={{color:'var(--accent)'}}>{agg}</span>
+        {winsorOn && <><span className="dim-3">·</span><span style={{color:'var(--warn)'}}>w{winsor}</span></>}
+        <span className="dim-3">·</span>
+        <span>role = {role}</span>
+        {direction==='lower' && <><span className="dim-3">·</span><span style={{color:'var(--purple)'}}>↓</span></>}
+        {pending && <><span className="dim-3">·</span><span style={{color:'var(--warn)'}}>pending</span></>}
+      </div>
+    </Modal>
+  );
+}
+
+/* Power calc */
+function powerCalc({ p1, mdeAbs, alpha=0.05, beta=0.20, dailyUsers, alloc }) {
+  // z_{α/2}, z_β  approx
+  const zA = 1.96;            // alpha 0.05 two-sided
+  const zB = 0.84;            // power 0.80
+  const p2 = Math.max(0.001, Math.min(0.999, p1 + mdeAbs));
+  const n = Math.ceil(((zA + zB)**2) * (p1*(1-p1) + p2*(1-p2)) / (mdeAbs*mdeAbs));
+  const days = Math.ceil(n / Math.max(1, dailyUsers * alloc / 2));
+  return { n, days, p2 };
+}
+
+/* Code snippets */
+const CODE = {
+  ts: ({slug, params, groupNames, events}) => (
+`import { shipeasy } from "@shipeasy/sdk";
+
+` +
+`// Read the experiment for this user
+const exp = await shipeasy.experiments.get(
+  "${slug}",
+  { user_id: ctx.user.id, attributes: ctx.user.attributes }
+);
+
+` +
+`if (exp.group === "${groupNames[1] || 'test'}") {
+  return renderVariantB(exp.params);
+}
+return renderControl(exp.params);
+
+` +
+`// Then track the events you registered as metrics
+${events.map(e => `shipeasy.track("${e}", { user_id: ctx.user.id });`).join('\n')}`),
+  js: ({slug, groupNames, events}) => (
+`const shipeasy = require("@shipeasy/sdk").default;
+
+` +
+`const exp = await shipeasy.experiments.get("${slug}", {
+  user_id: ctx.user.id,
+  attributes: ctx.user.attributes
+});
+
+` +
+`if (exp.group === "${groupNames[1] || 'test'}") {
+  renderVariantB(exp.params);
+} else {
+  renderControl(exp.params);
+}
+
+` +
+events.map(e => `shipeasy.track("${e}", { user_id: ctx.user.id });`).join('\n')),
+  py: ({slug, groupNames, events}) => (
+`from shipeasy import client
+
+` +
+`exp = client.experiments.get(
+    "${slug}",
+    user_id=ctx.user.id,
+    attributes=ctx.user.attributes,
+)
+
+` +
+`if exp.group == "${groupNames[1] || 'test'}":
+    render_variant_b(exp.params)
+else:
+    render_control(exp.params)
+
+` +
+events.map(e => `client.track("${e}", user_id=ctx.user.id)`).join('\n')),
+  rb: ({slug, groupNames, events}) => (
+`require "shipeasy"
+
+` +
+`exp = Shipeasy.experiments.get(
+  "${slug}",
+  user_id: ctx.user.id,
+  attributes: ctx.user.attributes
+)
+
+` +
+`if exp.group == "${groupNames[1] || 'test'}"
+  render_variant_b(exp.params)
+else
+  render_control(exp.params)
+end
+
+` +
+events.map(e => `Shipeasy.track("${e}", user_id: ctx.user.id)`).join('\n')),
+  go: ({slug, groupNames, events}) => (
+`exp, _ := shipeasy.Experiments.Get(ctx, "${slug}", &shipeasy.GetOpts{
+    UserID:     ctx.User.ID,
+    Attributes: ctx.User.Attributes,
+})
+
+` +
+`if exp.Group == "${groupNames[1] || "test"}" {
+    renderVariantB(exp.Params)
+} else {
+    renderControl(exp.Params)
+}
+
+` +
+events.map(e => `shipeasy.Track(ctx, "${e}", ctx.User.ID)`).join('\n')),
+};
+
+/* Highlighting — tokenize once with a single regex, no string-substitution
+   tags that ate the first letter of keywords in the previous version. */
+function hi(code, lang) {
+  const kwList = {
+    ts: 'import|from|const|let|var|if|else|return|await|async|function',
+    js: 'const|let|var|if|else|return|await|async|function|require',
+    py: 'from|import|def|if|else|return|None|True|False',
+    rb: 'require|if|else|end|def|return|nil|true|false',
+    go: 'if|else|return|func|var|const|nil|true|false',
+  }[lang] || '';
+  const commentRe = (lang==='py'||lang==='rb') ? '#[^\\n]*' : '//[^\\n]*';
+  const re = new RegExp(
+    `(${commentRe})|("[^"]*")|(\\b\\d+(?:\\.\\d+)?\\b)|(\\b(?:${kwList})\\b)`,
+    'g'
+  );
+  const out = [];
+  let last = 0, m, i = 0;
+  while ((m = re.exec(code)) !== null) {
+    if (m.index > last) out.push(code.slice(last, m.index));
+    if (m[1]) out.push(<span className="c" key={i++}>{m[1]}</span>);
+    else if (m[2]) out.push(<span className="s" key={i++}>{m[2]}</span>);
+    else if (m[3]) out.push(<span className="n" key={i++}>{m[3]}</span>);
+    else if (m[4]) out.push(<span className="k" key={i++}>{m[4]}</span>);
+    last = m.index + m[0].length;
+  }
+  if (last < code.length) out.push(code.slice(last));
+  return out;
+}
+
+/* ── Main wizard ───────────────────────────────────────────── */
+function Wizard() {
+  const [universes, setUniverses] = React.useState(INITIAL_UNIVERSES);
+  const [gates, setGates] = React.useState(INITIAL_GATES);
+  const [showCreateUniverse, setShowCreateUniverse] = React.useState(false);
+  const [showCreateGate, setShowCreateGate] = React.useState(false);
+  const [creatingMetricRole, setCreatingMetricRole] = React.useState(null); // 'goal' | 'guard' | 'sec'
+
+  const [profile, setProfile] = React.useState('conversion');
+  const [name, setName] = React.useState('Three-step checkout');
+  const [question, setQuestion] = React.useState('Does a three-step checkout improve completion over the single-page form for new users?');
+  const [success, setSuccess] = React.useState('Goal metric checkout.completed lifts ≥ 2% absolute with no regression on refund rate or p95 latency.');
+  const [change, setChange] = React.useState('Replace the single-page checkout with a three-step flow: address → shipping → pay, with inline validation per step.');
+  const [universeId, setUniverseId] = React.useState('web-users');
+  const [gateId, setGateId] = React.useState('');
+  const [alloc, setAlloc] = React.useState(50); // % of universe
+  const [groups, setGroups] = React.useState([
+    { name:'control',    weight:5000, params:'{ "variant": "single_page" }' },
+    { name:'three_step', weight:5000, params:'{ "variant": "three_step", "step_count": 3 }' },
+  ]);
+  const [goals, setGoals] = React.useState([{ name:'checkout.completed', agg:'count_users' }]);
+  const [guards, setGuards] = React.useState([
+    { name:'order.refund_rate', agg:'count_users', mde:0.02 },
+    { name:'api.p95_latency_ms', agg:'avg', mde:0.05, winsor:99 },
+  ]);
+  const [secs, setSecs] = React.useState([
+    { name:'checkout.aov', agg:'sum' },
+    { name:'checkout.time_to_complete', agg:'avg' },
+    { name:'pending_events_demo', agg:'count_users', pending:true },
+  ]);
+  const [baseline, setBaseline] = React.useState(0.50); // 50% baseline checkout completion
+  const [mde, setMde] = React.useState(0.025);
+  const [alpha, setAlpha] = React.useState(0.05);
+  const [minDays, setMinDays] = React.useState(7);
+  const [minSample, setMinSample] = React.useState(100);
+  const [seqTest, setSeqTest] = React.useState(false);
+  const [codeLang, setCodeLang] = React.useState('ts');
+  const [copiedCode, setCopiedCode] = React.useState(false);
+
+  const slug = slugify(name);
+  const slugValid = /^[a-z][a-z0-9-]{2,47}$/.test(slug);
+  const universe = universes.find(u => u.id === universeId) || universes[0];
+  const gate = gates.find(g => g.id === gateId);
+  const weightsSum = groups.reduce((s,g) => s + g.weight, 0);
+  const weightsOk = weightsSum === 10000;
+  const dailyUsers = 24000;
+  const power = powerCalc({
+    p1: baseline,
+    mdeAbs: mde,
+    alpha,
+    dailyUsers,
+    alloc: alloc/100,
+  });
+
+  const setGroupWeight = (i, w) => {
+    const next = groups.slice();
+    next[i] = { ...next[i], weight: Math.max(0, Math.min(10000, w)) };
+    setGroups(next);
+  };
+  const setGroupName = (i, v) => {
+    const next = groups.slice();
+    next[i] = { ...next[i], name: v };
+    setGroups(next);
+  };
+  const addGroup = () => setGroups([...groups, { name:`test_${groups.length}`, weight:0, params:'{}' }]);
+  const rmGroup = (i) => setGroups(groups.filter((_,j)=>j!==i));
+  const evenSplit = () => {
+    const w = Math.floor(10000 / groups.length);
+    const rem = 10000 - w*groups.length;
+    setGroups(groups.map((g,i)=>({ ...g, weight: w + (i===0?rem:0) })));
+  };
+
+  // segments for the live preview bar
+  const notInExp = 100 - alloc;
+  const holdoutPct = universe.pct * (alloc / 100); // holdout slice of allocated traffic
+  // simplest model from spec: not-in-experiment | holdout | control | tests
+  const segs = [];
+  segs.push({ name:'not_in_experiment', pct: notInExp, color:'var(--bg-4)' });
+  segs.push({ name:'holdout',           pct: holdoutPct,  color:'#888' });
+  let remaining = alloc - holdoutPct;
+  const groupColors = ['var(--fg-3)','var(--accent)','#7c5cff','#74c7ec','#ff8445'];
+  groups.forEach((g,i) => {
+    const share = remaining * (g.weight/10000);
+    segs.push({ name:g.name, pct:share, color:groupColors[i % groupColors.length] });
+  });
+
+  // checklist
+  const events = [...goals, ...guards, ...secs].map(m => m.name);
+  const eventsRegistered = events.filter(e => e !== 'pending_events_demo');
+  const checklist = [
+    { ok: goals.length === 1, label: goals.length===1?'1 goal metric registered':'Goal metric required (exactly one is best)' },
+    { ok: weightsOk, label: weightsOk?`Weights sum to ${weightsSum}`:`Weights must sum to 10000 (currently ${weightsSum})` },
+    { ok: !!universe, label: universe?`Universe: ${universe.id}`:'Select a universe' },
+    { ok: copiedCode, label: copiedCode?'Code copied at least once':'Copy a code snippet for at least one language' },
+    { ok: eventsRegistered.length === events.length, warn: eventsRegistered.length !== events.length,
+      label: eventsRegistered.length===events.length?'All metric events exist in catalog':'1 metric references a pending event' },
+    { ok: slugValid, label: slugValid?'Slug valid':'Slug must be kebab-case, 3–48 chars' },
+  ];
+  const allReady = checklist.every(c => c.ok);
+
+  const codeSrc = CODE[codeLang]({
+    slug, groupNames: groups.map(g=>g.name), events: eventsRegistered, params:[]
+  });
+
+  return (
+    <div className="app">
+      <Sidebar active="experiments"/>
+      <div style={{minWidth:0}}>
+        <Topbar crumbs={['Acme Co.','Experiments','New']}
+          actions={<>
+            <a href="experiments.html" className="btn btn-ghost">Cancel</a>
+            <button className="btn btn-secondary"><IconCode size={12}/> View YAML</button>
+            <button className={`btn ${allReady?'btn-primary':'btn-secondary'}`}
+              disabled={!allReady} style={{opacity:allReady?1:0.5}}>
+              <IconPlay size={12}/> Start experiment
+            </button>
+          </>}/>
+
+        <div className="wizard">
+
+          {/* MAIN COLUMN ─────────────────────────────────── */}
+          <div className="wizard-main">
+            <div className="t-caps dim-2" style={{marginBottom:8}}>Step 1 of 1 · configure</div>
+            <h1 style={{margin:'0 0 6px',fontSize:32,letterSpacing:'-0.02em',fontWeight:500}}>
+              <span className="t-serif">A new </span>experiment
+            </h1>
+            <p className="dim" style={{maxWidth:'60ch',marginTop:0,marginBottom:26,fontSize:13.5}}>
+              An experiment lives inside a <span className="help-term" data-tip="A universe owns the unit (user_id, device_id…), reserves a holdout, and pins the hashing version. The same users are excluded from every experiment in it.">universe</span>,
+              splits allocated users into groups, and measures a goal metric (with optional guardrails and secondaries).
+            </p>
+
+            {/* §1 Quick-setup profile picker ────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">1</span>
+                <h2>Quick-setup profile</h2>
+                <span className="sub">pre-fills aggregation + goal</span>
+              </div>
+              <div className="profile-tiles">
+                {PROFILES.map(p => {
+                  const Ic = window[p.icon] || IconFlask;
+                  return (
+                    <div key={p.k} className={`profile-tile ${profile===p.k?'active':''}`}
+                      onClick={() => setProfile(p.k)}>
+                      <Ic size={16} className="ico"/>
+                      <div className="name">{p.name}</div>
+                      <div className="desc">{p.desc}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* §2 Basics ─────────────────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">2</span>
+                <h2>Basics</h2>
+              </div>
+
+              <div className="grid-2">
+                <div className="field">
+                  <label>Name</label>
+                  <div className="input"><input value={name} onChange={e=>setName(e.target.value)}/></div>
+                  <div className="hint">
+                    <span><span className="dim-3">slug · </span><span className={slugValid?'dim-accent':'dim-danger'}>{slug || 'invalid'}</span></span>
+                    <span>{slugValid?'kebab-case · 3-48':'invalid · use letters, digits, hyphens'}</span>
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Tag (optional)</label>
+                  <div className="select"><select defaultValue="revenue">
+                    <option>revenue</option><option>activation</option>
+                    <option>engagement</option><option>performance</option><option>stability</option>
+                  </select></div>
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Question <span className="dim-3">· what you want to learn</span></label>
+                <textarea className="textarea" value={question} onChange={e=>setQuestion(e.target.value)}/>
+                <div className="hint"><span>One sentence ending in a question mark.</span><CountChars value={question} max={200}/></div>
+              </div>
+
+              <div className="field">
+                <label>Success definition <span className="dim-3">· what "shipping" means</span></label>
+                <textarea className="textarea" value={success} onChange={e=>setSuccess(e.target.value)}/>
+                <div className="hint"><span>Mention the goal metric and the guardrails that must hold.</span><CountChars value={success} max={240}/></div>
+              </div>
+
+              <div className="field">
+                <label>Change description <span className="dim-3">· what's actually different in the test</span></label>
+                <textarea className="textarea" value={change} onChange={e=>setChange(e.target.value)}/>
+                <div className="hint"><span>Future you will thank present you.</span><CountChars value={change} max={300}/></div>
+              </div>
+            </div>
+
+            {/* §3 Universe selector ──────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">3</span>
+                <h2>Universe</h2>
+                <span className="sub">defines the eligible population</span>
+              </div>
+
+              <div className="field">
+                <div className="select">
+                  <select value={universeId} onChange={e=>setUniverseId(e.target.value)}>
+                    {universes.map(u => <option key={u.id} value={u.id}>
+                      {u.id} · holdout {u.pct}% · {u.unit}
+                    </option>)}
+                  </select>
+                </div>
+                <div className="flex gap-2 items-center" style={{marginTop:6}}>
+                  <span className="t-mono-xs dim-3">
+                    Can't find what you need?
+                  </span>
+                  <button className="btn btn-ghost btn-sm"
+                    onClick={()=>setShowCreateUniverse(true)}>
+                    <IconPlus size={11}/> Create new universe
+                  </button>
+                </div>
+              </div>
+
+              <div className="banner info" style={{marginTop:10}}>
+                <IconInfo size={14} style={{color:'var(--info)',flexShrink:0}}/>
+                <div className="body" style={{color:'var(--fg-2)'}}>
+                  <strong>{universe.pct}% holdout</strong> · users hashed by <code className="t-mono-xs">{universe.unit}</code> into slots <code className="t-mono-xs">{universe.holdout[0]}–{universe.holdout[1]}</code> (of 10,000) are excluded.
+                  <p>Configured on the universe — the same users are excluded from every experiment in it. To change holdout you have to edit the universe.</p>
+                </div>
+                <button className="btn btn-ghost btn-sm">Edit universe</button>
+              </div>
+            </div>
+
+            {/* §4 Targeting gate ─────────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">4</span>
+                <h2>Targeting gate</h2>
+                <span className="sub">optional</span>
+              </div>
+              <p className="dim" style={{margin:'0 0 12px',fontSize:12.5}}>
+                Narrow the universe further with a gate (e.g. mobile only, US/EU new users).
+                Users who don't pass the gate are not enrolled.
+              </p>
+              <div className="field">
+                <div className="select">
+                  <select value={gateId} onChange={e=>setGateId(e.target.value)}>
+                    <option value="">No gate — eligible = whole universe</option>
+                    {gates.map(g => <option key={g.id} value={g.id}>{g.id}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-2 items-center" style={{marginTop:6}}>
+                  <span className="t-mono-xs dim-3">
+                    Need a new rule set?
+                  </span>
+                  <button className="btn btn-ghost btn-sm"
+                    onClick={()=>setShowCreateGate(true)}>
+                    <IconPlus size={11}/> Create new gate
+                  </button>
+                </div>
+              </div>
+              {gate && (
+                <div className="gate-card" style={{marginTop:8}}>
+                  <div className="head">
+                    <IconShield size={12} style={{color:'var(--info)'}}/>
+                    <b style={{fontSize:13}}>{gate.id}</b>
+                    <span className="ml-auto t-mono-xs dim-2">live</span>
+                  </div>
+                  {gate.rules.map((r,i) => <div key={i} className="rule">
+                    <span style={{color:'var(--fg-4)'}}>{i===0?'WHERE':'AND'}</span>
+                    <span>{r}</span>
+                  </div>)}
+                </div>
+              )}
+            </div>
+
+            {/* §5 Traffic split ─────────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">5</span>
+                <h2>Traffic split</h2>
+                <span className="sub">allocation · groups · params</span>
+              </div>
+
+              <div className="field">
+                <label>Allocation <span className="dim-3">· % of {universe.id} (after holdout) entering this experiment</span></label>
+                <div className="flex gap-3 items-center">
+                  <input type="range" className="range" min="1" max="100" value={alloc}
+                    onChange={e => setAlloc(+e.target.value)} style={{flex:1}}/>
+                  <div className="input mono" style={{width:96}}>
+                    <input value={alloc} onChange={e=>setAlloc(Math.max(1,Math.min(100,+e.target.value||0)))}/>
+                    <span className="suffix">%</span>
+                  </div>
+                </div>
+                <div className="hint">
+                  <span><b className="num t-mono dim">{alloc}%</b> of universe ≈ <b className="num t-mono dim">{Math.round(dailyUsers * alloc / 100).toLocaleString()}</b> daily users · {universe.users} match the gate</span>
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Live split preview</label>
+                <div className="split-bar">
+                  {segs.filter(s=>s.pct>0.001).map((s,i) => (
+                    <span key={i} style={{flexBasis:`${s.pct}%`,background:s.color}}>
+                      {s.pct > 6 && <span className="lbl">{s.name} · {s.pct.toFixed(1)}%</span>}
+                    </span>
+                  ))}
+                </div>
+                <div className="hint" style={{marginTop:8}}>
+                  <span>not_in_experiment + holdout never receive a treatment.</span>
+                </div>
+              </div>
+
+              <div className="rule-h"/>
+
+              <div className="field">
+                <label className="flex items-center gap-2">
+                  Group weights
+                  <span className="dim-3" style={{fontWeight:400,fontSize:11}}>· must sum to 100%</span>
+                  <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={evenSplit}>
+                    Even split
+                  </button>
+                </label>
+                {groups.map((g,i) => (
+                  <div className="group-row" key={i}>
+                    <div className={`group-pill ${i===1?'b':i===2?'c':''}`}>{String.fromCharCode(65+i)}</div>
+                    <div className="input mono"><input value={g.name} onChange={e=>setGroupName(i,e.target.value)}/></div>
+                    <input type="range" className="range" min="0" max="10000" step="100"
+                      value={g.weight} onChange={e=>setGroupWeight(i,+e.target.value)}/>
+                    <div className="input mono" data-tip="Stored as basis points (0–10,000). Each 100 bp = 1%.">
+                      <input value={(g.weight/100).toFixed(0)}
+                        onChange={e=>setGroupWeight(i,Math.round((+e.target.value||0)*100))}/>
+                      <span className="suffix">%</span>
+                    </div>
+                    <span className="t-mono-xs dim-2 num" style={{textAlign:'right'}} data-tip={`${g.weight} basis points`}>{g.weight}<span style={{color:'var(--fg-4)'}}>bp</span></span>
+                    {groups.length > 2 ? <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>rmGroup(i)}><IconX size={11}/></button> : <span/>}
+                  </div>
+                ))}
+                <div className="flex gap-2 items-center" style={{marginTop:6}}>
+                  <button className="btn btn-ghost btn-sm" onClick={addGroup}>
+                    <IconPlus size={11}/> Add group
+                  </button>
+                  <div className="ml-auto t-mono-xs" style={{color:weightsOk?'var(--accent)':'var(--danger)'}}
+                    data-tip="Each group's share of allocated traffic, expressed in basis points (1% = 100 bp). All groups must sum to exactly 10,000 bp.">
+                    <span className="help-term">Σ = {(weightsSum/100).toFixed(0)}% ({weightsSum} bp)</span> {weightsOk?'· ok':'· must equal 100%'}
+                  </div>
+                </div>
+              </div>
+
+              <details style={{marginTop:14,paddingTop:12,borderTop:'1px solid var(--line)'}}>
+                <summary className="advanced-summary">
+                  <IconChevronRight size={11} className="chev"/>
+                  Per-group <code className="t-mono-xs">params</code> (typed JSON · pulled from experiment-level schema)
+                </summary>
+                <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:8}}>
+                  <div className="t-mono-xs dim-2" style={{padding:'4px 6px'}}>
+                    Schema: <span style={{color:'var(--accent)'}}>variant: string</span>,&nbsp;
+                    <span style={{color:'var(--accent)'}}>step_count: int</span>
+                  </div>
+                  {groups.map((g,i) => (
+                    <div key={i} className="field" style={{marginBottom:0}}>
+                      <label className="t-mono-xs">{g.name}.params</label>
+                      <textarea className="textarea" style={{fontFamily:'var(--mono)',fontSize:12,minHeight:54}}
+                        defaultValue={g.params}/>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </div>
+
+            {/* §6 Metrics ────────────────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">6</span>
+                <h2>Metrics</h2>
+                <span className="sub">goal · guardrail · secondary</span>
+              </div>
+
+              {/* Goal */}
+              <div className="role-card goal">
+                <div className="head">
+                  <span style={{width:8,height:8,borderRadius:50,background:'var(--accent)'}}/>
+                  <b>Goal {goals.length>1 && <span style={{color:'var(--warn)'}}>⚠ &gt;1 goal</span>}</b>
+                  <span className="ml-auto t-mono-xs dim-2">required · 1 recommended</span>
+                </div>
+                <div className="explain">
+                  Register exactly one if you can — intersection test means more goals = less statistical power.
+                  Verdict <span className="help-term" data-tip="ALL goal metrics significant AND positive, AND no guardrail regressions.">ship</span> requires this metric to lift significantly.
+                </div>
+                <div className="chip-input">
+                  {goals.map((g,i)=>(
+                    <span key={i} className="metric-chip goal">
+                      <IconTarget size={10} className="ico" style={{color:'var(--accent)'}}/>
+                      <b style={{fontWeight:500}}>{g.name}</b>
+                      <span className="agg">{g.agg}</span>
+                      <span className="x" onClick={()=>setGoals(goals.filter((_,j)=>j!==i))}><IconX size={10}/></span>
+                    </span>
+                  ))}
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setCreatingMetricRole('goal')}
+                    style={{marginLeft:'auto'}}>
+                    <IconPlus size={11}/> {goals.length === 0 ? 'Pick a goal metric' : 'Add another goal'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Guardrails */}
+              <div className="role-card guard">
+                <div className="head">
+                  <IconShield size={11} style={{color:'var(--warn)'}}/>
+                  <b>Guardrails</b>
+                  <span className="ml-auto t-mono-xs dim-2">block ship on regression</span>
+                </div>
+                <div className="explain">
+                  Any significant negative move on a guardrail flips the verdict to <span className="help-term" data-tip="A guardrail regressed significantly. Don't ship.">hold</span>.
+                  Configure MDE per guardrail to set how big a regression you'll tolerate.
+                </div>
+                <div className="chip-input">
+                  {guards.map((g,i)=>(
+                    <span key={i} className="metric-chip guard">
+                      <IconShield size={10} className="ico" style={{color:'var(--warn)'}}/>
+                      <b style={{fontWeight:500}}>{g.name}</b>
+                      <span className="agg">{g.agg}</span>
+                      {g.winsor && <span className="agg" data-tip={`Winsorized at ${g.winsor}th percentile to limit outlier influence.`}>w{g.winsor}</span>}
+                      <span className="agg">MDE {(g.mde*100).toFixed(1)}%</span>
+                      <span className="x" onClick={()=>setGuards(guards.filter((_,j)=>j!==i))}><IconX size={10}/></span>
+                    </span>
+                  ))}
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setCreatingMetricRole('guard')}
+                    style={{marginLeft:'auto'}}>
+                    <IconPlus size={11}/> Add guardrail
+                  </button>
+                </div>
+              </div>
+
+              {/* Secondary */}
+              <div className="role-card">
+                <div className="head">
+                  <IconChart size={11} style={{color:'var(--info)'}}/>
+                  <b>Secondary</b>
+                  <span className="ml-auto t-mono-xs dim-2">informational only</span>
+                </div>
+                <div className="explain">
+                  Tracked & shown in results but do not affect the verdict. Good for "the test isn't bad, but is it actually moving anything else?"
+                </div>
+                <div className="chip-input">
+                  {secs.map((g,i)=>(
+                    <span key={i} className="metric-chip secondary">
+                      <IconChart size={10} className="ico" style={{color:'var(--info)'}}/>
+                      <b style={{fontWeight:500}}>{g.name}</b>
+                      <span className="agg">{g.agg}</span>
+                      {g.pending && <span className="agg" data-tip="This metric references an event that hasn't been seen in the catalog yet. It will become valid once the event fires."
+                        style={{color:'var(--warn)',background:'color-mix(in oklab,var(--warn) 14%,transparent)'}}>pending</span>}
+                      <span className="x" onClick={()=>setSecs(secs.filter((_,j)=>j!==i))}><IconX size={10}/></span>
+                    </span>
+                  ))}
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setCreatingMetricRole('sec')}
+                    style={{marginLeft:'auto'}}>
+                    <IconPlus size={11}/> Add secondary
+                  </button>
+                </div>
+              </div>
+
+              <div className="agg-ref">
+                <div className="row" style={{gridColumn:'1 / -1'}}>
+                  <span className="k">aggregation</span>
+                  <span className="v" style={{color:'var(--fg-4)',fontFamily:'var(--mono)'}}>one-line example each</span>
+                </div>
+                {AGG_REF.map(([k,v]) => (
+                  <div className="row" key={k}>
+                    <span className="k">{k}</span>
+                    <span className="v">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* §7 Statistical power calculator ───────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">7</span>
+                <h2>Statistical power</h2>
+                <span className="sub">live · live · live</span>
+              </div>
+              <p className="dim" style={{margin:'0 0 8px',fontSize:12.5}}>
+                Estimates required sample and runtime to detect your goal lift at α={alpha}, power=0.80.
+              </p>
+
+              <div className="grid-2">
+                <div className="field">
+                  <label>Baseline conversion <span className="dim-3">· auto-filled from history if available</span></label>
+                  <div className="input mono">
+                    <input value={(baseline*100).toFixed(1)} onChange={e=>setBaseline(Math.max(0.001,Math.min(0.999,(+e.target.value||0)/100)))}/>
+                    <span className="suffix">%</span>
+                  </div>
+                  <span className="hint"><span>historical p̂ for checkout.completed on this universe</span></span>
+                </div>
+                <div className="field">
+                  <label>MDE <span className="help-term" data-tip="Minimum Detectable Effect — the smallest difference between groups you want to be able to detect.">· abs.</span></label>
+                  <div className="input mono">
+                    <input value={(mde*100).toFixed(1)} onChange={e=>setMde(Math.max(0.001,(+e.target.value||0)/100))}/>
+                    <span className="suffix">%</span>
+                  </div>
+                  <span className="hint"><span>e.g. lift baseline {(baseline*100).toFixed(1)}% → {((baseline+mde)*100).toFixed(1)}%</span></span>
+                </div>
+                <div className="field">
+                  <label>Daily users <span className="dim-3">· in this universe</span></label>
+                  <div className="input mono"><input value={dailyUsers.toLocaleString()} readOnly/><span className="suffix">/day</span></div>
+                </div>
+                <div className="field">
+                  <label>Allocation</label>
+                  <div className="input mono"><input value={alloc} readOnly/><span className="suffix">%</span></div>
+                </div>
+              </div>
+
+              <div className="power-grid">
+                <div className="power-stat">
+                  <div className="k">n per group</div>
+                  <div className="v num">{power.n.toLocaleString()}</div>
+                  <div className="d">users · for {(mde*100).toFixed(1)}% MDE</div>
+                </div>
+                <div className="power-stat">
+                  <div className="k">Days to run</div>
+                  <div className={"v num " + (power.days > 30 ? 'warn' : 'ok')}>{power.days}</div>
+                  <div className="d">at {alloc}% alloc · ⌈n / (daily × alloc / 2)⌉</div>
+                </div>
+                <div className="power-stat">
+                  <div className="k">Power</div>
+                  <div className="v num">80%</div>
+                  <div className="d">β = 0.20 · z_β ≈ 0.84</div>
+                </div>
+                <div className="power-stat">
+                  <div className="k">α (two-sided)</div>
+                  <div className="v num">{alpha}</div>
+                  <div className="d">z_α/2 ≈ 1.96</div>
+                </div>
+              </div>
+
+              {power.days > 30 && (
+                <div className="banner warn" style={{marginTop:12}}>
+                  <IconAlert size={14} style={{color:'var(--warn)',flexShrink:0}}/>
+                  <div className="body">
+                    <strong>Runtime exceeds 30 days.</strong>
+                    <p>Consider raising allocation, increasing MDE, or splitting fewer groups. Long-running experiments accumulate drift risk.</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="formula">
+                <span className="o">n</span> = <span className="o">(z<sub>α/2</sub> + z<sub>β</sub>)²</span> × (p₁(1−p₁) + p₂(1−p₂)) / MDE² &nbsp;·&nbsp;
+                <span className="o">days</span> = ⌈n / (daily × alloc / 2)⌉
+              </div>
+            </div>
+
+            {/* §8 Advanced ───────────────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">8</span>
+                <h2>Advanced</h2>
+                <span className="sub">defaults are usually right</span>
+              </div>
+
+              <div className="grid-3">
+                <div className="field">
+                  <label>Significance threshold (α)</label>
+                  <div className="input mono">
+                    <input value={alpha} onChange={e=>setAlpha(Math.max(0.001,Math.min(0.2,+e.target.value||0.05)))}/>
+                  </div>
+                  <span className="hint"><span>default 0.05 (two-sided)</span></span>
+                </div>
+                <div className="field">
+                  <label>Min runtime</label>
+                  <div className="input mono">
+                    <input value={minDays} onChange={e=>setMinDays(+e.target.value||7)}/>
+                    <span className="suffix">days</span>
+                  </div>
+                  <span className="hint"><span>peek-warning until reached</span></span>
+                </div>
+                <div className="field">
+                  <label>Min sample / group</label>
+                  <div className="input mono">
+                    <input value={minSample} onChange={e=>setMinSample(+e.target.value||100)}/>
+                    <span className="suffix">users</span>
+                  </div>
+                  <span className="hint"><span>default 100</span></span>
+                </div>
+              </div>
+
+              <div className="rule-h"/>
+
+              <div className="toggle-row">
+                <div className={`toggle ${seqTest?'on':''}`} onClick={()=>setSeqTest(s=>!s)}/>
+                <div className="lbl">
+                  <b>Sequential testing (mSPRT) <span className="lock" style={{marginLeft:6}}><IconLock size={9}/> PREMIUM</span></b>
+                  <span>Always-valid <span className="help-term" data-tip="mixture Sequential Probability Ratio Test. Lets you peek at results before a fixed sample size without inflating false-positive rate.">mSPRT</span> bounds — peek at any time without inflating false-positive rate.</span>
+                </div>
+              </div>
+              {!seqTest && (
+                <div className="upgrade-prompt">
+                  <IconLock size={11}/> Unlock sequential testing — included on Premium and Enterprise plans.
+                  <a className="ml-auto" style={{color:'var(--purple)',textDecoration:'underline'}}>View plans →</a>
+                </div>
+              )}
+            </div>
+
+            {/* §9 Generated code ─────────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">9</span>
+                <h2>Generated instrumentation</h2>
+                <span className="sub">copy into your code</span>
+              </div>
+              <p className="dim" style={{margin:'0 0 10px',fontSize:12.5}}>
+                Wire your assignment call and the <code className="t-mono-xs">track()</code> events for every registered metric.
+              </p>
+
+              <div className="gen-tabs">
+                {[['ts','TypeScript'],['js','JavaScript'],['py','Python'],['rb','Ruby'],['go','Go']].map(([k,l]) => (
+                  <div key={k} className={`gen-tab ${codeLang===k?'active':''}`} onClick={()=>setCodeLang(k)}>{l}</div>
+                ))}
+              </div>
+              <div className="code-block" style={{borderRadius:'0 0 var(--r-md) var(--r-md)'}}>
+                <button className="copy-btn" onClick={()=>{ navigator.clipboard?.writeText(codeSrc); setCopiedCode(true); }}>
+                  {copiedCode ? <><IconCheck size={10}/> copied</> : <><IconCopy size={10}/> copy</>}
+                </button>
+                {hi(codeSrc, codeLang)}
+              </div>
+            </div>
+
+            {/* §10 Launch checklist ─────────────────────── */}
+            <div className="section">
+              <div className="section-head">
+                <span className="num">10</span>
+                <h2>Launch checklist</h2>
+                <span className="sub">all required to start</span>
+              </div>
+
+              <div className="checklist">
+                {checklist.map((c,i) => (
+                  <div key={i} className={`check-item ${c.ok?'done':c.warn?'warn':''}`}>
+                    <span className="check">
+                      {c.ok ? <IconCheck size={9} strokeWidth={2.6}/> : c.warn ? <IconAlert size={8}/> : <IconX size={8}/>}
+                    </span>
+                    {c.label}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 items-center" style={{marginTop:20}}>
+                <button className="btn btn-secondary">Save as draft</button>
+                <span className="ml-auto t-mono-xs dim-2">
+                  {checklist.filter(c=>c.ok).length}/{checklist.length} checks pass
+                </span>
+                <button className={`btn ${allReady?'btn-primary':'btn-secondary'} btn-lg`} disabled={!allReady}>
+                  <IconPlay size={12}/> Start experiment
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* SIDEBAR — sticky summary ─────────────────────── */}
+          <div className="wizard-side">
+            <div style={{padding:'18px 20px 12px',display:'flex',alignItems:'center',gap:8,borderBottom:'1px solid var(--line)'}}>
+              <div className="t-caps dim-2">Live summary</div>
+              <span className="ml-auto badge"><span className="dot" style={{background:weightsOk?'var(--accent)':'var(--warn)'}}/>{weightsOk?'valid':'invalid'}</span>
+            </div>
+
+            <div className="summary-section">
+              <div className="label">Identity</div>
+              <div className="summary-kv"><span className="k">name</span><span className="v">{slug || '—'}</span></div>
+              <div className="summary-kv"><span className="k">profile</span><span className="v">{profile}</span></div>
+            </div>
+
+            <div className="summary-section">
+              <div className="label">Universe & holdout</div>
+              <div className="summary-kv"><span className="k">universe</span><span className="v">{universe.id}</span></div>
+              <div className="summary-kv"><span className="k">unit</span><span className="v">{universe.unit}</span></div>
+              <div className="summary-kv"><span className="k">holdout</span><span className="v" data-tip={`Slots ${universe.holdout[0]}–${universe.holdout[1]} of 10,000`}>{universe.pct}%</span></div>
+              <div className="summary-kv"><span className="k">hash</span><span className="v">{universe.hash}</span></div>
+              {gate && <div className="summary-kv"><span className="k">gate</span><span className="v">{gate.id}</span></div>}
+            </div>
+
+            <div className="summary-section">
+              <div className="label">Traffic</div>
+              <div className="summary-bar-row">
+                <div className="split-bar">
+                  {segs.filter(s=>s.pct>0.001).map((s,i) => (
+                    <span key={i} style={{flexBasis:`${s.pct}%`,background:s.color}}/>
+                  ))}
+                </div>
+                <div className="legend">
+                  {segs.filter(s=>s.pct>0).map((s,i) => (
+                    <span key={i}><i style={{background:s.color}}/>{s.name} {s.pct.toFixed(1)}%</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="summary-section">
+              <div className="label">Metrics</div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {goals.map((g,i) => <div key={i} className="flex gap-2 items-center" style={{fontSize:12}}>
+                  <span style={{width:8,height:8,borderRadius:50,background:'var(--accent)'}}/>
+                  <span className="t-mono">{g.name}</span>
+                  <span className="ml-auto t-mono-xs dim-2">{g.agg}</span>
+                </div>)}
+                {guards.map((g,i) => <div key={i} className="flex gap-2 items-center" style={{fontSize:12}}>
+                  <IconShield size={10} style={{color:'var(--warn)'}}/>
+                  <span className="t-mono">{g.name}</span>
+                  <span className="ml-auto t-mono-xs dim-2">{g.agg}</span>
+                </div>)}
+                {secs.map((g,i) => <div key={i} className="flex gap-2 items-center" style={{fontSize:12}}>
+                  <IconChart size={10} style={{color:'var(--info)'}}/>
+                  <span className="t-mono">{g.name}</span>
+                  <span className="ml-auto t-mono-xs dim-2">{g.agg}</span>
+                </div>)}
+              </div>
+            </div>
+
+            <div className="summary-section">
+              <div className="label">Estimated runtime</div>
+              <div className="summary-kv"><span className="k">sample / group</span><span className="v">{power.n.toLocaleString()}</span></div>
+              <div className="summary-kv"><span className="k">days to run</span>
+                <span className="v" style={{color:power.days>30?'var(--warn)':'var(--fg)'}}>{power.days}</span>
+              </div>
+              <div className="summary-kv"><span className="k">min runtime</span><span className="v">{minDays}d</span></div>
+              <div className="summary-kv"><span className="k">α / power</span><span className="v">{alpha} / 0.80</span></div>
+            </div>
+
+            <div className="summary-section" style={{paddingBottom:24}}>
+              <div className="label">Ready to launch</div>
+              <div className="checklist">
+                {checklist.map((c,i) => (
+                  <div key={i} className={`check-item ${c.ok?'done':c.warn?'warn':''}`}>
+                    <span className="check">
+                      {c.ok ? <IconCheck size={9} strokeWidth={2.6}/> : c.warn ? <IconAlert size={8}/> : <IconX size={8}/>}
+                    </span>
+                    <span style={{fontSize:11.5}}>{c.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {showCreateUniverse && (
+        <CreateUniverseModal
+          onClose={()=>setShowCreateUniverse(false)}
+          onCreate={u => {
+            setUniverses([...universes, u]);
+            setUniverseId(u.id);
+            setShowCreateUniverse(false);
+          }}/>
+      )}
+      {showCreateGate && (
+        <CreateGateModal
+          onClose={()=>setShowCreateGate(false)}
+          onCreate={g => {
+            setGates([...gates, g]);
+            setGateId(g.id);
+            setShowCreateGate(false);
+          }}/>
+      )}
+      {creatingMetricRole && (
+        <CreateMetricModal
+          role={creatingMetricRole}
+          onClose={()=>setCreatingMetricRole(null)}
+          onCreate={m => {
+            if (creatingMetricRole === 'goal')  setGoals([...goals, m]);
+            if (creatingMetricRole === 'guard') setGuards([...guards, m]);
+            if (creatingMetricRole === 'sec')   setSecs([...secs, m]);
+            setCreatingMetricRole(null);
+          }}/>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<Wizard/>);
+</script>
+</body>
+</html>

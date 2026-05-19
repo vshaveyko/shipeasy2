@@ -18,6 +18,7 @@ import {
 import { BigModalWizard, type WizardStep } from "@/components/shell/big-modal-wizard";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
+import { FolderNameInput } from "@/components/ui/folder-name-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { createConfigAction } from "./actions";
@@ -43,8 +44,8 @@ import {
 // Match the server-side `configNameSchema` shape: exactly two segments
 // separated by `.`, each `[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?`. The folder
 // segment may also be the reserved `_default` namespace.
-const KEY_PATTERN =
-  /^(?:_default|[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
+const SEGMENT_RE = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
+const FOLDER_RE = /^(?:_default|[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)$/;
 
 export interface NewConfigWizardProps {
   open: boolean;
@@ -60,7 +61,8 @@ export function NewConfigWizard({
   onCreated,
 }: NewConfigWizardProps) {
   const [step, setStep] = useState(0);
-  const [key, setKey] = useState("");
+  const [folder, setFolder] = useState("");
+  const [leaf, setLeaf] = useState("");
   const [description, setDescription] = useState("");
   const [fields, setFields] = useState<WizField[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -84,14 +86,19 @@ export function NewConfigWizard({
   const missing = useMemo(() => countMissingRequired(fields), [fields]);
   const built = useMemo(() => buildSchemaAndDefault(fields), [fields]);
 
-  const trimmed = key.trim();
-  const keyValid = KEY_PATTERN.test(trimmed);
+  const folderTrim = folder.trim();
+  const leafTrim = leaf.trim();
+  const folderValid = FOLDER_RE.test(folderTrim);
+  const leafValid = SEGMENT_RE.test(leafTrim);
+  const keyValid = folderValid && leafValid;
+  const trimmed = keyValid ? `${folderTrim}.${leafTrim}` : "";
   const displayKey = trimmed || "your_config";
 
   function resetAndClose(next: boolean) {
     if (!next) {
       setStep(0);
-      setKey("");
+      setFolder("");
+      setLeaf("");
       setDescription("");
       setFields([]);
       setExpanded({});
@@ -144,8 +151,12 @@ export function NewConfigWizard({
       ),
       content: (
         <StepDetails
-          keyValue={key}
-          setKeyValue={setKey}
+          folder={folder}
+          setFolder={setFolder}
+          leaf={leaf}
+          setLeaf={setLeaf}
+          folderValid={folderValid}
+          leafValid={leafValid}
           description={description}
           setDescription={setDescription}
         />
@@ -275,37 +286,58 @@ export function NewConfigWizard({
 // ── Step 1: Details ─────────────────────────────────────────────────
 
 function StepDetails({
-  keyValue,
-  setKeyValue,
+  folder,
+  setFolder,
+  leaf,
+  setLeaf,
+  folderValid,
+  leafValid,
   description,
   setDescription,
 }: {
-  keyValue: string;
-  setKeyValue: (v: string) => void;
+  folder: string;
+  setFolder: (v: string) => void;
+  leaf: string;
+  setLeaf: (v: string) => void;
+  folderValid: boolean;
+  leafValid: boolean;
   description: string;
   setDescription: (v: string) => void;
 }) {
+  const folderError = folder.trim().length > 0 && !folderValid;
+  const leafError = leaf.trim().length > 0 && !leafValid;
+  const fullKey = folderValid && leafValid ? `${folder.trim()}.${leaf.trim()}` : "folder.name";
   return (
     <div className="flex flex-col gap-3">
       <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
         <DetailsRow label="Key" required>
-          <input
-            id="config-key"
-            aria-label="Key"
-            value={keyValue}
-            onChange={(e) => setKeyValue(e.target.value)}
-            placeholder="features.shipping"
-            data-testid="config-key-input"
-            autoFocus
-            className="h-9 w-full rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 font-mono text-[13.5px] font-medium outline-none transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] focus:border-[var(--se-accent)] focus:bg-[var(--se-bg-1)]"
+          <FolderNameInput
+            folder={folder}
+            leaf={leaf}
+            onFolderChange={setFolder}
+            onLeafChange={setLeaf}
+            folderPlaceholder="features"
+            leafPlaceholder="shipping"
+            folderId="config-folder"
+            leafId="config-leaf"
+            folderTestId="config-folder-input"
+            leafTestId="config-key-input"
+            allowDefaultFolder
           />
-          <div className="mt-2 text-[11.5px] leading-[1.55] text-[var(--se-fg-3)]">
-            Lowercase, dot-separated. Example{" "}
-            <code className="rounded-[3px] bg-[var(--se-bg-3)] px-1.5 py-px font-mono text-[11px] text-[var(--se-fg-2)]">
-              features.shipping
-            </code>
-            .
-          </div>
+          {folderError || leafError ? (
+            <div role="alert" className="mt-2 text-[11.5px] leading-[1.55] text-[var(--se-danger)]">
+              Use lowercase letters, digits, <code className="font-mono">-</code> or{" "}
+              <code className="font-mono">_</code>. Cannot start or end with a separator.
+            </div>
+          ) : (
+            <div className="mt-2 text-[11.5px] leading-[1.55] text-[var(--se-fg-3)]">
+              SDK call:{" "}
+              <code className="rounded-[3px] bg-[var(--se-bg-3)] px-1.5 py-px font-mono text-[11px] text-[var(--se-fg-2)]">
+                shipeasy.getConfig(&quot;{fullKey}&quot;)
+              </code>
+              . Folder organises the dashboard rail; both halves immutable after publish.
+            </div>
+          )}
         </DetailsRow>
 
         <DetailsRow label="Description">

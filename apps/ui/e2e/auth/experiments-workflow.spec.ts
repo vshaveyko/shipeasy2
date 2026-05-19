@@ -4,13 +4,48 @@ import { adminList } from "../admin-list";
 import { setProjectPlan } from "../seed-fixtures";
 
 const RUN = Date.now();
+const PROJECT = "e2e-project-id";
+const GOAL_EVENT = `e2exp_wf_event_${RUN}`;
+const GOAL_METRIC = `e2exp_wf_goal_${RUN}`;
 
 // Free plan caps experiments at 1; this spec exercises multiple full
 // lifecycles. Bump to paid for the whole spec.
-test.beforeAll(() => setProjectPlan("paid"));
-test.afterAll(() => setProjectPlan("free"));
+test.beforeAll(async ({ request }) => {
+  setProjectPlan("paid");
+  await seedGoalMetric(request);
+});
+test.afterAll(async ({ request }) => {
+  await cleanupGoalMetric(request);
+  setProjectPlan("free");
+});
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Seed helpers ─────────────────────────────────────────────────────────────
+
+async function seedGoalMetric(request: APIRequestContext): Promise<void> {
+  // Best-effort — repeated calls return 409 which is fine.
+  await request.post("/api/admin/events", { data: { name: GOAL_EVENT } }).catch(() => {});
+  await request
+    .post("/api/admin/metrics", {
+      data: {
+        name: GOAL_METRIC,
+        event_name: GOAL_EVENT,
+        aggregation: "count_users",
+        winsorize_pct: 99,
+      },
+    })
+    .catch(() => {});
+}
+
+async function cleanupGoalMetric(request: APIRequestContext): Promise<void> {
+  const metrics = await adminList<{ id: string; name: string }>(
+    request,
+    "/api/admin/metrics",
+  ).catch(() => [] as { id: string; name: string }[]);
+  const m = metrics.find((x) => x.name === GOAL_METRIC);
+  if (m) await request.delete(`/api/admin/metrics/${m.id}`).catch(() => {});
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function expRow(page: Page, name: string) {
   return page
@@ -50,8 +85,9 @@ async function getExperimentId(page: Page, name: string): Promise<string> {
 }
 
 /**
- * Drive the BigModalWizard (`?new=1`) end-to-end through to Create.
- * Lands back on `/experiments` after the Server Action redirect.
+ * Drive the BigModalWizard (`?new=1`) through all 5 steps (Basics → Audience
+ * → Variants → Metrics → Integrate) and save as draft. The goal metric is
+ * seeded in `beforeAll` so it appears in the step-4 combobox.
  */
 async function createViaWizard(
   page: Page,
@@ -62,11 +98,12 @@ async function createViaWizard(
     extraVariants?: number;
   } = {},
 ) {
-  await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+  await cleanupExperiment(page.request, name);
+  await page.goto(`/dashboard/${PROJECT}/experiments?new=1`);
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
 
-  // Step 1 — Name & describe
+  // Step 1 — Basics
   await dialog.getByTestId("experiment-name-input").fill(name);
   if (opts.hypothesis !== undefined) {
     await dialog.locator("#experiment-description").fill(opts.hypothesis);
@@ -74,32 +111,39 @@ async function createViaWizard(
   if (opts.tag !== undefined) {
     await dialog.locator("#experiment-tag").fill(opts.tag);
   }
+  const next = dialog.getByRole("button", { name: /^next/i });
+  await expect(next).toBeEnabled();
+  await next.click();
+
+  // Step 2 — Audience & allocation (keep defaults: default universe, 100%)
+  await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Universe & allocation");
   await dialog.getByRole("button", { name: /^next/i }).click();
 
-  // Step 2 — Audience & traffic (keep defaults: default universe, 100%, no gate)
-  await dialog
-    .getByText(/audience & traffic/i)
-    .first()
-    .waitFor();
-  await dialog.getByRole("button", { name: /^next/i }).click();
-
-  // Step 3 — Variants
-  await dialog.getByRole("heading", { name: /^variants$/i }).waitFor();
+  // Step 3 — Variants & weights
+  await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Variants & weights");
   for (let i = 0; i < (opts.extraVariants ?? 0); i++) {
     await dialog.getByRole("button", { name: /^add variant$/i }).click();
   }
   await dialog.getByRole("button", { name: /^next/i }).click();
 
-  // Step 4 — Review → submit
-  await dialog.getByRole("heading", { name: /^review$/i }).waitFor();
-  await dialog.getByRole("button", { name: /create experiment/i }).click();
+  // Step 4 — Goal & guardrails — pick the seeded goal metric.
+  await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Goal & guardrails");
+  await dialog.locator("#experiment-goal-metric").click();
+  await page.keyboard.type(GOAL_METRIC, { delay: 10 });
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(dialog.locator("#experiment-goal-metric")).toContainText(GOAL_METRIC);
+  await dialog.getByRole("button", { name: /^next/i }).click();
 
-  // After submit the server action calls redirect() back to /experiments
-  // (no `?new=1`). Wait for the dialog to close + URL to strip the query.
+  // Step 5 — Integrate. Uncheck "Start immediately" so the experiment lands as
+  // draft (matches the legacy behaviour this helper guarantees).
+  await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Wire it up");
+  await dialog.getByLabel(/start experiment immediately/i).uncheck();
+  await dialog.getByRole("button", { name: /save as draft/i }).click();
+
+  // Wizard closes once the action returns ok; URL strips ?new=1.
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 15_000 });
   await expect(page).not.toHaveURL(/[?&]new=1\b/);
-  // SWR refetch — pin to the closed-table pane so the rail mirror doesn't
-  // double-match strict-mode.
   await expect(
     page.locator('[data-slot="pane-full"]').getByText(name, { exact: true }),
   ).toBeVisible({ timeout: 15_000 });
@@ -108,19 +152,16 @@ async function createViaWizard(
 // ── Wizard UI surface (BigModalWizard) ──────────────────────────────────────
 
 test.describe("New experiment wizard — BigModalWizard UI", () => {
-  test("renders the 4-step stepper", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+  test("renders the 5-step stepper", async ({ page }) => {
+    await page.goto(`/dashboard/${PROJECT}/experiments?new=1`);
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    // Footer copy: "Step N of M · <label>" — pin to 4 total.
-    await expect(dialog.getByText(/step 1 of 4/i).first()).toBeVisible();
-    for (const label of ["Name & describe", "Audience & traffic", "Variants", "Review"]) {
-      await expect(dialog.getByText(new RegExp(label, "i")).first()).toBeVisible();
-    }
+    await expect(dialog.getByText(/step 1 of 5 · experiment/i)).toBeVisible();
+    await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Hypothesis & basics");
   });
 
-  test("Next is disabled until a valid name is entered", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+  test("Next is disabled until a valid slug is entered", async ({ page }) => {
+    await page.goto(`/dashboard/${PROJECT}/experiments?new=1`);
     const dialog = page.getByRole("dialog");
     const next = dialog.getByRole("button", { name: /^next/i });
     await expect(next).toBeDisabled();
@@ -131,7 +172,7 @@ test.describe("New experiment wizard — BigModalWizard UI", () => {
   test("step 3 starts with control + treatment variants and an Add variant button", async ({
     page,
   }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    await page.goto(`/dashboard/${PROJECT}/experiments?new=1`);
     const dialog = page.getByRole("dialog");
     await dialog.getByTestId("experiment-name-input").fill("two_variants");
     await dialog.getByRole("button", { name: /^next/i }).click();
@@ -143,7 +184,7 @@ test.describe("New experiment wizard — BigModalWizard UI", () => {
   });
 
   test("Add variant button adds a third variant row and rebalances weights", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    await page.goto(`/dashboard/${PROJECT}/experiments?new=1`);
     const dialog = page.getByRole("dialog");
     await dialog.getByTestId("experiment-name-input").fill("three_variants");
     await dialog.getByRole("button", { name: /^next/i }).click();
@@ -156,25 +197,33 @@ test.describe("New experiment wizard — BigModalWizard UI", () => {
   });
 
   test("Esc closes the wizard and strips ?new=1", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+    await page.goto(`/dashboard/${PROJECT}/experiments?new=1`);
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(page).not.toHaveURL(/[?&]new=1\b/);
   });
 
-  test("Review step renders summary cards and a Create button", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments?new=1");
+  test("Integrate step exposes SDK snippets + Start immediately toggle", async ({ page }) => {
+    await page.goto(`/dashboard/${PROJECT}/experiments?new=1`);
     const dialog = page.getByRole("dialog");
-    await dialog.getByTestId("experiment-name-input").fill("review_demo");
-    await dialog.getByRole("button", { name: /^next/i }).click();
-    await dialog.getByRole("button", { name: /^next/i }).click();
-    await dialog.getByRole("button", { name: /^next/i }).click();
+    await dialog.getByTestId("experiment-name-input").fill("integrate_demo");
+    for (let i = 0; i < 4; i += 1) {
+      // Step 4 needs a goal metric to advance — pick it before clicking Next.
+      if (i === 3) {
+        await dialog.locator("#experiment-goal-metric").click();
+        await page.keyboard.type(GOAL_METRIC, { delay: 10 });
+        await page.keyboard.press("ArrowDown");
+        await page.keyboard.press("Enter");
+      }
+      await dialog.getByRole("button", { name: /^next/i }).click();
+    }
 
-    await expect(dialog.getByRole("heading", { name: /^review$/i })).toBeVisible();
-    await expect(dialog.getByText(/^name$/i).first()).toBeVisible();
-    await expect(dialog.getByText(/^variants$/i).first()).toBeVisible();
-    await expect(dialog.getByRole("button", { name: /create experiment/i })).toBeVisible();
+    await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Wire it up");
+    await expect(dialog.getByRole("tab", { name: /typescript/i })).toBeVisible();
+    await expect(dialog.getByLabel(/start experiment immediately/i)).toBeChecked();
+    // Default CTA is "Start experiment"; toggle drops it to "Save as draft".
+    await expect(dialog.getByRole("button", { name: /start experiment/i })).toBeVisible();
   });
 });
 
@@ -213,7 +262,7 @@ test.describe("Two-variant experiment — full lifecycle", () => {
   });
 
   test("start experiment from list → 'running' badge appears", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments");
+    await page.goto(`/dashboard/${PROJECT}/experiments`);
     await expRow(page, name)
       .getByRole("button", { name: /start experiment/i })
       .click();
@@ -222,7 +271,7 @@ test.describe("Two-variant experiment — full lifecycle", () => {
   });
 
   test("stop experiment from list → 'stopped' badge", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments");
+    await page.goto(`/dashboard/${PROJECT}/experiments`);
     await expRow(page, name)
       .getByRole("button", { name: /stop experiment/i })
       .click();
@@ -231,12 +280,11 @@ test.describe("Two-variant experiment — full lifecycle", () => {
   });
 
   test("delete stopped experiment via row action → vanishes from list", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments");
+    await page.goto(`/dashboard/${PROJECT}/experiments`);
     await expRow(page, name)
       .getByRole("button", { name: /delete experiment/i })
       .click();
 
-    // SWR mutate is async; give the refetch a generous window before asserting.
     // Scope to pane-full to avoid the rail-pane mirror of the same name.
     await expect(
       page.locator('[data-slot="pane-full"]').getByText(name, { exact: true }),
@@ -280,7 +328,7 @@ test.describe("Multi-variant experiment — 3 groups via wizard", () => {
 
   test("detail page: variants card lists all 3 group names", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/e2e-project-id/experiments/${id}`);
+    await page.goto(`/dashboard/${PROJECT}/experiments/${id}`);
 
     // Standalone v2 detail tags the first variant with "· baseline" inside
     // the same <span>, so /^control$/ as text-content matches the parent;
@@ -291,7 +339,7 @@ test.describe("Multi-variant experiment — 3 groups via wizard", () => {
   });
 
   test("cleanup: delete multi-variant experiment", async ({ page }) => {
-    await page.goto("/dashboard/e2e-project-id/experiments");
+    await page.goto(`/dashboard/${PROJECT}/experiments`);
     await expRow(page, name)
       .getByRole("button", { name: /delete experiment/i })
       .click();
@@ -323,7 +371,7 @@ test.describe("Experiments detail pane — embedded summary", () => {
 
   test("row click adds ?open=<id> and renders the embedded summary", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto("/dashboard/e2e-project-id/experiments");
+    await page.goto(`/dashboard/${PROJECT}/experiments`);
 
     await expRow(page, name).click();
     await expect(page).toHaveURL(new RegExp(`[?&]open=${id}\\b`));
@@ -337,17 +385,17 @@ test.describe("Experiments detail pane — embedded summary", () => {
 
   test("'Open full view' link points at the standalone detail page", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/e2e-project-id/experiments?open=${id}`);
+    await page.goto(`/dashboard/${PROJECT}/experiments?open=${id}`);
     const link = page.getByTestId("experiment-detail-fullview-link");
     await expect(link).toHaveAttribute(
       "href",
-      new RegExp(`/dashboard/e2e-project-id/experiments/${id}$`),
+      new RegExp(`/dashboard/${PROJECT}/experiments/${id}$`),
     );
   });
 
   test("Esc strips ?open and collapses the detail pane", async ({ page }) => {
     const id = await getExperimentId(page, name);
-    await page.goto(`/dashboard/e2e-project-id/experiments?open=${id}`);
+    await page.goto(`/dashboard/${PROJECT}/experiments?open=${id}`);
     await expect(page.locator('[data-slot="detail-pane"]')).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page).not.toHaveURL(/[?&]open=/);

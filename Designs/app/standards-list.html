@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Standard · List of records · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-height:100vh}
+
+  /* ── Anatomy markers (toggleable via ?anatomy=1) ─────────────────
+     When the anatomy query string is present, every standard region
+     is labeled with a small dashed bracket + monospace tag so the
+     pattern is legible at a glance. The clean (default) view shows
+     the page exactly as a real feature would render it. */
+  .anat{position:relative}
+  .anat::before, .anat::after{content:none}
+  body.anat-on .anat{outline:1px dashed color-mix(in oklab, var(--accent) 50%, transparent);
+    outline-offset:2px;border-radius:4px}
+  body.anat-on .anat[data-tag]::after{
+    content:attr(data-tag);position:absolute;top:-9px;left:8px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent);
+    background:var(--bg);padding:0 6px;border-radius:3px;
+    line-height:1;z-index:5}
+
+  /* ── Local utilities used by this template ─────────────────────── */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-top:-4px}
+  .tab{padding:10px 14px;font-size:13px;color:var(--fg-3);cursor:default;
+    border-bottom:1.5px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--fg);border-bottom-color:var(--accent)}
+  .tab .count{margin-left:6px;font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+  .filter-row{display:flex;align-items:center;gap:10px;padding:12px 0}
+  .spark{display:inline-block;width:92px;height:22px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+// ── Anatomy toggle ──────────────────────────────────────────────────
+// /standards-list.html         → clean view (what a real feature looks like)
+// /standards-list.html?anat=1  → labelled view (overlay the names of each region)
+if (new URLSearchParams(location.search).get('anat') === '1') {
+  document.body.classList.add('anat-on');
+}
+
+// ── Sparkline ──────────────────────────────────────────────────────
+function Spark({ data, color='var(--accent)', neg=false }) {
+  const w=92, h=22;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v,i) => {
+    const x = (i/(data.length-1))*w;
+    const y = h - ((v-min)/range)*(h-4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return <svg className="spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+    <polyline points={pts} fill="none"
+      stroke={neg ? 'var(--danger)' : color}
+      strokeWidth="1.3" strokeLinejoin="round" strokeLinecap="round"/>
+  </svg>;
+}
+
+// ── Standard status badge ─────────────────────────────────────────
+const statusBadge = s => {
+  const m = {
+    live:      ['badge-live',      'LIVE'],
+    draft:     ['badge-draft',     'DRAFT'],
+    paused:    ['badge-paused',    'PAUSED'],
+    killed:    ['badge-killed',    'ARCHIVED'],
+    completed: ['badge-completed', 'SHIPPED'],
+  };
+  const [cls, txt] = m[s] || ['',''];
+  return <span className={`badge ${cls}`}><span className="dot"/>{txt}</span>;
+};
+
+// ── Demo data ─────────────────────────────────────────────────────
+// Generic "Releases" used as the canonical record type — fields and
+// columns map 1:1 to every other feature in Shipeasy (Experiments,
+// Gates, Killswitches, Configs).
+const rows = [
+  { id:'rel_checkout_v3',   key:'rel_8f2a21', status:'live',
+    desc:'3-step checkout rollout · 50% traffic',
+    tag:'revenue', owner:['M','#7c5cff'],
+    primary:50, secondary:'+8.4%',  metric:'14.2k users',
+    spark:[30,33,31,37,41,44,49,52,58,62,69,72], days:6 },
+  { id:'rel_welcome_email', key:'rel_9c11a0', status:'live',
+    desc:'5-min welcome email · all new signups',
+    tag:'activation', owner:['J','#00d08a'],
+    primary:100, secondary:'+6.8%', metric:'4.8k users',
+    spark:[20,22,21,25,28,30,34,36,40,42,46,49], days:3 },
+  { id:'rel_pricing_v2',    key:'rel_a03f2b', status:'live',
+    desc:'New pricing page · benefit-led headline',
+    tag:'marketing', owner:['K','#ff8445'],
+    primary:100, secondary:'+2.1%', metric:'38.1k users',
+    spark:[50,51,52,51,52,53,52,54,53,55,54,56], days:11 },
+  { id:'rel_onboarding_v2', key:'rel_b1cc08', status:'paused',
+    desc:'Personalized onboarding · regression in d1 retention',
+    tag:'activation', owner:['R','#3b82f6'],
+    primary:10, secondary:'−1.2%', metric:'1.1k users',
+    spark:[40,42,39,40,38,38,37,36,35,34,33,32], days:4, neg:true },
+  { id:'rel_dashboard_v2',  key:'rel_a70221', status:'draft',
+    desc:'Redesigned metrics dashboard · ready for staging',
+    tag:'engagement', owner:['M','#7c5cff'],
+    primary:null, secondary:'—',   metric:'—', spark:null },
+  { id:'rel_ranker_v4',     key:'rel_c4dd91', status:'live',
+    desc:'ML ranker v4 · vs. v3 baseline',
+    tag:'engagement', owner:['J','#00d08a'],
+    primary:30, secondary:'+11.2%', metric:'22.7k users',
+    spark:[18,22,28,34,40,48,56,62,70,78,85,94], days:8 },
+  { id:'rel_legacy_uploader', key:'rel_3b2041', status:'killed',
+    desc:'Legacy uploader · archived after p95 regression',
+    tag:'stability', owner:['R','#3b82f6'],
+    primary:0,  secondary:'−3.1%', metric:'912 users', archived:true },
+  { id:'rel_typo_search',   key:'rel_d87e33', status:'completed',
+    desc:'Fuzzy search · shipped to 100% on May 12',
+    tag:'search', owner:['K','#ff8445'],
+    primary:100, secondary:'+4.7%', metric:'201.3k users',
+    spark:[40,45,50,57,63,68,72,74,76,77,78,78], days:21 },
+];
+
+// ── Standard list page ───────────────────────────────────────────
+//
+// REGIONS (in order, top → bottom):
+//
+//   A · sidebar        global product nav (from shell.jsx)
+//   B · topbar         crumbs · search · secondary + primary CTA
+//   C · page-head      title · description · meta · inline KPIs
+//   D · tabs           status filter (optional — drop for short lists)
+//   E · filter-row     search · facet filters · sort · export
+//   F · table          the records themselves (in a .card container)
+//     ├─ status-col       badge — first visual scan
+//     ├─ identity-col     <b>name</b> + tag + key + description
+//     ├─ primary-col      most-important number (right-aligned, mono)
+//     ├─ secondary-col    second-most-important number
+//     ├─ trend-col        sparkline (right-aligned)
+//     ├─ context-col      lightweight context (sample size, age, etc.)
+//     ├─ owner-col        owner avatar
+//     └─ row-actions      kebab menu
+//   G · card-foot      count + paginate
+//
+// CTA RULES
+//   · Topbar primary CTA always uses the verb "New <singular>" e.g.
+//     "New experiment", "New gate", "New release".
+//   · Topbar secondary slot is "Ask Claude" on every list page.
+//   · Row-level destructive actions live in the kebab, NEVER as visible
+//     buttons in the row. Confirm via the standard delete dialog.
+
+function StandardListPage() {
+  const [tab, setTab] = useState('all');
+
+  return (
+    <div className="app">
+      {/* A · sidebar */}
+      <Sidebar active=""/>
+      <div>
+        {/* B · topbar */}
+        <div className="anat" data-tag="B · topbar">
+          <Topbar crumbs={['Acme Co.','Releases']}
+            actions={<>
+              <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+              <button className="btn btn-primary"><IconPlus size={12}/> New release</button>
+            </>}
+          />
+        </div>
+
+        <div className="page">
+
+          {/* C · page-head */}
+          <div className="page-head anat" data-tag="C · page-head">
+            <div>
+              <div className="t-caps dim-2" style={{marginBottom:8}}>
+                8 active · 41 total · last shipped 6h ago
+              </div>
+              <h1>Releases</h1>
+              <p>The canonical list of records. Replace title, description, columns
+                and demo data with the feature's own — keep the regions, structure
+                and CTA rules.</p>
+            </div>
+            <div className="flex gap-3">
+              <div className="stat-block" style={{textAlign:'right'}}>
+                <div className="stat-k">Live</div>
+                <div className="stat-v num">8</div>
+              </div>
+              <div style={{width:1,background:'var(--line)'}}/>
+              <div className="stat-block" style={{textAlign:'right'}}>
+                <div className="stat-k">Shipped (7d)</div>
+                <div className="stat-v num" style={{color:'var(--accent)'}}>4</div>
+              </div>
+              <div style={{width:1,background:'var(--line)'}}/>
+              <div className="stat-block" style={{textAlign:'right'}}>
+                <div className="stat-k">Avg lift</div>
+                <div className="stat-v num">+5.4%</div>
+              </div>
+            </div>
+          </div>
+
+          {/* D · tabs (status filter) */}
+          <div className="tabs anat" data-tag="D · tabs">
+            {[
+              ['all','All',24],
+              ['live','Live',8],
+              ['draft','Draft',3],
+              ['paused','Paused',2],
+              ['completed','Shipped',10],
+              ['killed','Archived',1],
+            ].map(([k,l,n]) => (
+              <div key={k} className={`tab ${tab===k?'active':''}`} onClick={()=>setTab(k)}>
+                {l} <span className="count">{n}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* E · filter-row */}
+          <div className="filter-row anat" data-tag="E · filter-row">
+            <div className="input" style={{width:240}}>
+              <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+              <input placeholder="Filter by name, key, or tag"/>
+            </div>
+            <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Owner</button>
+            <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Tag</button>
+            <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Environment: prod</button>
+            <div className="ml-auto flex gap-2">
+              <button className="btn btn-ghost btn-sm">Sort: Recent</button>
+              <button className="btn btn-secondary btn-sm"><IconCode size={11}/> Export</button>
+            </div>
+          </div>
+
+          {/* F · table */}
+          <div className="card anat" data-tag="F · table">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th style={{width:28}}></th>
+                  <th>Record</th>
+                  <th>Status</th>
+                  <th style={{textAlign:'right',width:90}}>Primary</th>
+                  <th style={{textAlign:'right',width:110}}>Secondary</th>
+                  <th style={{width:140}}>Trend</th>
+                  <th style={{textAlign:'right',width:110}}>Context</th>
+                  <th style={{width:80}}>Owner</th>
+                  <th style={{width:40}}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r,i) => (
+                  <tr key={r.id} className={i===0?'selected':''}>
+                    <td className="col-icon">
+                      <IconLayers size={13} style={{color:
+                        r.status==='live'?'var(--accent)':
+                        r.status==='paused'?'var(--warn)':
+                        r.status==='killed'?'var(--danger)':
+                        r.status==='completed'?'var(--info)':'var(--fg-3)'}}/>
+                    </td>
+                    <td>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <b>{r.id}</b>
+                        <span className="tag" style={{fontSize:10.5,padding:'1px 6px'}}>{r.tag}</span>
+                      </div>
+                      <div className="t-mono-xs dim-2" style={{marginTop:2}}>
+                        {r.key} · {r.desc}
+                      </div>
+                    </td>
+                    <td>{statusBadge(r.status)}</td>
+                    <td className="num">{r.primary!=null ? r.primary+'%' : '—'}</td>
+                    <td className="num" style={{color:
+                      r.secondary==='—' ? 'var(--fg-4)' :
+                      r.secondary.startsWith('−') ? 'var(--danger)' : 'var(--accent)'}}>
+                      {r.secondary}
+                    </td>
+                    <td>{r.spark && <Spark data={r.spark} neg={r.neg}/>}</td>
+                    <td className="num dim">{r.metric}</td>
+                    <td>
+                      <div className="avatar-sm" style={{
+                        background:r.owner[1],
+                        color:r.owner[1]==='#00d08a'?'#07120d':'#fff'}}>
+                        {r.owner[0]}
+                      </div>
+                    </td>
+                    <td>
+                      <button className="btn btn-ghost btn-icon btn-sm">
+                        <IconMore size={12}/>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* G · card-foot */}
+            <div className="card-foot">
+              <span className="t-mono-xs dim-2">8 of 24 shown</span>
+              <div className="ml-auto flex gap-2">
+                <button className="btn btn-ghost btn-sm">Previous</button>
+                <button className="btn btn-ghost btn-sm">Next</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<StandardListPage/>);
+</script>
+</body>
+</html>

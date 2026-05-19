@@ -92,7 +92,9 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
   const searchParams = useSearchParams();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
-  const newOpen = searchParams.get("new") === "1";
+  // `?new=1` only seeds the initial open state — keep local thereafter so
+  // closing the wizard never triggers a route change (caused the page blink).
+  const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
   const { data, isLoading, mutate } = useSWR<ConfigRow[]>("/api/admin/configs", fetcher, {
     fallbackData: initial,
@@ -113,11 +115,7 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
   }
 
   function setNewWizardOpen(open: boolean) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (open) params.set("new", "1");
-    else params.delete("new");
-    const qs = params.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    setNewOpen(open);
   }
 
   const filtered = useMemo(() => {
@@ -162,7 +160,14 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
   if (total === 0) {
     return (
       <>
-        <HeroEmptyState kind="configs" ctaHref={`/dashboard/${projectId}/configs/values?new=1`} />
+        <HeroEmptyState
+          kind="configs"
+          extraAction={
+            <Button size="lg" type="button" onClick={() => setNewWizardOpen(true)}>
+              Define your first config
+            </Button>
+          }
+        />
         <NewConfigWizard
           open={newOpen}
           onOpenChange={setNewWizardOpen}

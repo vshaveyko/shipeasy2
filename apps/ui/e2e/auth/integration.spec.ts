@@ -67,14 +67,24 @@ test.describe("Integration: full experiment lifecycle", () => {
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments\/metrics/);
     await expect(page.getByText(mName)).toBeVisible();
 
-    // 3. Create experiment via the 4-step BigModalWizard (uses seeded default
-    // universe). The list page opens the wizard via ?new=1.
+    // 3. Create experiment via the 5-step BigModalWizard
+    //    (Basics → Audience → Variants → Metrics → Integrate). Pick the metric
+    //    we just registered as the goal, then save as draft.
     const expDialog = await openNewWizard(page, "/dashboard/e2e-project-id/experiments?new=1");
     await expDialog.locator("#experiment-name").fill(expKey);
+    // Steps 1 → 2, 2 → 3, 3 → 4 (Metrics)
     for (let i = 0; i < 3; i++) {
       await expDialog.getByRole("button", { name: /^next\b/i }).click();
     }
-    await expDialog.getByRole("button", { name: /create experiment/i }).click();
+    // Goal-metric Combobox — open, type to filter, ArrowDown, Enter.
+    await expDialog.locator("#experiment-goal-metric").click();
+    await page.keyboard.type(mName, { delay: 10 });
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    // Advance to Integrate, then save as draft.
+    await expDialog.getByRole("button", { name: /^next\b/i }).click();
+    await expDialog.getByLabel(/start experiment immediately/i).uncheck();
+    await expDialog.getByRole("button", { name: /save as draft/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/experiments(\?.*)?$/);
     await expect(paneRow(page, expKey).getByText(/^draft$/i)).toBeVisible();
 
@@ -147,7 +157,7 @@ test.describe("Integration: gate and config for the same feature", () => {
     for (let i = 0; i < 3; i++) {
       await cDialog.getByRole("button", { name: /^next\b/i }).click();
     }
-    await cDialog.getByRole("button", { name: /create config/i }).click();
+    await cDialog.getByRole("button", { name: /create & publish v1/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/]+$/);
     await expect(page.getByText(configName, { exact: true }).first()).toBeVisible();
 

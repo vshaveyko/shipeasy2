@@ -457,6 +457,47 @@
   opacity: 0.5;
 }
 
+/* Generic syntax-highlighted code blocks (ts/py/go/ruby/bash). Token classes
+ * are produced by `src/lib/highlight.tsx`. Colors lean on the same palette
+ * used by `.se-json` so the design stays cohesive. */
+.se-code .se-tok-keyword {
+  color: #a78bfa;
+}
+.se-code .se-tok-string {
+  color: var(--se-accent);
+}
+.se-code .se-tok-number {
+  color: #f0c674;
+}
+.se-code .se-tok-boolean {
+  color: #74c7ec;
+}
+.se-code .se-tok-comment {
+  color: var(--se-fg-4);
+  font-style: italic;
+}
+.se-code .se-tok-function {
+  color: #82d8ff;
+}
+.se-code .se-tok-type {
+  color: #74c7ec;
+}
+.se-code .se-tok-flag {
+  color: #f0c674;
+}
+.se-code .se-tok-variable {
+  color: #ff8445;
+}
+.se-code .se-tok-operator {
+  color: var(--se-fg-3);
+}
+.se-code .se-tok-punctuation {
+  color: var(--se-fg-3);
+}
+.se-code .se-tok-plain {
+  color: var(--se-fg-2);
+}
+
 /* Hero empty state — design's first-time view: serif-accented title + terminal preview + stats */
 .hero-empty-stage {
   position: relative;
@@ -1586,6 +1627,10 @@
   html {
     @apply font-sans overscroll-none;
     color-scheme: dark;
+    /* Reserve scrollbar gutter so Base UI dialog's scroll-lock (which sets
+     * body { overflow: hidden; padding-right: <scrollbar-width>; } on open)
+     * doesn't cause a horizontal layout shift / "blink" when the modal closes. */
+    scrollbar-gutter: stable;
   }
   ::selection {
     background: var(--se-accent);

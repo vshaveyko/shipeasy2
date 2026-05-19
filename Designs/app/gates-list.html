@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Gates · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<link rel="stylesheet" href="unified-list.css"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-width:1200px}
+  .gate-row{display:grid;grid-template-columns:20px minmax(0,1fr) 110px 90px 110px 60px 32px;
+    gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+  .gate-row > div:nth-child(2){min-width:0}
+  .gate-row b{white-space:nowrap}
+  .gate-row:hover{background:var(--bg-2)}
+  .gate-row:last-child{border-bottom:none}
+
+  .section-head-mini{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--fg-4);padding:10px 18px;background:var(--bg-2);
+    border-bottom:1px solid var(--line)}
+
+  /* Rule editor */
+  .rule{display:grid;grid-template-columns:1fr auto;gap:12px;
+    padding:16px;border:1px solid var(--line);border-radius:var(--r-md);
+    background:var(--bg-1);margin-bottom:10px;position:relative}
+  .rule::before{content:"";position:absolute;left:-1px;top:10px;bottom:10px;width:3px;
+    background:var(--accent);border-radius:2px}
+  .rule.deny::before{background:var(--danger)}
+  .rule-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .rule-head .n{width:22px;height:22px;border-radius:4px;display:grid;place-items:center;
+    font-family:var(--mono);font-size:11px;font-weight:600;background:var(--bg-3);border:1px solid var(--line-2)}
+
+  .cond{display:grid;grid-template-columns:auto 170px 110px 1fr auto;gap:8px;
+    align-items:center;padding:8px;background:var(--bg-2);border-radius:var(--r-sm);
+    margin-bottom:6px}
+  .cond:last-child{margin-bottom:0}
+  .cond .conn{font-family:var(--mono);font-size:10px;color:var(--fg-4);
+    padding:2px 8px;background:var(--bg-3);border-radius:3px;letter-spacing:.05em;text-align:center}
+  .cond .select, .cond .input{height:28px}
+  .cond .select select{height:28px;font-size:12px;padding-left:8px}
+  .cond .input input{font-size:12px}
+
+  .test-panel{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:18px}
+  .test-panel .head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .test-row{display:flex;gap:10px;padding:7px 0;font-size:12.5px;align-items:center}
+  .test-row .pill{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:4px;
+    background:var(--bg-3);color:var(--fg-2)}
+  .test-row.pass .pill{background:var(--accent-soft);color:var(--accent)}
+  .test-row.fail .pill{background:var(--danger-soft);color:var(--danger)}
+
+  .offering-card{padding:12px 14px;background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--r-md);display:flex;gap:10px;align-items:flex-start;cursor:default}
+  .offering-card:hover{border-color:var(--line-3)}
+  .offering-card .ico{width:28px;height:28px;border-radius:6px;background:var(--bg-3);
+    display:grid;place-items:center;border:1px solid var(--line-2);flex-shrink:0}
+  .offering-card .title{font-size:13px;font-weight:500}
+  .offering-card .desc{font-size:11.5px;color:var(--fg-3);margin-top:2px;line-height:1.45}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="onboarding.jsx"></script>
+<script type="text/babel" src="empty-states.jsx"></script>
+<script type="text/babel" src="unified-list.jsx"></script>
+<script type="text/babel">
+const { useState: useStateGL } = React;
+
+const gates = [
+  { k:'premium_features', label:'Premium features', desc:'Access to the paid tier bundle',
+    source:'custom', traffic:'18% pass', eval:'4ms p50', hit:'12.4M/d', state:'on', color:'var(--accent)' },
+  { k:'is_employee', label:'Is employee', desc:'Shipeasy-provided · email domain matching',
+    source:'built-in', traffic:'0.3% pass', eval:'2ms p50', hit:'38.1M/d', state:'on', color:'var(--info)' },
+  { k:'beta_access', label:'Beta access', desc:'Early-adopter gate, opted-in via settings',
+    source:'custom', traffic:'4.1% pass', eval:'5ms p50', hit:'8.8M/d', state:'on', color:'var(--purple)' },
+  { k:'mobile_only', label:'Mobile only', desc:'Shipeasy-provided · user-agent matching',
+    source:'built-in', traffic:'52% pass', eval:'1ms p50', hit:'32.0M/d', state:'on', color:'var(--info)' },
+  { k:'eu_user', label:'EU user', desc:'Shipeasy-provided · GeoIP + DPA compliance',
+    source:'built-in', traffic:'28% pass', eval:'3ms p50', hit:'22.1M/d', state:'on', color:'var(--info)' },
+  { k:'high_value_customer', label:'High-value customer', desc:'LTV > $1,000 OR team plan',
+    source:'custom', traffic:'6.8% pass', eval:'7ms p50', hit:'4.2M/d', state:'on', color:'var(--accent)' },
+  { k:'trial_ending_soon', label:'Trial ending soon', desc:'Show upsell banner 3d before trial ends',
+    source:'custom', traffic:'1.2% pass', eval:'3ms p50', hit:'1.1M/d', state:'paused', color:'var(--warn)' },
+];
+
+function GatesList() {
+  const [view, setView] = useStateGL(
+    new URLSearchParams(location.search).get('demo') ||
+    new URLSearchParams(location.search).get('open') ? 'list' : 'empty'
+  );
+
+  if (view === 'empty') {
+    return (
+      <div className="app">
+        <Sidebar active="gates"/>
+        <div>
+          <Topbar crumbs={['Acme Co.','Gates']}
+            actions={<>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setView('list')}>
+                Skip to demo data <IconArrowRight size={11}/>
+              </button>
+              <button className="btn btn-primary" onClick={()=>setView('onboarding')}>
+                <IconZap size={12}/> Start setup
+              </button>
+            </>}
+          />
+          <div style={{padding:28}}>
+            <EmptyState kind="gates"
+              onStart={()=>setView('onboarding')}
+              onDemo={()=>setView('list')}/>
+          </div>
+        </div>
+        {view === 'onboarding' && (
+          <OnboardingWizard kind="gates"
+            onClose={()=>setView('empty')}
+            onComplete={()=>setView('list')}/>
+        )}
+      </div>
+    );
+  }
+
+  // ── List branch (unified) ────────────────────────────────────
+  const builtIn = gates.filter(g => g.source === 'built-in');
+  const custom  = gates.filter(g => g.source === 'custom');
+  const u = useUnifiedList({ records: gates, getId: g => g.k });
+
+  const railIcon = g => <IconShield size={11} style={{color:g.color}}/>;
+
+  function GateRow({ g, pressing, onSelect }) {
+    return (
+      <div className={`gate-row ${pressing===g.k?'row-pressing':''}`}
+        onClick={() => onSelect(g.k)}>
+        <IconShield size={14} style={{color:g.color}}/>
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <b>{g.label}</b>
+            {g.source === 'built-in' && (
+              <span className="tag" style={{fontSize:10.5,padding:'1px 6px',
+                background:'var(--info-soft)',color:'var(--info)',
+                borderColor:'color-mix(in oklab, var(--info) 30%, transparent)'}}>built-in</span>
+            )}
+            {g.state==='paused' && <span className="badge badge-paused"><span className="dot"/>PAUSED</span>}
+            {g.k==='premium_features' && <span className="tag" style={{fontSize:10.5,padding:'1px 6px'}}>linked to 2 configs</span>}
+          </div>
+          <div className="t-mono-xs dim-2" style={{marginTop:2}}>gate.{g.k} · {g.desc}</div>
+        </div>
+        <div className="t-sm dim">{g.traffic}</div>
+        <div className="t-mono-xs num">{g.eval}</div>
+        <div className="t-mono-xs num">{g.hit}</div>
+        <div style={{display:'flex',gap:8,alignItems:'center',justifyContent:'flex-end'}}>
+          <div className={`toggle ${g.state==='on'?'on':''}`}/>
+        </div>
+        <button className="btn btn-ghost btn-icon btn-sm"
+          onClick={e=>e.stopPropagation()}><IconMore size={12}/></button>
+      </div>
+    );
+  }
+
+  const ClosedHead = () => <>
+    <div className="page-head">
+      <div>
+        <div className="t-caps dim-2" style={{marginBottom:8}}>12 gates · 118.6M checks/day · p50 3.4ms</div>
+        <h1>Gates</h1>
+        <p>Enable or disable features per user based on rules. Built-in gates work out of the box; custom gates run your own predicates on request context.</p>
+      </div>
+      <div className="flex gap-3 items-center">
+        <div className="stat-block"><div className="stat-k">Built-in</div><div className="stat-v num">5</div></div>
+        <div style={{width:1,background:'var(--line)'}}/>
+        <div className="stat-block"><div className="stat-k">Custom</div><div className="stat-v num">7</div></div>
+        <div style={{width:1,background:'var(--line)'}}/>
+        <div className="stat-block"><div className="stat-k">Pass (24h)</div><div className="stat-v num" style={{color:'var(--accent)'}}>14.3M</div></div>
+      </div>
+    </div>
+    <div className="filter-row" style={{paddingBottom:0,display:'flex',alignItems:'center',gap:10}}>
+      <div className="input" style={{width:240}}>
+        <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+        <input placeholder="Filter gates by key or label"/>
+      </div>
+      <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Source</button>
+      <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> State</button>
+      <div className="ml-auto flex gap-2">
+        <button className="btn btn-ghost btn-sm">Sort: Recent</button>
+        <button className="btn btn-secondary btn-sm"><IconCode size={11}/> Export</button>
+      </div>
+    </div>
+  </>;
+
+  const FullTable = () => <>
+    <div className="section-head-mini">Built-in · provided by Shipeasy</div>
+    {builtIn.map(g => <GateRow key={g.k} g={g} pressing={u.pressing} onSelect={u.selectRow}/>)}
+    <div className="section-head-mini">Custom · your rules</div>
+    {custom.map(g => <GateRow key={g.k} g={g} pressing={u.pressing} onSelect={u.selectRow}/>)}
+  </>;
+
+  const RailRows = () => <>
+    <div className="rail-group"><span>Built-in</span><span className="c">{builtIn.length}</span></div>
+    {builtIn.map(g => (
+      <ULRailRow key={g.k} id={g.k} active={g.k===u.openId}
+        icon={railIcon(g)} name={`gate.${g.k}`}
+        right={<span className="pill" style={{color:g.state==='on'?'var(--accent)':'var(--fg-3)'}}>
+          {g.state==='on'?'ON':'OFF'}</span>}
+        onClick={()=>u.setOpenId(g.k)}/>
+    ))}
+    <div className="rail-group"><span>Custom</span><span className="c">{custom.length}</span></div>
+    {custom.map(g => (
+      <ULRailRow key={g.k} id={g.k} active={g.k===u.openId}
+        icon={railIcon(g)} name={`gate.${g.k}`}
+        right={<span className="pill" style={{color:g.state==='paused'?'var(--warn)':g.state==='on'?'var(--accent)':'var(--fg-3)'}}>
+          {g.state==='paused'?'PAUSE':g.state==='on'?'ON':'OFF'}</span>}
+        onClick={()=>u.setOpenId(g.k)}/>
+    ))}
+  </>;
+
+  function GateDetail({ g }) {
+    return (
+      <ULDetailScroll>
+        <ULDetailHero
+          eyebrow={`gate.${g.k} · ${g.source==='built-in'?'Shipeasy-provided':'your custom rules'}`}
+          title={g.label}
+          desc={g.desc}
+          badges={<>
+            {g.source==='built-in'
+              ? <span className="tag" style={{fontSize:10.5,padding:'1px 6px',
+                  background:'var(--info-soft)',color:'var(--info)',
+                  borderColor:'color-mix(in oklab, var(--info) 30%, transparent)'}}>built-in</span>
+              : <span className="tag" style={{fontSize:10.5,padding:'1px 6px'}}>custom</span>}
+            {g.state==='paused'
+              ? <span className="badge badge-paused"><span className="dot"/>PAUSED</span>
+              : g.state==='on'
+                ? <span className="badge badge-live"><span className="dot"/>ON</span>
+                : <span className="badge badge-killed"><span className="dot"/>OFF</span>}
+            <span className="t-mono-xs dim-2">env · prod</span>
+          </>}
+          right={
+            <ULDetailCard icon={<IconCode size={11} style={{color:'var(--fg-3)'}}/>}
+              title="SDK call"
+              right={<button className="btn btn-ghost btn-icon btn-sm"><IconCopy size={11}/></button>}>
+              <div style={{fontFamily:'var(--mono)',fontSize:11.5,
+                color:'var(--fg-2)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>
+{`if (shipeasy.gate(`}<span style={{color:'var(--accent)'}}>"{g.k}"</span>{`)) {
+  renderFeature();
+}`}
+              </div>
+            </ULDetailCard>
+          }/>
+
+        <ULDetailStats stats={[
+          { k:'Traffic',    v:g.traffic.split(' ')[0], d:g.traffic.split(' ').slice(1).join(' ') || 'eligible users' },
+          { k:'Eval · p50', v:g.eval.split(' ')[0],    d:'edge-cached · 60+ regions' },
+          { k:'Hits / day', v:g.hit.split('/')[0],     d:'across all environments' },
+          { k:'Linked',     v: g.k==='premium_features' ? '3' : '0',
+            d: g.k==='premium_features' ? '2 configs · 1 experiment' : 'no dependents' },
+        ]}/>
+
+        <ULDetailCard icon={<IconShield size={11} style={{color:'var(--fg-3)'}}/>}
+          title={`Rules · ${g.source==='built-in'?'managed by Shipeasy':'3 active'}`}
+          right={g.source==='custom' &&
+            <a href="gates-editor-v2.html" className="btn btn-ghost btn-sm">
+              <IconEdit size={11}/> Open full editor
+            </a>}>
+          {g.source==='built-in' ? (
+            <div style={{fontSize:13,color:'var(--fg-2)',lineHeight:1.6}}>
+              Built-in gates are evaluated by Shipeasy infrastructure using the request context. The predicate is locked but you can override the result per-user using a custom gate above it in your routing.
+            </div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {[
+                ['1','Team plan members',  'ALLOW',
+                  'user.plan == "team" AND user.status == "active"'],
+                ['2','Beta cohort',         'ALLOW · 50%',
+                  'gate.beta_access is true'],
+                ['3','EU — legacy pricing', 'DENY',
+                  'gate.eu_user AND user.plan_migrated_at is null'],
+              ].map(([n,name,verdict,cond]) => (
+                <div key={n} style={{padding:'10px 12px',background:'var(--bg-2)',
+                  border:'1px solid var(--line)',borderRadius:'var(--r-md)',
+                  display:'grid',gridTemplateColumns:'22px 1fr auto',gap:10,alignItems:'center'}}>
+                  <div style={{width:22,height:22,borderRadius:4,background:'var(--bg-3)',
+                    border:'1px solid var(--line-2)',display:'grid',placeItems:'center',
+                    fontFamily:'var(--mono)',fontSize:10.5,fontWeight:600,color:'var(--fg-2)'}}>{n}</div>
+                  <div>
+                    <b style={{fontSize:12.5}}>{name}</b>
+                    <div className="t-mono-xs dim-2" style={{marginTop:2}}>{cond}</div>
+                  </div>
+                  <span className={`badge ${verdict.startsWith('DENY')?'badge-killed':'badge-live'}`}
+                    style={{padding:'1px 6px'}}>{verdict}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ULDetailCard>
+
+        <ULDetailCard icon={<IconClock size={11} style={{color:'var(--fg-3)'}}/>}
+          title="Activity" right={<span className="t-mono-xs dim-2">4 events</span>}>
+          <ULTimeline rows={[
+            { icon:<IconCheck size={10} style={{color:'var(--accent)'}}/>,
+              when:'12s ago', what:<><b>Maya Patel</b> enabled the gate</> },
+            { icon:<IconEdit size={10} style={{color:'var(--fg-3)'}}/>,
+              when:'2h ago',  what:<><b>Jiwoo Han</b> added rule <b>Beta cohort</b></> },
+            { icon:<IconEdit size={10} style={{color:'var(--fg-3)'}}/>,
+              when:'1d ago',  what:<><b>Kai Stewart</b> updated the description</> },
+            { icon:<IconPlus size={10} style={{color:'var(--fg-3)'}}/>,
+              when:'5d ago',  what:<><b>Maya Patel</b> created this gate</> },
+          ]}/>
+        </ULDetailCard>
+      </ULDetailScroll>
+    );
+  }
+
+  // Suggestion strip — closed-only, surfaces below the list footer
+  const Paginate = () => (
+    <>
+      <ULListFootClosed
+        left={`${gates.length} of 12 shown · p50 3.4ms`}
+        right={<>
+          <button className="btn btn-ghost btn-sm">Previous</button>
+          <button className="btn btn-ghost btn-sm">Next</button>
+        </>}/>
+      <div className="t-caps dim-2" style={{marginTop:18,marginBottom:8}}>
+        Suggested built-in gates
+      </div>
+      <div className="grid" style={{gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
+        {[
+          ['is_bot','User-agent bot detection'],
+          ['session_length','Engaged session > 5min'],
+          ['new_signup','Signed up in last 7d'],
+          ['plan_tier','Current subscription tier'],
+        ].map(([k,d]) => (
+          <div className="offering-card" key={k}>
+            <div className="ico"><IconShield size={13} style={{color:'var(--info)'}}/></div>
+            <div>
+              <div className="title">gate.{k}</div>
+              <div className="desc">{d}</div>
+            </div>
+            <button className="btn btn-ghost btn-icon btn-sm ml-auto"><IconPlus size={12}/></button>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  return (
+    <UnifiedListShell
+      sidebarActive="gates"
+      topbarCrumbs={u.crumbs(['Acme Co.','Gates'])}
+      topbarActions={<>
+        <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+        <button className="btn btn-primary"><IconPlus size={12}/> New gate</button>
+      </>}
+      isOpen={u.isOpen}
+      close={u.close}
+      railTitle="Gates" railCount={gates.length}
+      closedHead={<ClosedHead/>}
+      openHead={u.isOpen && (
+        <ULOpenHead
+          name={`gate.${u.activeRow.k}`}
+          badges={
+            u.activeRow.state==='paused'
+              ? <span className="badge badge-paused"><span className="dot"/>PAUSED</span>
+              : u.activeRow.state==='on'
+                ? <span className="badge badge-live"><span className="dot"/>ON</span>
+                : <span className="badge badge-killed"><span className="dot"/>OFF</span>
+          }
+          meta={u.activeRow.eval + ' · ' + u.activeRow.hit}
+          onBack={u.close}
+          backLabel="All gates"
+          actions={<>
+            <a href="gates-editor-v2.html" className="btn btn-ghost btn-sm">
+              <IconEdit size={11}/> Open editor
+            </a>
+            <button className="btn btn-ghost btn-sm"><IconMore size={11}/></button>
+            <button className="btn btn-primary btn-sm">
+              <IconCheck size={11}/> Publish changes
+            </button>
+          </>}/>
+      )}
+      fullTable={<FullTable/>}
+      railRows={<RailRows/>}
+      detail={u.activeRow && <GateDetail g={u.activeRow}/>}
+      paginate={<Paginate/>}/>
+  );
+}
+
+
+function GateEditor() {
+  return (
+    <div className="app">
+      <Sidebar active="gates"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','Gates','premium_features']}
+          actions={<>
+            <div style={{display:'flex',gap:4,padding:4,background:'var(--bg-2)',
+              borderRadius:'var(--r-md)',border:'1px solid var(--line)'}}>
+              <div style={{padding:'5px 11px',fontSize:12,fontFamily:'var(--mono)',color:'var(--fg-3)'}}>dev</div>
+              <div style={{padding:'5px 11px',fontSize:12,fontFamily:'var(--mono)',color:'var(--fg-3)'}}>staging</div>
+              <div style={{padding:'5px 11px',fontSize:12,fontFamily:'var(--mono)',color:'var(--fg)',
+                background:'var(--bg-1)',borderRadius:'var(--r-sm)',boxShadow:'var(--shadow-1)'}}>prod</div>
+            </div>
+            <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+            <button className="btn btn-ghost">Discard</button>
+            <button className="btn btn-primary"><IconCheck size={12}/> Publish changes</button>
+          </>}
+        />
+        <div className="page">
+          <div className="page-head">
+            <div>
+              <div className="flex items-center gap-3" style={{marginBottom:8}}>
+                <span className="badge badge-live"><span className="dot"/>ENABLED</span>
+                <span className="t-mono-xs dim-2">gate.premium_features</span>
+                <span className="tag">custom</span>
+                <span className="tag">linked to 2 configs · 1 experiment</span>
+              </div>
+              <h1>premium_features</h1>
+              <p>Rules evaluate top-to-bottom. First match wins. Returns <span className="t-mono">true</span> when
+                any <b style={{color:'var(--accent)'}}>allow</b> rule matches before a <b style={{color:'var(--danger)'}}>deny</b>.</p>
+            </div>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 380px',gap:24}}>
+            <div>
+              <div className="flex justify-between items-center" style={{marginBottom:12}}>
+                <div className="t-caps dim-2">Rules · 3 active</div>
+                <button className="btn btn-ghost btn-sm"><IconPlus size={11}/> Add rule</button>
+              </div>
+
+              <div className="rule">
+                <div>
+                  <div className="rule-head">
+                    <div className="n">1</div>
+                    <b>Team plan members</b>
+                    <span className="badge badge-live" style={{padding:'1px 6px'}}>ALLOW</span>
+                    <span className="ml-auto t-mono-xs dim">100% pass · when matched</span>
+                  </div>
+                  <div className="cond">
+                    <span className="conn">IF</span>
+                    <div className="select"><select defaultValue="user.plan">
+                      <option>user.plan</option><option>user.id</option><option>user.country</option>
+                    </select></div>
+                    <div className="select"><select defaultValue="equals">
+                      <option>equals</option><option>in</option><option>matches</option>
+                    </select></div>
+                    <div className="input mono"><input defaultValue="team"/></div>
+                    <button className="btn btn-ghost btn-icon btn-sm"><IconX size={11}/></button>
+                  </div>
+                  <div className="cond">
+                    <span className="conn">AND</span>
+                    <div className="select"><select defaultValue="user.status">
+                      <option>user.status</option>
+                    </select></div>
+                    <div className="select"><select defaultValue="equals">
+                      <option>equals</option>
+                    </select></div>
+                    <div className="input mono"><input defaultValue="active"/></div>
+                    <button className="btn btn-ghost btn-icon btn-sm"><IconX size={11}/></button>
+                  </div>
+                </div>
+                <button className="btn btn-ghost btn-icon btn-sm" style={{alignSelf:'flex-start'}}>
+                  <IconMore size={12}/>
+                </button>
+              </div>
+
+              <div className="rule">
+                <div>
+                  <div className="rule-head">
+                    <div className="n">2</div>
+                    <b>Beta cohort</b>
+                    <span className="badge badge-live" style={{padding:'1px 6px'}}>ALLOW · 50%</span>
+                    <span className="ml-auto t-mono-xs dim">bucket via user_id · sticky</span>
+                  </div>
+                  <div className="cond">
+                    <span className="conn">IF</span>
+                    <div className="select"><select defaultValue="gate.beta_access">
+                      <option>gate.beta_access</option>
+                    </select></div>
+                    <div className="select"><select defaultValue="is">
+                      <option>is</option>
+                    </select></div>
+                    <div className="input mono"><input defaultValue="true"/></div>
+                    <button className="btn btn-ghost btn-icon btn-sm"><IconX size={11}/></button>
+                  </div>
+                </div>
+                <button className="btn btn-ghost btn-icon btn-sm" style={{alignSelf:'flex-start'}}>
+                  <IconMore size={12}/>
+                </button>
+              </div>
+
+              <div className="rule deny">
+                <div>
+                  <div className="rule-head">
+                    <div className="n">3</div>
+                    <b>EU — legacy pricing</b>
+                    <span className="badge badge-killed" style={{padding:'1px 6px'}}>DENY</span>
+                    <span className="ml-auto t-mono-xs dim">DPA not yet migrated</span>
+                  </div>
+                  <div className="cond">
+                    <span className="conn">IF</span>
+                    <div className="select"><select defaultValue="gate.eu_user">
+                      <option>gate.eu_user</option>
+                    </select></div>
+                    <div className="select"><select defaultValue="is">
+                      <option>is</option>
+                    </select></div>
+                    <div className="input mono"><input defaultValue="true"/></div>
+                    <button className="btn btn-ghost btn-icon btn-sm"><IconX size={11}/></button>
+                  </div>
+                  <div className="cond">
+                    <span className="conn">AND</span>
+                    <div className="select"><select defaultValue="user.plan_migrated_at">
+                      <option>user.plan_migrated_at</option>
+                    </select></div>
+                    <div className="select"><select defaultValue="is_null">
+                      <option>is_null</option>
+                    </select></div>
+                    <div className="input mono"><input placeholder="—" style={{color:'var(--fg-4)'}}/></div>
+                    <button className="btn btn-ghost btn-icon btn-sm"><IconX size={11}/></button>
+                  </div>
+                </div>
+                <button className="btn btn-ghost btn-icon btn-sm" style={{alignSelf:'flex-start'}}>
+                  <IconMore size={12}/>
+                </button>
+              </div>
+
+              <div style={{padding:'14px 16px',background:'var(--bg-2)',border:'1px dashed var(--line-2)',
+                borderRadius:'var(--r-md)',display:'flex',gap:10,alignItems:'center',marginTop:8}}>
+                <IconSparkles size={13} style={{color:'var(--accent)'}}/>
+                <span className="t-sm dim flex-1">
+                  <b style={{color:'var(--fg)'}}>Tip:</b> ask Claude "add a rule for customers with LTV over $1k"
+                </span>
+                <button className="btn btn-ghost btn-sm">Ask →</button>
+              </div>
+
+              <div style={{marginTop:18}}>
+                <div className="t-caps dim-2" style={{marginBottom:10}}>Default when no rule matches</div>
+                <div className="flex gap-2">
+                  <button className="btn btn-secondary" style={{borderColor:'var(--accent)',color:'var(--accent)'}}>
+                    <IconCheck size={12}/> Allow (true)
+                  </button>
+                  <button className="btn btn-ghost">Deny (false)</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Test panel */}
+            <div>
+              <div className="test-panel">
+                <div className="head">
+                  <IconPlay size={13} style={{color:'var(--accent)'}}/>
+                  <b style={{fontSize:13,fontWeight:500}}>Test against a user</b>
+                  <span className="ml-auto t-mono-xs dim-2">live</span>
+                </div>
+                <div className="input mono" style={{marginBottom:10}}>
+                  <span className="prefix">user_id</span>
+                  <input defaultValue="usr_3b20a9f2"/>
+                </div>
+                <div style={{background:'var(--bg-1)',border:'1px solid var(--line)',
+                  borderRadius:'var(--r-md)',padding:'12px 14px'}}>
+                  <div className="flex items-center gap-2" style={{marginBottom:10}}>
+                    <div className="avatar-sm" style={{background:'#7c5cff'}}>M</div>
+                    <div>
+                      <div className="t-sm"><b>maya@acme.co</b></div>
+                      <div className="t-mono-xs dim-2">us-east · team plan · 94d old</div>
+                    </div>
+                  </div>
+                  <div style={{background:'var(--bg-2)',borderRadius:4,padding:'8px 10px',
+                    fontFamily:'var(--mono)',fontSize:11,color:'var(--fg-2)',lineHeight:1.7}}>
+                    <div><span className="dim-3">user.plan</span> = "team"</div>
+                    <div><span className="dim-3">user.status</span> = "active"</div>
+                    <div><span className="dim-3">user.country</span> = "US"</div>
+                    <div><span className="dim-3">gate.eu_user</span> = false</div>
+                  </div>
+                </div>
+
+                <div style={{marginTop:14}}>
+                  <div className="t-caps dim-2" style={{marginBottom:8}}>Evaluation</div>
+                  <div className="test-row pass">
+                    <span className="pill">PASS</span>
+                    <span>Rule 1 · Team plan members</span>
+                    <span className="ml-auto t-mono-xs dim-2">matched</span>
+                  </div>
+                  <div className="test-row">
+                    <span className="pill">skip</span>
+                    <span className="dim">Rule 2 · not evaluated</span>
+                  </div>
+                  <div className="test-row">
+                    <span className="pill">skip</span>
+                    <span className="dim">Rule 3 · not evaluated</span>
+                  </div>
+                </div>
+
+                <div style={{marginTop:16,padding:'12px 14px',background:'var(--accent-soft)',
+                  border:'1px solid color-mix(in oklab, var(--accent) 30%, transparent)',
+                  borderRadius:'var(--r-md)',display:'flex',alignItems:'center',gap:10}}>
+                  <div style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--accent)'}}>RESULT</div>
+                  <div style={{fontFamily:'var(--mono)',fontSize:16,fontWeight:600,color:'var(--accent)'}}>true</div>
+                  <span className="ml-auto t-mono-xs" style={{color:'var(--accent)'}}>evaluated in 2.8ms</span>
+                </div>
+              </div>
+
+              <div className="card" style={{marginTop:14,padding:16}}>
+                <div className="t-caps dim-2" style={{marginBottom:10}}>SDK usage</div>
+                <div style={{fontFamily:'var(--mono)',fontSize:11.5,background:'var(--bg-2)',
+                  border:'1px solid var(--line)',borderRadius:'var(--r-sm)',padding:'10px 12px',
+                  color:'var(--fg-2)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>
+<span style={{color:'#a78bfa'}}>const</span>{` allowed = `}
+<span style={{color:'#a78bfa'}}>await</span>{` shipeasy.gate(`}
+<span style={{color:'var(--accent)'}}>"premium_features"</span>{`);
+`}
+<span style={{color:'#a78bfa'}}>if</span>{` (allowed) `}{`<`}<span style={{color:'#74c7ec'}}>PremiumPanel</span>{` />;`}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { GatesList, GateEditor });
+const _pageParam = new URLSearchParams(location.search).get('page');
+const Page = _pageParam === 'editor' ? GateEditor : GatesList;
+ReactDOM.createRoot(document.getElementById('app')).render(<Page/>);
+</script>
+</body>
+</html>

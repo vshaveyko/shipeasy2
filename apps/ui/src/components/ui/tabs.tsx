@@ -27,11 +27,12 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
     <TabsPrimitive.Tab
       data-slot="tabs-trigger"
       className={cn(
-        "relative inline-flex items-center gap-1.5 px-3 py-2 text-[13px] text-[var(--se-fg-3)] outline-none transition-colors",
+        "relative inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[var(--se-fg-3)] outline-none transition-colors",
         "hover:text-[var(--se-fg-2)]",
         "focus-visible:text-[var(--se-fg)] focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-        "data-[selected]:text-[var(--se-fg)]",
-        "data-[selected]:after:absolute data-[selected]:after:inset-x-2 data-[selected]:after:-bottom-px data-[selected]:after:h-[2px] data-[selected]:after:rounded-full data-[selected]:after:bg-[var(--se-accent)]",
+        // Active tab — Base UI exposes `data-active` (empty attr) on the selected tab.
+        "data-[active]:text-[var(--se-accent)]",
+        "data-[active]:after:absolute data-[active]:after:inset-x-2 data-[active]:after:-bottom-px data-[active]:after:h-[2px] data-[active]:after:rounded-full data-[active]:after:bg-[var(--se-accent)]",
         className,
       )}
       {...props}

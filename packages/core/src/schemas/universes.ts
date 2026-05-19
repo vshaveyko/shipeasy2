@@ -2,9 +2,10 @@ import { z } from "zod";
 
 export const universeNameSchema = z
   .string()
-  .regex(/^[a-z0-9][a-z0-9_-]{0,63}$/)
+  .regex(/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)?$/)
+  .max(128)
   .describe(
-    "Stable universe key referenced by experiments via `universe: '<name>'`. Lowercase letters, digits, `_` or `-`, max 64 chars. Immutable after create.",
+    "Stable universe key. Single segment or `folder.name`. Lowercase letters, digits, `_` or `-`; max 128 chars. Immutable after create.",
   );
 
 export const holdoutRangeSchema = z

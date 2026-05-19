@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Configs · Detail · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-height:100vh}
+
+  /* ── Unified split (open state) ───────────────────────────────── */
+  .split{display:flex;gap:0;
+    background:var(--bg-1);border:1px solid var(--line);
+    border-radius:var(--r-lg);overflow:hidden;min-height:840px}
+
+  .list-pane{flex:0 0 280px;max-width:280px;
+    border-right:1px solid var(--line);overflow:hidden;
+    display:flex;flex-direction:column;background:var(--bg-1)}
+  .rail-head{padding:11px 14px;border-bottom:1px solid var(--line);
+    background:var(--bg-2);display:flex;align-items:center;gap:8px}
+  .rail-head .input{flex:1;height:28px}
+  .rail-head .input input{font-size:11.5px}
+  .rail-body{flex:1;overflow-y:auto}
+  .rail-group{padding:11px 14px 5px;font-family:var(--mono);font-size:9.5px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--fg-4);
+    display:flex;align-items:center;gap:6px}
+  .rail-group .c{padding:0 5px;background:var(--bg-3);border-radius:3px;
+    color:var(--fg-3);border:1px solid var(--line-2);font-size:9px}
+  .rail-row{display:grid;grid-template-columns:14px 1fr auto auto;gap:8px;
+    align-items:center;padding:9px 14px;cursor:default;
+    border-left:2px solid transparent;
+    transition:background .12s, border-left-color .12s}
+  .rail-row:hover{background:var(--bg-2)}
+  .rail-row.active{background:color-mix(in oklab, var(--accent) 7%, var(--bg-2));
+    border-left-color:var(--accent)}
+  .rail-row .nm{font-family:var(--mono);font-size:12px;color:var(--fg);
+    font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rail-row .drft{font-family:var(--mono);font-size:9px;letter-spacing:.05em;
+    padding:1px 5px;border-radius:3px;background:color-mix(in oklab, var(--warn) 18%, transparent);
+    color:var(--warn);border:1px solid color-mix(in oklab, var(--warn) 35%, transparent)}
+  .rail-row .ver{font-family:var(--mono);font-size:10px;
+    padding:1px 5px;border-radius:3px;background:var(--bg-3);color:var(--fg-3);
+    border:1px solid var(--line-2);letter-spacing:.02em}
+  .rail-foot{padding:8px 12px;border-top:1px solid var(--line);
+    background:var(--bg-2);display:flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:10.5px;color:var(--fg-3)}
+
+  /* ── Center pane ────────────────────────────────────────────── */
+  .center-pane{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+
+  /* Persistent close button on the slideout (unfold to full list) */
+  .pane-close{position:absolute;top:14px;right:14px;z-index:6;
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-1);border:1px solid var(--line-2);
+    color:var(--fg-2);cursor:default;
+    box-shadow:0 1px 2px rgba(0,0,0,.18);
+    transition:background .12s,color .12s,border-color .12s}
+  .pane-close:hover{background:var(--bg-2);color:var(--fg);
+    border-color:var(--line-3)}
+  .show-full-pill{display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:var(--r-sm);
+    border:1px solid var(--line);background:var(--bg-1);
+    color:var(--fg-2);font-size:12.5px;cursor:default;
+    transition:background .12s,color .12s,border-color .12s}
+  .show-full-pill:hover{background:var(--bg-2);color:var(--fg);
+    border-color:var(--line-2)}
+  .show-full-pill kbd{font-family:var(--mono);font-size:9.5px;
+    padding:1px 5px;background:var(--bg-2);border-radius:3px;
+    border:1px solid var(--line);color:var(--fg-4);margin-left:4px}
+
+  /* Sticky hero header */
+  .center-hd{padding:18px 24px 14px;border-bottom:1px solid var(--line);
+    background:var(--bg-1);position:sticky;top:0;z-index:5;
+    display:flex;flex-direction:column;gap:10px}
+  .hd-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .hd-row .name{font-family:var(--mono);font-size:20px;font-weight:500;
+    letter-spacing:-0.01em;color:var(--fg)}
+  .pill{display:inline-flex;align-items:center;gap:5px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;
+    padding:2px 7px;border-radius:4px;border:1px solid var(--line)}
+  .pill.live{background:color-mix(in oklab, var(--accent) 14%, transparent);
+    color:var(--accent);
+    border-color:color-mix(in oklab, var(--accent) 35%, transparent)}
+  .pill.draft{background:color-mix(in oklab, var(--warn) 14%, transparent);
+    color:var(--warn);
+    border-color:color-mix(in oklab, var(--warn) 35%, transparent)}
+  .pill.draft .dot{width:5px;height:5px;border-radius:50%;background:var(--warn)}
+  .pill.live .dot{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+  .desc{font-size:13px;color:var(--fg-2);line-height:1.55;max-width:74ch;
+    text-wrap:pretty}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--fg-4);
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .meta b{color:var(--fg-3);font-weight:500}
+  .meta .sep{color:var(--fg-4)}
+
+  /* Body grid: schema | value (50/50) */
+  .center-body{flex:1;display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;min-height:0}
+  .pane-col{padding:18px 22px;display:flex;flex-direction:column;gap:12px;
+    min-width:0}
+  .pane-col + .pane-col{border-left:1px solid var(--line);background:var(--bg-1)}
+  .col-hd{display:flex;align-items:center;gap:10px;font-family:var(--mono);
+    font-size:11px;color:var(--fg-4);letter-spacing:.06em;text-transform:uppercase}
+  .col-hd .ttl{color:var(--fg-2);font-weight:500}
+  .col-hd .act{margin-left:auto;display:flex;gap:6px;align-items:center}
+
+  /* Schema field rows */
+  .field{display:grid;
+    grid-template-columns:18px minmax(120px,1fr) 110px minmax(120px,1.4fr) 32px;
+    gap:10px;align-items:center;padding:10px 12px;
+    background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--r-md);transition:background .12s,border-color .12s}
+  .field:hover{background:color-mix(in oklab, var(--bg-2) 80%, var(--bg-1))}
+  .field .grip{color:var(--fg-4);cursor:grab;display:flex;align-items:center;justify-content:center}
+  .field .k{font-family:var(--mono);font-size:12px;color:var(--fg);font-weight:500;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .field .type{font-family:var(--mono);font-size:10.5px;color:var(--fg-3);
+    padding:2px 6px;border-radius:3px;background:var(--bg-3);
+    border:1px solid var(--line-2);text-align:center;letter-spacing:.04em}
+  .field .help{font-size:11.5px;color:var(--fg-3);line-height:1.4;
+    overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical}
+  .field .help b{font-family:var(--mono);font-size:10.5px;color:var(--fg-4);
+    font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+  .field.required{border-left:2px solid var(--accent)}
+
+  .add-field{padding:9px 12px;background:transparent;
+    border:1px dashed var(--line-2);border-radius:var(--r-md);
+    display:flex;align-items:center;gap:8px;color:var(--fg-3);
+    font-size:12px;cursor:default;transition:background .12s,border-color .12s}
+  .add-field:hover{background:var(--bg-2);border-color:var(--line-3);color:var(--fg-2)}
+
+  /* Value form fields */
+  .vf{display:flex;flex-direction:column;gap:6px}
+  .vf .lbl{font-family:var(--mono);font-size:11px;color:var(--fg-2);
+    display:flex;align-items:center;gap:6px;font-weight:500}
+  .vf .lbl .star{color:var(--accent)}
+  .vf .lbl .hint{margin-left:auto;font-family:var(--mono);font-size:10px;
+    color:var(--fg-4);text-transform:uppercase;letter-spacing:.06em}
+  .vf .input{height:34px}
+
+  .toggle-pill{display:inline-flex;align-items:center;gap:8px;
+    padding:5px 10px;border-radius:999px;background:var(--bg-2);
+    border:1px solid var(--line);cursor:default;
+    transition:border-color .12s}
+  .toggle-pill .knob{width:22px;height:12px;background:var(--bg-3);
+    border-radius:999px;position:relative;transition:background .15s}
+  .toggle-pill .knob::after{content:"";position:absolute;top:1px;left:1px;
+    width:10px;height:10px;border-radius:50%;background:var(--fg-3);
+    transition:transform .15s,background .15s}
+  .toggle-pill.on .knob{background:color-mix(in oklab, var(--accent) 30%, transparent)}
+  .toggle-pill.on .knob::after{transform:translateX(10px);background:var(--accent)}
+  .toggle-pill .lbl{font-size:12.5px;color:var(--fg)}
+
+  .draft-banner{margin:14px 24px 0;padding:11px 14px;
+    background:color-mix(in oklab, var(--warn) 8%, transparent);
+    border:1px solid color-mix(in oklab, var(--warn) 30%, transparent);
+    border-radius:var(--r-md);display:flex;gap:10px;align-items:center;
+    font-size:12.5px}
+  .draft-banner .ic{width:24px;height:24px;border-radius:6px;
+    background:color-mix(in oklab, var(--warn) 18%, transparent);
+    border:1px solid color-mix(in oklab, var(--warn) 35%, transparent);
+    color:var(--warn);display:grid;place-items:center;flex-shrink:0}
+  .draft-banner b{color:var(--fg);font-weight:500}
+
+  /* Activity feed */
+  .activity{padding:18px 24px;border-top:1px solid var(--line);
+    background:var(--bg-1)}
+  .activity h4{margin:0 0 12px;font-size:12px;font-weight:500;
+    font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;
+    color:var(--fg-4);display:flex;align-items:center;gap:8px}
+  .a-row{display:grid;grid-template-columns:24px 100px 1fr auto;gap:12px;
+    padding:9px 0;border-bottom:1px dashed var(--line);align-items:center;
+    font-size:12.5px}
+  .a-row:last-child{border-bottom:none}
+  .a-row .ic{width:24px;height:24px;border-radius:6px;
+    background:var(--bg-2);border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--fg-3)}
+  .a-row .ic.publish{background:color-mix(in oklab, var(--accent) 12%, transparent);
+    border-color:color-mix(in oklab, var(--accent) 30%, transparent);color:var(--accent)}
+  .a-row .ic.draft{background:color-mix(in oklab, var(--warn) 12%, transparent);
+    border-color:color-mix(in oklab, var(--warn) 30%, transparent);color:var(--warn)}
+  .a-row .when{font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+  .a-row .what b{color:var(--fg);font-weight:500}
+  .a-row .v{font-family:var(--mono);font-size:10.5px;color:var(--fg-3);
+    padding:2px 6px;background:var(--bg-3);border-radius:3px;
+    border:1px solid var(--line-2)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+
+// ── Demo data ────────────────────────────────────────────────────
+const groups = [
+  { ns:'checkout', items:[
+    { id:'checkout.copy',          v:14, draft:true,  active:true },
+    { id:'checkout.timeout_ms',    v:8,  draft:false },
+    { id:'checkout.allowed_methods', v:6, draft:false },
+    { id:'checkout.address_required_fields', v:4, draft:false },
+  ]},
+  { ns:'search', items:[
+    { id:'search.ranker_weights', v:21, draft:false },
+    { id:'search.typo_tolerance', v:9,  draft:false },
+    { id:'search.max_results',    v:3,  draft:false },
+  ]},
+  { ns:'pricing', items:[
+    { id:'pricing.tiers',         v:18, draft:true },
+    { id:'pricing.trial_length',  v:5,  draft:false },
+  ]},
+  { ns:'features', items:[
+    { id:'features.ml_ranker',    v:7,  draft:false },
+    { id:'features.recommendations_count', v:11, draft:false },
+  ]},
+];
+
+const schema = [
+  { k:'headline',           type:'string',  required:true,
+    help:'Hero line on the cart. Used on web · ios · android.' },
+  { k:'sub_headline',       type:'string',  required:false,
+    help:'Secondary line below the hero. Empty hides it.' },
+  { k:'cta_label',          type:'string',  required:true,
+    help:'Primary button label. Localized via i18n keys.' },
+  { k:'show_promo_banner',  type:'boolean', required:true,
+    help:'When true, the promo banner appears above the form.' },
+  { k:'promo_discount_pct', type:'number',  required:false,
+    help:'Discount percentage 0–100. Validated server-side.' },
+  { k:'available_methods',  type:'string[]',required:true,
+    help:'Ordered list of payment methods to show in the picker.' },
+];
+
+const value = {
+  headline:'Almost there — review your order',
+  sub_headline:'Free shipping on orders over $50',
+  cta_label:'Place order',
+  show_promo_banner:true,
+  promo_discount_pct:15,
+  available_methods:['card','paypal','apple_pay','google_pay'],
+};
+
+const activity = [
+  { at:'just now',  who:'maya@acme.co',   kind:'draft',    verb:'saved a draft', detail:'headline · cta_label', v:'v14 → v15' },
+  { at:'2h ago',    who:'jiwoo@acme.co',  kind:'publish',  verb:'published',     detail:'CDN rebuild · 1.4s · 14 SDKs synced', v:'v14' },
+  { at:'5h ago',    who:'jiwoo@acme.co',  kind:'schema',   verb:'added field',   detail:'promo_discount_pct · optional · number', v:'schema' },
+  { at:'yesterday', who:'maya@acme.co',   kind:'publish',  verb:'published',     detail:'changed cta_label · gradual rollout', v:'v13' },
+  { at:'3d ago',    who:'kai@acme.co',    kind:'publish',  verb:'published',     detail:'baseline · canary 5% → 100%', v:'v12' },
+];
+
+// ── Page ─────────────────────────────────────────────────────────
+function ConfigsExpanded() {
+  return (
+    <div className="app">
+      <Sidebar active="configs"/>
+      <div>
+        <Topbar
+          crumbs={['Acme Co.','Configs','checkout.copy']}
+          actions={<>
+            <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+            <button className="btn btn-primary"><IconPlus size={12}/> New config</button>
+          </>}
+        />
+        <div className="page">
+
+          {/* Open-record local head — same pattern as other features */}
+          <div style={{display:'flex',alignItems:'center',gap:14}}>
+            <button style={{display:'flex',alignItems:'center',gap:6,
+              padding:'6px 10px',borderRadius:'var(--r-sm)',
+              border:'1px solid var(--line)',background:'var(--bg-1)',
+              color:'var(--fg-2)',fontSize:12.5,cursor:'default'}}>
+              <IconChevronLeft size={12}/> All configs
+            </button>
+            <button className="show-full-pill" title="Show full table">
+              <IconSliders size={11}/> Show full table <kbd>Esc</kbd>
+            </button>
+            <span style={{fontFamily:'var(--mono)',fontSize:18,fontWeight:500,
+              color:'var(--fg)'}}>checkout.copy</span>
+            <span className="pill live"><span className="dot"/>v14 LIVE</span>
+            <span className="pill draft">DRAFT · 2 fields</span>
+            <span className="meta" style={{margin:0}}>linked to 1 gate · 2 experiments</span>
+            <div className="ml-auto flex gap-2 items-center">
+              <button className="btn btn-ghost btn-sm">
+                <IconHistory size={11}/> History
+              </button>
+              <button className="btn btn-ghost btn-sm">
+                <IconCode size={11}/> Integrate
+              </button>
+              <button className="btn btn-ghost btn-sm">
+                <IconTrash size={11}/> Delete
+              </button>
+              <button className="btn btn-ghost btn-sm">Discard</button>
+              <button className="btn btn-primary btn-sm">
+                <IconRocket size={11}/> Publish v15
+              </button>
+            </div>
+          </div>
+
+          {/* Split — rail (280) + center (full) */}
+          <div className="split">
+
+            {/* ── Rail ─────────────────────────────────────────── */}
+            <div className="list-pane">
+              <div className="rail-head">
+                <div className="input">
+                  <IconSearch size={11} style={{color:'var(--fg-3)'}}/>
+                  <input placeholder="Filter configs"/>
+                </div>
+                <button className="btn btn-ghost btn-icon btn-sm">
+                  <IconPlus size={11}/>
+                </button>
+              </div>
+              <div className="rail-body">
+                {groups.map(g => (
+                  <div key={g.ns}>
+                    <div className="rail-group">
+                      <span>{g.ns}</span>
+                      <span className="c">{g.items.length}</span>
+                    </div>
+                    {g.items.map(it => (
+                      <div key={it.id} className={`rail-row ${it.active ? 'active' : ''}`}>
+                        <IconSliders size={11} style={{color:'var(--fg-4)'}}/>
+                        <div className="nm">{it.id.split('.').slice(1).join('.')}</div>
+                        {it.draft && <span className="drft">D</span>}
+                        <span className="ver">v{it.v}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="rail-foot">
+                <span>⌘K · ↑↓</span>
+                <span className="ml-auto">11 of 41</span>
+              </div>
+            </div>
+
+            {/* ── Center pane ─────────────────────────────────── */}
+            <div className="center-pane">
+              <button className="pane-close" title="Show full table (Esc)">
+                <IconX size={13}/>
+              </button>
+
+              {/* Sticky hero */}
+              <div className="center-hd">
+                <div className="hd-row">
+                  <span className="name">checkout.copy</span>
+                  <span className="pill live"><span className="dot"/>LIVE</span>
+                  <span className="pill draft"><span className="dot"/>DRAFT</span>
+                  <span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--fg-4)'}}>
+                    namespace · checkout
+                  </span>
+                </div>
+                <div className="desc">
+                  Hero & call-to-action copy for the checkout flow. Drives copy on web, iOS and Android in lockstep — the SDK long-polls and the next session picks up the new values within ~5s.
+                </div>
+                <div className="meta">
+                  <span><b>last published</b> 2h ago by jiwoo@acme.co</span>
+                  <span className="sep">·</span>
+                  <span><b>fields</b> 6 (3 required)</span>
+                  <span className="sep">·</span>
+                  <span><b>kv</b> live · 14 SDKs in sync</span>
+                  <span className="sep">·</span>
+                  <span><b>owner</b> Maya Patel</span>
+                </div>
+              </div>
+
+              {/* Unsaved-draft banner */}
+              <div className="draft-banner">
+                <div className="ic"><IconEdit size={11}/></div>
+                <div style={{flex:1}}>
+                  <b>You have unsaved changes</b> — <code style={{fontFamily:'var(--mono)',fontSize:11.5}}>headline</code> and <code style={{fontFamily:'var(--mono)',fontSize:11.5}}>cta_label</code> differ from v14. Publish to make these live.
+                </div>
+                <button className="btn btn-ghost btn-sm">Discard</button>
+                <button className="btn btn-primary btn-sm">
+                  <IconRocket size={11}/> Publish v15
+                </button>
+              </div>
+
+              {/* Schema + Value editor */}
+              <div className="center-body" style={{paddingTop:6}}>
+
+                {/* Schema column */}
+                <div className="pane-col">
+                  <div className="col-hd">
+                    <span className="ttl">Schema</span>
+                    <span style={{fontFamily:'var(--mono)',fontSize:10,
+                      color:'var(--fg-4)'}}>6 fields · 3 required</span>
+                    <div className="act">
+                      <button className="btn btn-ghost btn-sm">
+                        <IconCode size={10}/> JSON
+                      </button>
+                      <button className="btn btn-secondary btn-sm">
+                        <IconCheck size={10}/> Save schema
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    {schema.map(f => (
+                      <div key={f.k} className={`field ${f.required?'required':''}`}>
+                        <div className="grip"><IconMore size={10}/></div>
+                        <div className="k">{f.k}</div>
+                        <div className="type">{f.type}</div>
+                        <div className="help">
+                          {f.required && <b>required</b>}{f.help}
+                        </div>
+                        <button className="btn btn-ghost btn-icon btn-sm">
+                          <IconMore size={11}/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button className="add-field">
+                    <IconPlus size={11}/> Add field
+                  </button>
+                </div>
+
+                {/* Value column */}
+                <div className="pane-col">
+                  <div className="col-hd">
+                    <span className="ttl">Value</span>
+                    <span className="pill draft" style={{padding:'1px 6px',fontSize:9.5}}>
+                      UNSAVED
+                    </span>
+                    <div className="act">
+                      <button className="btn btn-ghost btn-sm">
+                        <IconRefreshCcw size={10}/> Reset to v14
+                      </button>
+                      <button className="btn btn-secondary btn-sm">
+                        <IconEdit size={10}/> Save draft
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                    <div className="vf">
+                      <div className="lbl">headline <span className="star">*</span>
+                        <span className="hint">edited</span></div>
+                      <div className="input">
+                        <input defaultValue={value.headline}/>
+                      </div>
+                    </div>
+
+                    <div className="vf">
+                      <div className="lbl">sub_headline
+                        <span className="hint">optional</span></div>
+                      <div className="input">
+                        <input defaultValue={value.sub_headline}/>
+                      </div>
+                    </div>
+
+                    <div className="vf">
+                      <div className="lbl">cta_label <span className="star">*</span>
+                        <span className="hint">edited</span></div>
+                      <div className="input">
+                        <input defaultValue={value.cta_label}/>
+                      </div>
+                    </div>
+
+                    <div className="vf">
+                      <div className="lbl">show_promo_banner <span className="star">*</span>
+                        <span className="hint">boolean</span></div>
+                      <div className="toggle-pill on">
+                        <span className="lbl">true</span>
+                        <span className="knob"/>
+                      </div>
+                    </div>
+
+                    <div className="vf">
+                      <div className="lbl">promo_discount_pct
+                        <span className="hint">number · 0–100</span></div>
+                      <div className="input mono" style={{width:120}}>
+                        <input defaultValue={value.promo_discount_pct}
+                          type="number"/>
+                        <span className="suffix">%</span>
+                      </div>
+                    </div>
+
+                    <div className="vf">
+                      <div className="lbl">available_methods <span className="star">*</span>
+                        <span className="hint">string[] · ordered</span></div>
+                      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                        {value.available_methods.map(m => (
+                          <span key={m} style={{display:'inline-flex',alignItems:'center',gap:5,
+                            padding:'4px 8px',borderRadius:'var(--r-sm)',
+                            background:'var(--bg-2)',border:'1px solid var(--line)',
+                            fontFamily:'var(--mono)',fontSize:11,color:'var(--fg-2)'}}>
+                            <span style={{color:'var(--fg-4)'}}>≡</span>
+                            {m}
+                            <IconX size={10} style={{color:'var(--fg-4)',cursor:'default'}}/>
+                          </span>
+                        ))}
+                        <button className="btn btn-ghost btn-sm">
+                          <IconPlus size={10}/> Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity */}
+              <div className="activity">
+                <h4>
+                  <IconClock size={11}/>
+                  Activity
+                  <span style={{fontFamily:'var(--mono)',fontSize:10,
+                    color:'var(--fg-4)',marginLeft:6}}>
+                    {activity.length} events
+                  </span>
+                  <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}}>
+                    <IconDownload size={10}/> Export
+                  </button>
+                </h4>
+                {activity.map((a,i) => (
+                  <div key={i} className="a-row">
+                    <div className={`ic ${a.kind}`}>
+                      {a.kind === 'publish' ? <IconRocket size={11}/> :
+                       a.kind === 'draft'   ? <IconEdit size={11}/> :
+                                              <IconCode size={11}/>}
+                    </div>
+                    <div className="when">{a.at}</div>
+                    <div className="what">
+                      <b>{a.who}</b> {a.verb} · <span style={{color:'var(--fg-3)'}}>{a.detail}</span>
+                    </div>
+                    <div className="v">{a.v}</div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<ConfigsExpanded/>);
+</script>
+</body>
+</html>

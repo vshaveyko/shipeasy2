@@ -500,9 +500,10 @@ guide. Per-feature guides only enable the corresponding **module** (via
 | `shipeasy-i18n`        | [`translations.md`](./translations.md)                             |
 | `shipeasy-bugs`        | [`bugs-feature-requests.md`](./bugs-feature-requests.md)           |
 
-The plugin also contributes slash commands — `/shipeasy-setup`,
-`/shipeasy-i18n-extract`, `/shipeasy-i18n-migrate`, `/shipeasy-flag`,
-`/shipeasy-experiment`, `/shipeasy-bug` — and a plugin-scoped `.mcp.json`
+The plugin also contributes slash commands — `/shipeasy:install`,
+`/shipeasy:i18n:extract`, `/shipeasy:i18n:migrate`, `/shipeasy:flags:flag`,
+`/shipeasy:experiments:experiment`, `/shipeasy:bugs:bug`, plus per-feature
+`/shipeasy:<feature>:install` — and a plugin-scoped `.mcp.json`
 registering `@shipeasy/mcp`. If you used `shipeasy plugin install`, you can
 skip `shipeasy mcp install` for Claude Code (the plugin's own `.mcp.json`
 covers it). For Cursor / Windsurf you still want

@@ -1,0 +1,1681 @@
+/* Shipeasy — Standard "big modal" creation wizard.
+   One reusable shell; each item kind plugs in its own steps.
+   Loaded after app.css + forms.css + configs.css.
+   Re-uses tokens + .ed-input / .cc-card / .pill-stat / .cf-row from configs.css */
+
+/* ── Backdrop ─────────────────────────────────────── */
+.wm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: radial-gradient(
+    120% 90% at 50% 0%,
+    rgba(8, 8, 10, 0.62) 0%,
+    rgba(8, 8, 10, 0.82) 60%,
+    rgba(8, 8, 10, 0.92) 100%
+  );
+  backdrop-filter: blur(6px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 36px 28px;
+  animation: wmFade 0.18s ease-out;
+}
+@keyframes wmFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.wm-stage {
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  max-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: wmPop 0.22s cubic-bezier(0.18, 0.86, 0.22, 1.04);
+}
+@keyframes wmPop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Eyebrow above the modal — shows context (project · area) */
+.wm-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px 14px;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wm-eyebrow .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+.wm-eyebrow .esc {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.wm-eyebrow .esc kbd {
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+/* ── Modal frame ──────────────────────────────────── */
+.wm-modal {
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 70px -20px rgba(0, 0, 0, 0.55),
+    0 8px 18px -8px rgba(0, 0, 0, 0.45);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 560px;
+  max-height: calc(100vh - 130px);
+  overflow: hidden;
+}
+
+/* ── Header (compact · matches configs-new wiz-head) ─ */
+.wm-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+  min-width: 0;
+}
+.wm-head .ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--accent) 18%, var(--bg-2)),
+    color-mix(in oklab, var(--accent) 10%, var(--bg-3))
+  );
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line-2));
+  color: var(--accent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+.wm-head .ico.gates {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, #74c7ec 18%, var(--bg-2)),
+    color-mix(in oklab, #74c7ec 10%, var(--bg-3))
+  );
+  border-color: color-mix(in oklab, #74c7ec 30%, var(--line-2));
+  color: #74c7ec;
+}
+.wm-head .ico.ks {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--warn) 18%, var(--bg-2)),
+    color-mix(in oklab, var(--warn) 10%, var(--bg-3))
+  );
+  border-color: color-mix(in oklab, var(--warn) 30%, var(--line-2));
+  color: var(--warn);
+}
+.wm-head .ico.metrics {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, #a78bfa 18%, var(--bg-2)),
+    color-mix(in oklab, #a78bfa 10%, var(--bg-3))
+  );
+  border-color: color-mix(in oklab, #a78bfa 30%, var(--line-2));
+  color: #a78bfa;
+}
+.wm-head .ico.experiments {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, #ff8445 18%, var(--bg-2)),
+    color-mix(in oklab, #ff8445 10%, var(--bg-3))
+  );
+  border-color: color-mix(in oklab, #ff8445 30%, var(--line-2));
+  color: #ff8445;
+}
+
+.wm-head .titles {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.wm-head .titles .stem {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wm-head .titles h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  line-height: 1.25;
+}
+.wm-head .titles h2 .pill-stat {
+  font-size: 9.5px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+}
+.wm-head .x {
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+/* The compact stepper from configs.css sits inline in the wizard header
+   without its own card chrome. */
+.wm-head .wiz-stepper.compact {
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.wm-head .wiz-stepper.compact .wiz-step {
+  padding: 4px 8px;
+}
+.wm-head .wiz-stepper.compact .wiz-step:hover {
+  background: var(--bg-2);
+}
+.wm-head .wiz-stepper.compact .wiz-step.current .num {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+.wm-head .wiz-stepper.compact .wiz-conn {
+  min-width: 8px;
+  margin: 0 1px;
+}
+
+/* ── Body — scrollable content area ───────────────── */
+.wm-body {
+  padding: 18px 22px 8px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background:
+    radial-gradient(
+      900px 320px at 100% 0%,
+      color-mix(in oklab, var(--accent) 3%, transparent),
+      transparent 60%
+    ),
+    var(--bg);
+}
+.wm-body > .step-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0 2px 6px;
+  color: var(--fg-3);
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 80ch;
+}
+.wm-body > .step-hint .ico {
+  margin-top: 2px;
+  color: var(--fg-4);
+  flex-shrink: 0;
+}
+
+/* Two-column step layout — most steps use this */
+.wm-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 14px;
+  align-items: start;
+}
+.wm-cols.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.wm-cols .side {
+  position: sticky;
+  top: 8px;
+}
+
+/* Aside card — context, preview, tips */
+.wm-aside {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wm-aside .ahd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--line);
+}
+.wm-aside .ahd .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.wm-aside .arow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  line-height: 1.55;
+}
+.wm-aside .arow .lk {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-4);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  width: 78px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.wm-aside .arow .vl {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg-2);
+  word-break: break-word;
+}
+.wm-aside .arow .vl.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg);
+}
+.wm-aside .arow .vl.dim {
+  color: var(--fg-3);
+}
+.wm-aside .acard {
+  margin-top: 2px;
+  padding: 9px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+  color: var(--fg-3);
+  line-height: 1.55;
+}
+
+/* ── Banner ───────────────────────────────────────── */
+.wm-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: color-mix(in oklab, var(--accent) 6%, var(--bg-2));
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--line-2));
+  color: var(--fg-2);
+}
+.wm-banner .ic {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.wm-banner b {
+  color: var(--fg);
+  font-weight: 500;
+}
+.wm-banner.warn {
+  background: color-mix(in oklab, var(--warn) 7%, var(--bg-2));
+  border-color: color-mix(in oklab, var(--warn) 28%, var(--line-2));
+}
+.wm-banner.warn .ic {
+  color: var(--warn);
+}
+.wm-banner.info {
+  background: color-mix(in oklab, var(--info) 6%, var(--bg-2));
+  border-color: color-mix(in oklab, var(--info) 26%, var(--line-2));
+}
+.wm-banner.info .ic {
+  color: var(--info);
+}
+
+/* ── Footer ───────────────────────────────────────── */
+.wm-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(0deg, var(--bg-2), var(--bg-1));
+}
+.wm-foot .meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.wm-foot .meta .sep {
+  color: var(--fg-4);
+}
+.wm-foot .meta b {
+  color: var(--fg-2);
+  font-weight: 500;
+}
+.wm-foot .acts {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wm-foot .kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  color: var(--fg-3);
+  letter-spacing: 0.04em;
+}
+
+/* ── Targeting rules editor (gates / killswitch) ─── */
+.rule-grid {
+  display: grid;
+  gap: 8px;
+}
+.rule-row-2 {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1.1fr) 110px minmax(0, 1.4fr) 28px;
+  gap: 8px;
+  align-items: center;
+}
+.rule-row-2 .when-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+  text-align: right;
+  padding-right: 2px;
+}
+.rule-row-2 .rm {
+  display: grid;
+  place-items: center;
+  color: var(--fg-4);
+  cursor: default;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+}
+.rule-row-2 .rm:hover {
+  background: var(--bg-3);
+  color: var(--danger);
+}
+.rule-add {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px dashed var(--line-3);
+  border-radius: var(--r-md);
+  color: var(--fg-3);
+  font-size: 12px;
+  cursor: default;
+}
+.rule-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Scope picker (killswitch) ────────────────────── */
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.scope-card {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  cursor: default;
+  transition: all 0.12s;
+}
+.scope-card:hover {
+  border-color: var(--line-3);
+  background: var(--bg-3);
+}
+.scope-card.active {
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--line-2));
+  background: color-mix(in oklab, var(--accent) 7%, var(--bg-2));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.scope-card .icn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  color: var(--fg-2);
+}
+.scope-card.active .icn {
+  background: color-mix(in oklab, var(--accent) 16%, var(--bg-3));
+  border-color: color-mix(in oklab, var(--accent) 35%, var(--line-2));
+  color: var(--accent);
+}
+.scope-card .nm {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 2px;
+}
+.scope-card .ds {
+  font-size: 11.5px;
+  color: var(--fg-3);
+  line-height: 1.5;
+}
+.scope-card .ck {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-3);
+  background: var(--bg-1);
+  display: grid;
+  place-items: center;
+}
+.scope-card.active .ck {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* ── Event catalog picker (metrics) ──────────────── */
+.ev-pick {
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.ev-pick .ev-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+}
+.ev-pick .ev-search input {
+  all: unset;
+  flex: 1;
+  font-size: 13px;
+  color: var(--fg);
+}
+.ev-pick .ev-search input::placeholder {
+  color: var(--fg-4);
+}
+.ev-list {
+  max-height: 260px;
+  overflow: auto;
+}
+.ev-row {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: default;
+  border-bottom: 1px solid var(--line);
+}
+.ev-row:last-child {
+  border-bottom: none;
+}
+.ev-row:hover {
+  background: var(--bg-1);
+}
+.ev-row.active {
+  background: color-mix(in oklab, var(--accent) 10%, var(--bg-1));
+}
+.ev-row .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--info);
+}
+.ev-row.conversion .dot {
+  background: var(--accent);
+}
+.ev-row .nm {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--fg-2);
+  font-weight: 500;
+}
+.ev-row.active .nm {
+  color: var(--fg);
+}
+.ev-row .vl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-4);
+  letter-spacing: 0.04em;
+}
+.ev-row .ck {
+  color: var(--accent);
+  width: 14px;
+  display: grid;
+  place-items: center;
+}
+
+/* ── Variant editor (experiments) ────────────────── */
+.var-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 96px 28px;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+}
+.var-row + .var-row {
+  margin-top: 6px;
+}
+.var-row .swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+}
+.var-row .alloc {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-2);
+  justify-content: flex-end;
+}
+.alloc-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+}
+.alloc-bar .seg {
+  height: 100%;
+}
+
+/* ── Review summary ────────────────────────────── */
+.rv-list {
+  display: flex;
+  flex-direction: column;
+}
+.rv-item {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 14px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  align-items: flex-start;
+}
+.rv-item:last-child {
+  border-bottom: none;
+}
+.rv-item .lbl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  padding-top: 2px;
+}
+.rv-item .val {
+  font-size: 13px;
+  color: var(--fg);
+  line-height: 1.55;
+}
+.rv-item .val.mono {
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+.rv-item .val.dim {
+  color: var(--fg-3);
+}
+.rv-item .val .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-2);
+  margin-right: 4px;
+}
+
+/* ── Checklist (review) ─────────────────────────── */
+.rv-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rv-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--fg-2);
+  border-radius: var(--r-sm);
+}
+.rv-check .ck {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.rv-check.no .ck {
+  background: var(--warn);
+  color: var(--bg);
+}
+.rv-check.warn .ck {
+  background: var(--warn);
+  color: var(--bg);
+}
+.rv-check .lbl {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Backdrop "list peek" — softly visible list behind the modal ─ */
+.wm-stage-peek {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.4;
+}
+
+/* Allocation visualizer */
+.alloc-viz {
+  display: grid;
+  grid-template-columns: 120px 1fr 80px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-2);
+}
+.alloc-viz .nm {
+  color: var(--fg);
+}
+.alloc-viz .bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-3);
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+}
+.alloc-viz .bar .fill {
+  height: 100%;
+}
+.alloc-viz .pct {
+  text-align: right;
+  color: var(--fg-3);
+}
+
+/* ── Code snippets (used by every wizard's Integrate step) ─── */
+.cs-block {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.cs-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line-2);
+}
+.cs-tab {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--fg-3);
+  cursor: default;
+  border-bottom: 2px solid transparent;
+  letter-spacing: 0.02em;
+  transition:
+    color 0.12s,
+    background 0.12s,
+    border-color 0.12s;
+  flex-shrink: 0;
+}
+.cs-tab:hover {
+  color: var(--fg-2);
+  background: var(--bg-3);
+}
+.cs-tab.active {
+  color: var(--fg);
+  background: var(--bg-1);
+  border-bottom-color: var(--accent);
+}
+.cs-tab-spacer {
+  flex: 1;
+}
+.cs-copy {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-right: 8px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  cursor: default;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cs-copy:hover {
+  background: var(--bg-4);
+  color: var(--fg);
+  border-color: var(--line-3);
+}
+.cs-pre {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--fg-2);
+  overflow: auto;
+  max-height: 340px;
+  white-space: pre;
+  border: none;
+  tab-size: 2;
+}
+.cs-pre code {
+  font-family: inherit;
+}
+.cs-pre .k {
+  color: var(--purple);
+  font-weight: 500;
+}
+.cs-pre .s {
+  color: var(--accent);
+}
+.cs-pre .n {
+  color: #f0c674;
+}
+.cs-pre .c {
+  color: var(--fg-4);
+  font-style: italic;
+}
+.cs-note {
+  padding: 9px 14px;
+  font-size: 11.5px;
+  color: var(--fg-3);
+  line-height: 1.55;
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+.cs-note code {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  background: var(--bg-3);
+  border-radius: 3px;
+  color: var(--fg-2);
+}
+
+/* Compact integrate-step summary band */
+.cs-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.cs-sum-item {
+  padding: 10px 14px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.cs-sum-item:last-child {
+  border-right: none;
+}
+.cs-sum-item .lbl {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+.cs-sum-item .val {
+  font-size: 12.5px;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-sum-item .val.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+.cs-sum-item .val.dim {
+  color: var(--fg-3);
+}
+
+/* ════════════════════════════════════════════════════════════
+   Rich kind-specific visuals lifted from full-page editors,
+   scoped to the wizard body so they don't leak into other pages.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Gates · gate stack (from gates-editor-v2) ─────── */
+.wm-body .gk-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.wm-body .gk-eval-flow {
+  padding: 9px 14px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.04em;
+}
+.wm-body .gk-eval-flow b {
+  color: var(--fg-2);
+  font-weight: 500;
+}
+.wm-body .gk-eval-flow .arrow {
+  color: var(--fg-4);
+}
+
+.wm-body .gk-gate {
+  display: grid;
+  grid-template-columns: 24px 32px minmax(0, 1fr) 100px 110px auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px 10px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  cursor: default;
+  transition: background 0.1s;
+}
+.wm-body .gk-gate:hover {
+  background: color-mix(in oklab, var(--accent) 3%, var(--bg-1));
+}
+.wm-body .gk-gate:last-child {
+  border-bottom: none;
+}
+.wm-body .gk-gate.locked {
+  background: color-mix(in oklab, var(--fg-4) 4%, var(--bg-1));
+}
+.wm-body .gk-gate .order {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-4);
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.wm-body .gk-gate .order .grip {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+  cursor: grab;
+}
+.wm-body .gk-gate .order .grip span {
+  width: 7px;
+  height: 1.5px;
+  background: var(--fg-4);
+  border-radius: 1px;
+}
+.wm-body .gk-gate .order .n {
+  font-weight: 500;
+  color: var(--fg-3);
+}
+.wm-body .gk-gate.locked .order .grip {
+  visibility: hidden;
+}
+
+.wm-body .gk-gate .badge-ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--fg-2);
+}
+.wm-body .gk-gate.t-condition .badge-ico {
+  color: var(--info);
+  border-color: color-mix(in oklab, var(--info) 32%, var(--line-2));
+  background: color-mix(in oklab, var(--info) 10%, var(--bg-2));
+}
+.wm-body .gk-gate.t-rollout .badge-ico {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 32%, var(--line-2));
+  background: color-mix(in oklab, var(--accent) 10%, var(--bg-2));
+}
+.wm-body .gk-gate.locked .badge-ico {
+  color: var(--fg-3);
+  background: var(--bg-3);
+}
+
+.wm-body .gk-gate .body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wm-body .gk-gate .body .name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  line-height: 1.2;
+}
+.wm-body .gk-gate .body .name .pill {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1.5px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line-2);
+  color: var(--fg-3);
+  background: var(--bg-3);
+}
+.wm-body .gk-gate .body .name .pill.cond {
+  color: var(--info);
+  border-color: color-mix(in oklab, var(--info) 30%, var(--line-2));
+  background: color-mix(in oklab, var(--info) 10%, transparent);
+}
+.wm-body .gk-gate .body .name .pill.roll {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--line-2));
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+}
+.wm-body .gk-gate .body .summary {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wm-body .gk-gate .body .summary code {
+  color: var(--fg-2);
+}
+
+.wm-body .gk-pass {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+.wm-body .gk-pass .top {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wm-body .gk-pass .top b {
+  color: var(--fg-2);
+  font-weight: 500;
+}
+.wm-body .gk-pass .bar {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.wm-body .gk-pass .bar .fill {
+  height: 100%;
+  background: var(--info);
+  border-radius: 99px;
+  transition: width 0.2s;
+}
+
+.wm-body .mini-roll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+  cursor: default;
+}
+.wm-body .mini-roll:hover {
+  border-color: var(--line-2);
+  background: var(--bg-2);
+}
+.wm-body .mini-roll .num {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 30px;
+  text-align: right;
+}
+.wm-body .mini-roll .num.zero {
+  color: var(--fg-4);
+}
+.wm-body .mini-roll .track {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  display: flex;
+  align-items: center;
+}
+.wm-body .mini-roll .bar {
+  flex: 1;
+  height: 5px;
+  background: var(--bg-3);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  position: relative;
+}
+.wm-body .mini-roll .bar .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.15s;
+}
+.wm-body .mini-roll input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: default;
+  margin: 0;
+  padding: 0;
+}
+
+.wm-body .gk-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.55;
+  transition: opacity 0.1s;
+}
+.wm-body .gk-gate:hover .gk-actions {
+  opacity: 1;
+}
+.wm-body .gk-actions .ic-btn {
+  all: unset;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  color: var(--fg-4);
+  cursor: default;
+}
+.wm-body .gk-actions .ic-btn:hover {
+  background: var(--bg-3);
+  color: var(--fg);
+}
+.wm-body .gk-actions .ic-btn.danger:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.wm-body .gk-locked-note {
+  padding: 8px 14px;
+  background: color-mix(in oklab, var(--fg-4) 4%, var(--bg-2));
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wm-body .gk-add-cta {
+  padding: 10px 14px;
+  display: flex;
+  gap: 8px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+}
+
+/* ── Gates · preview / fixture testing ──────────────── */
+.wm-body .gk-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  min-height: 240px;
+}
+.wm-body .gk-prev-col {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.wm-body .gk-prev-col + .gk-prev-col {
+  border-left: 1px solid var(--line);
+}
+.wm-body .gk-prev-col h4 {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 500;
+}
+.wm-body .gk-fixture {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.wm-body .gk-fixture .k {
+  color: var(--fg-4);
+}
+.wm-body .gk-fixture .v {
+  color: var(--fg-2);
+}
+.wm-body .gk-fixture .v.in {
+  display: flex;
+}
+.wm-body .gk-fixture .v.in input,
+.wm-body .gk-fixture .v.in select {
+  all: unset;
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg);
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+.wm-body .gk-eval-row {
+  display: grid;
+  grid-template-columns: 18px 80px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line);
+  color: var(--fg-3);
+}
+.wm-body .gk-eval-row:last-child {
+  border-bottom: none;
+}
+.wm-body .gk-eval-row .n {
+  color: var(--fg-4);
+  font-size: 10px;
+}
+.wm-body .gk-eval-row .pill {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border: 1px solid var(--line-2);
+}
+.wm-body .gk-eval-row .pill.pass {
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--line-2));
+}
+.wm-body .gk-eval-row .pill.fail {
+  color: var(--fg-4);
+  background: var(--bg-3);
+}
+.wm-body .gk-eval-row .pill.skip {
+  color: var(--fg-4);
+  background: var(--bg-3);
+  opacity: 0.6;
+}
+.wm-body .gk-eval-row .lbl {
+  color: var(--fg-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wm-body .gk-eval-row .meta {
+  color: var(--fg-4);
+}
+.wm-body .gk-verdict {
+  margin-top: auto;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--accent) 8%, var(--bg-2));
+  border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--line-2));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wm-body .gk-verdict .big {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+.wm-body .gk-verdict .reason {
+  font-size: 11.5px;
+  color: var(--fg-3);
+  flex: 1;
+  min-width: 0;
+}
+.wm-body .gk-verdict.fail {
+  background: var(--bg-2);
+  border-color: var(--line-2);
+}
+.wm-body .gk-verdict.fail .big {
+  color: var(--fg-3);
+}
+
+/* ── Experiments · role cards + metric chips + power grid ─── */
+.wm-body .role-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  margin-bottom: 8px;
+}
+.wm-body .role-card.goal {
+  border-color: color-mix(in oklab, var(--accent) 28%, var(--line));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--accent) 5%, var(--bg-2)),
+    var(--bg-2)
+  );
+}
+.wm-body .role-card.guard {
+  border-color: color-mix(in oklab, var(--warn) 28%, var(--line));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--warn) 5%, var(--bg-2)),
+    var(--bg-2)
+  );
+}
+.wm-body .role-card.sec {
+  border-color: color-mix(in oklab, var(--info) 22%, var(--line));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--info) 4%, var(--bg-2)),
+    var(--bg-2)
+  );
+}
+.wm-body .role-card .head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.wm-body .role-card .head b {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+.wm-body .role-card .head .badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line-2);
+  text-transform: uppercase;
+  color: var(--fg-3);
+  background: var(--bg-3);
+}
+.wm-body .role-card.goal .head .badge {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--line-2));
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.wm-body .role-card.guard .head .badge {
+  color: var(--warn);
+  border-color: color-mix(in oklab, var(--warn) 30%, var(--line-2));
+  background: color-mix(in oklab, var(--warn) 12%, transparent);
+}
+.wm-body .role-card.sec .head .badge {
+  color: var(--info);
+  border-color: color-mix(in oklab, var(--info) 30%, var(--line-2));
+  background: color-mix(in oklab, var(--info) 12%, transparent);
+}
+.wm-body .role-card .head .add {
+  margin-left: auto;
+}
+.wm-body .role-card .explain {
+  font-size: 11.5px;
+  color: var(--fg-3);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.wm-body .chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wm-body .metric-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px 5px 8px;
+  border-radius: 6px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  cursor: default;
+}
+.wm-body .metric-chip.goal {
+  border-color: color-mix(in oklab, var(--accent) 32%, var(--line-2));
+  background: color-mix(in oklab, var(--accent) 7%, var(--bg-1));
+}
+.wm-body .metric-chip.guard {
+  border-color: color-mix(in oklab, var(--warn) 32%, var(--line-2));
+  background: color-mix(in oklab, var(--warn) 7%, var(--bg-1));
+}
+.wm-body .metric-chip.sec {
+  border-color: color-mix(in oklab, var(--info) 28%, var(--line-2));
+  background: color-mix(in oklab, var(--info) 5%, var(--bg-1));
+}
+.wm-body .metric-chip .agg {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-3);
+  color: var(--fg-3);
+  letter-spacing: 0.04em;
+}
+.wm-body .metric-chip .x {
+  cursor: default;
+  color: var(--fg-4);
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  margin-left: 1px;
+}
+.wm-body .metric-chip .x:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.wm-body .metric-chip.empty {
+  color: var(--fg-4);
+  border-style: dashed;
+}
+
+.wm-body .power-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.wm-body .power-stat {
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.wm-body .power-stat .k {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+.wm-body .power-stat .v {
+  font-size: 20px;
+  letter-spacing: -0.015em;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+  color: var(--fg);
+}
+.wm-body .power-stat .v.warn {
+  color: var(--warn);
+}
+.wm-body .power-stat .v.ok {
+  color: var(--accent);
+}
+.wm-body .power-stat .d {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-4);
+  margin-top: 2px;
+}
+
+/* ── Experiments · profile tiles ─────────────────── */
+.wm-body .profile-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.wm-body .profile-tile {
+  padding: 11px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.wm-body .profile-tile:hover {
+  border-color: var(--line-3);
+  background: var(--bg-3);
+}
+.wm-body .profile-tile.active {
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--line-2));
+  background: color-mix(in oklab, var(--accent) 7%, var(--bg-2));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.wm-body .profile-tile .ico {
+  color: var(--fg-2);
+  width: 16px;
+  height: 16px;
+}
+.wm-body .profile-tile.active .ico {
+  color: var(--accent);
+}
+.wm-body .profile-tile .name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+.wm-body .profile-tile .desc {
+  font-size: 11px;
+  color: var(--fg-3);
+  line-height: 1.45;
+}
+
+/* ── Experiments · holdout bar (Audience step) ───── */
+.wm-body .holdout-preview {
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  margin-top: 6px;
+}
+.wm-body .holdout-bar {
+  position: relative;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--bg-3);
+  overflow: hidden;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(255, 255, 255, 0.025) 5px,
+    rgba(255, 255, 255, 0.025) 10px
+  );
+}
+.wm-body .holdout-bar .band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in oklab, var(--warn) 28%, transparent);
+  border-left: 2px solid var(--warn);
+  border-right: 2px solid var(--warn);
+}
+.wm-body .holdout-bar .alloc-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in oklab, var(--accent) 28%, transparent);
+  border-right: 2px solid var(--accent);
+}
+.wm-body .holdout-readout {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+}
+.wm-body .holdout-readout b {
+  color: var(--fg);
+  font-weight: 500;
+}
+.wm-body .holdout-readout span i {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+  border-radius: 2px;
+  margin-right: 5px;
+  vertical-align: middle;
+}

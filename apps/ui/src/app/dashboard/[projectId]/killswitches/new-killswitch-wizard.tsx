@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { BigModalWizard, type WizardStep } from "@/components/shell/big-modal-wizard";
 import { CodeBlock } from "@/components/ui/code-block";
+import { FolderNameInput } from "@/components/ui/folder-name-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createKillswitch } from "@/actions/killswitches";
 
@@ -71,30 +72,16 @@ export function NewKillswitchWizard({ open, onOpenChange, projectId }: NewKillsw
       ),
       content: (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-            <FieldLabel label="Folder" required>
-              <input
-                type="text"
-                value={folder}
-                onChange={(e) => setFolder(e.target.value)}
-                placeholder="checkout"
-                aria-label="Folder"
-                autoFocus
-                className="rounded-md border border-[var(--se-line)] bg-[var(--se-bg-1)] px-2.5 py-1.5 text-[13px] font-mono outline-none focus:border-[var(--se-accent)]"
-              />
-            </FieldLabel>
-            <span className="pb-2 text-[var(--se-fg-3)]">·</span>
-            <FieldLabel label="Name" required>
-              <input
-                type="text"
-                value={leaf}
-                onChange={(e) => setLeaf(e.target.value)}
-                placeholder="payments_off"
-                aria-label="Name"
-                className="rounded-md border border-[var(--se-line)] bg-[var(--se-bg-1)] px-2.5 py-1.5 text-[13px] font-mono outline-none focus:border-[var(--se-accent)]"
-              />
-            </FieldLabel>
-          </div>
+          <FieldLabel label="Key" required>
+            <FolderNameInput
+              folder={folder}
+              leaf={leaf}
+              onFolderChange={setFolder}
+              onLeafChange={setLeaf}
+              folderPlaceholder="checkout"
+              leafPlaceholder="payments_off"
+            />
+          </FieldLabel>
           <FieldLabel label="Description (optional)">
             <input
               type="text"

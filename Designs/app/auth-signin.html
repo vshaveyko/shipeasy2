@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Sign in · Shipeasy</title>
+<meta name="viewport" content="width=1200"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=2">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  #app{min-height:100vh;display:grid;grid-template-columns:minmax(420px, 1.1fr) minmax(440px, 1fr);min-width:1100px}
+  body{min-height:100vh;
+    background:
+      radial-gradient(900px 500px at 80% 110%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 60%),
+      radial-gradient(700px 400px at 15% -10%, color-mix(in oklab, var(--purple) 10%, transparent), transparent 55%),
+      var(--bg)}
+  .auth-left{padding:48px 56px;display:flex;flex-direction:column;
+    border-right:1px solid var(--line);position:relative;overflow:hidden}
+  .auth-right{padding:48px;display:flex;align-items:center;justify-content:center}
+  .auth-card{width:100%;max-width:380px}
+  .auth-card h1{margin:0 0 8px;font-size:32px;letter-spacing:-0.02em;font-weight:500;line-height:1.1}
+  .auth-card h1 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--fg)}
+  .auth-card p.sub{margin:0 0 28px;color:var(--fg-2);font-size:14px;line-height:1.55}
+
+  .oauth{width:100%;height:40px;display:flex;align-items:center;justify-content:center;gap:10px;
+    background:var(--bg-1);border:1px solid var(--line-2);border-radius:var(--r-md);
+    color:var(--fg);font-size:14px;font-weight:500;margin-bottom:10px;cursor:default;
+    transition:background .15s,border-color .15s}
+  .oauth:hover{background:var(--bg-2);border-color:var(--line-3)}
+
+  .divider{display:flex;align-items:center;gap:12px;margin:20px 0;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--fg-4)}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .magic-form{display:flex;flex-direction:column;gap:10px}
+  .magic-form .input{height:40px}
+  .magic-form .btn{height:40px;justify-content:center}
+
+  .terms{font-size:11.5px;color:var(--fg-3);line-height:1.55;margin-top:24px;text-align:center}
+  .terms a{color:var(--fg-2);text-decoration:underline;text-decoration-color:var(--line-2)}
+
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;margin-bottom:auto}
+  .brand .mark{width:26px;height:26px;border-radius:7px;
+    background:conic-gradient(from 140deg, var(--accent), #0a0a0b 40%, var(--accent) 80%);
+    box-shadow:0 0 0 1px var(--line-2)}
+  .brand .mark::after{content:"";display:block;margin:6px;width:14px;height:14px;
+    background:var(--bg);border-radius:4px;box-shadow:inset 0 0 0 1px var(--line-2)}
+
+  .quote{max-width:480px;margin-top:auto}
+  .quote .q{font-family:var(--serif);font-style:italic;font-size:38px;
+    line-height:1.15;letter-spacing:-0.015em;color:var(--fg);margin-bottom:24px}
+  .quote .q span{color:var(--accent);font-style:normal;font-family:var(--sans);font-weight:500;
+    font-size:32px}
+  .quote .by{display:flex;gap:12px;align-items:center}
+  .quote .by .av{width:36px;height:36px;border-radius:50%;background:#7c5cff;
+    display:grid;place-items:center;color:#fff;font-family:var(--mono);font-size:13px;font-weight:600}
+  .quote .by .who b{display:block;font-weight:500}
+  .quote .by .who span{color:var(--fg-3);font-size:12px}
+
+  .fake-chat{margin-top:36px;padding:18px;border:1px solid var(--line);
+    border-radius:var(--r-lg);background:color-mix(in oklab, var(--bg-1) 80%, transparent);backdrop-filter:blur(12px)}
+  .fake-chat .head{display:flex;gap:8px;align-items:center;padding-bottom:10px;
+    border-bottom:1px solid var(--line);margin-bottom:10px}
+  .fake-chat .head .dots{display:flex;gap:4px}
+  .fake-chat .head .dots span{width:8px;height:8px;border-radius:50%;background:var(--bg-4)}
+  .fake-chat .head .t{font-family:var(--mono);font-size:11px;color:var(--fg-3);margin-left:auto}
+  .fake-chat .line{font-family:var(--mono);font-size:11.5px;color:var(--fg-2);line-height:1.7}
+  .fake-chat .line.cmd{color:var(--fg)}
+  .fake-chat .line.out{color:var(--fg-3)}
+  .fake-chat .line b.prompt{color:var(--accent)}
+
+  .footer-inline{margin-top:28px;padding-top:20px;border-top:1px solid var(--line);
+    display:flex;gap:16px;justify-content:space-between;color:var(--fg-4);font-size:11.5px}
+  .footer-inline a{color:var(--fg-3)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel">
+function GoogleIcon({size=16}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24">
+    <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.4 29.2 35.5 24 35.5c-6.3 0-11.5-5.2-11.5-11.5S17.7 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.3 29.2 4.5 24 4.5 12.9 4.5 4 13.4 4 24.5S12.9 44.5 24 44.5c11 0 19.7-8 19.7-20 0-1.5-.2-2.9-.4-4.4z"/>
+    <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 15.1 18.9 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.3 29.2 4.5 24 4.5 16.3 4.5 9.7 8.6 6.3 14.7z"/>
+    <path fill="#4CAF50" d="M24 44.5c5.1 0 9.8-2 13.3-5.1l-6.2-5.2c-2 1.4-4.4 2.3-7.1 2.3-5.1 0-9.5-3.1-11.3-7.4l-6.5 5C9.6 40.3 16.2 44.5 24 44.5z"/>
+    <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2c-.4.4 6.5-4.8 6.5-14.3 0-1.5-.2-2.9-.4-4.4z"/>
+  </svg>;
+}
+
+function AuthShell({ children, variant='signin' }) {
+  return (
+    <>
+      <div className="auth-left">
+        <div className="brand"><div className="mark"/>Shipeasy</div>
+
+        <div className="quote">
+          <div className="q">
+            "We now ship <span>20×</span> more experiments.
+            <br/>And kill them faster."
+          </div>
+          <div className="by">
+            <div className="av">M</div>
+            <div className="who">
+              <b>Maya Chen</b>
+              <span>Staff Engineer · Acme Co.</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="fake-chat">
+          <div className="head">
+            <div className="dots"><span/><span/><span/></div>
+            <div className="t">claude · mcp.shipeasy</div>
+          </div>
+          <div className="line cmd"><b className="prompt">›</b> <b>maya</b>: try 3-step checkout, ramp to 50%, ship if aov improves</div>
+          <div className="line out"><span style={{color:'var(--accent)'}}>✓</span> created exp_8f2a21 · checkout_v3</div>
+          <div className="line out"><span style={{color:'var(--accent)'}}>✓</span> instrumented src/checkout/page.tsx</div>
+          <div className="line out"><span style={{color:'var(--accent)'}}>✓</span> live at 50% · results in ~11 days</div>
+        </div>
+
+        <div className="footer-inline">
+          <span>© 2026 Shipeasy, Inc.</span>
+          <span className="flex gap-3"><a>Docs</a><a>Status</a><a>Privacy</a></span>
+        </div>
+      </div>
+
+      <div className="auth-right">{children}</div>
+    </>
+  );
+}
+
+function SignIn() {
+  return (
+    <AuthShell>
+      <div className="auth-card">
+        <h1>Welcome <em>back</em></h1>
+        <p className="sub">Sign in to your workspace. No passwords — just OAuth or a magic link.</p>
+
+        <button className="oauth"><IconGithub size={16}/> Continue with GitHub</button>
+        <button className="oauth"><GoogleIcon size={16}/> Continue with Google</button>
+
+        <div className="divider">or email magic link</div>
+
+        <div className="magic-form">
+          <div className="input" style={{height:40}}>
+            <input placeholder="you@company.com" type="email"/>
+          </div>
+          <button className="btn btn-primary">Send magic link <IconArrowRight size={13}/></button>
+        </div>
+
+        <div className="terms">
+          New to Shipeasy? <a>Create an account</a> · protected by passkey-first auth.
+          <br/><br/>
+          By continuing, you agree to our <a>Terms</a> and <a>Privacy Policy</a>.
+        </div>
+      </div>
+    </AuthShell>
+  );
+}
+
+function MagicSent() {
+  return (
+    <AuthShell>
+      <div className="auth-card">
+        <div style={{width:48,height:48,borderRadius:12,background:'var(--accent-soft)',
+          display:'grid',placeItems:'center',marginBottom:20,
+          border:'1px solid color-mix(in oklab, var(--accent) 30%, transparent)'}}>
+          <IconCheck size={22} style={{color:'var(--accent)'}}/>
+        </div>
+        <h1>Check your <em>inbox</em></h1>
+        <p className="sub">We sent a one-time sign-in link to <b className="t-mono" style={{fontSize:13,color:'var(--fg)'}}>maya@acme.co</b>.
+          The link expires in 15 minutes.</p>
+
+        <div className="card" style={{padding:16,marginBottom:16}}>
+          <div className="flex items-center gap-3">
+            <div className="avatar-sm" style={{background:'var(--accent)',color:'var(--accent-fg)'}}>✦</div>
+            <div className="flex-1">
+              <div className="t-sm"><b>Sign in to Shipeasy</b></div>
+              <div className="t-mono-xs dim-2" style={{marginTop:2}}>noreply@shipeasy.dev · just now</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button className="btn btn-secondary flex-1" style={{height:40,justifyContent:'center'}}>
+            Resend link
+          </button>
+          <button className="btn btn-ghost flex-1" style={{height:40,justifyContent:'center'}}>
+            Change email
+          </button>
+        </div>
+
+        <div className="terms">
+          Didn't receive it? Check spam, or <a>try a different method</a>.
+        </div>
+      </div>
+    </AuthShell>
+  );
+}
+
+function CreateAccount() {
+  return (
+    <AuthShell>
+      <div className="auth-card">
+        <div className="t-caps dim-2" style={{marginBottom:8}}>Step 1 of 2 · workspace</div>
+        <h1>Create your <em>workspace</em></h1>
+        <p className="sub">Name it after your company. You can invite the rest of the team right after.</p>
+
+        <div className="flex" style={{flexDirection:'column',gap:14}}>
+          <div>
+            <label className="t-xs dim" style={{display:'block',marginBottom:6}}>Workspace name</label>
+            <div className="input" style={{height:40}}>
+              <input placeholder="Acme Co." defaultValue="Acme Co."/>
+            </div>
+          </div>
+          <div>
+            <label className="t-xs dim" style={{display:'block',marginBottom:6}}>Workspace URL</label>
+            <div className="input mono" style={{height:40}}>
+              <span className="prefix">shipeasy.dev/</span>
+              <input defaultValue="acme"/>
+              <IconCheck size={12} style={{color:'var(--accent)'}}/>
+            </div>
+          </div>
+          <div>
+            <label className="t-xs dim" style={{display:'block',marginBottom:6}}>What are you shipping?</label>
+            <div className="select"><select style={{height:40}}>
+              <option>B2B SaaS</option><option>Consumer app</option>
+              <option>E-commerce</option><option>Marketplace</option><option>Other</option>
+            </select></div>
+          </div>
+        </div>
+
+        <button className="btn btn-primary" style={{width:'100%',height:40,justifyContent:'center',marginTop:20}}>
+          Continue <IconArrowRight size={13}/>
+        </button>
+
+        <div className="terms">
+          You'll be able to install the <b style={{color:'var(--fg-2)'}}>Claude MCP</b> in the next step.
+        </div>
+      </div>
+    </AuthShell>
+  );
+}
+
+Object.assign(window, { SignIn, MagicSent, CreateAccount });
+
+const Page = SignIn;
+ReactDOM.createRoot(document.getElementById('app')).render(<Page/>);
+</script>
+</body>
+</html>

@@ -154,13 +154,7 @@ export const notificationPrefs = sqliteTable(
   }),
 );
 
-export type IntegrationKind =
-  | "slack"
-  | "github"
-  | "datadog"
-  | "segment"
-  | "linear"
-  | "pagerduty";
+export type IntegrationKind = "slack" | "github" | "datadog" | "segment" | "linear" | "pagerduty";
 
 export const integrationSettings = sqliteTable(
   "integration_settings",
@@ -792,7 +786,14 @@ export const labelDraftKeys = sqliteTable(
 
 // ── Feedback (bug reports + feature requests) ───────────────────────────────
 
-export const BUG_STATUSES = ["open", "triaged", "in_progress", "resolved", "wont_fix"] as const;
+export const BUG_STATUSES = [
+  "open",
+  "triaged",
+  "in_progress",
+  "ready_for_qa",
+  "resolved",
+  "wont_fix",
+] as const;
 export type BugStatus = (typeof BUG_STATUSES)[number];
 
 export const BUG_PRIORITIES = ["low", "medium", "high", "critical"] as const;

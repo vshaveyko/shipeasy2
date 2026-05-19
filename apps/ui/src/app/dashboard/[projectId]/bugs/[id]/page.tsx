@@ -12,6 +12,7 @@ const STATUS_LABEL: Record<BugStatus, string> = {
   open: "Open",
   triaged: "Triaged",
   in_progress: "In progress",
+  ready_for_qa: "Ready for QA",
   resolved: "Resolved",
   wont_fix: "Won't fix",
 };

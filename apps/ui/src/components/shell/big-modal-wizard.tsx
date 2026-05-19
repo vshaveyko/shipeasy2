@@ -38,6 +38,12 @@ export type BigModalWizardProps = {
   kind: WizardKind;
   title: React.ReactNode;
   eyebrow?: { project?: React.ReactNode };
+  /** When this wizard is opened from inside another wizard, pass the parent
+   * record so the eyebrow surfaces e.g. `· FOR EXPERIMENT checkout_redesign`. */
+  forContext?: { kind: string; name: string };
+  /** Render at the smaller "nested" size so the layering vs the host wizard is
+   * visible (~88% width, ~84% height). */
+  nested?: boolean;
   steps: WizardStep[];
   current: number;
   onStepChange: (index: number) => void;
@@ -93,6 +99,8 @@ export function BigModalWizard({
   kind,
   title,
   eyebrow,
+  forContext,
+  nested = false,
   steps,
   current,
   onStepChange,
@@ -141,7 +149,7 @@ export function BigModalWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="big-modal" showClose={false}>
+      <DialogContent size={nested ? "big-modal-nested" : "big-modal"} showClose={false}>
         {/* Eyebrow — mono crumb above the modal frame (visually). */}
         <div className="flex h-9 items-center justify-between border-b border-[var(--se-line)] px-4 text-[11px] uppercase tracking-[0.06em] text-[var(--se-fg-3)]">
           <div className="font-mono flex min-w-0 items-center gap-1.5 truncate">
@@ -154,14 +162,30 @@ export function BigModalWizard({
             <span>{meta.label}</span>
             <span className="text-[var(--se-fg-4)]">·</span>
             <span>new</span>
+            {forContext ? (
+              <>
+                <span className="text-[var(--se-fg-4)]">·</span>
+                <span className="normal-case tracking-normal text-[var(--se-fg-3)]">
+                  for {forContext.kind}
+                </span>
+                <span className="normal-case tracking-normal text-[var(--se-fg-2)]">
+                  {forContext.name}
+                </span>
+              </>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-0.5">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+              className="group flex items-center gap-1.5 rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 py-0.5 outline-none transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] focus-visible:border-[var(--se-line-3)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <Kbd>Esc</Kbd>
-              <span className="text-[10.5px] normal-case tracking-normal text-[var(--se-fg-3)]">
+              <span className="text-[10.5px] normal-case tracking-normal text-[var(--se-fg-3)] group-hover:text-[var(--se-fg-2)]">
                 to cancel
               </span>
-            </span>
+            </button>
           </div>
         </div>
 
@@ -236,15 +260,6 @@ export function BigModalWizard({
             <span>next</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
             {!isFirst ? (
               <Button
                 type="button"
@@ -323,6 +338,7 @@ function CompactStepper({
                 type="button"
                 onClick={() => onSelect(i)}
                 aria-current={active ? "step" : undefined}
+                data-state={done ? "done" : active ? "active" : "todo"}
                 title={typeof s.label === "string" ? s.label : undefined}
                 className={cn(
                   "grid size-5 place-items-center rounded-full border text-[10.5px] font-medium transition-colors outline-none",

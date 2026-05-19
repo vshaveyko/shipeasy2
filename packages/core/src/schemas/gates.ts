@@ -25,9 +25,13 @@ export const gateRuleSchema = z
 
 export const gateNameSchema = z
   .string()
-  .regex(/^[a-z0-9][a-z0-9_-]{0,63}$/, "lowercase, digits, _/-; max 64 chars")
+  .regex(
+    /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)?$/,
+    "lowercase, digits, _/-; optional folder.name shape",
+  )
+  .max(128)
   .describe(
-    "Stable gate key used by SDKs (`Shipeasy.checkGate(user, '<name>')`). Lowercase letters, digits, `_` or `-`, must start with a letter/digit, max 64 chars. Immutable after create — rename = delete + recreate.",
+    "Stable gate key used by SDKs (`Shipeasy.checkGate(user, '<name>')`). Single segment or `folder.name`. Lowercase letters, digits, `_` or `-`; max 128 chars. Immutable after create — rename = delete + recreate.",
   );
 
 const stackedConditionSchema = z

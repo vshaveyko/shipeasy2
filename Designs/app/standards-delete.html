@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Standard · Delete confirm · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-height:100vh}
+
+  /* ── Modal scrim ──────────────────────────────────── */
+  .modal-scrim{position:fixed;inset:0;background:rgba(8,8,10,.66);
+    backdrop-filter:blur(6px);z-index:100;
+    display:grid;place-items:center;padding:24px}
+
+  .modal{width:520px;max-width:100%;background:var(--bg-1);
+    border:1px solid var(--line-2);border-radius:var(--r-xl);
+    box-shadow:0 24px 60px -16px rgba(0,0,0,.7),
+               0 2px 12px rgba(0,0,0,.4),
+               inset 0 1px 0 color-mix(in oklab, var(--fg) 4%, transparent);
+    overflow:hidden}
+
+  .modal-head{padding:24px 24px 8px;display:flex;gap:14px;align-items:flex-start}
+  .modal-icon{width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    display:grid;place-items:center;
+    background:color-mix(in oklab, var(--danger) 12%, transparent);
+    border:1px solid color-mix(in oklab, var(--danger) 30%, transparent);
+    color:var(--danger)}
+  .modal-title{font-size:17px;font-weight:500;letter-spacing:-0.015em;line-height:1.3}
+  .modal-sub{margin-top:4px;font-size:13px;color:var(--fg-2);line-height:1.55;text-wrap:pretty}
+  .modal-sub b{color:var(--fg);font-weight:500}
+
+  .modal-body{padding:14px 24px 4px}
+  .impact-card{background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--r-md);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+  .impact-row{display:flex;align-items:center;gap:10px;font-size:12.5px}
+  .impact-row .ico{width:18px;height:18px;border-radius:4px;display:grid;
+    place-items:center;background:var(--bg-3);color:var(--fg-3);flex-shrink:0}
+  .impact-row .v{font-family:var(--mono);font-size:11.5px;color:var(--fg);
+    margin-left:auto}
+
+  .confirm-input{margin-top:14px}
+  .confirm-input .help{font-size:12px;color:var(--fg-2);margin-bottom:6px}
+  .confirm-input .help code{font-family:var(--mono);font-size:11.5px;
+    background:var(--bg-3);padding:1px 6px;border-radius:3px;
+    border:1px solid var(--line);color:var(--fg)}
+
+  .modal-foot{padding:16px 24px 20px;display:flex;align-items:center;gap:10px;
+    margin-top:18px;border-top:1px solid var(--line);background:var(--bg-2)}
+  .modal-foot .left{font-size:11.5px;color:var(--fg-3);font-family:var(--mono)}
+
+  .btn-danger{background:var(--danger);color:#fff;border:1px solid color-mix(in oklab, var(--danger) 80%, #000)}
+  .btn-danger:hover{filter:brightness(1.08)}
+  .btn-danger[disabled]{opacity:.45;cursor:not-allowed}
+
+  /* Dim the underlying list ever so slightly so the modal is the focus */
+  .page-dim{filter:saturate(.7) brightness(.85)}
+
+  /* Background list (just enough chrome to give context) */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-top:-4px}
+  .tab{padding:10px 14px;font-size:13px;color:var(--fg-3);cursor:default;
+    border-bottom:1.5px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--fg);border-bottom-color:var(--accent)}
+  .tab .count{margin-left:6px;font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+  .filter-row{display:flex;align-items:center;gap:10px;padding:12px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+// ── Standard destructive-confirm modal ─────────────────────────────
+//
+// When to use:
+//   · Delete / archive / kill any record (gate, experiment, config, etc.)
+//   · Any action that is non-reversible OR breaks production behavior.
+//
+// Required parts:
+//   1. Icon — circle in danger-soft with a danger-bordered ring.
+//   2. Title — "Delete <type>?" (or "Archive", "Permanently kill", etc.)
+//   3. One-sentence consequence — what happens, in plain language.
+//   4. Impact card — concrete blast radius: dependents, traffic, audit.
+//   5. Type-to-confirm input — value is the record's identifier, NOT
+//      the literal word "DELETE". Forces eyes-on-name before action.
+//   6. Footer — left-aligned audit hint (who, when) + Cancel + Destroy.
+//
+// Reversibility nuances:
+//   · Soft-delete? Replace primary button label with "Archive".
+//   · Hard-delete? Add a "This cannot be undone" line in red, sans serif.
+
+function DeleteConfirmModal({ record, onClose }) {
+  const [typed, setTyped] = useState('');
+  const ok = typed === record.id;
+
+  return (
+    <div className="modal-scrim" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+
+        <div className="modal-head">
+          <div className="modal-icon"><IconTrash size={16}/></div>
+          <div style={{flex:1,minWidth:0}}>
+            <div className="modal-title">Delete release?</div>
+            <div className="modal-sub">
+              You're about to permanently delete <b>{record.id}</b>. SDKs that
+              still reference this release will fall back to control. This
+              action cannot be undone.
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}>
+            <IconX size={12}/>
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <div className="impact-card">
+            <div className="impact-row">
+              <div className="ico"><IconUsers size={11}/></div>
+              <span style={{color:'var(--fg-2)'}}>Currently serving</span>
+              <span className="v">14,201 users</span>
+            </div>
+            <div className="impact-row">
+              <div className="ico"><IconLayers size={11}/></div>
+              <span style={{color:'var(--fg-2)'}}>Linked to</span>
+              <span className="v">2 configs · 1 experiment</span>
+            </div>
+            <div className="impact-row">
+              <div className="ico"><IconClock size={11}/></div>
+              <span style={{color:'var(--fg-2)'}}>Last evaluated</span>
+              <span className="v">38s ago · 12.4M / day</span>
+            </div>
+          </div>
+
+          <div className="confirm-input">
+            <div className="help">
+              Type <code>{record.id}</code> to confirm.
+            </div>
+            <div className="input mono" style={{width:'100%'}}>
+              <input value={typed} onChange={e=>setTyped(e.target.value)}
+                placeholder={record.id} autoFocus/>
+              {ok && <IconCheck size={11} style={{color:'var(--accent)'}}/>}
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-foot">
+          <div className="left">
+            Action will be audited as <b style={{color:'var(--fg-2)'}}>maya@acme.co</b>
+          </div>
+          <div className="ml-auto flex gap-2">
+            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button className={`btn btn-danger`} disabled={!ok}>
+              <IconTrash size={12}/> Delete release
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// Fake list behind the modal so the screen has context
+const ROWS = [
+  ['rel_checkout_v3',  'Live',  'badge-live',      true],
+  ['rel_welcome_email','Live',  'badge-live',      false],
+  ['rel_pricing_v2',   'Live',  'badge-live',      false],
+  ['rel_onboarding_v2','Paused','badge-paused',    false],
+  ['rel_dashboard_v2', 'Draft', 'badge-draft',     false],
+];
+
+function App() {
+  return (
+    <>
+      <div className="app page-dim">
+        <Sidebar active=""/>
+        <div>
+          <Topbar crumbs={['Acme Co.','Releases']}
+            actions={<>
+              <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+              <button className="btn btn-primary"><IconPlus size={12}/> New release</button>
+            </>}
+          />
+          <div className="page">
+            <div className="page-head">
+              <div>
+                <div className="t-caps dim-2" style={{marginBottom:8}}>8 active · 41 total</div>
+                <h1>Releases</h1>
+                <p>Versioned deploys of feature bundles with automatic rollback hooks.</p>
+              </div>
+            </div>
+            <div className="card">
+              <table className="tbl">
+                <thead><tr>
+                  <th style={{width:28}}></th>
+                  <th>Record</th>
+                  <th>Status</th>
+                  <th style={{textAlign:'right',width:90}}>Primary</th>
+                  <th style={{width:80}}>Owner</th>
+                  <th style={{width:40}}></th>
+                </tr></thead>
+                <tbody>
+                  {ROWS.map(([id, status, cls, sel]) => (
+                    <tr key={id} className={sel?'selected':''}>
+                      <td className="col-icon">
+                        <IconLayers size={13} style={{color:cls==='badge-live'?'var(--accent)':'var(--fg-3)'}}/>
+                      </td>
+                      <td><b>{id}</b></td>
+                      <td><span className={`badge ${cls}`}><span className="dot"/>{status.toUpperCase()}</span></td>
+                      <td className="num">100%</td>
+                      <td><div className="avatar-sm" style={{background:'#7c5cff'}}>M</div></td>
+                      <td><button className="btn btn-ghost btn-icon btn-sm"><IconMore size={12}/></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <DeleteConfirmModal record={{id:'rel_checkout_v3'}} onClose={()=>{}}/>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+</body>
+</html>

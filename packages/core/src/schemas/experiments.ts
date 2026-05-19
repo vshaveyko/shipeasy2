@@ -2,9 +2,10 @@ import { z } from "zod";
 
 export const experimentNameSchema = z
   .string()
-  .regex(/^[a-z0-9][a-z0-9_-]{0,63}$/)
+  .regex(/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)?$/)
+  .max(128)
   .describe(
-    "Stable experiment key (a-z, 0-9, `_`/`-`, must start with letter/digit, max 64 chars). Used by SDKs as `Shipeasy.getExperiment(user, '<name>')`. Immutable after create.",
+    "Stable experiment key. Single segment or `folder.name` (a-z, 0-9, `_`/`-`; max 128 chars). Used by SDKs as `Shipeasy.getExperiment(user, '<name>')`. Immutable after create.",
   );
 
 export const experimentGroupSchema = z

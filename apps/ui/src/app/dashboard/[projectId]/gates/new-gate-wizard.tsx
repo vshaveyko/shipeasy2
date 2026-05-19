@@ -22,7 +22,7 @@ import {
 import "./[id]/gate-editor.css";
 import { createGateAction } from "./actions";
 
-const KEY_PATTERN = /^[a-z0-9][a-z0-9_-]{0,59}$/;
+import { FolderNameInput, deriveFolderName } from "@/components/ui/folder-name-input";
 
 interface AttributeRow {
   id?: string;
@@ -64,7 +64,10 @@ export interface NewGateWizardProps {
 
 export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardProps) {
   const [step, setStep] = useState(0);
-  const [key, setKey] = useState("");
+  const [folder, setFolder] = useState("");
+  const [leaf, setLeaf] = useState("");
+  const derived = deriveFolderName(folder, leaf);
+  const key = derived.fullName;
   const [stack, setStack] = useState<StackEntry[]>(() =>
     initialStack({ initialRules: [], initialRolloutPct: 0, publicFloorPct: 0 }),
   );
@@ -81,7 +84,8 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
   function resetAndClose(next: boolean) {
     if (!next) {
       setStep(0);
-      setKey("");
+      setFolder("");
+      setLeaf("");
       setStack(initialStack({ initialRules: [], initialRolloutPct: 0, publicFloorPct: 0 }));
       setExpandedId(null);
       setShowTplPicker(false);
@@ -89,9 +93,9 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
     onOpenChange(next);
   }
 
-  const trimmed = key.trim();
-  const keyValid = KEY_PATTERN.test(trimmed);
-  const displayKey = trimmed || "your_key";
+  const trimmed = key;
+  const keyValid = derived.folderValid && derived.leafValid;
+  const displayKey = trimmed || "your.gate_key";
 
   const attrList: InitialAttribute[] = useMemo(
     () => (attributes ?? []).map((a) => ({ k: a.name, ex: a.example ?? "" })),
@@ -169,22 +173,22 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
       ),
       content: (
         <Field>
-          <FieldLabel htmlFor="new-gate-key" required>
+          <FieldLabel htmlFor="new-gate-folder" required>
             Key
           </FieldLabel>
-          <Input
-            id="new-gate-key"
-            name="key"
-            placeholder="premium_features"
-            className="font-mono"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            pattern="[a-z0-9][a-z0-9_\-]{0,59}"
-            autoFocus
+          <FolderNameInput
+            folder={folder}
+            leaf={leaf}
+            onFolderChange={setFolder}
+            onLeafChange={setLeaf}
+            folderPlaceholder="features"
+            leafPlaceholder="premium_dashboard"
+            folderId="new-gate-folder"
+            leafId="new-gate-key"
           />
           <FieldHint>
-            Lowercase letters, digits, <code className="font-mono">-</code> or{" "}
-            <code className="font-mono">_</code>. Max 64 characters.
+            <code className="font-mono">folder.name</code> · lowercase letters, digits,{" "}
+            <code className="font-mono">-</code> or <code className="font-mono">_</code>.
           </FieldHint>
         </Field>
       ),

@@ -41,12 +41,16 @@ async function gotoWizard(page: Page): Promise<Locator> {
   return dialog;
 }
 
-async function nextTo(dialog: Locator, label: "Schema" | "Defaults" | "Review"): Promise<void> {
+// Step 4 was renamed from "Review" → "Integrate" with title "Wire it up".
+const STEP_TITLES = {
+  Schema: "Define the shape",
+  Defaults: "Seed the initial value",
+  Integrate: "Wire it up",
+} as const;
+
+async function nextTo(dialog: Locator, label: keyof typeof STEP_TITLES): Promise<void> {
   await dialog.getByRole("button", { name: /next/i }).click();
-  // Step title is rendered as `<DialogTitle>` (Base UI renders an <h2>).
-  // Scope assertion to the wizard dialog to avoid bumping into any nested
-  // confirm dialogs that may also expose a title.
-  await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText(label);
+  await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText(STEP_TITLES[label]);
 }
 
 function innerDialog(page: Page, title: RegExp): Locator {
@@ -124,17 +128,17 @@ test.describe("Create-config wizard — navigation", () => {
     await dialog.getByTestId("config-key-input").fill(`e2.wiz_nav_${RUN}`);
     await nextTo(dialog, "Schema");
     await nextTo(dialog, "Defaults");
-    await nextTo(dialog, "Review");
+    await nextTo(dialog, "Integrate");
 
-    await expect(dialog.getByRole("button", { name: /create config/i })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /create & publish v1/i })).toBeVisible();
 
     await dialog.getByRole("button", { name: /^back$/i }).click();
-    await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Defaults");
+    await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Seed the initial value");
   });
 
   test("close button strips ?new=1 and dialog hides", async ({ page }) => {
     const dialog = await gotoWizard(page);
-    await dialog.getByRole("button", { name: /^close$/i }).click();
+    await dialog.getByRole("button", { name: /^close \(esc\)$/i }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/?$/);
   });
 
@@ -147,7 +151,7 @@ test.describe("Create-config wizard — navigation", () => {
     // Stepper buttons render a CheckIcon (no text) once done, so target the
     // first `data-state="done"` button instead of matching by name.
     await dialog.locator('[data-slot="stepper"] button[data-state="done"]').first().click();
-    await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Details");
+    await expect(dialog.locator('[data-slot="dialog-title"]')).toHaveText("Identify the config");
   });
 });
 
@@ -408,30 +412,27 @@ test.describe("Create-config wizard — Defaults step", () => {
 // ── Review + publish ──────────────────────────────────────────────────────────
 
 test.describe("Create-config wizard — Review & publish", () => {
-  test("Review step shows metadata, JSON preview, and Tabs/CodeBlock SDK snippets", async ({
-    page,
-  }) => {
+  test("Integrate step shows CDN banner, SDK snippets, and JSON preview", async ({ page }) => {
     const key = `e2.wiz_review_${RUN}`;
     const dialog = await gotoWizard(page);
     await dialog.getByTestId("config-key-input").fill(key);
-    await dialog
-      .getByRole("textbox", { name: /^description$/i })
-      .first()
-      .fill("E2E review check");
 
     await nextTo(dialog, "Schema");
     await addFieldAndSave(page, dialog, { name: "page_size", type: "number" });
 
     await nextTo(dialog, "Defaults");
-    await nextTo(dialog, "Review");
+    await nextTo(dialog, "Integrate");
 
-    await expect(dialog.getByText(key, { exact: false }).first()).toBeVisible();
-    await expect(dialog.getByText(/E2E review check/)).toBeVisible();
+    // Green CDN-rebuild banner (also paraphrased in the aside, hence .first()).
+    await expect(dialog.getByText(/Publish triggers a CDN rebuild/i).first()).toBeVisible();
+    // JSON preview includes the schema field name.
     await expect(dialog.getByText(/"page_size"/)).toBeVisible();
-
+    // SDK snippet references the key.
+    await expect(dialog.locator("pre").filter({ hasText: "@shipeasy/sdk" }).first()).toContainText(
+      key,
+    );
     // Inline SDK snippets — Tabs default to TypeScript.
     await expect(dialog.getByRole("tab", { name: /typescript/i })).toBeVisible();
-    await expect(dialog.locator("pre").filter({ hasText: "@shipeasy/sdk" }).first()).toBeVisible();
     await dialog.getByRole("tab", { name: /^python$/i }).click();
     await expect(
       dialog.locator("pre").filter({ hasText: "from shipeasy import client" }).first(),
@@ -445,9 +446,9 @@ test.describe("Create-config wizard — Review & publish", () => {
     await nextTo(dialog, "Schema");
     await addFieldAndSave(page, dialog, { name: "feature_enabled", type: "boolean" });
     await nextTo(dialog, "Defaults");
-    await nextTo(dialog, "Review");
+    await nextTo(dialog, "Integrate");
 
-    await dialog.getByRole("button", { name: /create config/i }).click();
+    await dialog.getByRole("button", { name: /create & publish v1/i }).click();
     // createConfigAction redirects to /values/<id> after persisting.
     await expect(page).toHaveURL(/\/dashboard\/e2e-project-id\/configs\/values\/[^/?]+$/);
   });

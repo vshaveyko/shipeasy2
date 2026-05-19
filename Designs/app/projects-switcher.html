@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Projects · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=2">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-width:1280px}
+  .proj-card{padding:20px;background:var(--bg-1);border:1px solid var(--line);
+    border-radius:var(--r-lg);display:flex;flex-direction:column;gap:14px;
+    cursor:default;transition:border-color .15s, transform .15s;position:relative;overflow:hidden}
+  .proj-card:hover{border-color:var(--line-3)}
+  .proj-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--accent-color, var(--accent));opacity:.7}
+  .proj-card .head{display:flex;align-items:center;gap:10px}
+  .proj-card .mark{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;
+    background:var(--bg-2);border:1px solid var(--line-2);
+    font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent-color, var(--accent))}
+  .proj-card h3{margin:0;font-size:15px;font-weight:500;letter-spacing:-0.01em}
+  .proj-card .desc{font-size:12.5px;color:var(--fg-3);line-height:1.5;
+    overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .proj-card .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    padding-top:14px;border-top:1px solid var(--line)}
+  .proj-card .stat .v{font-family:var(--mono);font-size:14px;font-weight:600}
+  .proj-card .stat .v.accent{color:var(--accent)}
+  .proj-card .stat .k{font-family:var(--mono);font-size:10px;color:var(--fg-4);
+    letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+  .proj-card .foot{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-3)}
+  .proj-card .members{display:flex}
+  .proj-card .members .av{width:22px;height:22px;border-radius:50%;border:2px solid var(--bg-1);
+    margin-left:-6px;font-size:10px;color:#fff;display:grid;place-items:center;font-weight:600}
+  .proj-card .members .av:first-child{margin-left:0}
+
+  .new-card{background:var(--bg-2);border:1px dashed var(--line-3);
+    display:grid;place-items:center;text-align:center;color:var(--fg-3);
+    min-height:220px;cursor:default;transition:background .15s, border-color .15s}
+  .new-card:hover{background:var(--bg-1);border-color:var(--accent);color:var(--fg)}
+
+  /* Switcher dropdown */
+  .switcher-pop{position:absolute;left:14px;top:54px;width:340px;
+    background:var(--bg-1);border:1px solid var(--line-2);border-radius:var(--r-lg);
+    box-shadow:var(--shadow-3);overflow:hidden;z-index:50}
+  .switcher-search{padding:10px 12px;border-bottom:1px solid var(--line)}
+  .switcher-list{max-height:280px;overflow:auto;padding:4px 0}
+  .switcher-row{display:flex;gap:10px;align-items:center;padding:8px 12px;cursor:default}
+  .switcher-row:hover{background:var(--bg-2)}
+  .switcher-row.active{background:color-mix(in oklab, var(--accent) 8%, transparent)}
+  .switcher-row .mark{width:24px;height:24px;border-radius:6px;background:var(--bg-2);
+    display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:600;
+    border:1px solid var(--line-2);flex-shrink:0}
+  .switcher-row .meta{flex:1;min-width:0}
+  .switcher-row .meta .name{font-size:13px;font-weight:500}
+  .switcher-row .meta .sub{font-size:11px;color:var(--fg-3);font-family:var(--mono);margin-top:1px}
+  .switcher-foot{padding:6px;border-top:1px solid var(--line);background:var(--bg-2)}
+
+  /* Create modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);
+    z-index:60;display:grid;place-items:center}
+  .modal{width:560px;background:var(--bg-1);border:1px solid var(--line-2);
+    border-radius:var(--r-lg);box-shadow:var(--shadow-3);overflow:hidden}
+  .modal .head{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .modal .body{padding:24px;display:flex;flex-direction:column;gap:14px}
+  .modal .foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--bg-2)}
+
+  .color-swatches{display:flex;gap:6px}
+  .color-swatch{width:28px;height:28px;border-radius:7px;cursor:default;
+    border:1.5px solid transparent;display:grid;place-items:center}
+  .color-swatch.sel{border-color:var(--fg)}
+  .color-swatch .inner{width:18px;height:18px;border-radius:5px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+const projects = [
+  { k:'web', mark:'W', name:'acme-web', desc:'Marketing site, checkout flow, and customer dashboard.',
+    color:'#22a06b', exps:8, gates:12, evals:'14.3M', members:['M','J','P','D'], updated:'2m ago', current:true },
+  { k:'ios', mark:'iOS', name:'acme-ios', desc:'iOS consumer app — onboarding, store, and account.',
+    color:'#3b82f6', exps:5, gates:6, evals:'8.1M', members:['J','P'], updated:'1h ago' },
+  { k:'android', mark:'A', name:'acme-android', desc:'Android consumer app — feature parity with iOS.',
+    color:'#a78bfa', exps:4, gates:6, evals:'6.4M', members:['J','S'], updated:'4h ago' },
+  { k:'api', mark:'API', name:'acme-api', desc:'Backend services — pricing, search ranking, recs.',
+    color:'#f5a623', exps:3, gates:9, evals:'42.0M', members:['D','R','M'], updated:'12m ago' },
+  { k:'sandbox', mark:'SB', name:'sandbox', desc:'Personal scratch space for experiments. Not production-grade.',
+    color:'#ec4899', exps:2, gates:1, evals:'12k', members:['M'], updated:'3d ago', archived:false },
+  { k:'partner', mark:'PT', name:'partner-portal', desc:'Stand-alone portal for B2B partners. Internal only.',
+    color:'#06b6d4', exps:1, gates:4, evals:'140k', members:['P','D'], updated:'8d ago' },
+];
+
+function ProjectsList() {
+  const [creating, setCreating] = useState(false);
+  return (
+    <div className="app">
+      <Sidebar active="projects"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','Projects']}
+          actions={<>
+            <button className="btn btn-secondary"><IconBook size={12}/> Docs</button>
+            <button className="btn btn-primary" onClick={()=>setCreating(true)}>
+              <IconPlus size={12}/> New project
+            </button>
+          </>}
+        />
+        <div className="page">
+          <div className="page-head">
+            <div>
+              <div className="t-caps dim-2" style={{marginBottom:8}}>{projects.length} projects · 23 active experiments · 70.9M evals/day</div>
+              <h1>Projects</h1>
+              <p>One project per app, surface, or service. Experiments, gates, configs, and SDK keys live inside a project — switch in the sidebar to scope your view.</p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <div className="input" style={{width:240}}>
+                <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+                <input placeholder="Find a project"/>
+              </div>
+              <button className="btn btn-ghost btn-sm"><IconFilter size={11}/> Sort: Recent</button>
+            </div>
+          </div>
+
+          <div className="grid" style={{gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+            {projects.map(p => (
+              <div key={p.k} className="proj-card" style={{'--accent-color':p.color}}>
+                <div className="head">
+                  <div className="mark">{p.mark}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <h3>{p.name}</h3>
+                    <div className="t-mono-xs dim-2" style={{marginTop:2}}>updated {p.updated}</div>
+                  </div>
+                  {p.current
+                    ? <span className="badge badge-live"><span className="dot"/>CURRENT</span>
+                    : <button className="btn btn-ghost btn-icon btn-sm"><IconMore size={12}/></button>}
+                </div>
+                <div className="desc">{p.desc}</div>
+                <div className="stats">
+                  <div className="stat">
+                    <div className="v accent">{p.exps}</div>
+                    <div className="k">Active exps</div>
+                  </div>
+                  <div className="stat">
+                    <div className="v">{p.gates}</div>
+                    <div className="k">Gates</div>
+                  </div>
+                  <div className="stat">
+                    <div className="v">{p.evals}</div>
+                    <div className="k">Evals/day</div>
+                  </div>
+                </div>
+                <div className="foot">
+                  <div className="members">
+                    {p.members.slice(0,4).map((a,i)=>(
+                      <div key={i} className="av" style={{background:['#7c5cff','#22a06b','#f5a623','#3b82f6','#ec4899','#06b6d4'][i%6]}}>{a}</div>
+                    ))}
+                  </div>
+                  <span className="t-mono-xs dim-2">{p.members.length} member{p.members.length===1?'':'s'}</span>
+                  <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}}>
+                    Open <IconArrowRight size={11}/>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <div className="proj-card new-card" onClick={()=>setCreating(true)}>
+              <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'center'}}>
+                <div style={{width:40,height:40,borderRadius:10,background:'var(--bg-1)',
+                  border:'1px solid var(--line-2)',display:'grid',placeItems:'center'}}>
+                  <IconPlus size={16}/>
+                </div>
+                <div style={{fontSize:14,fontWeight:500,color:'var(--fg)'}}>New project</div>
+                <div style={{fontSize:12}}>Start fresh, or import from an existing codebase</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {creating && <CreateProjectModal onClose={()=>setCreating(false)}/>}
+    </div>
+  );
+}
+
+function CreateProjectModal({ onClose }) {
+  const [color, setColor] = useState('#22a06b');
+  const [tpl, setTpl] = useState('blank');
+  const colors = ['#22a06b','#3b82f6','#a78bfa','#f5a623','#ec4899','#06b6d4'];
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="head">
+          <IconPlus size={16}/>
+          <h3 style={{margin:0,fontSize:17,fontWeight:500}}>New project</h3>
+          <button className="btn btn-ghost btn-icon btn-sm" style={{marginLeft:'auto'}} onClick={onClose}><IconX size={12}/></button>
+        </div>
+        <div className="body">
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Name</div>
+            <div className="input"><input placeholder="e.g. acme-checkout"/></div>
+            <div className="t-mono-xs dim-2" style={{marginTop:4}}>Lowercase, hyphens. Used as the SDK identifier.</div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Description (optional)</div>
+            <div className="input" style={{height:'auto',padding:'10px 12px'}}>
+              <textarea rows={2} placeholder="What lives in this project?"
+                style={{flex:1,border:'none',background:'none',outline:'none',resize:'vertical',
+                  fontFamily:'inherit',fontSize:13,color:'var(--fg)'}}/>
+            </div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Color</div>
+            <div className="color-swatches">
+              {colors.map(c => (
+                <div key={c} className={`color-swatch ${c===color?'sel':''}`}
+                  onClick={()=>setColor(c)}>
+                  <div className="inner" style={{background:c}}/>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Start from</div>
+            <div className="grid" style={{gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+              {[
+                ['blank','Blank',<IconPlus size={14}/>],
+                ['web','Web SDK',<IconCode size={14}/>],
+                ['mobile','Mobile SDK',<IconShield size={14}/>],
+              ].map(([k,l,ic])=>(
+                <div key={k} onClick={()=>setTpl(k)} style={{padding:'12px',background:tpl===k?'var(--bg-1)':'var(--bg-2)',
+                  border:`1px solid ${tpl===k?'var(--accent)':'var(--line)'}`,borderRadius:'var(--r-md)',
+                  display:'flex',flexDirection:'column',gap:6,cursor:'default'}}>
+                  <div style={{color:tpl===k?'var(--accent)':'var(--fg-2)'}}>{ic}</div>
+                  <div style={{fontSize:13,fontWeight:500}}>{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{padding:'12px 14px',background:'var(--bg-2)',border:'1px solid var(--line)',
+            borderRadius:'var(--r-md)',display:'flex',gap:10,alignItems:'flex-start'}}>
+            <IconSparkles size={13} style={{color:'var(--accent)',marginTop:2}}/>
+            <div>
+              <div className="t-sm" style={{fontWeight:500,marginBottom:2}}>Claude will scaffold for you</div>
+              <div className="t-sm dim" style={{lineHeight:1.5}}>After creating, ask Claude to install the SDK in your codebase — it'll add the import, wrap your root, and ship a sample experiment.</div>
+            </div>
+          </div>
+        </div>
+        <div className="foot">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary"><IconArrowRight size={12}/> Create project</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectSwitcher() {
+  return (
+    <div className="app">
+      <Sidebar active="experiments"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','acme-web','Experiments']}
+          actions={<>
+            <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+            <button className="btn btn-primary"><IconPlus size={12}/> New experiment</button>
+          </>}
+        />
+
+        {/* Switcher pop-over rendered over the sidebar */}
+        <div className="switcher-pop">
+          <div className="switcher-search">
+            <div className="input" style={{height:30}}>
+              <IconSearch size={11} style={{color:'var(--fg-3)'}}/>
+              <input placeholder="Switch project…"/>
+              <span className="suffix" style={{paddingRight:6,fontFamily:'var(--mono)',fontSize:10,color:'var(--fg-4)'}}>⌘K</span>
+            </div>
+          </div>
+          <div style={{padding:'8px 12px 4px',fontFamily:'var(--mono)',fontSize:10,
+            color:'var(--fg-4)',letterSpacing:'.06em',textTransform:'uppercase'}}>Recent</div>
+          <div className="switcher-list">
+            {projects.map(p=>(
+              <div key={p.k} className={`switcher-row ${p.current?'active':''}`}>
+                <div className="mark" style={{color:p.color}}>{p.mark}</div>
+                <div className="meta">
+                  <div className="name">{p.name}</div>
+                  <div className="sub">{p.exps} active · {p.evals}/day</div>
+                </div>
+                {p.current && <IconCheck size={12} style={{color:'var(--accent)'}}/>}
+              </div>
+            ))}
+          </div>
+          <div className="switcher-foot">
+            <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'flex-start'}}>
+              <IconPlus size={11}/> New project
+            </button>
+            <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'flex-start'}}>
+              <IconBook size={11}/> Browse all projects
+            </button>
+          </div>
+        </div>
+
+        <div className="page" style={{filter:'blur(2px) opacity(0.5)',pointerEvents:'none'}}>
+          <div className="page-head">
+            <div><h1>Experiments</h1><p>Loading…</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const Page = ProjectSwitcher;
+ReactDOM.createRoot(document.getElementById('app')).render(<Page/>);
+</script>
+</body>
+</html>

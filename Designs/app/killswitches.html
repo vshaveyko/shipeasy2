@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Killswitches & Configs · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<link rel="stylesheet" href="unified-list.css"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  .ks-row{display:grid;grid-template-columns:40px 1fr 120px 120px 140px 160px 40px;
+    gap:14px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line)}
+  .ks-row:last-child{border-bottom:none}
+  .ks-row:hover{background:var(--bg-2)}
+  .ks-icon{width:32px;height:32px;border-radius:var(--r-md);display:grid;place-items:center;
+    background:var(--bg-3);border:1px solid var(--line-2)}
+  .ks-title b{font-weight:500}
+  .ks-key{font-family:var(--mono);font-size:10.5px;color:var(--fg-4);margin-top:2px}
+
+  .cfg-grid{display:grid;grid-template-columns:280px 1fr;gap:0;
+    background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+  .cfg-tree{border-right:1px solid var(--line);padding:12px 8px;
+    background:var(--bg-1)}
+  .cfg-tree-item{display:flex;align-items:center;gap:8px;padding:6px 10px;
+    border-radius:var(--r-sm);font-size:13px;color:var(--fg-2);cursor:default}
+  .cfg-tree-item:hover{background:var(--bg-2);color:var(--fg)}
+  .cfg-tree-item.active{background:var(--bg-3);color:var(--fg)}
+  .cfg-tree-item .key{font-family:var(--mono);font-size:12px;flex:1}
+  .cfg-tree-item .type{font-family:var(--mono);font-size:10px;color:var(--fg-4)}
+  .cfg-tree-group{font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--fg-4);padding:10px 10px 4px}
+
+  .cfg-editor{padding:24px 28px}
+
+  .json-view{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-md);
+    padding:16px 18px;font-family:var(--mono);font-size:12px;line-height:1.75;
+    white-space:pre;overflow-x:auto;color:var(--fg-2);
+    counter-reset:line}
+  .json-view .k{color:#a78bfa}
+  .json-view .s{color:var(--accent)}
+  .json-view .n{color:#f0c674}
+  .json-view .b{color:#74c7ec}
+  .json-view .c{color:var(--fg-4)}
+  .json-view .edit{background:color-mix(in oklab, var(--accent) 18%, transparent);
+    border-radius:3px;padding:1px 4px;box-shadow:inset 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent)}
+  .json-view .del{color:var(--fg-4);text-decoration:line-through;opacity:.5}
+
+  .env-tabs{display:flex;gap:4px;padding:4px;background:var(--bg-2);
+    border-radius:var(--r-md);border:1px solid var(--line)}
+  .env-tab{padding:5px 11px;font-size:12px;font-family:var(--mono);color:var(--fg-3);
+    border-radius:var(--r-sm);cursor:default}
+  .env-tab.active{background:var(--bg-1);color:var(--fg);box-shadow:var(--shadow-1)}
+
+  .audit-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .audit-row:last-child{border-bottom:none}
+  .audit-time{width:80px;font-family:var(--mono);font-size:10.5px;color:var(--fg-4)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="onboarding.jsx"></script>
+<script type="text/babel" src="empty-states.jsx"></script>
+<script type="text/babel" src="unified-list.jsx"></script>
+<script type="text/babel">
+const { useState: useStateKS } = React;
+
+const killswitches = [
+  { k:'new_checkout', label:'New checkout flow', desc:'Kills checkout_v3 variant, reverts to single-page', on:true,
+    scope:'100% of traffic', latency:'8ms p50', hit:'12.4M / day', color:'var(--accent)' },
+  { k:'ai_recommendations', label:'AI recommendations', desc:'Disables ML ranker, falls back to popularity sort', on:true,
+    scope:'100% of traffic', latency:'4ms p50', hit:'38.1M / day', color:'var(--purple)' },
+  { k:'legacy_uploader', label:'Legacy uploader', desc:'Emergency kill — p95 regression at 340ms', on:false,
+    scope:'0% · killed', latency:'—', hit:'0 / day', color:'var(--danger)', killed:true },
+  { k:'slack_notifications', label:'Slack notifications', desc:'Disable outgoing Slack webhooks during maintenance', on:true,
+    scope:'region:us-east', latency:'2ms p50', hit:'1.1M / day', color:'var(--info)' },
+  { k:'onboarding_v2', label:'New onboarding', desc:'Disable personalized onboarding wizard', on:true,
+    scope:'plan:free · 25%', latency:'6ms p50', hit:'840k / day', color:'var(--warn)' },
+  { k:'embeddings_api', label:'Embeddings API', desc:'Kill all embedding generation requests', on:true,
+    scope:'100% of traffic', latency:'3ms p50', hit:'2.8M / day', color:'var(--accent)' },
+];
+
+function KillswitchesPage() {
+  const [view, setView] = useStateKS(
+    new URLSearchParams(location.search).get('demo') ||
+    new URLSearchParams(location.search).get('open') ? 'list' : 'empty'
+  );
+
+  if (view === 'empty') {
+    return (
+      <div className="app">
+        <Sidebar active="killswitches"/>
+        <div>
+          <Topbar crumbs={['Acme Co.','Killswitches']}
+            actions={<>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setView('list')}>
+                Skip to demo data <IconArrowRight size={11}/>
+              </button>
+              <button className="btn btn-primary" onClick={()=>setView('list')}>
+                <IconZap size={12}/> Wire one up
+              </button>
+            </>}
+          />
+          <div style={{padding:28}}>
+            <EmptyState kind="killswitches"
+              onStart={()=>setView('list')}
+              onDemo={()=>setView('list')}/>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  // ── List branch (unified) ────────────────────────────────────
+  const u = useUnifiedList({ records: killswitches, getId: k => k.k });
+
+  function KSRow({ ks, pressing, onSelect }) {
+    const cls = pressing===ks.k ? "ks-row row-pressing" : "ks-row";
+    return (
+      <div className={cls} onClick={() => onSelect(ks.k)}>
+        <div className="ks-icon">
+          <IconPower size={14} style={{color:ks.color}}/>
+        </div>
+        <div className="ks-title">
+          <b>{ks.label}</b>
+          <div className="ks-key">flag.{ks.k} · {ks.desc}</div>
+        </div>
+        <div className="t-sm dim">{ks.scope}</div>
+        <div className="t-mono-xs num">{ks.latency}</div>
+        <div className="t-mono-xs num">{ks.hit}</div>
+        <div style={{display:"flex",gap:10,alignItems:"center",justifyContent:"flex-end"}}>
+          {ks.killed
+            ? <span className="badge badge-killed"><span className="dot"/>KILLED</span>
+            : <span className="badge badge-live"><span className="dot"/>ENABLED</span>}
+          <div className={ks.on ? "toggle on" : "toggle"}/>
+        </div>
+        <button className="btn btn-ghost btn-icon btn-sm"
+          onClick={e=>e.stopPropagation()}><IconMore size={12}/></button>
+      </div>
+    );
+  }
+
+  const ClosedHead = () => (<>
+    <div className="page-head">
+      <div>
+        <div className="t-caps dim-2" style={{marginBottom:8}}>8 switches · p50 latency 5ms · 55.3M evaluations / day</div>
+        <h1>Killswitches</h1>
+        <p>Instant feature shutoffs with audit history. Propagate globally in under a second.</p>
+      </div>
+      <div className="flex gap-3 items-center">
+        <div style={{padding:"10px 14px",background:"var(--accent-soft)",
+          border:"1px solid color-mix(in oklab, var(--accent) 30%, transparent)",
+          borderRadius:"var(--r-md)",display:"flex",gap:10,alignItems:"center"}}>
+          <IconShield size={14} style={{color:"var(--accent)"}}/>
+          <div>
+            <div className="t-mono-xs" style={{color:"var(--accent)"}}>ALL SYSTEMS NOMINAL</div>
+            <div className="t-xs dim">0 kills in last 7 days</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div className="filter-row" style={{paddingBottom:0,display:"flex",alignItems:"center",gap:10}}>
+      <div className="input" style={{width:220}}>
+        <IconSearch size={12} style={{color:"var(--fg-3)"}}/>
+        <input placeholder="Filter killswitches"/>
+      </div>
+      <div className="env-tabs">
+        <div className="env-tab">dev</div>
+        <div className="env-tab">staging</div>
+        <div className="env-tab active">prod</div>
+      </div>
+      <div className="ml-auto flex gap-2">
+        <button className="btn btn-ghost btn-sm">Sort: Recent</button>
+      </div>
+    </div>
+  </>);
+
+  const FullTable = () => (
+    <div>
+      <div className="ks-row" style={{borderBottom:"1px solid var(--line)",
+        background:"var(--bg-2)",padding:"8px 20px"}}>
+        <span></span>
+        <span className="t-caps dim-2">Switch</span>
+        <span className="t-caps dim-2">Scope</span>
+        <span className="t-caps dim-2">p50 latency</span>
+        <span className="t-caps dim-2">Evaluations</span>
+        <span className="t-caps dim-2" style={{textAlign:"right"}}>State</span>
+        <span></span>
+      </div>
+      {killswitches.map(ks => (
+        <KSRow key={ks.k} ks={ks} pressing={u.pressing} onSelect={u.selectRow}/>
+      ))}
+    </div>
+  );
+
+  const RailRows = () => killswitches.map(ks => (
+    <ULRailRow key={ks.k} id={ks.k} active={ks.k===u.openId}
+      icon={<IconPower size={11} style={{color:ks.color}}/>}
+      name={"flag." + ks.k}
+      right={<span className="pill" style={{
+        color: ks.killed?"var(--danger)":ks.on?"var(--accent)":"var(--fg-3)"}}>
+        {ks.killed?"KILL":ks.on?"ON":"OFF"}
+      </span>}
+      onClick={()=>u.setOpenId(ks.k)}/>
+  ));
+
+  function KillswitchDetail({ ks }) {
+    return (
+      <ULDetailScroll>
+        <ULDetailHero
+          eyebrow={"flag." + ks.k + " · scope · " + ks.scope}
+          title={ks.label}
+          desc={ks.desc}
+          badges={<>
+            {ks.killed
+              ? <span className="badge badge-killed"><span className="dot"/>KILLED</span>
+              : <span className="badge badge-live"><span className="dot"/>ENABLED</span>}
+            <div className={ks.on ? "toggle on" : "toggle"}/>
+            <span className="t-mono-xs dim-2">env · prod</span>
+          </>}
+          right={
+            <ULDetailCard icon={<IconCode size={11} style={{color:"var(--fg-3)"}}/>}
+              title="SDK call"
+              right={<button className="btn btn-ghost btn-icon btn-sm"><IconCopy size={11}/></button>}>
+              <pre style={{margin:0,fontFamily:"var(--mono)",fontSize:11.5,
+                color:"var(--fg-2)",lineHeight:1.7,whiteSpace:"pre-wrap"}}>
+{`if (shipeasy.killswitch("` + ks.k + `").enabled) {
+  await runNewPath();
+} else {
+  await fallback();
+}`}
+              </pre>
+            </ULDetailCard>
+          }/>
+
+        <ULDetailStats stats={[
+          { k:"Scope",       v: ks.scope.split(" ")[0],
+            d: ks.scope.split(" ").slice(1).join(" ") || "of evaluation traffic" },
+          { k:"p50 latency", v: ks.latency.split(" ")[0],
+            d: "edge-cached · global" },
+          { k:"Evaluations", v: ks.hit.split(" /")[0],
+            d: "/ day · across SDKs" },
+          { k:"Propagation", v: "<1s", d: "KV invalidated everywhere" },
+        ]}/>
+
+        <ULDetailCard icon={<IconShield size={11} style={{color:"var(--fg-3)"}}/>}
+          title="Behavior when killed">
+          <div style={{fontSize:13,color:"var(--fg-2)",lineHeight:1.6}}>
+            When this switch is <b>off</b>, every call to <code style={{fontFamily:"var(--mono)",fontSize:11.5,
+              padding:"1px 6px",background:"var(--bg-3)",borderRadius:3,
+              border:"1px solid var(--line)"}}>shipeasy.killswitch("{ks.k}")</code>
+            returns disabled. Code paths inside the kill block are skipped; the <code style={{fontFamily:"var(--mono)",fontSize:11.5,
+              padding:"1px 6px",background:"var(--bg-3)",borderRadius:3,
+              border:"1px solid var(--line)"}}>else</code> branch (your fallback) runs in their place. No redeploy needed.
+          </div>
+        </ULDetailCard>
+
+        <ULDetailCard icon={<IconClock size={11} style={{color:"var(--fg-3)"}}/>}
+          title="Audit"
+          right={<span className="t-mono-xs dim-2">4 events</span>}>
+          <ULTimeline rows={[
+            { icon:<IconCheck size={10} style={{color:"var(--accent)"}}/>,
+              when:"2m ago",  what:<><b>Maya Patel</b> {ks.on?"enabled":"disabled"} the switch · reason: "{ks.killed?"p95 regression":"incident resolved"}"</> },
+            { icon:<IconEdit size={10} style={{color:"var(--fg-3)"}}/>,
+              when:"1h ago",  what:<><b>Jiwoo Han</b> narrowed scope to <b>{ks.scope}</b></> },
+            { icon:<IconCheck size={10} style={{color:"var(--accent)"}}/>,
+              when:"2d ago",  what:<><b>Kai Stewart</b> verified fallback in staging</> },
+            { icon:<IconPlus size={10} style={{color:"var(--fg-3)"}}/>,
+              when:"14d ago", what:<><b>Maya Patel</b> wired up this killswitch</> },
+          ]}/>
+        </ULDetailCard>
+      </ULDetailScroll>
+    );
+  }
+
+  return (
+    <UnifiedListShell
+      sidebarActive="killswitches"
+      topbarCrumbs={u.crumbs(["Acme Co.","Killswitches"])}
+      topbarActions={<>
+        <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+        <button className="btn btn-primary"><IconPlus size={12}/> New killswitch</button>
+      </>}
+      isOpen={u.isOpen}
+      close={u.close}
+      railTitle="Killswitches" railCount={killswitches.length}
+      closedHead={<ClosedHead/>}
+      openHead={u.isOpen && (
+        <ULOpenHead
+          name={"flag." + u.activeRow.k}
+          badges={
+            u.activeRow.killed
+              ? <span className="badge badge-killed"><span className="dot"/>KILLED</span>
+              : <span className="badge badge-live"><span className="dot"/>ENABLED</span>
+          }
+          meta={u.activeRow.scope}
+          onBack={u.close}
+          backLabel="All killswitches"
+          actions={<>
+            <button className="btn btn-ghost btn-sm"><IconEdit size={11}/> Edit scope</button>
+            <button className="btn btn-ghost btn-sm"><IconMore size={11}/></button>
+            <button className="btn btn-primary btn-sm"
+              style={u.activeRow.on?{background:"var(--danger)",borderColor:"color-mix(in oklab, var(--danger) 80%, #000)"}:undefined}>
+              <IconPower size={11}/> {u.activeRow.on?"Kill now":"Re-enable"}
+            </button>
+          </>}/>
+      )}
+      fullTable={<FullTable/>}
+      railRows={<RailRows/>}
+      detail={u.activeRow && <KillswitchDetail ks={u.activeRow}/>}
+      paginate={<ULListFootClosed
+        left={killswitches.length + " of 8 shown · p50 5ms"}
+        right={<>
+          <button className="btn btn-ghost btn-sm">Previous</button>
+          <button className="btn btn-ghost btn-sm">Next</button>
+        </>}/>}/>
+  );
+}
+
+function ConfigsPage() {
+  return (
+    <div className="app">
+      <Sidebar active="configs"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','Configs','pricing.tiers']}
+          actions={<>
+            <div className="env-tabs">
+              <div className="env-tab">dev</div>
+              <div className="env-tab">staging</div>
+              <div className="env-tab active">prod</div>
+            </div>
+            <button className="btn btn-secondary"><IconSparkles size={12}/> Ask Claude</button>
+            <button className="btn btn-ghost">Discard</button>
+            <button className="btn btn-primary"><IconCheck size={12}/> Publish · 3 changes</button>
+          </>}
+        />
+        <div className="page">
+          <div className="page-head">
+            <div>
+              <div className="t-caps dim-2" style={{marginBottom:8}}>41 configs · last publish 2h ago</div>
+              <h1>Configs</h1>
+              <p>Runtime-editable configuration with typed schema, live validation, and per-environment overrides.</p>
+            </div>
+          </div>
+
+          <div className="cfg-grid">
+            {/* Tree */}
+            <div className="cfg-tree">
+              <div className="input" style={{marginBottom:10}}>
+                <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+                <input placeholder="Search configs"/>
+              </div>
+              <div className="cfg-tree-group">Commerce</div>
+              <div className="cfg-tree-item active">
+                <IconSliders size={12} style={{color:'var(--accent)'}}/>
+                <span className="key">pricing.tiers</span>
+                <span className="type">object</span>
+              </div>
+              <div className="cfg-tree-item">
+                <IconSliders size={12} style={{color:'var(--fg-3)'}}/>
+                <span className="key">checkout.timeout_ms</span>
+                <span className="type">number</span>
+              </div>
+              <div className="cfg-tree-item">
+                <IconSliders size={12} style={{color:'var(--fg-3)'}}/>
+                <span className="key">tax.region_rates</span>
+                <span className="type">object</span>
+              </div>
+              <div className="cfg-tree-group">Platform</div>
+              <div className="cfg-tree-item">
+                <IconSliders size={12} style={{color:'var(--fg-3)'}}/>
+                <span className="key">ratelimit.api</span>
+                <span className="type">object</span>
+              </div>
+              <div className="cfg-tree-item">
+                <IconSliders size={12} style={{color:'var(--fg-3)'}}/>
+                <span className="key">search.timeout_ms</span>
+                <span className="type">number</span>
+              </div>
+              <div className="cfg-tree-item">
+                <IconSliders size={12} style={{color:'var(--fg-3)'}}/>
+                <span className="key">features.experimental</span>
+                <span className="type">string[]</span>
+              </div>
+              <div className="cfg-tree-group">ML</div>
+              <div className="cfg-tree-item">
+                <IconSliders size={12} style={{color:'var(--fg-3)'}}/>
+                <span className="key">ranker.weights</span>
+                <span className="type">object</span>
+              </div>
+              <div className="cfg-tree-item">
+                <IconSliders size={12} style={{color:'var(--fg-3)'}}/>
+                <span className="key">embeddings.model</span>
+                <span className="type">string</span>
+              </div>
+            </div>
+
+            {/* Editor */}
+            <div className="cfg-editor">
+              <div style={{display:'flex',gap:12,alignItems:'flex-end',marginBottom:20}}>
+                <div>
+                  <div className="t-mono-xs dim-2">config key</div>
+                  <div style={{fontFamily:'var(--mono)',fontSize:18,fontWeight:500,marginTop:4}}>pricing.tiers</div>
+                </div>
+                <span className="badge">v42</span>
+                <span className="badge badge-paused"><span className="dot"/>3 UNPUBLISHED</span>
+                <div className="ml-auto flex gap-2">
+                  <button className="btn btn-ghost btn-sm"><IconBook2 size={11}/> Schema</button>
+                  <button className="btn btn-ghost btn-sm"><IconCode size={11}/> Usage: 8 sites</button>
+                  <button className="btn btn-ghost btn-sm"><IconGitBranch size={11}/> History</button>
+                </div>
+              </div>
+
+              <div style={{background:'var(--bg-2)',border:'1px solid var(--line)',
+                borderRadius:'var(--r-md)',padding:'10px 14px',marginBottom:14,
+                display:'flex',gap:12,alignItems:'center'}}>
+                <IconSparkles size={13} style={{color:'var(--accent)'}}/>
+                <div className="t-sm flex-1">
+                  <b>Claude suggested</b> lowering the pro tier to $19 based on 6 weeks of elasticity data.
+                  <span className="dim"> Review the diff below.</span>
+                </div>
+                <button className="btn btn-ghost btn-sm">Dismiss</button>
+                <button className="btn btn-secondary btn-sm">Open in chat</button>
+              </div>
+
+              <div className="json-view">
+{'{'}
+{'\n  '}<span className="k">"starter"</span>: {'{'}
+{'\n    '}<span className="k">"name"</span>: <span className="s">"Starter"</span>,
+{'\n    '}<span className="k">"price_usd"</span>: <span className="n">0</span>,
+{'\n    '}<span className="k">"seats"</span>: <span className="n">3</span>,
+{'\n    '}<span className="k">"experiments_limit"</span>: <span className="n">5</span>
+{'\n  }'},
+{'\n  '}<span className="k">"pro"</span>: {'{'}
+{'\n    '}<span className="k">"name"</span>: <span className="s">"Pro"</span>,
+{'\n    '}<span className="k">"price_usd"</span>: <span className="del n">29</span> <span className="edit n">19</span>,
+{'\n    '}<span className="k">"seats"</span>: <span className="n">10</span>,
+{'\n    '}<span className="k">"experiments_limit"</span>: <span className="del n">50</span> <span className="edit n">100</span>,
+{'\n    '}<span className="k">"mcp_enabled"</span>: <span className="b">true</span>
+{'\n  }'},
+{'\n  '}<span className="k">"team"</span>: {'{'}
+{'\n    '}<span className="k">"name"</span>: <span className="s">"Team"</span>,
+{'\n    '}<span className="k">"price_usd"</span>: <span className="n">99</span>,
+{'\n    '}<span className="k">"seats"</span>: <span className="n">25</span>,
+{'\n    '}<span className="k">"experiments_limit"</span>: <span className="del n">200</span> <span className="edit n">"unlimited"</span>,
+{'\n    '}<span className="k">"sso_enabled"</span>: <span className="b">true</span>
+{'\n  }'}
+{'\n}'}
+              </div>
+
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginTop:20}}>
+                <div>
+                  <div className="t-caps dim-2" style={{marginBottom:10}}>Recent activity</div>
+                  <div className="audit-row">
+                    <span className="audit-time">2m ago</span>
+                    <div className="flex-1">
+                      <b>Claude</b> <span className="dim">edited <span className="t-mono dim-2">pro.price_usd</span></span>
+                      <div className="t-mono-xs dim-2">via MCP · reason: elasticity analysis</div>
+                    </div>
+                  </div>
+                  <div className="audit-row">
+                    <span className="audit-time">2h ago</span>
+                    <div className="flex-1">
+                      <b>Maya</b> <span className="dim">published v41 to <b>prod</b></span>
+                    </div>
+                  </div>
+                  <div className="audit-row">
+                    <span className="audit-time">1d ago</span>
+                    <div className="flex-1">
+                      <b>Jin</b> <span className="dim">added <span className="t-mono dim-2">team.sso_enabled</span></span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="t-caps dim-2" style={{marginBottom:10}}>Environment diff</div>
+                  <div style={{background:'var(--bg-2)',border:'1px solid var(--line)',
+                    borderRadius:'var(--r-md)',padding:'10px 14px',display:'flex',flexDirection:'column',gap:8}}>
+                    <div className="flex justify-between t-sm">
+                      <span className="t-mono">pro.price_usd</span>
+                      <span className="dim">dev <span className="t-mono">19</span> · staging <span className="t-mono">29</span> · prod <span className="t-mono" style={{color:'var(--warn)'}}>29 →</span></span>
+                    </div>
+                    <div className="flex justify-between t-sm">
+                      <span className="t-mono">pro.experiments_limit</span>
+                      <span className="dim">dev <span className="t-mono">100</span> · staging <span className="t-mono">100</span> · prod <span className="t-mono" style={{color:'var(--warn)'}}>50 →</span></span>
+                    </div>
+                    <div className="flex justify-between t-sm">
+                      <span className="t-mono">team.experiments_limit</span>
+                      <span className="dim">dev <span className="t-mono">unlimited</span> · prod <span className="t-mono" style={{color:'var(--warn)'}}>200 →</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { KillswitchesPage, ConfigsPage });
+
+// Route: default is combined canvas view via query
+const Page = KillswitchesPage;
+ReactDOM.createRoot(document.getElementById('app')).render(<Page/>);
+</script>
+</body>
+</html>

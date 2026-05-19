@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Metrics · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-width:1320px}
+
+  .pill-group{display:flex;gap:0;padding:3px;background:var(--bg-2);
+    border:1px solid var(--line);border-radius:var(--r-md)}
+  .pill-group .pill{padding:4px 11px;font-size:11.5px;color:var(--fg-3);
+    border-radius:var(--r-sm);font-family:var(--mono);letter-spacing:.02em;cursor:default}
+  .pill-group .pill.on{background:var(--bg-1);color:var(--fg);box-shadow:var(--shadow-1)}
+
+  .tile{padding:14px 16px;background:var(--bg-1);border:1px solid var(--line);
+    border-radius:var(--r-lg);display:flex;flex-direction:column;gap:8px;
+    position:relative;overflow:hidden;min-height:120px}
+  .tile .top{display:flex;align-items:center;gap:8px;color:var(--fg-3);min-height:18px}
+  .tile .top .label{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .val{font-size:26px;letter-spacing:-0.02em;font-weight:500;
+    font-variant-numeric:tabular-nums;line-height:1;margin-top:2px}
+  .tile .val .unit{font-size:13px;color:var(--fg-3);margin-left:3px;font-weight:400}
+  .tile .delta{font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:5px}
+  .tile .delta.up{color:var(--accent)} .tile .delta.dn{color:var(--danger)}
+  .tile .delta.flat{color:var(--fg-3)}
+  .tile .spark{position:absolute;right:10px;bottom:10px;opacity:.95}
+  .tile .kindtag{position:absolute;top:14px;right:14px;font-family:var(--mono);
+    font-size:8.5px;letter-spacing:.12em;padding:1px 5px;border-radius:3px;line-height:1.5}
+  .tile.auto .kindtag{color:var(--info);background:var(--info-soft);
+    border:1px solid color-mix(in oklab, var(--info) 30%, transparent)}
+  .tile.custom .kindtag{color:var(--accent);background:var(--accent-soft);
+    border:1px solid color-mix(in oklab, var(--accent) 30%, transparent)}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .legend .item{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;
+    color:var(--fg-2);cursor:default;padding:4px 10px;border-radius:6px;
+    font-family:var(--mono);background:var(--bg-2);border:1px solid var(--line)}
+  .legend .item.muted{opacity:.4}
+  .legend .swatch{width:10px;height:10px;border-radius:2px}
+  .legend .item .v{font-size:11px;color:var(--fg-3);margin-left:2px}
+
+  .ev-row{display:grid;grid-template-columns:18px minmax(0,1.7fr) 110px 110px 100px 110px 90px 28px;
+    gap:14px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--line)}
+  .ev-row:hover{background:var(--bg-2)}
+  .ev-row:last-child{border-bottom:none}
+  .ev-name{font-family:var(--mono);font-size:13px;color:var(--fg);font-weight:500}
+  .ev-prop{display:inline-flex;align-items:center;font-family:var(--mono);
+    font-size:10px;color:var(--fg-3);background:var(--bg-3);
+    border:1px solid var(--line);border-radius:3px;padding:1px 5px;margin-right:3px}
+
+  .stream-row{display:grid;grid-template-columns:60px 14px minmax(0,1fr) 80px;gap:10px;
+    align-items:center;padding:7px 16px;border-bottom:1px solid var(--line)}
+  .stream-row:last-child{border-bottom:none}
+  .stream-time{font-family:var(--mono);font-size:10.5px;color:var(--fg-4);letter-spacing:.02em}
+  .stream-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent)}
+  .stream-dot.err{background:var(--danger);
+    box-shadow:0 0 0 3px color-mix(in oklab, var(--danger) 22%, transparent)}
+  .stream-dot.info{background:var(--info);
+    box-shadow:0 0 0 3px color-mix(in oklab, var(--info) 22%, transparent)}
+  .stream-dot.warn{background:var(--warn);
+    box-shadow:0 0 0 3px color-mix(in oklab, var(--warn) 22%, transparent)}
+  .stream-name{font-family:var(--mono);font-size:11.5px;color:var(--fg);white-space:nowrap}
+  .stream-payload{font-family:var(--mono);font-size:10.5px;color:var(--fg-4);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stream-tag{font-family:var(--mono);font-size:9.5px;color:var(--fg-3);
+    background:var(--bg-3);padding:1px 6px;border-radius:3px;
+    border:1px solid var(--line);justify-self:end}
+
+  .drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);z-index:60}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:580px;background:var(--bg-1);
+    border-left:1px solid var(--line-2);box-shadow:-20px 0 60px -20px rgba(0,0,0,.6);
+    display:flex;flex-direction:column;z-index:61;animation:slide .25s ease}
+  @keyframes slide{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+  .drawer .head{padding:18px 22px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:12px}
+  .drawer .body{flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:18px}
+  .drawer .foot{padding:14px 22px;border-top:1px solid var(--line);background:var(--bg-2);
+    display:flex;justify-content:flex-end;gap:8px}
+
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--fg-4)}
+  .field .hint{font-size:11.5px;color:var(--fg-3);line-height:1.5}
+
+  .code-block{font-family:var(--mono);font-size:11.5px;background:var(--bg-2);
+    border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;
+    color:var(--fg-2);line-height:1.7;white-space:pre-wrap;overflow:auto}
+  .code-block .kw{color:#a78bfa}
+  .code-block .str{color:var(--accent)}
+  .code-block .fn{color:#74c7ec}
+  .code-block .num{color:var(--warn)}
+  .code-block .cmt{color:var(--fg-4)}
+
+  .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r-md);
+    overflow:hidden;background:var(--bg-2)}
+  .seg .opt{padding:6px 12px;font-size:12px;color:var(--fg-3);font-family:var(--mono);
+    cursor:default;border-right:1px solid var(--line-2)}
+  .seg .opt:last-child{border-right:none}
+  .seg .opt.on{background:var(--bg-1);color:var(--fg)}
+
+  .vital-row{display:grid;grid-template-columns:60px minmax(0,1fr) 90px 70px;gap:14px;
+    align-items:center;padding:11px 18px;border-bottom:1px solid var(--line)}
+  .vital-row:last-child{border-bottom:none}
+
+  .funnel-row{display:grid;grid-template-columns:24px minmax(0,1fr) 80px 70px;gap:12px;
+    align-items:center;padding:9px 16px;border-bottom:1px solid var(--line)}
+  .funnel-row:last-child{border-bottom:none}
+  .funnel-bar{height:18px;background:var(--bg-3);border-radius:3px;overflow:hidden;
+    border:1px solid var(--line);position:relative}
+  .funnel-bar .fill{height:100%;background:linear-gradient(90deg,
+    color-mix(in oklab, var(--accent) 70%, transparent),
+    color-mix(in oklab, var(--accent) 30%, transparent));
+    border-right:2px solid var(--accent)}
+  .funnel-bar.muted .fill{background:linear-gradient(90deg,
+    color-mix(in oklab, var(--fg-3) 35%, transparent),
+    color-mix(in oklab, var(--fg-3) 15%, transparent));border-right-color:var(--fg-3)}
+
+  /* ── Onboarding wizard ───────────────────────────── */
+  .ob-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);
+    z-index:80;display:grid;place-items:center;padding:32px;animation:fadeIn .2s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .ob{display:grid;grid-template-columns:260px 1fr;width:min(1040px,100%);
+    height:min(680px,calc(100vh - 64px));background:var(--bg-1);
+    border:1px solid var(--line-2);border-radius:var(--r-xl);
+    box-shadow:0 40px 100px -20px rgba(0,0,0,.6),0 0 0 1px var(--line);
+    overflow:hidden;animation:obPop .35s cubic-bezier(.2,.8,.2,1)}
+  @keyframes obPop{from{transform:scale(.96) translateY(8px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+
+  .ob-rail{background:var(--bg-2);border-right:1px solid var(--line);
+    padding:20px 16px;display:flex;flex-direction:column}
+  .ob-brand{display:flex;gap:10px;align-items:flex-start;padding:0 4px 18px;
+    border-bottom:1px solid var(--line);margin-bottom:14px}
+  .ob-mark{width:28px;height:28px;border-radius:7px;flex-shrink:0;
+    box-shadow:0 0 0 1px var(--line-2)}
+  .ob-mark::after{content:"";display:block;margin:7px;width:14px;height:14px;
+    background:var(--bg);border-radius:3px;box-shadow:inset 0 0 0 1px var(--line-2)}
+
+  .ob-steps{display:flex;flex-direction:column;gap:2px}
+  .ob-step{display:flex;align-items:center;gap:10px;padding:8px 9px;
+    border-radius:var(--r-md);font-size:12.5px;color:var(--fg-3);cursor:default}
+  .ob-step .dot{width:20px;height:20px;border-radius:50%;
+    background:var(--bg-3);border:1px solid var(--line-2);
+    display:grid;place-items:center;font-family:var(--mono);font-size:10.5px;
+    color:var(--fg-3);flex-shrink:0}
+  .ob-step.on{color:var(--fg);background:color-mix(in oklab, var(--accent) 8%, transparent)}
+  .ob-step.on .dot{background:var(--accent);border-color:transparent;color:var(--accent-fg)}
+  .ob-step.on .dot .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent-fg);
+    animation:pulse 1.4s ease-in-out infinite}
+  .ob-step.done{color:var(--fg-2)}
+  .ob-step.done .dot{background:var(--accent-soft);border-color:color-mix(in oklab, var(--accent) 30%, transparent);color:var(--accent)}
+  @keyframes pulse{0%,100%{transform:scale(.7);opacity:.5}50%{transform:scale(1);opacity:1}}
+
+  .ob-help{padding-top:12px;border-top:1px solid var(--line);
+    display:flex;flex-direction:column;gap:2px}
+  .ob-help-row{display:flex;align-items:center;gap:8px;padding:6px 9px;
+    border-radius:var(--r-sm);font-size:12px;color:var(--fg-3);cursor:default;
+    text-decoration:none}
+  .ob-help-row:hover{background:var(--bg-3);color:var(--fg)}
+
+  .ob-main{display:flex;flex-direction:column;position:relative;min-width:0}
+  .ob-x{position:absolute;top:14px;right:14px;width:28px;height:28px;
+    border-radius:6px;border:1px solid var(--line-2);background:var(--bg-2);
+    color:var(--fg-2);display:grid;place-items:center;cursor:default;z-index:2}
+  .ob-x:hover{background:var(--bg-3);color:var(--fg)}
+
+  .ob-body{flex:1;overflow:auto;padding:36px 40px 24px;display:flex;
+    flex-direction:column;gap:18px}
+  .ob-heading h2{margin:6px 0 6px;font-size:22px;letter-spacing:-0.02em;font-weight:500}
+  .ob-heading p{margin:0;color:var(--fg-2);font-size:13.5px;max-width:60ch}
+
+  .ob-card{padding:12px 14px;background:var(--bg-2);
+    border:1px solid var(--line);border-radius:var(--r-md);cursor:default;
+    transition:border-color .15s,background .15s}
+  .ob-card:hover{border-color:var(--line-3)}
+  .ob-card.on{border-color:var(--accent);background:color-mix(in oklab, var(--accent) 6%, var(--bg-2))}
+
+  .ob-foot{display:flex;align-items:center;gap:14px;padding:14px 24px;
+    border-top:1px solid var(--line);background:var(--bg-2)}
+  .ob-foot-bar{display:flex;gap:3px;flex:1;max-width:200px}
+  .ob-foot-bar .seg{flex:1;height:3px;background:var(--bg-3);border-radius:2px}
+  .ob-foot-bar .seg.on{background:var(--accent)}
+
+  .pulse-bar{position:absolute;inset:0;background:linear-gradient(90deg,
+    transparent, var(--accent), transparent);width:30%;
+    animation:pulseBar 1.6s ease-in-out infinite}
+  .pulse-bar.received{background:var(--accent);width:100%;animation:none}
+  @keyframes pulseBar{0%{left:-30%}100%{left:100%}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* metrics-specific only — shared empty-state styles live in app.css */
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel">
+const IconActivity = (p) => <Icon {...p}><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.5.5 0 0 1-.96 0L9.24 2.18a.5.5 0 0 0-.96 0l-2.35 8.36A2 2 0 0 1 4 12H2"/></Icon>;
+const IconWand = (p) => <Icon {...p}><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></Icon>;
+const IconPin = (p) => <Icon {...p}><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></Icon>;
+const IconUserPlus = (p) => <Icon {...p}><path d="M2 21a8 8 0 0 1 13.292-6"/><circle cx="10" cy="8" r="5"/><path d="M19 16v6"/><path d="M22 19h-6"/></Icon>;
+const IconCart = (p) => <Icon {...p}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></Icon>;
+Object.assign(window, { IconActivity, IconWand, IconPin, IconUserPlus, IconCart });
+</script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="metrics-data.jsx"></script>
+<script type="text/babel" src="metrics-charts.jsx"></script>
+<script type="text/babel" src="metrics-drawer.jsx"></script>
+<script type="text/babel" src="onboarding.jsx"></script>
+<script type="text/babel" src="empty-states.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+function Tile({ t }) {
+  const up = t.delta > 0, dn = t.delta < 0;
+  const isGood = t.good;
+  const deltaClass = Math.abs(t.delta) < 1 ? 'flat' : (isGood ? 'up' : 'dn');
+  const sparkColor = isGood ? 'var(--accent)' : 'var(--danger)';
+  return (
+    <div className={`tile ${t.kind}`}>
+      <div className="kindtag">{t.kind === 'auto' ? 'AUTO' : 'CUSTOM'}</div>
+      <div className="top">
+        <span className="label">{t.label}</span>
+      </div>
+      <div className="val">
+        {t.val}{t.unit && <span className="unit">{t.unit}</span>}
+      </div>
+      <div className={`delta ${deltaClass}`}>
+        {up ? <IconArrowUp size={10}/> : dn ? <IconArrowDown size={10}/> : '·'}
+        {Math.abs(t.delta).toFixed(1)}%
+        <span style={{color:'var(--fg-4)'}}>vs prev</span>
+      </div>
+      <div className="spark"><Sparkline data={t.spark} color={sparkColor} w={88} h={32} fill/></div>
+    </div>
+  );
+}
+
+function MetricsPage() {
+  const [range, setRange] = useState('24h');
+  const [drawerEvent, setDrawerEvent] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [filter, setFilter] = useState('');
+  const [view, setView] = useState('empty'); // 'empty' | 'onboarding' | 'dashboard'
+  const [active, setActive] = useState({
+    'user_checkout': true, 'user_startcheckout': true, 'cart_abandoned': true
+  });
+  const toggle = k => setActive(a => ({ ...a, [k]: !a[k] }));
+
+  // ── Empty state (first visit) ────────────────────
+  if (view === 'empty') {
+    return (
+      <div className="app">
+        <Sidebar active="metrics"/>
+        <div>
+          <Topbar crumbs={['Acme Co.','Metrics']}
+            actions={<>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setView('dashboard')}>
+                Skip to demo data <IconArrowRight size={11}/>
+              </button>
+              <button className="btn btn-primary" onClick={()=>setView('onboarding')}>
+                <IconZap size={12}/> Start setup
+              </button>
+            </>}
+          />
+          <div style={{padding:28}}>
+            <EmptyState kind="metrics"
+              onStart={()=>setView('onboarding')}
+              onDemo={()=>setView('dashboard')}/>
+          </div>
+        </div>
+        {view === 'onboarding' && (
+          <OnboardingWizard kind="metrics"
+            onClose={()=>setView('empty')}
+            onComplete={()=>setView('dashboard')}/>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <Sidebar active="metrics"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','Metrics']}
+          actions={<>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setView('onboarding')}>
+              <IconBook2 size={11}/> Setup guide
+            </button>
+            <button className="btn btn-primary" onClick={()=>setCreating(true)}>
+              <IconPlus size={12}/> Register event
+            </button>
+          </>}
+        />
+
+        {view === 'onboarding' && (
+          <OnboardingWizard kind="metrics"
+            onClose={()=>setView('dashboard')}
+            onComplete={()=>setView('dashboard')}/>
+        )}
+        <div className="page">
+          {/* ── Header ───────────────────────── */}
+          <div className="page-head">
+            <div>
+              <div className="t-caps dim-2" style={{marginBottom:8,display:'flex',gap:10,alignItems:'center'}}>
+                <span style={{display:'inline-flex',alignItems:'center',gap:6,
+                  color:'var(--accent)'}}>
+                  <span style={{width:6,height:6,borderRadius:'50%',background:'var(--accent)',
+                    boxShadow:'0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent)'}}/>
+                  <span>INGESTING · 4s ago</span>
+                </span>
+                <span className="dim-3">·</span>
+                <span>7 custom events</span>
+                <span className="dim-3">·</span>
+                <span>12 auto metrics</span>
+                <span className="dim-3">·</span>
+                <span>48.2k sessions today</span>
+              </div>
+              <h1>Metrics</h1>
+              <p>Auto-collected web vitals plus the events you register with <span className="t-mono dim">log()</span>. New events show up live within seconds — no schema migrations, no redeploy.</p>
+            </div>
+            <div className="flex gap-3 items-center">
+              <div className="select" style={{width:130}}>
+                <select defaultValue="prod">
+                  <option value="dev">env · dev</option>
+                  <option value="staging">env · staging</option>
+                  <option value="prod">env · production</option>
+                </select>
+              </div>
+              <div className="pill-group">
+                {['1h','24h','7d','30d','90d'].map(r => (
+                  <div key={r} className={`pill ${range===r?'on':''}`}
+                    onClick={()=>setRange(r)}>{r}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── KPI tiles ────────────────────── */}
+          <div className="grid" style={{gridTemplateColumns:'repeat(6, 1fr)', gap:14}}>
+            {metricsTiles.map(t => <Tile key={t.label} t={t}/>)}
+          </div>
+
+          {/* ── Main chart + funnel side-by-side ─ */}
+          <div className="grid" style={{gridTemplateColumns:'1.55fr 1fr', gap:18}}>
+            <div className="card">
+              <div className="card-head">
+                <div className="card-head-title">Events over time</div>
+                <span className="t-mono-xs dim-2">stacked · counts per hour</span>
+                <div className="ml-auto flex gap-2 items-center">
+                  <div className="seg">
+                    <div className="opt on">count</div>
+                    <div className="opt">sum(amount)</div>
+                    <div className="opt">unique users</div>
+                  </div>
+                  <button className="btn btn-ghost btn-icon btn-sm"><IconMore size={12}/></button>
+                </div>
+              </div>
+              <div style={{padding:'14px 18px 4px'}}>
+                <div className="legend" style={{marginBottom:6}}>
+                  {[
+                    { k:'user_checkout',      v:'2,184',  c:'var(--accent)' },
+                    { k:'user_startcheckout', v:'12,840', c:'var(--info)' },
+                    { k:'cart_abandoned',     v:'4,021',  c:'var(--warn)' },
+                  ].map(s => (
+                    <div key={s.k} className={`item ${!active[s.k]?'muted':''}`}
+                      onClick={()=>toggle(s.k)}>
+                      <span className="swatch" style={{background:s.c}}/>
+                      <span>{s.k}</span>
+                      <span className="v">{s.v}</span>
+                    </div>
+                  ))}
+                  <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}}>
+                    <IconPlus size={11}/> add series
+                  </button>
+                </div>
+              </div>
+              <div style={{padding:'0 12px 12px'}}>
+                <MainChart active={active}/>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-head">
+                <div className="card-head-title">Checkout funnel</div>
+                <span className="t-mono-xs dim-2">last 24h · all users</span>
+                <div className="ml-auto">
+                  <button className="btn btn-ghost btn-sm">
+                    <IconWand size={11}/> Build from events
+                  </button>
+                </div>
+              </div>
+              <div style={{padding:'4px 0'}}>
+                {funnel.map((f,i) => (
+                  <div key={i} className="funnel-row">
+                    <div style={{fontFamily:'var(--mono)',fontSize:10.5,color:'var(--fg-4)'}}>
+                      {String(i+1).padStart(2,'0')}
+                    </div>
+                    <div>
+                      <div style={{fontFamily:'var(--mono)',fontSize:12,color:'var(--fg-2)',
+                        marginBottom:5}}>{f.step}</div>
+                      <div className={`funnel-bar ${i===0?'muted':''}`}>
+                        <div className="fill" style={{width:`${f.pct}%`}}/>
+                      </div>
+                    </div>
+                    <div className="num t-mono" style={{fontSize:12,color:'var(--fg-2)',
+                      textAlign:'right'}}>{f.count.toLocaleString()}</div>
+                    <div className="num t-mono" style={{fontSize:11,
+                      color:i===0?'var(--fg-3)':(f.pct<10?'var(--warn)':'var(--accent)'),
+                      textAlign:'right'}}>{f.pct.toFixed(1)}%</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{padding:'10px 16px',background:'var(--bg-2)',
+                borderTop:'1px solid var(--line)',display:'flex',gap:10,alignItems:'center'}}>
+                <IconSparkles size={12} style={{color:'var(--accent)'}}/>
+                <div className="t-sm" style={{color:'var(--fg-2)'}}>
+                  Biggest drop-off: <b style={{color:'var(--fg)'}}>payment_form_filled → user_checkout</b>
+                </div>
+                <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}}>
+                  Investigate <IconArrowRight size={11}/>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Custom events table ──────────── */}
+          <div className="card">
+            <div className="card-head">
+              <div className="card-head-title">Custom events</div>
+              <span className="t-mono-xs dim-2">{customEvents.length} registered</span>
+              <div className="ml-auto flex gap-2 items-center">
+                <div className="seg">
+                  <div className="opt on">All</div>
+                  <div className="opt">Events</div>
+                  <div className="opt">Conversions</div>
+                  <div className="opt">Funnel</div>
+                </div>
+                <div className="input" style={{width:200}}>
+                  <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+                  <input placeholder="Filter events" value={filter}
+                    onChange={e=>setFilter(e.target.value)}/>
+                </div>
+                <button className="btn btn-secondary btn-sm" onClick={()=>setCreating(true)}>
+                  <IconPlus size={11}/> Register
+                </button>
+              </div>
+            </div>
+            <div style={{display:'grid',
+              gridTemplateColumns:'18px minmax(0,1.7fr) 110px 110px 100px 110px 90px 28px',
+              gap:14,padding:'8px 18px',borderBottom:'1px solid var(--line)',
+              background:'var(--bg-2)',fontFamily:'var(--mono)',fontSize:10,
+              color:'var(--fg-4)',letterSpacing:'.06em',textTransform:'uppercase'}}>
+              <span/><span>Event · properties</span><span>Type</span><span>Volume · 24h</span>
+              <span>vs prev</span><span>Trend</span><span>Per session</span><span/>
+            </div>
+            {customEvents
+              .filter(e => !filter || e.name.includes(filter))
+              .map(e => (
+              <div key={e.name} className="ev-row" onClick={()=>setDrawerEvent(e)}>
+                <span className={`stream-dot ${e.kind==='conversion'?'':'info'}`}
+                  style={e.kind==='conversion'
+                    ? {}
+                    : e.kind==='funnel'
+                      ? {background:'var(--info)',boxShadow:'0 0 0 3px color-mix(in oklab, var(--info) 22%, transparent)'}
+                      : {background:'var(--fg-3)',boxShadow:'0 0 0 3px color-mix(in oklab, var(--fg-3) 18%, transparent)'}}/>
+                <div style={{minWidth:0}}>
+                  <div className="ev-name">
+                    {e.name}
+                    {e.pinned && <IconPin size={10} style={{color:'var(--accent)',marginLeft:8,verticalAlign:'-1px'}}/>}
+                  </div>
+                  <div style={{marginTop:4,display:'flex',gap:0,flexWrap:'wrap',alignItems:'center'}}>
+                    {e.props.map(p => <span key={p} className="ev-prop">{p}</span>)}
+                    <span className="t-mono-xs dim-3" style={{marginLeft:6}}>
+                      since {e.firstSeen} · {e.owner}
+                    </span>
+                  </div>
+                </div>
+                <span className="badge" style={
+                  e.kind==='conversion' ? {background:'var(--accent-soft)',color:'var(--accent)',
+                    borderColor:'color-mix(in oklab, var(--accent) 30%, transparent)'} :
+                  e.kind==='funnel' ? {background:'var(--info-soft)',color:'var(--info)',
+                    borderColor:'color-mix(in oklab, var(--info) 30%, transparent)'} :
+                  {}}>{e.kind}</span>
+                <span className="t-mono num" style={{fontSize:13,color:'var(--fg)'}}>{e.volume}</span>
+                <span className="t-mono num" style={{fontSize:12,
+                  color:e.vsPrev>0?'var(--accent)':'var(--danger)',
+                  display:'flex',alignItems:'center',gap:4}}>
+                  {e.vsPrev>0 ? <IconArrowUp size={10}/> : <IconArrowDown size={10}/>}
+                  {Math.abs(e.vsPrev).toFixed(1)}%
+                </span>
+                <Sparkline data={e.spark}
+                  color={e.vsPrev>0?'var(--accent)':'var(--danger)'} w={92} h={22}/>
+                <span className="t-mono num" style={{fontSize:11.5,color:'var(--fg-3)'}}>{e.perSession}</span>
+                <button className="btn btn-ghost btn-icon btn-sm"
+                  onClick={ev=>{ev.stopPropagation();setDrawerEvent(e)}}>
+                  <IconMore size={12}/>
+                </button>
+              </div>
+            ))}
+            <div style={{padding:'12px 18px',background:'var(--bg-2)',
+              borderTop:'1px solid var(--line)',display:'flex',gap:14,alignItems:'center'}}>
+              <IconCode size={12} style={{color:'var(--fg-3)'}}/>
+              <span className="t-sm dim">
+                Send a new event from your code — we'll auto-detect it and surface it here within seconds.
+              </span>
+              <span className="t-mono-xs" style={{color:'var(--accent)',background:'var(--bg-3)',
+                padding:'4px 8px',borderRadius:4,border:'1px solid var(--line)'}}>
+                log('event_name', {`{ ...props }`})
+              </span>
+              <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}}>
+                Copy SDK init <IconCopy size={11}/>
+              </button>
+            </div>
+          </div>
+
+          {/* ── Auto vitals + Live stream ────── */}
+          <div className="grid" style={{gridTemplateColumns:'1fr 1.05fr', gap:18}}>
+            <div className="card">
+              <div className="card-head">
+                <div className="card-head-title">Auto-collected health</div>
+                <span className="t-mono-xs dim-2">no setup required · web vitals + errors</span>
+                <div className="ml-auto">
+                  <span className="badge" style={{background:'var(--info-soft)',color:'var(--info)',
+                    borderColor:'color-mix(in oklab, var(--info) 30%, transparent)'}}>
+                    <span className="dot"/>AUTO
+                  </span>
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'60px minmax(0,1fr) 90px 70px',
+                gap:14,padding:'8px 18px',borderBottom:'1px solid var(--line)',
+                background:'var(--bg-2)',fontFamily:'var(--mono)',fontSize:10,
+                color:'var(--fg-4)',letterSpacing:'.06em',textTransform:'uppercase'}}>
+                <span>Metric</span><span>Range · good ↔ poor</span><span>Value</span><span>Status</span>
+              </div>
+              {autoVitals.map(v => (
+                <div key={v.name} className="vital-row">
+                  <div>
+                    <div style={{fontFamily:'var(--mono)',fontSize:12,color:'var(--fg)',fontWeight:500}}>
+                      {v.name}
+                    </div>
+                    <div className="t-mono-xs dim-3" style={{marginTop:2}}>{v.unit||'ratio'}</div>
+                  </div>
+                  <div>
+                    <div className="t-sm dim" style={{marginBottom:6,
+                      whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                      {v.desc}
+                    </div>
+                    <VitalGauge val={v.val} good={v.good} poor={v.poor} status={v.status}/>
+                  </div>
+                  <div className="t-mono num" style={{fontSize:13,color:'var(--fg)',textAlign:'right'}}>
+                    {v.val}{v.unit && <span style={{color:'var(--fg-3)',fontSize:11,marginLeft:2}}>{v.unit}</span>}
+                  </div>
+                  <span className="badge" style={
+                    v.status==='good' ? {background:'var(--accent-soft)',color:'var(--accent)',
+                      borderColor:'color-mix(in oklab, var(--accent) 30%, transparent)'} :
+                    v.status==='warn' ? {background:'var(--warn-soft)',color:'var(--warn)',
+                      borderColor:'color-mix(in oklab, var(--warn) 30%, transparent)'} :
+                    {background:'var(--danger-soft)',color:'var(--danger)',
+                      borderColor:'color-mix(in oklab, var(--danger) 30%, transparent)'}}>
+                    <span className="dot"/>{v.status.toUpperCase()}
+                  </span>
+                </div>
+              ))}
+              <div style={{padding:'12px 18px',background:'var(--bg-2)',
+                borderTop:'1px solid var(--line)',display:'flex',gap:10,alignItems:'flex-start'}}>
+                <IconAlertTriangle size={13} style={{color:'var(--warn)',marginTop:2,flexShrink:0}}/>
+                <div>
+                  <div className="t-sm" style={{color:'var(--fg)'}}>
+                    API 5xx is trending warm. <a style={{color:'var(--accent)'}}>Open APM →</a>
+                  </div>
+                  <div className="t-mono-xs dim-2" style={{marginTop:2}}>
+                    1.18% of requests failed (target ≤1.0%) · spike in <span style={{color:'var(--fg-2)'}}>POST /v1/checkout</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-head">
+                <div className="card-head-title">Live event stream</div>
+                <span className="t-mono-xs" style={{color:'var(--accent)',display:'inline-flex',
+                  gap:6,alignItems:'center'}}>
+                  <span style={{width:6,height:6,borderRadius:'50%',background:'var(--accent)',
+                    boxShadow:'0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent)'}}/>
+                  LIVE
+                </span>
+                <div className="ml-auto flex gap-2 items-center">
+                  <div className="input" style={{width:160}}>
+                    <IconFilter size={11} style={{color:'var(--fg-3)'}}/>
+                    <input placeholder="Filter stream"/>
+                  </div>
+                  <button className="btn btn-ghost btn-icon btn-sm"><IconPause size={12}/></button>
+                </div>
+              </div>
+              <div style={{maxHeight:380,overflow:'auto'}}>
+                {liveStream.map((e,i) => (
+                  <div key={i} className="stream-row">
+                    <span className="stream-time">{e.t}</span>
+                    <span className={`stream-dot ${e.kind==='live'?'':e.kind}`}/>
+                    <div style={{minWidth:0,display:'flex',flexDirection:'column',gap:1}}>
+                      <span className="stream-name">{e.name}</span>
+                      <span className="stream-payload">{e.payload}</span>
+                    </div>
+                    <span className="stream-tag">{e.kind==='live'?'log()':e.kind}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Setup reminder banner ───────────── */}
+          <div style={{padding:'14px 18px',background:'var(--bg-1)',
+            border:'1px solid var(--line)',borderRadius:'var(--r-lg)',
+            display:'flex',gap:14,alignItems:'center'}}>
+            <span style={{width:36,height:36,borderRadius:8,background:'var(--accent-soft)',
+              border:'1px solid color-mix(in oklab, var(--accent) 30%, transparent)',
+              display:'grid',placeItems:'center',color:'var(--accent)',flexShrink:0}}>
+              <IconBook2 size={16}/>
+            </span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13.5,fontWeight:500}}>
+                Setup guide · install the SDK, send your first event, pick starters
+              </div>
+              <div className="t-mono-xs dim-2" style={{marginTop:3}}>
+                Walk through it any time — works the same for Experiments, Gates, and Configs.
+              </div>
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setView('onboarding')}>
+              Open setup <IconArrowRight size={11}/>
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setCreating(true)}>
+              <IconPlus size={11}/> Register event
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {(creating || drawerEvent) && (
+        <EventDrawer event={drawerEvent}
+          onClose={()=>{setCreating(false);setDrawerEvent(null)}}
+          onSave={()=>{setCreating(false);setDrawerEvent(null)}}/>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<MetricsPage/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Create wizard · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="forms.css?v=1">
+<link rel="stylesheet" href="configs.css?v=7">
+<link rel="stylesheet" href="wizards.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  html,body{margin:0;height:100vh;overflow:hidden;background:var(--bg)}
+  .peek-frame{position:fixed;inset:0;width:100%;height:100%;border:0;
+    filter:saturate(.55) brightness(.65);pointer-events:none}
+</style>
+</head>
+<body>
+<iframe id="peek" class="peek-frame" src="standards-list-v2.html" loading="eager"></iframe>
+<div id="app"></div>
+
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="configs-data.jsx"></script>
+<script type="text/babel" src="configs-shared.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="wizards-shell.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "kind": "configs",
+  "step": 0,
+  "hideAside": false,
+  "showPeek": true
+}/*EDITMODE-END*/;
+
+// URL ?kind=…&step=… override (so the matrix can show different kinds in one file)
+const _urlParams = new URLSearchParams(location.search);
+const _urlKind = _urlParams.get('kind');
+const _urlStep = _urlParams.get('step');
+const INITIAL_TWEAKS = {
+  ...TWEAK_DEFAULTS,
+  ...(_urlKind ? { kind: _urlKind } : {}),
+  ...(_urlStep ? { step: +_urlStep } : {}),
+};
+
+const KIND_OPTIONS = [
+  { v:'configs',      label:'Config' },
+  { v:'gates',        label:'Gate' },
+  { v:'killswitches', label:'Killswitch' },
+  { v:'metrics',      label:'Metric' },
+  { v:'experiments',  label:'Experiment' },
+];
+
+const KIND_PEEK = {
+  configs:      'configs.html',
+  gates:        'gates-list.html?demo=1',
+  killswitches: 'killswitches.html?demo=1',
+  metrics:      'metrics-list.html',
+  experiments:  'experiments-list.html?demo=1',
+};
+
+function Root() {
+  const [t, setTweak] = useTweaks(INITIAL_TWEAKS);
+
+  // Update the peek iframe when kind changes
+  React.useEffect(() => {
+    const el = document.getElementById('peek');
+    const target = KIND_PEEK[t.kind] || 'standards-list-v2.html';
+    if (el && el.getAttribute('data-src') !== target) {
+      el.src = target;
+      el.setAttribute('data-src', target);
+    }
+    el.style.display = t.showPeek ? 'block' : 'none';
+  }, [t.kind, t.showPeek]);
+
+  // Reset step when kind changes (different total)
+  const flow = React.useMemo(() => FLOW_BUILDERS[t.kind](), [t.kind]);
+  const stepCount = flow.steps.length;
+  React.useEffect(() => {
+    if (t.step >= stepCount) setTweak('step', 0);
+  }, [t.kind]);
+
+  return (
+    <>
+      <WizardModal kind={t.kind} defaultStep={Math.min(t.step, stepCount-1)}
+        hideAside={t.hideAside}
+        onClose={() => {/* no-op in matrix */}}/>
+
+      <TweaksPanel title="Wizard preview">
+        <TweakSection label="Item kind">
+          <TweakSelect label="kind" value={t.kind}
+            onChange={v=>{setTweak('kind', v); setTweak('step', 0);}}
+            options={KIND_OPTIONS.map(o=>({value:o.v, label:o.label}))}/>
+        </TweakSection>
+        <TweakSection label="Step">
+          <TweakSelect label="step" value={String(t.step)}
+            onChange={v=>setTweak('step', +v)}
+            options={flow.steps.map((s,i)=>({value:String(i), label:`${i+1} · ${s.label}`}))}/>
+        </TweakSection>
+        <TweakSection label="Layout">
+          <TweakToggle label="Show context sidebar" value={!t.hideAside}
+            onChange={v=>setTweak('hideAside', !v)}/>
+          <TweakToggle label="Show list behind modal" value={t.showPeek}
+            onChange={v=>setTweak('showPeek', v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<Root/>);
+</script>
+</body>
+</html>

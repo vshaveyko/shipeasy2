@@ -12,7 +12,16 @@ import {
 import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/action-result";
 
-export type Tone = "neutral" | "blue" | "amber" | "violet" | "green" | "red" | "orange" | "rose";
+export type Tone =
+  | "neutral"
+  | "blue"
+  | "amber"
+  | "violet"
+  | "cyan"
+  | "green"
+  | "red"
+  | "orange"
+  | "rose";
 
 export interface StatusOption {
   value: string;
@@ -34,6 +43,7 @@ const TONE_DOT: Record<Tone, string> = {
   blue: "bg-blue-500",
   amber: "bg-amber-500",
   violet: "bg-violet-500",
+  cyan: "bg-cyan-500",
   green: "bg-emerald-500",
   red: "bg-rose-500",
   orange: "bg-orange-500",
@@ -48,6 +58,7 @@ const TONE_PILL: Record<Tone, string> = {
     "bg-amber-500/15 text-amber-800 ring-amber-500/30 hover:bg-amber-500/22 dark:text-amber-300",
   violet:
     "bg-violet-500/12 text-violet-700 ring-violet-500/25 hover:bg-violet-500/18 dark:text-violet-300",
+  cyan: "bg-cyan-500/12 text-cyan-700 ring-cyan-500/25 hover:bg-cyan-500/18 dark:text-cyan-300",
   green:
     "bg-emerald-500/12 text-emerald-700 ring-emerald-500/25 hover:bg-emerald-500/18 dark:text-emerald-300",
   red: "bg-rose-500/12 text-rose-700 ring-rose-500/25 hover:bg-rose-500/18 dark:text-rose-300",

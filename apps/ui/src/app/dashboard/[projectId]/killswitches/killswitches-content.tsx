@@ -65,7 +65,9 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
   const searchParams = useSearchParams();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
-  const newOpen = searchParams.get("new") === "1";
+  // `?new=1` only seeds the initial open state — keep local thereafter so
+  // closing the wizard never triggers a route change.
+  const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
   const [filter, setFilter] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -80,11 +82,7 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
   }
 
   function setNewWizardOpen(open: boolean) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (open) params.set("new", "1");
-    else params.delete("new");
-    const qs = params.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    setNewOpen(open);
   }
 
   const filtered = useMemo(() => {

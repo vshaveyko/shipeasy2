@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Settings · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=2">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-width:1280px}
+  .settings-grid{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:start}
+  .nav-rail{position:sticky;top:24px;display:flex;flex-direction:column;gap:1px}
+  .nav-rail a{padding:8px 12px;font-size:13px;color:var(--fg-3);
+    border-left:2px solid transparent;cursor:pointer;text-decoration:none;
+    display:flex;align-items:center;gap:8px}
+  .nav-rail a:hover{color:var(--fg)}
+  .nav-rail a.active{color:var(--fg);border-left-color:var(--accent);background:var(--bg-1)}
+
+  .panel{padding:24px;background:var(--bg-1);border:1px solid var(--line);
+    border-radius:var(--r-lg);margin-bottom:18px}
+  .panel-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;
+    border-bottom:1px solid var(--line);margin-bottom:18px}
+  .panel-head h2{margin:0;font-size:16px;font-weight:500}
+  .panel-head .desc{font-size:12.5px;color:var(--fg-3);margin-top:2px}
+
+  .field-row{display:grid;grid-template-columns:200px 1fr auto;gap:18px;
+    padding:14px 0;border-bottom:1px solid var(--line);align-items:center}
+  .field-row:last-child{border-bottom:none;padding-bottom:0}
+  .field-row .label .name{font-size:13px;font-weight:500}
+  .field-row .label .desc{font-size:12px;color:var(--fg-3);margin-top:3px;line-height:1.45}
+  .field-row .control{display:flex;justify-content:flex-end}
+
+  .danger-zone{border-color:color-mix(in oklab, var(--danger) 30%, var(--line));
+    background:color-mix(in oklab, var(--danger) 4%, var(--bg-1))}
+
+  .integration{display:flex;gap:14px;align-items:center;padding:14px 0;
+    border-bottom:1px solid var(--line)}
+  .integration:last-child{border-bottom:none}
+  .integration .ico{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;
+    background:var(--bg-2);border:1px solid var(--line-2);flex-shrink:0}
+  .integration .meta{flex:1;min-width:0}
+  .integration .name{font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px}
+  .integration .desc{font-size:12px;color:var(--fg-3);margin-top:3px}
+  .integration .right{display:flex;gap:8px;align-items:center}
+
+  .billing-card{background:linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    border:1px solid var(--line-2);border-radius:var(--r-md);padding:18px;
+    display:flex;align-items:center;gap:18px;margin-bottom:14px}
+  .billing-card .price{font-family:"Instrument Serif",serif;font-size:38px;font-weight:400;
+    line-height:1;letter-spacing:-0.02em}
+  .billing-card .price em{font-style:italic;color:var(--accent)}
+  .billing-card .meta{flex:1;min-width:0}
+  .billing-card .plan{font-size:12px;font-family:var(--mono);color:var(--accent);
+    letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+
+  .usage-bar{height:8px;background:var(--bg-2);border-radius:4px;overflow:hidden;margin-top:8px}
+  .usage-bar > div{height:100%;background:linear-gradient(90deg, var(--accent), color-mix(in oklab, var(--accent) 70%, var(--info)))}
+
+  .invoice-row{display:grid;grid-template-columns:24px 1fr 100px 110px 70px;gap:14px;
+    align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .invoice-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+function GeneralPanel() {
+  return (
+    <div className="panel">
+      <div className="panel-head">
+        <div style={{flex:1}}>
+          <h2>General</h2>
+          <div className="desc">Workspace identity & defaults.</div>
+        </div>
+        <button className="btn btn-secondary btn-sm">Save changes</button>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Workspace name</div>
+          <div className="desc">How your team appears in the app & emails.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="input" style={{width:280}}><input defaultValue="Acme Co."/></div></div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Slug</div>
+          <div className="desc">Used in URLs and SDK config.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="input mono" style={{width:280}}>
+          <span className="prefix">shipeasy.dev/</span><input defaultValue="acme"/></div></div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Default environment</div>
+          <div className="desc">New experiments target this env first.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="select" style={{width:180}}><select defaultValue="staging">
+          <option>dev</option><option>staging</option><option>prod</option>
+        </select></div></div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Time zone</div>
+          <div className="desc">Affects scheduling and audit logs.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="select" style={{width:280}}><select defaultValue="LA">
+          <option value="LA">America/Los_Angeles · UTC−7</option>
+          <option>America/New_York</option><option>UTC</option><option>Europe/London</option>
+        </select></div></div>
+      </div>
+    </div>
+  );
+}
+
+function ExperimentDefaultsPanel() {
+  return (
+    <div className="panel">
+      <div className="panel-head">
+        <div style={{flex:1}}>
+          <h2>Experiment defaults</h2>
+          <div className="desc">Applied to new experiments unless overridden.</div>
+        </div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Statistical method</div>
+          <div className="desc">Sequential testing always-valid p-values vs. fixed-horizon.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="select" style={{width:240}}><select defaultValue="seq">
+          <option value="seq">Sequential (recommended)</option>
+          <option>Fixed-horizon (frequentist)</option>
+          <option>Bayesian</option>
+        </select></div></div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Default significance threshold</div>
+          <div className="desc">Required p-value to call a winner.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="select" style={{width:140}}><select defaultValue="0.05">
+          <option>0.01</option><option>0.05</option><option>0.10</option>
+        </select></div></div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Auto-rollback</div>
+          <div className="desc">Pause experiment if a guardrail metric regresses past threshold.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="toggle on"/></div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Min sample size warning</div>
+          <div className="desc">Show a banner when expected runtime exceeds this.</div>
+        </div>
+        <div></div>
+        <div className="control"><div className="input" style={{width:140}}><input defaultValue="14"/><span className="suffix" style={{paddingRight:10,color:'var(--fg-3)',fontSize:12}}>days</span></div></div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsPanel() {
+  return (
+    <div className="panel">
+      <div className="panel-head" style={{flex:1}}>
+        <div style={{flex:1}}>
+          <h2>Notifications</h2>
+          <div className="desc">Where and when Shipeasy pings you.</div>
+        </div>
+      </div>
+      {[
+        ['Experiment reaches significance', true, true, true],
+        ['Guardrail breached', true, true, true],
+        ['Killswitch flipped', false, true, true],
+        ['Config published to prod', false, true, false],
+        ['New team member joins', true, false, false],
+        ['Weekly experimentation digest', true, false, false],
+      ].map(([label, email, slack, claude],i)=>(
+        <div key={i} className="field-row" style={{gridTemplateColumns:'1fr 90px 90px 90px'}}>
+          <div className="label"><div className="name">{label}</div></div>
+          <div style={{textAlign:'center'}}><div className={`toggle ${email?'on':''}`} style={{margin:'0 auto'}}/></div>
+          <div style={{textAlign:'center'}}><div className={`toggle ${slack?'on':''}`} style={{margin:'0 auto'}}/></div>
+          <div style={{textAlign:'center'}}><div className={`toggle ${claude?'on':''}`} style={{margin:'0 auto'}}/></div>
+        </div>
+      ))}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 90px 90px 90px',
+        padding:'10px 0 0',borderTop:'1px solid var(--line)',marginTop:8,
+        fontFamily:'var(--mono)',fontSize:10.5,color:'var(--fg-4)',letterSpacing:'.05em',textTransform:'uppercase'}}>
+        <div>Event</div>
+        <div style={{textAlign:'center'}}>Email</div>
+        <div style={{textAlign:'center'}}>Slack</div>
+        <div style={{textAlign:'center'}}>Claude DM</div>
+      </div>
+    </div>
+  );
+}
+
+function IntegrationsPanel() {
+  const items = [
+    { name:'Slack', desc:'Post experiment updates to #experiments. 2 channels connected.',
+      ico:'#', state:'connected' },
+    { name:'GitHub', desc:'Open PRs from Claude when experiments graduate. acme/web · acme/api.',
+      ico:'gh', state:'connected' },
+    { name:'Datadog', desc:'Send experiment-tagged metrics into Datadog dashboards.',
+      ico:'dd', state:'available' },
+    { name:'Segment', desc:'Forward exposure events to your existing pipeline.',
+      ico:'sg', state:'available' },
+    { name:'Linear', desc:'Auto-create tickets when an experiment is killed.',
+      ico:'li', state:'available' },
+    { name:'PagerDuty', desc:'Alert on-call when a killswitch flips in production.',
+      ico:'pd', state:'available' },
+  ];
+  return (
+    <div className="panel">
+      <div className="panel-head">
+        <div style={{flex:1}}>
+          <h2>Integrations</h2>
+          <div className="desc">Connect Shipeasy to the rest of your stack.</div>
+        </div>
+        <button className="btn btn-ghost btn-sm"><IconBook size={11}/> Browse all</button>
+      </div>
+      {items.map(i=>(
+        <div key={i.name} className="integration">
+          <div className="ico">
+            <span style={{fontFamily:'var(--mono)',fontSize:13,fontWeight:600,color:'var(--fg-2)'}}>{i.ico}</span>
+          </div>
+          <div className="meta">
+            <div className="name">{i.name}
+              {i.state==='connected' && <span className="badge badge-live"><span className="dot"/>CONNECTED</span>}
+            </div>
+            <div className="desc">{i.desc}</div>
+          </div>
+          <div className="right">
+            {i.state==='connected'
+              ? <><button className="btn btn-ghost btn-sm">Configure</button>
+                  <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)'}}>Disconnect</button></>
+              : <button className="btn btn-secondary btn-sm">Connect</button>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BillingPanel() {
+  return (
+    <>
+      <div className="panel">
+        <div className="panel-head">
+          <div style={{flex:1}}>
+            <h2>Billing & usage</h2>
+            <div className="desc">Plan, payment, and current usage.</div>
+          </div>
+          <button className="btn btn-secondary btn-sm">Upgrade plan</button>
+        </div>
+        <div className="billing-card">
+          <div className="price">$<em>240</em><span style={{fontSize:14,color:'var(--fg-3)',
+            fontFamily:'var(--mono)',fontStyle:'normal',marginLeft:6}}>/ mo</span></div>
+          <div className="meta">
+            <div className="plan">Team plan · billed monthly</div>
+            <div style={{fontSize:14,fontWeight:500}}>Up to 25M evaluations & 10 seats</div>
+            <div className="usage-bar"><div style={{width:'58%'}}/></div>
+            <div className="t-mono-xs dim-2" style={{marginTop:6}}>14.6M / 25M evaluations · 6 / 10 seats used</div>
+          </div>
+          <button className="btn btn-ghost btn-sm">View usage →</button>
+        </div>
+
+        <div className="grid" style={{gridTemplateColumns:'1fr 1fr',gap:14}}>
+          <div style={{padding:16,background:'var(--bg-2)',borderRadius:'var(--r-md)',border:'1px solid var(--line)'}}>
+            <div className="t-caps dim-2" style={{marginBottom:8}}>Payment method</div>
+            <div className="flex items-center gap-3">
+              <div style={{padding:'4px 8px',background:'var(--bg-1)',border:'1px solid var(--line-2)',
+                borderRadius:4,fontFamily:'var(--mono)',fontSize:11,fontWeight:600}}>VISA</div>
+              <div>
+                <div style={{fontSize:13,fontWeight:500}}>•••• 4242</div>
+                <div className="t-mono-xs dim-2">expires 09/28</div>
+              </div>
+              <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}}>Update</button>
+            </div>
+          </div>
+          <div style={{padding:16,background:'var(--bg-2)',borderRadius:'var(--r-md)',border:'1px solid var(--line)'}}>
+            <div className="t-caps dim-2" style={{marginBottom:8}}>Next invoice</div>
+            <div className="flex items-center gap-3">
+              <IconClock size={14} style={{color:'var(--fg-3)'}}/>
+              <div>
+                <div style={{fontSize:13,fontWeight:500}}>$240.00 on May 14, 2026</div>
+                <div className="t-mono-xs dim-2">Acme Co. · billing@acme.co</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <div style={{flex:1}}>
+            <h2>Recent invoices</h2>
+          </div>
+          <button className="btn btn-ghost btn-sm"><IconBook size={11}/> View all</button>
+        </div>
+        {[
+          ['INV-2026-04','Apr 14, 2026','$240.00','paid'],
+          ['INV-2026-03','Mar 14, 2026','$240.00','paid'],
+          ['INV-2026-02','Feb 14, 2026','$180.00','paid'],
+          ['INV-2026-01','Jan 14, 2026','$180.00','paid'],
+        ].map(([id,date,amt,st])=>(
+          <div key={id} className="invoice-row">
+            <IconBook size={13} style={{color:'var(--fg-3)'}}/>
+            <div>
+              <div style={{fontWeight:500,fontSize:13}}>{id}</div>
+              <div className="t-mono-xs dim-2" style={{marginTop:2}}>{date}</div>
+            </div>
+            <div className="num" style={{fontFamily:'var(--mono)'}}>{amt}</div>
+            <span className="badge badge-live" style={{justifySelf:'start'}}><span className="dot"/>{st.toUpperCase()}</span>
+            <button className="btn btn-ghost btn-sm">PDF</button>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function DangerPanel() {
+  return (
+    <div className="panel danger-zone">
+      <div className="panel-head" style={{borderColor:'color-mix(in oklab, var(--danger) 25%, var(--line))'}}>
+        <IconAlertTriangle size={14} style={{color:'var(--danger)'}}/>
+        <div>
+          <h2 style={{color:'var(--danger)'}}>Danger zone</h2>
+          <div className="desc">Irreversible actions. Double-check before proceeding.</div>
+        </div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Transfer ownership</div>
+          <div className="desc">Move this workspace to a different admin. They'll get full control.</div>
+        </div>
+        <div></div>
+        <div className="control"><button className="btn btn-secondary btn-sm">Transfer</button></div>
+      </div>
+      <div className="field-row">
+        <div className="label">
+          <div className="name">Delete workspace</div>
+          <div className="desc">Removes all experiments, gates, configs, and audit logs after a 14-day grace period.</div>
+        </div>
+        <div></div>
+        <div className="control">
+          <button className="btn btn-secondary btn-sm" style={{color:'var(--danger)',borderColor:'color-mix(in oklab, var(--danger) 30%, var(--line-2))'}}>
+            <IconX size={11}/> Delete workspace
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  const [tab, setTab] = useState('general');
+  const tabs = [
+    { k:'general', label:'General', icon:<IconSettings size={13}/> },
+    { k:'experiments', label:'Experiment defaults', icon:<IconFlask size={13}/> },
+    { k:'notifications', label:'Notifications', icon:<IconBell size={13}/> },
+    { k:'integrations', label:'Integrations', icon:<IconPlug size={13}/> },
+    { k:'billing', label:'Billing & usage', icon:<IconKey size={13}/> },
+    { k:'danger', label:'Danger zone', icon:<IconAlertTriangle size={13}/> },
+  ];
+  return (
+    <div className="app">
+      <Sidebar active="settings"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','Settings']}
+          actions={<>
+            <button className="btn btn-ghost btn-sm"><IconBook size={11}/> Docs</button>
+          </>}
+        />
+        <div className="page">
+          <div className="page-head">
+            <div>
+              <div className="t-caps dim-2" style={{marginBottom:8}}>WORKSPACE · acme.shipeasy.dev</div>
+              <h1>Settings</h1>
+              <p>Manage your workspace, experiment defaults, integrations, and billing. Per-project settings live under each project.</p>
+            </div>
+          </div>
+
+          <div className="settings-grid">
+            <div className="nav-rail">
+              {tabs.map(t=>(
+                <a key={t.k} className={tab===t.k?'active':''} onClick={()=>setTab(t.k)}>
+                  {t.icon}{t.label}
+                </a>
+              ))}
+            </div>
+            <div>
+              {tab==='general' && <GeneralPanel/>}
+              {tab==='experiments' && <ExperimentDefaultsPanel/>}
+              {tab==='notifications' && <NotificationsPanel/>}
+              {tab==='integrations' && <IntegrationsPanel/>}
+              {tab==='billing' && <BillingPanel/>}
+              {tab==='danger' && <DangerPanel/>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<SettingsPage/>);
+</script>
+</body>
+</html>

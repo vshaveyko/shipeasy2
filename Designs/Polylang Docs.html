@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Polylang Docs — Localize, as easy as asking Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="polylang-landing.css" />
+
+<style>
+  /* ── Docs-only chrome ─────────────────────────────── */
+  :root{
+    --accent: oklch(0.74 0.17 245); /* match landing's docs blue */
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --accent-dim: color-mix(in oklch, var(--accent) 50%, #0a0a0b);
+    --side-w: 268px;
+    --toc-w: 220px;
+    --content-max: 760px;
+  }
+
+  body{ font-feature-settings: "ss01","ss02","cv11"; }
+  .bg-grid{ opacity:.35 }
+
+  /* Container override for docs */
+  .docs-wrap{
+    max-width:1480px; margin:0 auto;
+    display:grid;
+    grid-template-columns: var(--side-w) minmax(0, 1fr) var(--toc-w);
+    gap:0;
+    position:relative; z-index:1;
+  }
+
+  /* ── Sidebar ──────────────────────────────────────── */
+  .side{
+    position:sticky; top:56px; align-self:start;
+    height:calc(100vh - 56px);
+    overflow-y:auto;
+    border-right:1px solid var(--line);
+    padding:24px 20px 80px 28px;
+    font-size:13.5px;
+  }
+  .side::-webkit-scrollbar{width:6px}
+  .side::-webkit-scrollbar-thumb{background:var(--bg-3);border-radius:3px}
+
+  .side-search{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 12px;
+    background:var(--bg-2);
+    border:1px solid var(--line-2);
+    border-radius:8px;
+    color:var(--fg-3);
+    margin-bottom:24px;
+    font-family:var(--mono); font-size:12px;
+  }
+  .side-search .kbd{
+    margin-left:auto;
+    font-family:var(--mono); font-size:10.5px;
+    padding:2px 6px; border-radius:4px;
+    background:var(--bg-3); color:var(--fg-2);
+    border:1px solid var(--line-2);
+  }
+  .side-search svg{flex-shrink:0}
+
+  .side-section{ margin-bottom:22px }
+  .side-section h6{
+    margin:0 0 8px; padding:0 8px;
+    font-family:var(--mono); font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.08em;
+    color:var(--fg-4); font-weight:500;
+    display:flex; align-items:center; gap:8px;
+  }
+  .side-section h6 .badge{
+    font-family:var(--mono); font-size:9px; padding:1px 5px;
+    border-radius:3px; background:var(--accent-soft); color:var(--accent);
+    border:1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+    letter-spacing:.06em;
+  }
+
+  .side-list{ list-style:none; margin:0; padding:0; }
+  .side-list a{
+    display:flex; align-items:center; gap:10px;
+    padding:6px 8px; border-radius:6px;
+    color:var(--fg-2); font-size:13px;
+    line-height:1.4; cursor:default;
+    transition: background .15s, color .15s;
+    position:relative;
+  }
+  .side-list a:hover{ background:var(--bg-2); color:var(--fg) }
+  .side-list a.active{
+    background:color-mix(in oklab, var(--accent) 9%, transparent);
+    color:var(--fg);
+  }
+  .side-list a.active::before{
+    content:""; position:absolute; left:-12px; top:8px; bottom:8px;
+    width:2px; background:var(--accent); border-radius:2px;
+  }
+  .side-list a .si{
+    width:14px; height:14px; flex-shrink:0;
+    color:var(--fg-4);
+  }
+  .side-list a.active .si, .side-list a:hover .si{ color:var(--accent) }
+  .side-list a .meta{
+    margin-left:auto; font-family:var(--mono); font-size:9.5px;
+    padding:1px 5px; border-radius:3px;
+    background:var(--bg-3); color:var(--fg-3);
+    border:1px solid var(--line);
+    letter-spacing:.04em;
+  }
+  .side-list a .meta.new{ background:var(--accent-soft); color:var(--accent);
+    border-color:color-mix(in oklab, var(--accent) 25%, transparent) }
+
+  .side-cta{
+    margin-top:18px; padding:14px;
+    border:1px solid color-mix(in oklab, var(--accent) 28%, transparent);
+    border-radius:10px;
+    background:
+      radial-gradient(ellipse at top right, var(--accent-soft), transparent 60%),
+      var(--bg-1);
+    position:relative; overflow:hidden;
+  }
+  .side-cta .lab{
+    font-family:var(--mono); font-size:10px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--accent);
+  }
+  .side-cta .h{
+    font-size:14px; font-weight:500; letter-spacing:-0.01em;
+    margin:6px 0 4px; color:var(--fg);
+  }
+  .side-cta .p{
+    font-size:12px; color:var(--fg-2); line-height:1.45;
+    margin-bottom:10px;
+  }
+  .side-cta .b{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:var(--mono); font-size:11px;
+    padding:5px 9px; border-radius:6px;
+    background:var(--accent); color:#0a0a0b;
+    font-weight:600;
+  }
+
+  /* ── Content area ─────────────────────────────────── */
+  .content{
+    padding:40px 56px 120px;
+    max-width:calc(var(--content-max) + 112px);
+    margin:0 auto;
+    min-width:0;
+  }
+  .crumbs{
+    display:flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:11px;
+    color:var(--fg-3); margin-bottom:24px;
+    letter-spacing:.02em;
+  }
+  .crumbs a{ color:var(--fg-3) }
+  .crumbs a:hover{ color:var(--fg-2) }
+  .crumbs .sep{ color:var(--fg-4) }
+  .crumbs .cur{ color:var(--fg) }
+
+  .doc-title{
+    font-size:48px; line-height:1.04; letter-spacing:-0.035em;
+    font-weight:500; margin:0 0 14px;
+    max-width:18ch;
+  }
+  .doc-title em{ font-family:var(--serif); font-style:italic; font-weight:400 }
+  .doc-lede{
+    font-size:18px; line-height:1.55; color:var(--fg-2);
+    max-width:62ch; margin:0 0 32px;
+  }
+
+  .doc-meta-row{
+    display:flex; gap:18px; align-items:center;
+    font-family:var(--mono); font-size:11.5px; color:var(--fg-3);
+    margin-bottom:36px;
+    padding-bottom:18px; border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .doc-meta-row .item{ display:flex; gap:6px; align-items:center }
+  .doc-meta-row .item b{ color:var(--fg); font-weight:500 }
+  .doc-meta-row .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:3px 8px; border-radius:999px;
+    border:1px solid var(--line-2); background:var(--bg-2);
+    color:var(--fg-2);
+  }
+  .doc-meta-row .pill .d{
+    width:6px; height:6px; border-radius:999px; background:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+
+  /* Headings within docs */
+  .content h2{
+    font-size:28px; letter-spacing:-0.025em; font-weight:500;
+    margin:56px 0 14px; line-height:1.15;
+    scroll-margin-top:80px;
+    display:flex; align-items:baseline; gap:12px;
+  }
+  .content h2::before{
+    content:""; flex-shrink:0;
+    width:6px; height:6px; border-radius:2px;
+    background:var(--accent);
+    transform:translateY(-3px);
+  }
+  .content h3{
+    font-size:18px; letter-spacing:-0.015em; font-weight:500;
+    margin:32px 0 10px; scroll-margin-top:80px;
+  }
+  .content p{
+    font-size:15px; line-height:1.65; color:var(--fg-2);
+    margin:0 0 16px;
+  }
+  .content p strong{ color:var(--fg); font-weight:500 }
+  .content a.in{
+    color:var(--accent);
+    border-bottom:1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+  }
+  .content a.in:hover{ border-bottom-color:var(--accent) }
+  .content code{
+    font-family:var(--mono); font-size:.88em;
+    padding:1px 6px; border-radius:4px;
+    background:var(--bg-2); color:var(--fg);
+    border:1px solid var(--line);
+  }
+
+  /* ── Quickstart hero block ────────────────────────── */
+  .quickstart{
+    margin:8px 0 36px;
+    border:1px solid var(--line-2); border-radius:14px;
+    overflow:hidden; background:var(--bg-1);
+    position:relative;
+  }
+  .quickstart::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse 60% 50% at 80% 0%, var(--accent-soft), transparent 60%);
+  }
+  .qs-head{
+    padding:18px 22px; display:flex; align-items:center; gap:14px;
+    border-bottom:1px solid var(--line); position:relative; z-index:1;
+  }
+  .qs-head .qs-num{
+    width:24px; height:24px; border-radius:6px;
+    background:var(--accent); color:#0a0a0b;
+    display:grid; place-items:center;
+    font-family:var(--mono); font-size:11px; font-weight:700;
+  }
+  .qs-head h3{ margin:0; font-size:15px; font-weight:500; letter-spacing:-0.01em }
+  .qs-head .qs-time{
+    margin-left:auto; font-family:var(--mono); font-size:11px;
+    color:var(--fg-3);
+    display:flex; gap:8px; align-items:center;
+  }
+  .qs-head .qs-time svg{color:var(--accent)}
+
+  .qs-grid{
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    position:relative; z-index:1;
+  }
+  .qs-step{
+    padding:20px 22px;
+    border-right:1px solid var(--line);
+    display:flex; flex-direction:column; gap:10px;
+    position:relative;
+  }
+  .qs-step:last-child{ border-right:0 }
+  .qs-step .qs-k{
+    font-family:var(--mono); font-size:10.5px;
+    color:var(--accent); letter-spacing:.08em;
+  }
+  .qs-step h4{
+    margin:0; font-size:14px; font-weight:500;
+    letter-spacing:-0.01em;
+  }
+  .qs-step p{
+    margin:0; font-size:12.5px; color:var(--fg-2); line-height:1.5;
+  }
+  .qs-snip{
+    margin-top:auto;
+    font-family:var(--mono); font-size:11.5px;
+    background:var(--bg-2); border:1px solid var(--line);
+    border-radius:6px; padding:8px 10px;
+    color:var(--fg-2);
+    display:flex; align-items:center; gap:8px;
+    white-space:nowrap; overflow:hidden;
+  }
+  .qs-snip .p{ color:var(--accent); flex-shrink:0 }
+  .qs-snip .copy{
+    margin-left:auto; flex-shrink:0; color:var(--fg-4);
+    cursor:default;
+  }
+  .qs-snip .copy:hover{ color:var(--fg-2) }
+
+  .qs-foot{
+    padding:14px 22px;
+    border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:14px;
+    background:var(--bg-2);
+    position:relative; z-index:1;
+  }
+  .qs-foot .lab{
+    font-family:var(--mono); font-size:11px; color:var(--fg-3);
+    margin-right:6px;
+  }
+  .qs-foot .actions{ margin-left:auto; display:flex; gap:8px }
+
+  /* ── Install tabs ─────────────────────────────────── */
+  .install{
+    border:1px solid var(--line); border-radius:12px;
+    background:var(--bg-1); overflow:hidden;
+    margin:18px 0 28px;
+  }
+  .install-tabs{
+    display:flex; border-bottom:1px solid var(--line);
+    background:var(--bg-2); padding:0 8px;
+    gap:2px;
+  }
+  .install-tab{
+    padding:11px 14px; font-family:var(--mono); font-size:11.5px;
+    color:var(--fg-3); display:flex; gap:8px; align-items:center;
+    cursor:default; border-bottom:1px solid transparent;
+    margin-bottom:-1px;
+  }
+  .install-tab.active{ color:var(--fg); border-bottom-color:var(--accent) }
+  .install-tab .ico{ width:14px; height:14px; color:currentColor }
+  .install-tab .ico.npm{ color:#cb3837 }
+  .install-tab.active .ico{ color:var(--fg) }
+  .install-tab.active .ico.npm{ color:#cb3837 }
+
+  .install-body{
+    padding:18px 22px; font-family:var(--mono); font-size:13px;
+    line-height:1.8;
+    display:flex; align-items:center; gap:14px;
+  }
+  .install-body .p{ color:var(--accent); user-select:none }
+  .install-body .c{ color:var(--fg) }
+  .install-body .copy{
+    margin-left:auto; font-family:var(--mono); font-size:11px;
+    padding:5px 10px; border-radius:6px;
+    background:var(--bg-2); border:1px solid var(--line-2);
+    color:var(--fg-2); cursor:default;
+    display:flex; align-items:center; gap:6px;
+  }
+  .install-body .copy:hover{ color:var(--fg); background:var(--bg-3) }
+
+  /* ── Code blocks ─────────────────────────────────── */
+  .code{
+    border:1px solid var(--line); border-radius:10px;
+    background:var(--bg-1); margin:16px 0 24px;
+    overflow:hidden;
+  }
+  .code-head{
+    display:flex; align-items:center; gap:12px;
+    padding:9px 14px; border-bottom:1px solid var(--line);
+    background:var(--bg-2);
+    font-family:var(--mono); font-size:11px; color:var(--fg-3);
+  }
+  .code-head .file{ color:var(--fg-2) }
+  .code-head .lang{
+    margin-left:auto; padding:2px 7px; border-radius:4px;
+    background:var(--bg-3); border:1px solid var(--line);
+    color:var(--fg-3); font-size:10px;
+  }
+  .code-head .copy{
+    color:var(--fg-4); cursor:default;
+  }
+  .code-head .copy:hover{ color:var(--fg-2) }
+  .code-body{
+    padding:14px 16px;
+    font-family:var(--mono); font-size:12.5px; line-height:1.75;
+    color:var(--fg-2); overflow-x:auto;
+  }
+  .code-body pre{ margin:0 }
+  .code-body .ln{
+    display:inline-block; width:24px;
+    color:var(--fg-4); user-select:none;
+    font-size:11px;
+  }
+  .tk-key{ color:var(--fg) }
+  .tk-str{ color:var(--accent) }
+  .tk-num{ color:var(--warn) }
+  .tk-com{ color:var(--fg-4); font-style:italic }
+  .tk-fn{ color:#e8b260 }
+  .tk-kw{ color:#a78bfa }
+  .tk-tag{ color:#7dd3fc }
+  .tk-attr{ color:#e8b260 }
+  .tk-pun{ color:var(--fg-3) }
+
+  /* highlight a line */
+  .code-body .hl{
+    display:block;
+    background:color-mix(in oklab, var(--accent) 8%, transparent);
+    margin:0 -16px; padding:0 16px;
+    border-left:2px solid var(--accent);
+    margin-left:-16px; padding-left:14px;
+  }
+
+  /* ── Callout ─────────────────────────────────────── */
+  .callout{
+    margin:18px 0 22px;
+    padding:14px 16px 14px 14px;
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:8px;
+    background:color-mix(in oklab, var(--accent) 4%, var(--bg-1));
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .callout .ci{
+    width:18px; height:18px; flex-shrink:0;
+    color:var(--accent); margin-top:2px;
+  }
+  .callout p{ margin:0; font-size:14px; color:var(--fg-2); line-height:1.55 }
+  .callout p strong{ color:var(--fg) }
+
+  .callout.warn{
+    border-left-color:var(--warn);
+    background:color-mix(in oklab, var(--warn) 4%, var(--bg-1));
+  }
+  .callout.warn .ci{ color:var(--warn) }
+
+  /* ── API reference table ─────────────────────────── */
+  .api-table{
+    border:1px solid var(--line); border-radius:10px;
+    overflow:hidden; margin:18px 0 24px;
+    background:var(--bg-1);
+  }
+  .api-row{
+    display:grid;
+    grid-template-columns:160px 110px 1fr;
+    gap:0;
+    border-bottom:1px solid var(--line);
+    font-family:var(--mono); font-size:12.5px;
+  }
+  .api-row:last-child{ border-bottom:0 }
+  .api-row.head{
+    background:var(--bg-2);
+    font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--fg-4);
+  }
+  .api-row > div{
+    padding:12px 14px; border-right:1px solid var(--line);
+  }
+  .api-row > div:last-child{ border-right:0 }
+  .api-row .name{ color:var(--fg) }
+  .api-row .name .req{
+    margin-left:6px; font-size:9px; color:var(--danger);
+    letter-spacing:.04em;
+  }
+  .api-row .type{ color:var(--accent); font-size:11.5px }
+  .api-row .type .opt{ color:var(--fg-4) }
+  .api-row .desc{ font-family:var(--sans); font-size:13px; color:var(--fg-2); line-height:1.55 }
+  .api-row .desc code{ font-size:12px }
+
+  /* ── Inline cards (concept tiles) ────────────────── */
+  .tile-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:0;
+    border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; margin:18px 0 24px;
+    background:var(--bg-1);
+  }
+  .tile{
+    padding:18px;
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    display:flex; flex-direction:column; gap:10px;
+    min-height:140px;
+    cursor:default;
+    transition:background .2s;
+  }
+  .tile:nth-child(2n){ border-right:0 }
+  .tile:nth-last-child(-n+2){ border-bottom:0 }
+  .tile:hover{ background:color-mix(in oklab, var(--accent) 4%, transparent) }
+  .tile .ti{
+    width:28px; height:28px; border-radius:7px;
+    background:var(--accent-soft); color:var(--accent);
+    display:grid; place-items:center;
+    border:1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+  .tile h4{
+    margin:0; font-size:15px; font-weight:500; letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .tile h4 .arrow{
+    color:var(--fg-4); font-family:var(--mono); transition:transform .2s, color .2s;
+  }
+  .tile:hover h4 .arrow{ transform:translateX(3px); color:var(--accent) }
+  .tile p{
+    margin:0; font-size:12.5px; line-height:1.5; color:var(--fg-2);
+  }
+  .tile .meta{
+    margin-top:auto; padding-top:8px;
+    font-family:var(--mono); font-size:10.5px; color:var(--fg-4);
+    display:flex; gap:10px;
+    border-top:1px dashed var(--line);
+  }
+  .tile .meta b{ color:var(--accent); font-weight:500 }
+
+  /* ── Convert CTA bottom ────────────────────────── */
+  .convert{
+    margin:60px 0 0;
+    border:1px solid var(--line-2); border-radius:14px;
+    overflow:hidden; position:relative;
+    background:var(--bg-1);
+  }
+  .convert::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 50% 60% at 0% 100%, var(--accent-soft), transparent 60%),
+      radial-gradient(ellipse 60% 60% at 100% 0%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 60%);
+  }
+  .conv-grid{
+    display:grid; grid-template-columns:1.2fr 1fr;
+    position:relative; z-index:1;
+  }
+  .conv-l{
+    padding:32px 32px 32px;
+    border-right:1px solid var(--line);
+  }
+  .conv-l .e{
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em;
+    color:var(--accent); text-transform:uppercase;
+  }
+  .conv-l h3{
+    font-size:30px; letter-spacing:-0.025em; font-weight:500;
+    margin:10px 0 12px; line-height:1.1;
+  }
+  .conv-l h3 em{ font-family:var(--serif); font-style:italic; font-weight:400 }
+  .conv-l p{
+    font-size:14px; color:var(--fg-2); line-height:1.55;
+    margin:0 0 18px; max-width:38ch;
+  }
+  .conv-l .row{ display:flex; gap:8px }
+  .conv-r{
+    padding:24px;
+    display:flex; flex-direction:column; gap:10px;
+    background:
+      linear-gradient(180deg, transparent, color-mix(in oklab, var(--accent) 4%, transparent));
+  }
+  .conv-r .lab{
+    font-family:var(--mono); font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.08em;
+    color:var(--fg-4); margin-bottom:4px;
+  }
+  .conv-r-cmd{
+    font-family:var(--mono); font-size:13px;
+    background:var(--bg-2); border:1px solid var(--line-2);
+    border-radius:8px; padding:11px 14px;
+    color:var(--fg); display:flex; align-items:center; gap:10px;
+  }
+  .conv-r-cmd .p{ color:var(--accent) }
+  .conv-r-cmd .copy{
+    margin-left:auto; color:var(--fg-4); cursor:default;
+  }
+
+  /* ── TOC ──────────────────────────────────────────── */
+  .toc{
+    position:sticky; top:56px; align-self:start;
+    height:calc(100vh - 56px);
+    overflow-y:auto;
+    padding:40px 24px 80px 24px;
+    border-left:1px solid var(--line);
+    font-size:12.5px;
+  }
+  .toc h6{
+    margin:0 0 12px;
+    font-family:var(--mono); font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.08em;
+    color:var(--fg-4); font-weight:500;
+  }
+  .toc-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;
+    border-left:1px solid var(--line); }
+  .toc-list a{
+    display:block; padding:5px 12px;
+    color:var(--fg-3); line-height:1.45;
+    margin-left:-1px; border-left:1px solid transparent;
+    cursor:default;
+  }
+  .toc-list a:hover{ color:var(--fg-2) }
+  .toc-list a.active{
+    color:var(--fg); border-left-color:var(--accent);
+  }
+  .toc-list a.sub{ padding-left:24px; font-size:12px }
+
+  .toc-foot{
+    margin-top:24px; padding-top:16px;
+    border-top:1px solid var(--line);
+    display:flex; flex-direction:column; gap:8px;
+    font-family:var(--mono); font-size:11px;
+  }
+  .toc-foot a{
+    color:var(--fg-3);
+    display:flex; align-items:center; gap:8px;
+  }
+  .toc-foot a:hover{ color:var(--fg) }
+  .toc-foot a svg{ color:var(--fg-4); width:12px; height:12px }
+
+  /* ── Doc footer nav (prev/next) ───────────────── */
+  .doc-nav{
+    margin-top:48px; padding-top:28px;
+    border-top:1px solid var(--line);
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+  }
+  .doc-nav a{
+    padding:16px 18px; border:1px solid var(--line);
+    border-radius:10px; background:var(--bg-1);
+    transition:border-color .15s, background .15s;
+    cursor:default;
+  }
+  .doc-nav a:hover{
+    border-color:color-mix(in oklab, var(--accent) 35%, transparent);
+    background:color-mix(in oklab, var(--accent) 3%, var(--bg-1));
+  }
+  .doc-nav .lab{
+    font-family:var(--mono); font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.08em;
+    color:var(--fg-4); display:flex; align-items:center; gap:6px;
+    margin-bottom:6px;
+  }
+  .doc-nav .ti{ font-size:14px; font-weight:500; color:var(--fg) }
+  .doc-nav a.next{ text-align:right }
+  .doc-nav a.next .lab{ justify-content:flex-end }
+
+  /* ── Edit/feedback footer ─────────────────────── */
+  .doc-feedback{
+    margin-top:32px;
+    display:flex; align-items:center; gap:14px;
+    font-family:var(--mono); font-size:11.5px; color:var(--fg-3);
+    flex-wrap:wrap;
+  }
+  .doc-feedback .feedback-q{ color:var(--fg-2) }
+  .doc-feedback button{
+    padding:5px 10px; border:1px solid var(--line-2);
+    border-radius:6px; background:var(--bg-2); color:var(--fg-2);
+    font-family:var(--mono); font-size:11px;
+    display:inline-flex; align-items:center; gap:6px;
+    cursor:default;
+  }
+  .doc-feedback button:hover{ color:var(--fg); border-color:var(--accent); background:var(--bg-3) }
+  .doc-feedback .spacer{ flex:1; min-width:20px }
+  .doc-feedback .edit{ color:var(--fg-3); display:inline-flex; align-items:center; gap:6px }
+  .doc-feedback .edit:hover{ color:var(--fg) }
+
+  /* ── Responsive ──────────────────────────────── */
+  @media (max-width:1180px){
+    :root{ --side-w: 240px; --toc-w: 0px }
+    .toc{ display:none }
+    .docs-wrap{ grid-template-columns: var(--side-w) minmax(0, 1fr) }
+    .content{ padding:36px 40px 100px }
+  }
+  @media (max-width:880px){
+    :root{ --side-w: 0px }
+    .side{ display:none }
+    .docs-wrap{ grid-template-columns: 1fr }
+    .content{ padding:28px 20px 80px }
+    .qs-grid{ grid-template-columns:1fr }
+    .qs-step{ border-right:0; border-bottom:1px solid var(--line) }
+    .conv-grid{ grid-template-columns:1fr }
+    .conv-l{ border-right:0; border-bottom:1px solid var(--line) }
+    .doc-title{ font-size:36px }
+    .api-row{ grid-template-columns:1fr }
+    .api-row > div{ border-right:0; border-bottom:1px solid var(--line) }
+    .api-row > div:last-child{ border-bottom:0 }
+    .tile-grid{ grid-template-columns:1fr }
+    .tile{ border-right:0 }
+    .doc-nav{ grid-template-columns:1fr }
+    .doc-nav a.next{ text-align:left }
+    .doc-nav a.next .lab{ justify-content:flex-start }
+  }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<!-- ── Top nav (matches landing) ───────────────────── -->
+<nav class="nav">
+  <div class="wrap nav-row" style="max-width:1480px">
+    <div style="display:flex;align-items:center;gap:24px">
+      <a href="Polylang Landing.html" class="brand">
+        <span class="brand-mark"></span>
+        Polylang
+        <span style="color:var(--fg-4); font-weight:400; margin:0 4px">/</span>
+        <span style="color:var(--fg-2); font-weight:500">Docs</span>
+      </a>
+      <span class="pill"><span class="dot"></span>v0.4.2 · stable</span>
+    </div>
+    <div class="nav-links">
+      <a href="#">Docs</a>
+      <a href="#">API</a>
+      <a href="#">Changelog</a>
+      <a href="#">Examples</a>
+      <a href="#">Discord</a>
+    </div>
+    <div class="nav-cta">
+      <a class="btn btn-ghost btn-mono" href="#" style="display:inline-flex;align-items:center;gap:8px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3"/><path d="M15 22v-4a3.5 3.5 0 0 0-1-2.7c3.3-.4 6-2 6-7A5.4 5.4 0 0 0 18.5 5a5 5 0 0 0-.1-3.7s-1.1-.4-3.4 1.4a11.5 11.5 0 0 0-6 0C6.7.9 5.6 1.3 5.6 1.3a5 5 0 0 0-.1 3.7A5.4 5.4 0 0 0 4 8.5c0 5 2.7 6.6 6 7a3.6 3.6 0 0 0-1 2.7v4"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn-primary" href="#">Get started →</a>
+    </div>
+  </div>
+</nav>
+
+<div class="docs-wrap">
+
+  <!-- ── Sidebar ──────────────────────────────────── -->
+  <aside class="side">
+    <div class="side-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      Search docs…
+      <span class="kbd">⌘ K</span>
+    </div>
+
+    <div class="side-section">
+      <h6>Get started</h6>
+      <ul class="side-list">
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-9 6 9 6 9-6-9-6Z"/><path d="M3 15l9 6 9-6"/></svg>Introduction</a></li>
+        <li><a href="#" class="active"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Quickstart<span class="meta">5 min</span></a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Installation</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9 12h6"/></svg>Project setup</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18"/><path d="M3 16h18"/></svg>CLI reference</a></li>
+      </ul>
+    </div>
+
+    <div class="side-section">
+      <h6>Concepts</h6>
+      <ul class="side-list">
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 1 0 20"/></svg>How it works</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Translation memory</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l7 17 2.5-7.5L21 11Z"/></svg>Inline edit</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7 7M3 21l7-7"/><circle cx="17" cy="7" r="3"/><circle cx="17" cy="17" r="3"/></svg>Glossary &amp; tone</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Source files</a></li>
+      </ul>
+    </div>
+
+    <div class="side-section">
+      <h6>Frameworks</h6>
+      <ul class="side-list">
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Next.js</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 12 12 22 2 12"/></svg>React / Vite</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l9 18L21 3z"/></svg>SvelteKit</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 20 2 20"/></svg>Astro<span class="meta new">new</span></a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>Expo / RN</a></li>
+      </ul>
+    </div>
+
+    <div class="side-section">
+      <h6>API reference</h6>
+      <ul class="side-list">
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>polylang.config</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>Hooks</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7Z"/></svg>Runtime SDK</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>BYOK providers</a></li>
+        <li><a href="#"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M12 3v18"/></svg>Webhooks</a></li>
+      </ul>
+    </div>
+
+    <div class="side-cta">
+      <div class="lab">▲ Start free</div>
+      <div class="h">Localize 5,000 strings on us</div>
+      <div class="p">No credit card. Bring your own Claude key, or use ours for the first month.</div>
+      <span class="b">npx polylang init →</span>
+    </div>
+  </aside>
+
+  <!-- ── Main content ───────────────────────────── -->
+  <main class="content">
+    <div class="crumbs">
+      <a href="#">Docs</a><span class="sep">/</span>
+      <a href="#">Get started</a><span class="sep">/</span>
+      <span class="cur">Quickstart</span>
+    </div>
+
+    <h1 class="doc-title">Localize a real app in <em>five minutes</em>.</h1>
+    <p class="doc-lede">
+      Polylang plugs into your codebase, finds every user‑facing string, and ships translations
+      that read like a human wrote them — because Claude did. This page gets you from
+      <code>npm install</code> to a fully translated build.
+    </p>
+
+    <div class="doc-meta-row">
+      <span class="pill"><span class="d"></span>Production ready</span>
+      <span class="item">On this page · <b>5&nbsp;min read</b></span>
+      <span class="item">Updated · <b>Apr&nbsp;28,&nbsp;2026</b></span>
+      <span class="item">Works with · <b>Next, Vite, Svelte, Expo</b></span>
+    </div>
+
+    <!-- Quickstart 3-up -->
+    <h2 id="quickstart">The 5‑minute path</h2>
+    <p>Three commands. Three files. One coffee. By the end of this page your app is shipping in
+    <strong>12 languages</strong> with translation memory, a glossary, and an inline editor for non‑developers.</p>
+
+    <div class="quickstart">
+      <div class="qs-head">
+        <span class="qs-num">▶</span>
+        <h3>Quickstart — from zero to localized</h3>
+        <span class="qs-time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ~5 minutes · no card required
+        </span>
+      </div>
+      <div class="qs-grid">
+        <div class="qs-step">
+          <span class="qs-k">01 · INSTALL</span>
+          <h4>Add Polylang to your repo</h4>
+          <p>One CLI flag detects your framework, source files, and existing locale folders.</p>
+          <div class="qs-snip">
+            <span class="p">$</span><span>npx polylang init</span>
+            <span class="copy">⎘</span>
+          </div>
+        </div>
+        <div class="qs-step">
+          <span class="qs-k">02 · TRANSLATE</span>
+          <h4>Pick languages, hit go</h4>
+          <p>Claude streams translations file‑by‑file. Glossary, tone and brand voice respected.</p>
+          <div class="qs-snip">
+            <span class="p">$</span><span>polylang translate --to es,fr,de,ja</span>
+            <span class="copy">⎘</span>
+          </div>
+        </div>
+        <div class="qs-step">
+          <span class="qs-k">03 · SHIP</span>
+          <h4>Wire it up &amp; deploy</h4>
+          <p>Drop in the <code>&lt;Polylang/&gt;</code> provider. Strings switch on locale.</p>
+          <div class="qs-snip">
+            <span class="p">$</span><span>polylang sync &amp;&amp; vercel deploy</span>
+            <span class="copy">⎘</span>
+          </div>
+        </div>
+      </div>
+      <div class="qs-foot">
+        <span class="lab">Prefer to skim first?</span>
+        <span style="font-family:var(--mono);font-size:11.5px;color:var(--fg-2)">Read <a class="in" href="#">How it works</a> · or <a class="in" href="#">jump to API</a></span>
+        <div class="actions">
+          <a class="btn btn-ghost btn-mono" href="#" style="padding:7px 11px">View on GitHub</a>
+          <a class="btn btn-primary btn-mono" href="#" style="padding:7px 12px">Run quickstart →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Install -->
+    <h2 id="install">Install</h2>
+    <p>Polylang is a single CLI plus a tiny runtime. Pick the package manager you already use —
+    everything else is detected automatically.</p>
+
+    <div class="install">
+      <div class="install-tabs">
+        <div class="install-tab active">
+          <svg class="ico npm" viewBox="0 0 24 24" fill="currentColor"><path d="M0 7h24v10h-12v2H7v-2H0V7zm1 9h6v-7h2v7h2V9h2v8h2V9h2v8h6V9H1v9z"/></svg>
+          npm
+        </div>
+        <div class="install-tab">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          pnpm
+        </div>
+        <div class="install-tab">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+          yarn
+        </div>
+        <div class="install-tab">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/><path d="M9 12h6"/></svg>
+          bun
+        </div>
+      </div>
+      <div class="install-body">
+        <span class="p">$</span>
+        <span class="c">npm install --save-dev polylang &amp;&amp; npx polylang init</span>
+        <span class="copy">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </span>
+      </div>
+    </div>
+
+    <p>The init script writes one config file (<code>polylang.config.ts</code>) and creates a
+    <code>locales/</code> folder seeded with your default language. Nothing else.</p>
+
+    <div class="callout">
+      <svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p><strong>BYOK or hosted, your call.</strong> Polylang works with your own Anthropic API key (zero markup, zero data retention) <em>or</em> our hosted plan with a generous free tier. Switch any time with <code>polylang.config.ts</code>.</p>
+    </div>
+
+    <!-- Configure -->
+    <h2 id="configure">Configure your project</h2>
+    <p>The config file is plain TypeScript — no YAML, no JSON gymnastics. Most teams ship the defaults and never touch it again.</p>
+
+    <div class="code">
+      <div class="code-head">
+        <span style="color:var(--fg-4)">📄</span>
+        <span class="file">polylang.config.ts</span>
+        <span class="lang">typescript</span>
+        <span class="copy">⎘ Copy</span>
+      </div>
+      <div class="code-body"><pre><span class="ln"> 1</span><span class="tk-kw">import</span> { defineConfig } <span class="tk-kw">from</span> <span class="tk-str">"polylang"</span>;
+<span class="ln"> 2</span>
+<span class="ln"> 3</span><span class="tk-kw">export default</span> <span class="tk-fn">defineConfig</span>({
+<span class="ln"> 4</span>  source: <span class="tk-str">"en"</span>,
+<span class="ln"> 5</span><span class="hl"><span class="ln"> 6</span>  targets: [<span class="tk-str">"es"</span>, <span class="tk-str">"fr"</span>, <span class="tk-str">"de"</span>, <span class="tk-str">"ja"</span>, <span class="tk-str">"pt-BR"</span>],</span>
+<span class="ln"> 7</span>  files:   [<span class="tk-str">"app/**/*.{ts,tsx}"</span>, <span class="tk-str">"content/**/*.md"</span>],
+<span class="ln"> 8</span>
+<span class="ln"> 9</span>  <span class="tk-com">// Brand voice — Claude reads this on every translation.</span>
+<span class="ln">10</span>  tone: <span class="tk-str">"warm, technical, never marketing-speak"</span>,
+<span class="ln">11</span>  glossary: {
+<span class="ln">12</span>    <span class="tk-str">"Polylang"</span>: <span class="tk-str">"Polylang"</span>,   <span class="tk-com">// never translate</span>
+<span class="ln">13</span>    <span class="tk-str">"ship"</span>:     <span class="tk-str">"deploy"</span>,     <span class="tk-com">// disambiguate</span>
+<span class="ln">14</span>  },
+<span class="ln">15</span>
+<span class="ln">16</span>  provider: { kind: <span class="tk-str">"anthropic"</span>, model: <span class="tk-str">"claude-haiku-4-5"</span> },
+<span class="ln">17</span>});</pre></div>
+    </div>
+
+    <h3 id="what-just-happened">What just happened?</h3>
+    <p>The highlighted line tells Polylang which languages to ship. Everything else is optional —
+    but the <code>tone</code> and <code>glossary</code> fields are what separate Polylang output from
+    machine translation: Claude actually <em>reads</em> them before translating each string.</p>
+
+    <!-- Concept tiles -->
+    <h2 id="concepts">Core concepts</h2>
+    <p>Four ideas worth ten minutes — they make the rest of the docs obvious.</p>
+
+    <div class="tile-grid">
+      <a class="tile" href="#">
+        <span class="ti"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        <h4>Translation memory <span class="arrow">→</span></h4>
+        <p>Edit a string once, reuse it everywhere. Claude is asked only for net‑new content, so re‑translation is fast and cheap.</p>
+        <div class="meta"><span><b>~94%</b> hit rate</span><span>·</span><span>cached at the edge</span></div>
+      </a>
+      <a class="tile" href="#">
+        <span class="ti"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l7 17 2.5-7.5L21 11Z"/></svg></span>
+        <h4>Inline edit <span class="arrow">→</span></h4>
+        <p>Hold <code>⌥</code> in any preview and click any string to rewrite it across every language. Ships as a dev‑only devtool.</p>
+        <div class="meta"><span><b>0kb</b> in production</span><span>·</span><span>RBAC ready</span></div>
+      </a>
+      <a class="tile" href="#">
+        <span class="ti"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7 7M3 21l7-7"/><circle cx="17" cy="7" r="3"/><circle cx="17" cy="17" r="3"/></svg></span>
+        <h4>Glossary &amp; tone <span class="arrow">→</span></h4>
+        <p>Define brand terms, do‑not‑translate lists, and a one‑sentence voice guide. Claude reads it on every call.</p>
+        <div class="meta"><span><b>per-target</b> overrides</span><span>·</span><span>versioned</span></div>
+      </a>
+      <a class="tile" href="#">
+        <span class="ti"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg></span>
+        <h4>BYOK runtime <span class="arrow">→</span></h4>
+        <p>Bring your Anthropic key. Translations stay in your account, on your invoice, with your retention policy.</p>
+        <div class="meta"><span><b>0¢</b> markup</span><span>·</span><span>SOC 2 ready</span></div>
+      </a>
+    </div>
+
+    <!-- API reference -->
+    <h2 id="api">API · <code>defineConfig</code></h2>
+    <p>The full type lives in <code>polylang/types</code>. These are the fields you'll actually touch.</p>
+
+    <div class="api-table">
+      <div class="api-row head">
+        <div>Field</div><div>Type</div><div>Description</div>
+      </div>
+      <div class="api-row">
+        <div class="name">source<span class="req">required</span></div>
+        <div class="type">Locale</div>
+        <div class="desc">The language your source code is written in. Usually <code>"en"</code>.</div>
+      </div>
+      <div class="api-row">
+        <div class="name">targets<span class="req">required</span></div>
+        <div class="type">Locale[]</div>
+        <div class="desc">BCP‑47 codes to translate into. Use region tags (<code>pt-BR</code>) when register matters.</div>
+      </div>
+      <div class="api-row">
+        <div class="name">files</div>
+        <div class="type">string[] <span class="opt">?</span></div>
+        <div class="desc">Globs to scan for user‑facing strings. Defaults to your framework's source dirs.</div>
+      </div>
+      <div class="api-row">
+        <div class="name">tone</div>
+        <div class="type">string <span class="opt">?</span></div>
+        <div class="desc">One‑line voice guide. Claude reads this every translation. Keep it short — tonal, not exhaustive.</div>
+      </div>
+      <div class="api-row">
+        <div class="name">glossary</div>
+        <div class="type">Record&lt;string,string&gt; <span class="opt">?</span></div>
+        <div class="desc">Terms to lock or remap. Map a term to itself to mark <em>do‑not‑translate</em>.</div>
+      </div>
+      <div class="api-row">
+        <div class="name">provider</div>
+        <div class="type">Provider <span class="opt">?</span></div>
+        <div class="desc">Defaults to hosted. Swap to <code>{ kind: "anthropic", apiKey: env.ANTHROPIC_KEY }</code> for BYOK.</div>
+      </div>
+    </div>
+
+    <!-- Use it in your app -->
+    <h2 id="use">Use it in your app</h2>
+    <p>Polylang ships a thin runtime — about 1.4&nbsp;kB gzipped. The <code>useT</code> hook reads the
+    locale from your router and returns translations from the bundle generated at build time.</p>
+
+    <div class="code">
+      <div class="code-head">
+        <span style="color:var(--fg-4)">📄</span>
+        <span class="file">app/(marketing)/page.tsx</span>
+        <span class="lang">tsx</span>
+        <span class="copy">⎘ Copy</span>
+      </div>
+      <div class="code-body"><pre><span class="ln"> 1</span><span class="tk-kw">import</span> { useT } <span class="tk-kw">from</span> <span class="tk-str">"polylang/react"</span>;
+<span class="ln"> 2</span>
+<span class="ln"> 3</span><span class="tk-kw">export default function</span> <span class="tk-fn">Page</span>() {
+<span class="ln"> 4</span>  <span class="tk-kw">const</span> t = <span class="tk-fn">useT</span>();
+<span class="ln"> 5</span>  <span class="tk-kw">return</span> (
+<span class="ln"> 6</span>    &lt;<span class="tk-tag">section</span>&gt;
+<span class="ln"> 7</span>      &lt;<span class="tk-tag">h1</span>&gt;{<span class="tk-fn">t</span>(<span class="tk-str">"Localize, as easy as asking Claude."</span>)}&lt;/<span class="tk-tag">h1</span>&gt;
+<span class="ln"> 8</span>      &lt;<span class="tk-tag">p</span>&gt;{<span class="tk-fn">t</span>(<span class="tk-str">"Ship in 12 languages without ever leaving your editor."</span>)}&lt;/<span class="tk-tag">p</span>&gt;
+<span class="ln"> 9</span>    &lt;/<span class="tk-tag">section</span>&gt;
+<span class="ln">10</span>  );
+<span class="ln">11</span>}</pre></div>
+    </div>
+
+    <p>Notice — there is no <code>en.json</code> file you wrote by hand, no string keys, no
+    <code>i18n.t("hero.title")</code>. The English is the source of truth and the key. Polylang
+    generates a stable hash and keeps every locale's bundle in sync.</p>
+
+    <div class="callout warn">
+      <svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Don't translate user‑generated content this way.</strong> <code>useT</code> is for static UI strings extracted at build time. For UGC (chat messages, reviews, support tickets), use the runtime <a class="in" href="#">/translate</a> endpoint with our streaming SDK.</p>
+    </div>
+
+    <!-- CONVERT BLOCK -->
+    <div class="convert">
+      <div class="conv-grid">
+        <div class="conv-l">
+          <div class="e">▲ READY?</div>
+          <h3>Stop reading. <em>Start shipping.</em></h3>
+          <p>The fastest way to feel Polylang is to run it on your own repo. Five thousand strings on us — no card, no email gate, runs in your terminal.</p>
+          <div class="row">
+            <a class="btn btn-primary" href="#">Run quickstart →</a>
+            <a class="btn btn-ghost btn-mono" href="#">Talk to a human</a>
+          </div>
+        </div>
+        <div class="conv-r">
+          <div class="lab">One command</div>
+          <div class="conv-r-cmd">
+            <span class="p">$</span><span>npx polylang init</span>
+            <span class="copy">⎘</span>
+          </div>
+          <div class="lab" style="margin-top:6px">Then translate</div>
+          <div class="conv-r-cmd">
+            <span class="p">$</span><span>polylang translate --to es,fr,de,ja</span>
+            <span class="copy">⎘</span>
+          </div>
+          <div style="font-family:var(--mono);font-size:10.5px;color:var(--fg-4);margin-top:6px;line-height:1.6">
+            Detects framework · respects glossary · streams to disk
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doc nav -->
+    <nav class="doc-nav">
+      <a href="#" class="prev">
+        <div class="lab">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          PREVIOUS
+        </div>
+        <div class="ti">Introduction</div>
+      </a>
+      <a href="#" class="next">
+        <div class="lab">
+          NEXT
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="ti">Project setup</div>
+      </a>
+    </nav>
+
+    <div class="doc-feedback">
+      <span class="feedback-q">Was this page helpful?</span>
+      <button>👍 Yes</button>
+      <button>👎 Not quite</button>
+      <span class="spacer"></span>
+      <a class="edit" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit this page on GitHub
+      </a>
+    </div>
+  </main>
+
+  <!-- ── Right TOC ────────────────────────────── -->
+  <aside class="toc">
+    <h6>On this page</h6>
+    <ul class="toc-list">
+      <li><a href="#quickstart" class="active">The 5‑minute path</a></li>
+      <li><a href="#install">Install</a></li>
+      <li><a href="#configure">Configure your project</a></li>
+      <li><a href="#what-just-happened" class="sub">What just happened?</a></li>
+      <li><a href="#concepts">Core concepts</a></li>
+      <li><a href="#api">API · defineConfig</a></li>
+      <li><a href="#use">Use it in your app</a></li>
+    </ul>
+
+    <div class="toc-foot">
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit on GitHub
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Suggest a change
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Ask in Discord
+      </a>
+    </div>
+  </aside>
+</div>
+
+<script>
+  // simple TOC active-section sync
+  const headings = document.querySelectorAll('.content h2[id], .content h3[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const setActive = (id) => {
+    tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+  };
+  const obs = new IntersectionObserver((entries) => {
+    const visible = entries.filter(e => e.isIntersecting)
+      .sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (visible) setActive(visible.target.id);
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  headings.forEach(h => obs.observe(h));
+
+  // copy hints (visual only)
+  document.querySelectorAll('.copy').forEach(el => {
+    el.addEventListener('click', e => {
+      const txt = el.previousElementSibling?.textContent?.trim();
+      if (txt) navigator.clipboard?.writeText(txt).catch(()=>{});
+      const original = el.innerHTML;
+      el.innerHTML = '✓ Copied';
+      setTimeout(() => { el.innerHTML = original; }, 1200);
+    });
+  });
+</script>
+
+</body>
+</html>

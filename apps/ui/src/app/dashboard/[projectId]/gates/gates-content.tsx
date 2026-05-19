@@ -62,7 +62,7 @@ export function GatesContent() {
   const searchParams = useSearchParams();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
-  const newOpen = searchParams.get("new") === "1";
+  const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
   const { data, isLoading, mutate } = useSWR<GateRow[]>("/api/admin/gates", fetcher, {
     dedupingInterval: 0,
@@ -88,11 +88,7 @@ export function GatesContent() {
   }
 
   function setNewWizardOpen(open: boolean) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (open) params.set("new", "1");
-    else params.delete("new");
-    const qs = params.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    setNewOpen(open);
   }
 
   const filtered = filter
@@ -106,7 +102,14 @@ export function GatesContent() {
   if (total === 0) {
     return (
       <>
-        <HeroEmptyState kind="gates" ctaHref={`/dashboard/${projectId}/gates?new=1`} />
+        <HeroEmptyState
+          kind="gates"
+          extraAction={
+            <Button size="lg" type="button" onClick={() => setNewWizardOpen(true)}>
+              Define your first gate
+            </Button>
+          }
+        />
         <NewGateWizard open={newOpen} onOpenChange={setNewWizardOpen} projectId={projectId} />
       </>
     );

@@ -81,7 +81,7 @@ export function ExperimentsContent() {
   const searchParams = useSearchParams();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
-  const newOpen = searchParams.get("new") === "1";
+  const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
   const { data, isLoading, mutate } = useSWR<ExperimentRow[]>("/api/admin/experiments", fetcher, {
     dedupingInterval: 0,
@@ -135,8 +135,8 @@ export function ExperimentsContent() {
     [setParam],
   );
 
-  const openWizard = useCallback(() => setParam("new", "1"), [setParam]);
-  const closeWizard = useCallback(() => setParam("new", null), [setParam]);
+  const openWizard = useCallback(() => setNewOpen(true), []);
+  const closeWizard = useCallback(() => setNewOpen(false), []);
 
   // Auto-select status tab when openId belongs to a non-matching tab
   useEffect(() => {

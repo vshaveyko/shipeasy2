@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>API keys · Shipeasy</title>
+<meta name="viewport" content="width=1440"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=2">
+<link rel="stylesheet" href="forms.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  body{min-width:1280px}
+  .key-row{display:grid;grid-template-columns:24px minmax(0,1fr) 110px 130px 130px 110px 32px;
+    gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+  .key-row:hover{background:var(--bg-2)}
+  .key-row:last-child{border-bottom:none}
+  .key-mono{font-family:var(--mono);font-size:12px;color:var(--fg-2);
+    background:var(--bg-2);border:1px solid var(--line);border-radius:4px;
+    padding:2px 8px;display:inline-flex;align-items:center;gap:6px;max-width:100%}
+  .key-mono .reveal{color:var(--fg-4);cursor:default}
+  .key-mono .copy{margin-left:6px;color:var(--fg-3);cursor:default}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);
+    z-index:60;display:grid;place-items:center}
+  .modal{width:580px;background:var(--bg-1);border:1px solid var(--line-2);
+    border-radius:var(--r-lg);box-shadow:var(--shadow-3);overflow:hidden}
+  .modal .head{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .modal .body{padding:24px;display:flex;flex-direction:column;gap:14px}
+  .modal .foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--bg-2)}
+
+  .scope-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .scope-row:last-child{border-bottom:none}
+  .scope-row .check{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--line-3);
+    display:grid;place-items:center;flex-shrink:0;margin-top:2px;background:var(--bg-2)}
+  .scope-row .check.on{border-color:var(--accent);background:var(--accent)}
+  .scope-row .meta{flex:1;min-width:0}
+  .scope-row .name{font-family:var(--mono);font-size:12.5px;color:var(--fg)}
+  .scope-row .desc{font-size:11.5px;color:var(--fg-3);margin-top:3px;line-height:1.45}
+
+  .key-banner{padding:18px;background:linear-gradient(135deg,
+    color-mix(in oklab, var(--accent) 18%, var(--bg-1)),
+    color-mix(in oklab, var(--accent) 6%, var(--bg-1)));
+    border:1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+    border-radius:var(--r-md);display:flex;flex-direction:column;gap:10px}
+  .key-banner .top{display:flex;align-items:center;gap:8px;font-size:12px;
+    color:var(--accent);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase}
+  .key-banner .val{font-family:var(--mono);font-size:13.5px;background:var(--bg);
+    border:1px solid var(--line);border-radius:6px;padding:10px 14px;display:flex;
+    align-items:center;gap:10px;color:var(--fg);overflow:auto}
+  .key-banner .warn{font-size:12px;color:var(--warn);display:flex;gap:6px;align-items:center}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="icons-ext.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+const keys = [
+  { name:'web · production', prefix:'sk_live_acme_', tail:'7f2a',
+    type:'server', env:'prod', last:'2m ago', created:'Jan 14', creator:'Maya', state:'active' },
+  { name:'web · public',     prefix:'pk_live_acme_', tail:'1c0d',
+    type:'public', env:'prod', last:'just now', created:'Jan 14', creator:'Maya', state:'active' },
+  { name:'staging server',   prefix:'sk_test_acme_', tail:'b3e1',
+    type:'server', env:'staging', last:'18m ago', created:'Jan 19', creator:'Jordan', state:'active' },
+  { name:'iOS · public',     prefix:'pk_live_ios_', tail:'09aa',
+    type:'public', env:'prod', last:'7s ago', created:'Feb 02', creator:'Priya', state:'active' },
+  { name:'data warehouse',   prefix:'sk_live_warehouse_', tail:'4e88',
+    type:'server', env:'prod', last:'8h ago', created:'Mar 11', creator:'Devon', state:'active' },
+  { name:'old CI key',       prefix:'sk_test_ci_', tail:'2210',
+    type:'server', env:'staging', last:'31d ago', created:'Nov 02 \'25', creator:'Jordan', state:'revoked' },
+];
+
+function ApiKeysPage() {
+  const [creating, setCreating] = useState(false);
+  const [showNewKey, setShowNewKey] = useState(false);
+  return (
+    <div className="app">
+      <Sidebar active="keys"/>
+      <div>
+        <Topbar crumbs={['Acme Co.','API keys']}
+          actions={<>
+            <button className="btn btn-secondary"><IconBook size={12}/> SDK docs</button>
+            <button className="btn btn-primary" onClick={()=>setCreating(true)}>
+              <IconPlus size={12}/> New API key
+            </button>
+          </>}
+        />
+        <div className="page">
+          <div className="page-head">
+            <div>
+              <div className="t-caps dim-2" style={{marginBottom:8}}>{keys.filter(k=>k.state==='active').length} active · 1 revoked · last rotated 12d ago</div>
+              <h1>API keys</h1>
+              <p>Use server keys (<span className="t-mono">sk_</span>) on your backend and public keys (<span className="t-mono">pk_</span>) in the browser. Server keys can read user props; public keys cannot.</p>
+            </div>
+            <div className="flex gap-3 items-center">
+              <div className="stat-block"><div className="stat-k">Server</div><div className="stat-v num">3</div></div>
+              <div style={{width:1,background:'var(--line)'}}/>
+              <div className="stat-block"><div className="stat-k">Public</div><div className="stat-v num">2</div></div>
+              <div style={{width:1,background:'var(--line)'}}/>
+              <div className="stat-block"><div className="stat-k">Reqs (24h)</div><div className="stat-v num" style={{color:'var(--accent)'}}>4.8M</div></div>
+            </div>
+          </div>
+
+          {showNewKey && (
+            <div className="key-banner">
+              <div className="top">
+                <IconCheck size={12}/>
+                <span>New key created · copy it now, you won't see it again</span>
+                <button className="btn btn-ghost btn-icon btn-sm" style={{marginLeft:'auto'}}
+                  onClick={()=>setShowNewKey(false)}><IconX size={12}/></button>
+              </div>
+              <div className="val">
+                <span style={{color:'var(--accent)'}}>sk_live_acme_</span>
+                <span>9c4f7d1e8a3b6c2f0d4a17f29be8c031a47d562e9b14fa83</span>
+                <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}}>
+                  <IconCopy size={11}/> Copy
+                </button>
+              </div>
+              <div className="warn">
+                <IconAlertTriangle size={12}/>
+                Store this in a secret manager. Anyone with this key can read user props and modify experiments.
+              </div>
+            </div>
+          )}
+
+          <div className="card">
+            <div className="card-head">
+              <div className="card-head-title">Keys</div>
+              <div className="ml-auto flex gap-2 items-center">
+                <div style={{display:'flex',gap:4,padding:4,background:'var(--bg-2)',
+                  borderRadius:'var(--r-md)',border:'1px solid var(--line)'}}>
+                  {['All','Server','Public'].map((t,i)=>(
+                    <div key={i} style={{padding:'4px 10px',fontSize:12,color:i===0?'var(--fg)':'var(--fg-3)',
+                      background:i===0?'var(--bg-1)':'transparent',borderRadius:'var(--r-sm)',
+                      boxShadow:i===0?'var(--shadow-1)':'none'}}>{t}</div>
+                  ))}
+                </div>
+                <div className="input" style={{width:200}}>
+                  <IconSearch size={12} style={{color:'var(--fg-3)'}}/>
+                  <input placeholder="Filter keys"/>
+                </div>
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'24px minmax(0,1fr) 110px 130px 130px 110px 32px',
+              gap:14,padding:'8px 18px',borderBottom:'1px solid var(--line)',background:'var(--bg-2)',
+              fontFamily:'var(--mono)',fontSize:10,color:'var(--fg-4)',
+              letterSpacing:'.05em',textTransform:'uppercase'}}>
+              <span/><span>Name & key</span><span>Type</span><span>Env</span><span>Last used</span><span>Status</span><span/>
+            </div>
+
+            {keys.map(k=>(
+              <div key={k.name} className="key-row">
+                <IconKey size={13} style={{color:k.state==='revoked'?'var(--fg-4)':k.type==='server'?'var(--accent)':'var(--info)'}}/>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:13.5,fontWeight:500,
+                    color:k.state==='revoked'?'var(--fg-3)':'var(--fg)',
+                    textDecoration:k.state==='revoked'?'line-through':'none'}}>{k.name}</div>
+                  <div style={{marginTop:4,display:'flex',gap:6,alignItems:'center'}}>
+                    <span className="key-mono">
+                      <span>{k.prefix}</span><span className="reveal">··············{k.tail}</span>
+                      <IconCopy size={11} className="copy"/>
+                    </span>
+                    <span className="t-mono-xs dim-2">created {k.created} · {k.creator}</span>
+                  </div>
+                </div>
+                <span className="tag" style={{padding:'2px 7px',fontSize:11,
+                  ...(k.type==='server'
+                    ? {background:'var(--accent-soft)',color:'var(--accent)',
+                       borderColor:'color-mix(in oklab, var(--accent) 30%, transparent)'}
+                    : {background:'var(--info-soft)',color:'var(--info)',
+                       borderColor:'color-mix(in oklab, var(--info) 30%, transparent)'})}}>{k.type}</span>
+                <span className="t-mono-xs">{k.env}</span>
+                <span className="t-sm dim">{k.last}</span>
+                {k.state==='active'
+                  ? <span className="badge badge-live"><span className="dot"/>ACTIVE</span>
+                  : <span className="badge badge-killed"><span className="dot"/>REVOKED</span>}
+                <button className="btn btn-ghost btn-icon btn-sm"><IconMore size={12}/></button>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid" style={{gridTemplateColumns:'1.2fr 1fr',gap:18}}>
+            <div className="card" style={{padding:18}}>
+              <div className="t-caps dim-2" style={{marginBottom:10}}>Quick install</div>
+              <div style={{fontFamily:'var(--mono)',fontSize:11.5,background:'var(--bg-2)',
+                border:'1px solid var(--line)',borderRadius:'var(--r-sm)',padding:'12px 14px',
+                color:'var(--fg-2)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>
+<span style={{color:'var(--fg-4)'}}>{`# install`}</span>{`
+npm install @shipeasy/sdk
+
+`}<span style={{color:'var(--fg-4)'}}>{`# initialize`}</span>{`
+`}<span style={{color:'#a78bfa'}}>import</span>{` { Shipeasy } `}<span style={{color:'#a78bfa'}}>from</span>{` `}<span style={{color:'var(--accent)'}}>'@shipeasy/sdk'</span>{`;
+
+`}<span style={{color:'#a78bfa'}}>const</span>{` shipeasy = `}<span style={{color:'#a78bfa'}}>new</span>{` `}<span style={{color:'#74c7ec'}}>Shipeasy</span>{`({
+  apiKey: process.env.`}<span style={{color:'var(--accent)'}}>SHIPEASY_KEY</span>{`,
+  env: `}<span style={{color:'var(--accent)'}}>'production'</span>{`,
+});`}
+              </div>
+              <div className="flex gap-2" style={{marginTop:10}}>
+                <button className="btn btn-ghost btn-sm"><IconCopy size={11}/> Copy snippet</button>
+                <button className="btn btn-ghost btn-sm"><IconBook size={11}/> All SDKs</button>
+              </div>
+            </div>
+
+            <div className="card" style={{padding:18}}>
+              <div className="t-caps dim-2" style={{marginBottom:10}}>Security & rotation</div>
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                <div className="flex gap-3 items-start">
+                  <IconShield size={14} style={{color:'var(--accent)',marginTop:2}}/>
+                  <div>
+                    <div className="t-sm" style={{fontWeight:500}}>Rotate every 90 days</div>
+                    <div className="t-sm dim" style={{lineHeight:1.5,marginTop:2}}>
+                      We'll auto-flag keys that haven't been rotated. <a style={{color:'var(--accent)'}}>Enable rotation policy →</a>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <IconAlertTriangle size={14} style={{color:'var(--warn)',marginTop:2}}/>
+                  <div>
+                    <div className="t-sm" style={{fontWeight:500}}>Never commit keys to git</div>
+                    <div className="t-sm dim" style={{lineHeight:1.5,marginTop:2}}>
+                      We scan public GitHub for leaked keys hourly and auto-revoke matches.
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <IconKey size={14} style={{color:'var(--info)',marginTop:2}}/>
+                  <div>
+                    <div className="t-sm" style={{fontWeight:500}}>IP allow-list (Enterprise)</div>
+                    <div className="t-sm dim" style={{lineHeight:1.5,marginTop:2}}>
+                      Restrict server keys to specific source IPs. <a>Upgrade →</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {creating && <CreateKeyModal onClose={()=>setCreating(false)}
+        onCreate={()=>{setCreating(false);setShowNewKey(true)}}/>}
+    </div>
+  );
+}
+
+function CreateKeyModal({ onClose, onCreate }) {
+  const [type, setType] = useState('server');
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="head">
+          <IconKey size={16}/>
+          <h3 style={{margin:0,fontSize:17,fontWeight:500}}>New API key</h3>
+          <button className="btn btn-ghost btn-icon btn-sm" style={{marginLeft:'auto'}} onClick={onClose}><IconX size={12}/></button>
+        </div>
+        <div className="body">
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Name</div>
+            <div className="input"><input placeholder="e.g. checkout-service · production"/></div>
+            <div className="t-mono-xs dim-2" style={{marginTop:4}}>A short label so you can find this key in audit logs.</div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Type</div>
+            <div className="grid" style={{gridTemplateColumns:'1fr 1fr',gap:8}}>
+              {[
+                ['server','Server',<IconShield size={14}/>,'Backend only — full read/write. Keep secret.'],
+                ['public','Public',<IconCode size={14}/>,'Browser & mobile clients. Read-only by design.'],
+              ].map(([k,l,ic,d])=>(
+                <div key={k} onClick={()=>setType(k)} style={{padding:14,
+                  background:type===k?'var(--bg-1)':'var(--bg-2)',
+                  border:`1px solid ${type===k?'var(--accent)':'var(--line)'}`,
+                  borderRadius:'var(--r-md)',display:'flex',flexDirection:'column',gap:8,cursor:'default'}}>
+                  <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                    <span style={{color:type===k?'var(--accent)':'var(--fg-2)'}}>{ic}</span>
+                    <b style={{fontSize:13,fontWeight:500}}>{l}</b>
+                    {type===k && <IconCheck size={12} style={{color:'var(--accent)',marginLeft:'auto'}}/>}
+                  </div>
+                  <div style={{fontSize:12,color:'var(--fg-3)',lineHeight:1.4}}>{d}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Environment</div>
+            <div className="select"><select defaultValue="prod">
+              <option value="dev">dev</option>
+              <option value="staging">staging</option>
+              <option value="prod">production</option>
+            </select></div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:8}}>Scopes</div>
+            <div style={{padding:'4px 14px',background:'var(--bg-2)',border:'1px solid var(--line)',
+              borderRadius:'var(--r-md)'}}>
+              <div className="scope-row">
+                <div className="check on"><IconCheck size={11} style={{color:'#fff'}}/></div>
+                <div className="meta">
+                  <div className="name">experiments:read</div>
+                  <div className="desc">Read experiment configs and assignments.</div>
+                </div>
+              </div>
+              <div className="scope-row">
+                <div className="check on"><IconCheck size={11} style={{color:'#fff'}}/></div>
+                <div className="meta">
+                  <div className="name">gates:evaluate</div>
+                  <div className="desc">Evaluate gates against user properties.</div>
+                </div>
+              </div>
+              <div className="scope-row">
+                <div className="check on"><IconCheck size={11} style={{color:'#fff'}}/></div>
+                <div className="meta">
+                  <div className="name">events:write</div>
+                  <div className="desc">Send exposure and conversion events.</div>
+                </div>
+              </div>
+              <div className="scope-row">
+                <div className="check"/>
+                <div className="meta">
+                  <div className="name">configs:write</div>
+                  <div className="desc">Modify config values from your backend. Risky — only enable for trusted services.</div>
+                </div>
+              </div>
+              <div className="scope-row">
+                <div className="check"/>
+                <div className="meta">
+                  <div className="name">experiments:write</div>
+                  <div className="desc">Create or pause experiments programmatically.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="t-caps dim-2" style={{marginBottom:6}}>Expires</div>
+            <div className="select"><select defaultValue="never">
+              <option>30 days</option><option>90 days</option><option>1 year</option><option value="never">Never</option>
+            </select></div>
+          </div>
+        </div>
+        <div className="foot">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={onCreate}>
+            <IconKey size={12}/> Generate key
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<ApiKeysPage/>);
+</script>
+</body>
+</html>
