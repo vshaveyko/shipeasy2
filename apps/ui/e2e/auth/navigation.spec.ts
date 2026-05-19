@@ -21,9 +21,10 @@ const CONFIGS_NAV: NavCase[] = [
     startAt: "/dashboard/e2e-project-id/configs/values",
     label: /^configs$/i,
     url: /\/dashboard\/e2e-project-id\/configs\/values$/,
-    // The configs landing page now leads with the marketing-style hero
-    // heading instead of the old "Dynamic configs" title.
-    heading: /tune your app without redeploying/i,
+    // Configs page header — falls back to hero "Tune your app …" copy when
+    // the project has no configs yet, but earlier tests seed at least one
+    // config so the PageHeader title is what renders here.
+    heading: /^configs$/i,
   },
 ];
 

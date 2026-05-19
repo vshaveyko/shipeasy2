@@ -16,7 +16,8 @@ test.describe("Top bar", () => {
 
     await page.getByRole("button", { name: /e2e test user/i }).click();
 
-    await expect(page.getByText("e2e@shipeasy.test")).toBeVisible();
+    const menu = page.getByRole("menu");
+    await expect(menu.getByText("e2e@shipeasy.test")).toBeVisible();
     await expect(page.getByRole("menuitem", { name: /^settings$/i })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: /^sdk keys$/i })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: /^sign out$/i })).toBeVisible();

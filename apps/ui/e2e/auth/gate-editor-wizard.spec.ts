@@ -109,7 +109,7 @@ test.describe("Gatekeeper editor — wizard", () => {
       .getByRole("button", { name: /Next: Review and integrate/i })
       .first()
       .click();
-    await expect(page.getByText("Review and integrate")).toBeVisible();
+    // SDK preview is unique to the review step — proves transition.
     await expect(page.getByText(/shipeasy\.gate/)).toBeVisible();
   });
 

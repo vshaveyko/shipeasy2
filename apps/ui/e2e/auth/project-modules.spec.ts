@@ -6,7 +6,7 @@ test.describe("Project module toggles", () => {
 
     // The active project card carries an ACTIVE badge — submit that card's
     // form to land on its detail page.
-    const activeCard = page.locator("button[type=submit]").filter({ hasText: "ACTIVE" }).first();
+    const activeCard = page.locator("button[type=submit]").filter({ hasText: "CURRENT" }).first();
     await activeCard.click();
 
     await expect(page).toHaveURL(/\/dashboard\/projects\/[\w-]+$/);
@@ -15,7 +15,7 @@ test.describe("Project module toggles", () => {
 
   test("module page renders all seven toggle cards with switches", async ({ page }) => {
     await page.goto("/dashboard/projects");
-    const activeCard = page.locator("button[type=submit]").filter({ hasText: "ACTIVE" }).first();
+    const activeCard = page.locator("button[type=submit]").filter({ hasText: "CURRENT" }).first();
     await activeCard.click();
     await page.waitForURL(/\/dashboard\/projects\/[\w-]+$/);
 
@@ -43,7 +43,7 @@ test.describe("Project module toggles", () => {
 
   test("project detail page exposes Modules and Keys tabs", async ({ page }) => {
     await page.goto("/dashboard/projects");
-    const activeCard = page.locator("button[type=submit]").filter({ hasText: "ACTIVE" }).first();
+    const activeCard = page.locator("button[type=submit]").filter({ hasText: "CURRENT" }).first();
     await activeCard.click();
     await page.waitForURL(/\/dashboard\/projects\/[\w-]+$/);
 
@@ -70,7 +70,7 @@ test.describe("Project module toggles", () => {
 
   test("toggling a switch persists across reload", async ({ page }) => {
     await page.goto("/dashboard/projects");
-    const activeCard = page.locator("button[type=submit]").filter({ hasText: "ACTIVE" }).first();
+    const activeCard = page.locator("button[type=submit]").filter({ hasText: "CURRENT" }).first();
     await activeCard.click();
     await page.waitForURL(/\/dashboard\/projects\/[\w-]+$/);
 

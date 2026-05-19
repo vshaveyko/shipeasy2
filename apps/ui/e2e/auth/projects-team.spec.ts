@@ -66,7 +66,11 @@ test.describe("Projects page", () => {
       .getByRole("button", { name: /^new project$/i })
       .first()
       .click();
-    await page.getByRole("button", { name: /^close$/i }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^close$/i })
+      .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
     // Cancel footer button
@@ -74,7 +78,11 @@ test.describe("Projects page", () => {
       .getByRole("button", { name: /^new project$/i })
       .first()
       .click();
-    await page.getByRole("button", { name: /^cancel$/i }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^cancel$/i })
+      .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
@@ -161,7 +169,7 @@ test.describe("Projects page", () => {
 
     // Stays on the form; surfaces the validation error.
     await expect(page).toHaveURL(/\/dashboard\/projects\/new$/);
-    await expect(page.getByText(/http:\/\/ or https:\/\//i)).toBeVisible();
+    await expect(page.getByText(/http:\/\/ or https:\/\//i).first()).toBeVisible();
   });
 
   test("new project accepts '*' as a wildcard domain", async ({ page }) => {

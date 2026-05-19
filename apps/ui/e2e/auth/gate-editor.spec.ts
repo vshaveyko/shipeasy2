@@ -58,6 +58,6 @@ test.describe("Gate editor page", () => {
     await dialog.waitFor({ state: "visible" });
     await dialog.getByRole("button", { name: /^delete( gate)?$/i }).click();
     await dialog.waitFor({ state: "hidden" });
-    await expect(page.getByText(key, { exact: true })).not.toBeVisible();
+    await expect(page.getByRole("table").getByText(key, { exact: true })).not.toBeVisible();
   });
 });
