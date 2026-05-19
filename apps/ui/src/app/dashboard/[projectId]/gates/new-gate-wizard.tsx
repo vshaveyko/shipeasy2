@@ -158,6 +158,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
     {
       id: "details",
       label: "Details",
+      title: "Identify the gate",
       hint: (
         <>
           The key is locked after the first publish — pick a stable name like{" "}
@@ -200,6 +201,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
     {
       id: "targeting",
       label: "Targeting",
+      title: "Compose the gate stack",
       hint: (
         <>
           If any gate above passes, the gatekeeper returns <b>true</b> · otherwise falls through to{" "}
@@ -237,6 +239,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
     {
       id: "preview",
       label: "Preview",
+      title: "Test against a fixture",
       hint: <>Confirm the shape. Submit creates the gate and opens the full editor.</>,
       content: (
         <div className="flex flex-col gap-3">
@@ -276,6 +279,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
     {
       id: "integrate",
       label: "Integrate",
+      title: "Wire it up",
       hint: (
         <>
           Drop one of these into your codebase. The first call hydrates a local cache; later calls
@@ -324,7 +328,7 @@ export function NewGateWizard({ open, onOpenChange, projectId }: NewGateWizardPr
         onOpenChange={resetAndClose}
         kind="gates"
         title="Name your gatekeeper"
-        eyebrow={{ project: projectId, area: "Gates" }}
+        eyebrow={{ project: projectId }}
         steps={steps}
         current={step}
         onStepChange={setStep}

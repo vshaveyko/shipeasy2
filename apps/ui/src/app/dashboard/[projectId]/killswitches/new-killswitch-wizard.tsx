@@ -61,6 +61,7 @@ export function NewKillswitchWizard({ open, onOpenChange, projectId }: NewKillsw
     {
       id: "details",
       label: "Details",
+      title: "Identify the killswitch",
       hint: (
         <>
           Killswitches publish a <code className="font-mono">{"{ value, switches }"}</code> payload
@@ -125,7 +126,8 @@ export function NewKillswitchWizard({ open, onOpenChange, projectId }: NewKillsw
     },
     {
       id: "scope",
-      label: "Default & switches",
+      label: "Scope & fallback",
+      title: "Scope & fallback",
       hint: (
         <>
           The default value ships to every client. Optional switches let you override the answer per
@@ -223,6 +225,7 @@ export function NewKillswitchWizard({ open, onOpenChange, projectId }: NewKillsw
     {
       id: "integrate",
       label: "Integrate",
+      title: "Wire it up",
       hint: (
         <>
           Drop one of these into your codebase. The first call hydrates a local cache; later calls
@@ -265,12 +268,11 @@ export function NewKillswitchWizard({ open, onOpenChange, projectId }: NewKillsw
       onOpenChange={resetAndClose}
       kind="killswitches"
       title="New killswitch"
-      eyebrow={{ project: projectId, area: "Killswitches" }}
+      eyebrow={{ project: projectId }}
       steps={steps}
       current={step}
       onStepChange={setStep}
       onSubmit={handleSubmit}
-      submitLabel="Create killswitch"
       submitting={pending}
     />
   );

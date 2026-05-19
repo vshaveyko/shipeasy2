@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
   Braces,
   Check,
@@ -11,7 +12,6 @@ import {
   Edit3,
   List,
   Plus,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 
@@ -121,11 +121,12 @@ export function NewConfigWizard({
           schema: built.schema,
           value: built.value,
         });
+        toast.success(`Created ${trimmed}`);
         onCreated?.();
       } catch (err) {
         const digest = (err as { digest?: string })?.digest;
         if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) throw err;
-        // Other errors surface via the Server Action redirect chain — list pane refresh handles it.
+        toast.error(err instanceof Error ? err.message : "Failed to create config");
       }
     });
   }
@@ -134,6 +135,7 @@ export function NewConfigWizard({
     {
       id: "details",
       label: "Details",
+      title: "Identify the config",
       hint: (
         <>
           The key is how SDK consumers fetch this config — pick a stable, dot-separated name like{" "}
@@ -154,7 +156,7 @@ export function NewConfigWizard({
           <ul className="t-sm dim flex flex-col gap-1.5">
             <li>Schema → field types, descriptions, required flags.</li>
             <li>Defaults → the value SDK consumers receive on first read.</li>
-            <li>Review → ship to dev/staging/prod from the editor.</li>
+            <li>Integrate → wire the SDK call into your code.</li>
           </ul>
         </>
       ),
@@ -163,6 +165,7 @@ export function NewConfigWizard({
     {
       id: "schema",
       label: "Schema",
+      title: "Define the shape",
       hint: <>Click a row to edit it. Defaults come next.</>,
       content: (
         <StepSchema
@@ -179,8 +182,9 @@ export function NewConfigWizard({
       isValid: () => keyValid,
     },
     {
-      id: "values",
+      id: "value",
       label: "Defaults",
+      title: "Seed the initial value",
       hint: (
         <>
           These are what consumers receive on the first read. Click any row to open an editor sized
@@ -200,17 +204,28 @@ export function NewConfigWizard({
       isValid: () => keyValid && !built.error,
     },
     {
-      id: "review",
-      label: "Review",
-      hint: <>Confirm the shape. Submit creates the config and opens the full editor.</>,
-      content: (
-        <StepReview
-          keyValue={trimmed}
-          description={description}
-          fields={fields}
-          built={built}
-          fieldCount={fieldCount}
-        />
+      id: "integrate",
+      label: "Integrate",
+      title: "Wire it up",
+      hint: (
+        <>
+          Drop one of these into your codebase. Publish triggers a CDN rebuild — first SDK read is a
+          sub-100ms hit at the edge.
+        </>
+      ),
+      content: <StepIntegrate keyValue={trimmed} fields={fields} built={built} />,
+      aside: (
+        <>
+          <div className="t-caps dim-2">Publish behaviour</div>
+          <ul className="t-sm dim flex flex-col gap-1.5">
+            <li>
+              Lands as <span className="font-mono text-[var(--se-fg-2)]">v1</span> in dev / staging
+              / prod.
+            </li>
+            <li>Promote per env from the editor.</li>
+            <li>CDN purge fires automatically on every publish.</li>
+          </ul>
+        </>
       ),
       isValid: () => keyValid && !built.error,
     },
@@ -223,12 +238,12 @@ export function NewConfigWizard({
         onOpenChange={resetAndClose}
         kind="configs"
         title="Name your config"
-        eyebrow={{ project: projectId, area: "Configs" }}
+        eyebrow={{ project: projectId }}
         steps={steps}
         current={step}
         onStepChange={setStep}
         onSubmit={handleSubmit}
-        submitLabel={pending ? "Creating…" : "Create config"}
+        submitLabel={pending ? "Publishing…" : undefined}
         submitting={pending}
       />
       <EditFieldDialog
@@ -830,21 +845,18 @@ function ValueSummary({ field }: { field: WizField }) {
   return <span className="text-[var(--se-accent)]">&quot;{String(field.value)}&quot;</span>;
 }
 
-// ── Step 4: Review + Integrate ──────────────────────────────────────
+// ── Step 4: Integrate ───────────────────────────────────────────────
 
-function StepReview({
+function StepIntegrate({
   keyValue,
-  description,
   fields,
   built,
-  fieldCount,
 }: {
   keyValue: string;
-  description: string;
   fields: WizField[];
   built: { value: Record<string, unknown>; error: string | null };
-  fieldCount: number;
 }) {
+  const displayKey = keyValue || "your_config";
   const valuesObj = useMemo(() => {
     const o: Record<string, unknown> = {};
     for (const f of fields) o[f.key] = fieldToJson(f);
@@ -859,87 +871,38 @@ function StepReview({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[1.1fr_1fr]">
-        <div className="flex flex-col gap-3">
-          <ReviewCard title="Metadata" sub="step 1">
-            <ReviewItem
-              label="Key"
-              value={
-                <span className="flex items-center gap-2 font-mono">
-                  <SlidersHorizontal className="size-3.5 text-[var(--se-accent)]" />
-                  {keyValue || "—"}
-                </span>
-              }
-            />
-            <ReviewItem
-              label="Description"
-              value={
-                description ? (
-                  <span className="text-[var(--se-fg-2)]">{description}</span>
-                ) : (
-                  <em className="text-[var(--se-fg-4)]">—</em>
-                )
-              }
-            />
-          </ReviewCard>
+      <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[color-mix(in_oklab,var(--se-accent)_30%,transparent)] bg-[var(--se-accent-soft)] px-3.5 py-2.5">
+        <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--se-accent)]" />
+        <p className="text-[12.5px] leading-[1.55] text-[var(--se-fg-2)]">
+          Publish triggers a CDN rebuild. The first SDK read is sub-100ms at the edge.
+        </p>
+      </div>
 
-          <ReviewCard
-            title="Schema"
-            sub={`step 2 · ${fieldCount} field${fieldCount === 1 ? "" : "s"}`}
+      <Integrate configKey={displayKey} />
+
+      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-1)]">
+        <div className="flex items-center gap-3 border-b border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-4 py-2.5">
+          <span className="text-[12.5px] font-medium">Default value · JSON</span>
+          <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase text-[var(--se-fg-3)]">
+            what consumers receive on first read
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            onClick={copyJson}
+            aria-label="Copy JSON"
+            className="ml-auto"
           >
-            {fields.length === 0 ? (
-              <div className="px-4 py-3 text-[13px] text-[var(--se-fg-3)]">No fields defined.</div>
-            ) : (
-              fields.map((f) => (
-                <div
-                  key={f.id}
-                  className="grid grid-cols-[170px_1fr] items-start gap-3.5 border-b border-[var(--se-line)] px-4 py-3 last:border-b-0"
-                >
-                  <span className="pt-0.5 font-mono text-[10.5px] tracking-[0.06em] uppercase text-[var(--se-fg-3)]">
-                    {f.key}
-                  </span>
-                  <span className="flex flex-wrap items-center gap-2 text-[13.5px] leading-[1.55]">
-                    <TypePill field={f} />
-                    {f.description ? (
-                      <span className="text-[12px] text-[var(--se-fg-3)]">{f.description}</span>
-                    ) : null}
-                  </span>
-                </div>
-              ))
-            )}
-          </ReviewCard>
+            <Copy className="size-3" />
+          </Button>
         </div>
-
-        <div className="flex flex-col gap-3 lg:sticky lg:top-2">
-          <ReviewCard
-            title="Default values · JSON"
-            sub="step 3"
-            right={
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-sm"
-                onClick={copyJson}
-                aria-label="Copy JSON"
-              >
-                <Copy className="size-3" />
-              </Button>
-            }
-          >
-            {built.error ? (
-              <div className="px-4 py-3 text-[12.5px] text-[var(--se-danger)]">{built.error}</div>
-            ) : null}
-            <pre className="m-0 max-h-[260px] overflow-auto bg-[var(--se-bg-1)] px-4 py-3.5 font-mono text-[12px] leading-[1.65] whitespace-pre text-[var(--se-fg-2)]">
-              {JSON.stringify(valuesObj, null, 2)}
-            </pre>
-          </ReviewCard>
-
-          <ReviewCard title="SDK integration" sub="step 4">
-            <div className="px-4 py-3.5">
-              <Integrate configKey={keyValue || "your_config"} />
-            </div>
-          </ReviewCard>
-        </div>
+        {built.error ? (
+          <div className="px-4 py-3 text-[12.5px] text-[var(--se-danger)]">{built.error}</div>
+        ) : null}
+        <pre className="m-0 max-h-[220px] overflow-auto bg-[var(--se-bg-1)] px-4 py-3.5 font-mono text-[12px] leading-[1.65] whitespace-pre text-[var(--se-fg-2)]">
+          {JSON.stringify(valuesObj, null, 2)}
+        </pre>
       </div>
     </div>
   );
@@ -986,40 +949,4 @@ fmt.Printf("%+v\\n", cfg)`,
     curl: `curl -H "Authorization: Bearer $SHIPEASY_KEY" \\
   https://api.shipeasy.dev/v1/configs/${key}`,
   };
-}
-
-function ReviewCard({
-  title,
-  sub,
-  right,
-  children,
-}: {
-  title: string;
-  sub: string;
-  right?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-[var(--se-bg-1)]">
-      <div className="flex items-center gap-3 border-b border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-4 py-3">
-        <span className="text-[13.5px] font-medium tracking-[-0.005em]">{title}</span>
-        <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase text-[var(--se-fg-3)]">
-          {sub}
-        </span>
-        {right ? <span className="ml-auto">{right}</span> : null}
-      </div>
-      <div className="flex flex-col">{children}</div>
-    </div>
-  );
-}
-
-function ReviewItem({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[170px_1fr] items-start gap-3.5 border-b border-[var(--se-line)] px-4 py-3 last:border-b-0">
-      <span className="pt-0.5 font-mono text-[10.5px] tracking-[0.06em] uppercase text-[var(--se-fg-3)]">
-        {label}
-      </span>
-      <span className="text-[13.5px] leading-[1.55]">{value}</span>
-    </div>
-  );
 }

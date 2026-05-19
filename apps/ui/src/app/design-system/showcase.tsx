@@ -1667,7 +1667,7 @@ function BigModalWizardSection() {
           }}
           kind={openKind}
           title={labels[openKind].title}
-          eyebrow={{ project: "shipeasy-demo", area: openKind }}
+          eyebrow={{ project: "shipeasy-demo" }}
           steps={steps}
           current={step}
           onStepChange={setStep}

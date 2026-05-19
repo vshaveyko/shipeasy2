@@ -11,13 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { CodeBlock } from "@/components/ui/code-block";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FieldArray, FieldArrayRow, FieldArrayAdd } from "@/components/ui/field-array";
-import { createExperimentAction } from "./actions";
+import { publishExperimentAction, type WizardMetricInput } from "./actions";
 
 const NAME_RE = /^[a-z0-9][a-z0-9_-]{0,59}$/;
 
 type UniverseRow = { id: string; name: string; unit_type?: string };
 type GateRow = { id: string; name: string };
+type MetricRow = { id: string; name: string; aggregation?: string };
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const res = await fetch(url, { credentials: "same-origin" });
@@ -66,10 +69,17 @@ export function NewExperimentWizard({
     { name: "control", weight: 5000 },
     { name: "treatment", weight: 5000 },
   ]);
+  const [goalMetricId, setGoalMetricId] = useState<string>("");
+  const [guardrailIds, setGuardrailIds] = useState<string[]>([]);
+  const [secondaryIds, setSecondaryIds] = useState<string[]>([]);
+  const [mdePct, setMdePct] = useState<number>(5);
+  const [alphaPct, setAlphaPct] = useState<number>(5);
+  const [startNow, setStartNow] = useState<boolean>(true);
   const [pending, startTransition] = useTransition();
 
   const { data: universes } = useSWR<UniverseRow[]>(open ? "/api/admin/universes" : null, fetcher);
   const { data: gates } = useSWR<GateRow[]>(open ? "/api/admin/gates" : null, fetcher);
+  const { data: metrics } = useSWR<MetricRow[]>(open ? "/api/admin/metrics" : null, fetcher);
 
   const trimmed = name.trim();
   const nameValid = NAME_RE.test(trimmed);
@@ -79,6 +89,7 @@ export function NewExperimentWizard({
     const sum = variants.reduce((s, v) => s + v.weight, 0);
     return sum === 10000;
   }, [variants]);
+  const metricsValid = goalMetricId.length > 0;
 
   const universeOptions: ComboboxOption[] = useMemo(() => {
     const seen = new Set<string>();
@@ -100,6 +111,14 @@ export function NewExperimentWizard({
     return rows;
   }, [gates]);
 
+  const metricOptions: ComboboxOption[] = useMemo(() => {
+    return (metrics ?? []).map((m) => ({
+      value: m.id,
+      label: m.name,
+      description: m.aggregation,
+    }));
+  }, [metrics]);
+
   useEffect(() => {
     if (!open) {
       setStep(0);
@@ -113,6 +132,12 @@ export function NewExperimentWizard({
         { name: "control", weight: 5000 },
         { name: "treatment", weight: 5000 },
       ]);
+      setGoalMetricId("");
+      setGuardrailIds([]);
+      setSecondaryIds([]);
+      setMdePct(5);
+      setAlphaPct(5);
+      setStartNow(true);
     }
   }, [open]);
 
@@ -137,16 +162,26 @@ export function NewExperimentWizard({
     setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, weight: bps } : v)));
   }
 
+  function toggleId(arr: string[], id: string): string[] {
+    return arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
+  }
+
+  const goalMetricName = useMemo(
+    () => (metrics ?? []).find((m) => m.id === goalMetricId)?.name ?? null,
+    [metrics, goalMetricId],
+  );
+
   const steps: WizardStep[] = [
     {
-      id: "identity",
-      label: "Name & describe",
+      id: "basics",
+      label: "Basics",
+      title: "Hypothesis & basics",
       hint: "A stable identifier and a one-line hypothesis.",
       isValid: () => nameValid,
       content: (
         <div className="flex flex-col gap-4">
           <div>
-            <Label htmlFor="experiment-name">Name</Label>
+            <Label htmlFor="experiment-name">Slug</Label>
             <Input
               id="experiment-name"
               data-testid="experiment-name-input"
@@ -162,7 +197,7 @@ export function NewExperimentWizard({
             </p>
           </div>
           <div>
-            <Label htmlFor="experiment-description">Hypothesis</Label>
+            <Label htmlFor="experiment-description">Question / hypothesis</Label>
             <Textarea
               id="experiment-description"
               value={description}
@@ -184,18 +219,19 @@ export function NewExperimentWizard({
         </div>
       ),
       aside: (
-        <div className="flex flex-col gap-2 text-[12.5px]">
-          <div className="t-caps dim-2">Identity</div>
-          <p className="dim">
-            Pick a name you can paste into <code>shipeasy.experiment(…)</code> without renaming
-            later. Tags group experiments in the list.
-          </p>
-        </div>
+        <ExperimentAside
+          trimmed={trimmed}
+          universe={universe}
+          allocation={allocation}
+          variants={variants}
+          goalMetricName={goalMetricName}
+        />
       ),
     },
     {
       id: "audience",
-      label: "Audience & traffic",
+      label: "Audience",
+      title: "Universe & allocation",
       hint: "Who gets enrolled and what slice of them.",
       content: (
         <div className="flex flex-col gap-4">
@@ -245,23 +281,19 @@ export function NewExperimentWizard({
         </div>
       ),
       aside: (
-        <div className="flex flex-col gap-2 text-[12.5px]">
-          <div className="t-caps dim-2">Allocation</div>
-          <p className="dim">
-            <span className="font-mono">{allocation}%</span> of{" "}
-            <span className="font-mono">{universe}</span>{" "}
-            {gate !== "none" ? (
-              <>
-                · filtered by gate <span className="font-mono">{gate}</span>
-              </>
-            ) : null}
-          </p>
-        </div>
+        <ExperimentAside
+          trimmed={trimmed}
+          universe={universe}
+          allocation={allocation}
+          variants={variants}
+          goalMetricName={goalMetricName}
+        />
       ),
     },
     {
       id: "variants",
       label: "Variants",
+      title: "Variants & weights",
       hint: "Weights must sum to 100%.",
       isValid: () => variantsValid,
       content: (
@@ -328,93 +360,177 @@ export function NewExperimentWizard({
         </div>
       ),
       aside: (
-        <div className="flex flex-col gap-2 text-[12.5px]">
-          <div className="t-caps dim-2">Variants</div>
-          <p className="dim">
-            Add up to 6. SDK call{" "}
-            <code>shipeasy.experiment(&quot;{trimmed || "name"}&quot;).group</code> returns one of:{" "}
-            <span className="font-mono">{variants.map((v) => v.name).join(", ") || "—"}</span>.
-          </p>
-        </div>
+        <ExperimentAside
+          trimmed={trimmed}
+          universe={universe}
+          allocation={allocation}
+          variants={variants}
+          goalMetricName={goalMetricName}
+        />
       ),
     },
     {
-      id: "review",
-      label: "Review",
-      hint: "Confirm and create as draft.",
+      id: "metrics",
+      label: "Metrics",
+      title: "Goal & guardrails",
+      hint: "Pick one north-star metric. Guardrails alert when they regress.",
+      isValid: () => metricsValid,
       content: (
-        <div className="grid gap-3 md:grid-cols-2">
-          <ReviewCard label="Name" value={trimmed || "—"} mono />
-          <ReviewCard label="Tag" value={tag.trim() || "—"} mono />
-          <ReviewCard label="Universe" value={universe} mono />
-          <ReviewCard label="Allocation" value={`${allocation}%`} mono />
-          <ReviewCard label="Targeting gate" value={gate === "none" ? "—" : gate} mono />
-          <ReviewCard
-            label="Variants"
-            value={
-              <span className="flex flex-wrap gap-1">
-                {variants.map((v) => (
-                  <span
-                    key={v.name}
-                    className="rounded border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-1.5 py-0.5 font-mono text-[11px]"
-                  >
-                    {v.name} · {Math.round(v.weight / 100)}%
-                  </span>
-                ))}
-              </span>
-            }
+        <div className="flex flex-col gap-4">
+          <div>
+            <Label>Goal metric *</Label>
+            <Combobox
+              options={metricOptions}
+              value={goalMetricId}
+              onValueChange={setGoalMetricId}
+              placeholder={
+                metricOptions.length === 0 ? "No metrics registered yet" : "Pick a goal metric"
+              }
+              disabled={metricOptions.length === 0}
+            />
+            <p className="t-mono-xs dim-2 mt-1">
+              The primary outcome we evaluate at significance. Drives the verdict on the home
+              cockpit.
+            </p>
+          </div>
+          <MetricChipPicker
+            title="Guardrail metrics"
+            description="Move them in the wrong direction and the run alerts."
+            options={metricOptions}
+            selected={guardrailIds}
+            disable={[goalMetricId, ...secondaryIds]}
+            onToggle={(id) => setGuardrailIds((arr) => toggleId(arr, id))}
           />
-          {description.trim() ? (
-            <div className="rounded-md border border-[var(--se-line)] bg-[var(--se-bg-2)] p-3 md:col-span-2">
-              <div className="t-caps dim-2">Hypothesis</div>
-              <p className="mt-1 text-[13px]">{description.trim()}</p>
+          <MetricChipPicker
+            title="Secondary metrics"
+            description="Tracked alongside for context — they don't gate verdicts."
+            options={metricOptions}
+            selected={secondaryIds}
+            disable={[goalMetricId, ...guardrailIds]}
+            onToggle={(id) => setSecondaryIds((arr) => toggleId(arr, id))}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="experiment-mde">Min. detectable effect</Label>
+                <span
+                  className="font-mono text-[12px] text-[var(--se-fg-2)]"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {mdePct}%
+                </span>
+              </div>
+              <Slider
+                id="experiment-mde"
+                min={1}
+                max={25}
+                step={1}
+                value={mdePct}
+                onValueChange={(v) => setMdePct(Array.isArray(v) ? (v[0] ?? 5) : (v as number))}
+              />
             </div>
-          ) : null}
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="experiment-alpha">Significance (α)</Label>
+                <span
+                  className="font-mono text-[12px] text-[var(--se-fg-2)]"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {alphaPct}%
+                </span>
+              </div>
+              <Slider
+                id="experiment-alpha"
+                min={1}
+                max={20}
+                step={1}
+                value={alphaPct}
+                onValueChange={(v) => setAlphaPct(Array.isArray(v) ? (v[0] ?? 5) : (v as number))}
+              />
+            </div>
+          </div>
         </div>
       ),
       aside: (
-        <div className="flex flex-col gap-2 text-[12.5px]">
-          <div className="t-caps dim-2">After create</div>
-          <p className="dim">
-            Created in <strong>draft</strong> status. Attach metrics + start it from the detail pane
-            or the full editor.
-          </p>
+        <ExperimentAside
+          trimmed={trimmed}
+          universe={universe}
+          allocation={allocation}
+          variants={variants}
+          goalMetricName={goalMetricName}
+        />
+      ),
+    },
+    {
+      id: "integrate",
+      label: "Integrate",
+      title: "Wire it up",
+      hint: "Drop one of these into your codebase. SDK reads are sub-millisecond after the first hydrate.",
+      content: (
+        <div className="flex flex-col gap-3">
+          <ExperimentIntegrate slug={trimmed || "your_experiment"} variants={variants} />
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-2)] px-3.5 py-3">
+            <input
+              type="checkbox"
+              checked={startNow}
+              onChange={(e) => setStartNow(e.target.checked)}
+              className="mt-0.5"
+              aria-label="Start experiment immediately"
+            />
+            <span className="flex flex-col gap-0.5 text-[12.5px]">
+              <span className="font-medium text-[var(--se-fg)]">Start immediately on publish</span>
+              <span className="text-[var(--se-fg-3)]">
+                If off, the experiment is saved as a draft. You can start it from the detail pane
+                later.
+              </span>
+            </span>
+          </label>
         </div>
+      ),
+      aside: (
+        <ExperimentAside
+          trimmed={trimmed}
+          universe={universe}
+          allocation={allocation}
+          variants={variants}
+          goalMetricName={goalMetricName}
+        />
       ),
     },
   ];
 
   function handleSubmit() {
-    if (!nameValid || !variantsValid) {
-      setStep(nameValid ? 2 : 0);
+    if (!nameValid || !variantsValid || !metricsValid) {
+      setStep(nameValid ? (variantsValid ? 3 : 2) : 0);
       return;
     }
+    const metricsInput: WizardMetricInput[] = [
+      { metric_id: goalMetricId, role: "goal" },
+      ...guardrailIds.map<WizardMetricInput>((id) => ({ metric_id: id, role: "guardrail" })),
+      ...secondaryIds.map<WizardMetricInput>((id) => ({ metric_id: id, role: "secondary" })),
+    ];
     startTransition(async () => {
-      const fd = new FormData();
-      fd.append("name", trimmed);
-      if (description.trim()) fd.append("description", description.trim());
-      if (tag.trim()) fd.append("tag", tag.trim());
-      fd.append("universe", universe);
-      fd.append("allocation", String(allocation));
-      fd.append("targeting_gate", gate === "none" ? "none" : gate);
-      fd.append("group_count", String(variants.length));
-      variants.forEach((v, i) => {
-        fd.append(`group_name_${i}`, v.name);
-        fd.append(`group_weight_${i}`, String(v.weight));
+      const result = await publishExperimentAction({
+        name: trimmed,
+        description: description.trim() || null,
+        tag: tag.trim() || null,
+        universe,
+        targeting_gate: gate === "none" ? null : gate,
+        allocation_pct: allocation * 100,
+        groups: variants.map((v) => ({ name: v.name, weight: v.weight, params: {} })),
+        params: {},
+        significance_threshold: alphaPct / 100,
+        min_runtime_days: 0,
+        min_sample_size: 100,
+        sequential_testing: false,
+        metrics: metricsInput,
+        start: startNow,
       });
-      try {
-        await createExperimentAction(fd);
-        toast.success("Experiment created");
+      if (result.ok) {
+        toast.success(result.message);
         onCreated?.();
-      } catch (err) {
-        const digest = (err as { digest?: string })?.digest;
-        if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
-          // Server action redirected — our list page will reload. Surface a toast & close.
-          toast.success("Experiment created");
-          onCreated?.();
-          throw err;
-        }
-        toast.error(err instanceof Error ? err.message : "Failed to create experiment");
+      } else {
+        toast.error(result.error ?? "Failed to create experiment");
       }
     });
   }
@@ -425,30 +541,189 @@ export function NewExperimentWizard({
       onOpenChange={onOpenChange}
       kind="experiments"
       title="Design the experiment"
-      eyebrow={{ project: projectId, area: "Experiments" }}
+      eyebrow={{ project: projectId }}
       steps={steps}
       current={step}
       onStepChange={setStep}
       onSubmit={handleSubmit}
-      submitLabel="Create experiment"
+      submitLabel={startNow ? undefined : "Save as draft"}
       submitting={pending}
     />
   );
 }
 
-function ReviewCard({
-  label,
-  value,
-  mono,
+function ExperimentAside({
+  trimmed,
+  universe,
+  allocation,
+  variants,
+  goalMetricName,
 }: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
+  trimmed: string;
+  universe: string;
+  allocation: number;
+  variants: Variant[];
+  goalMetricName: string | null;
+}) {
+  const rows: Array<{ k: string; v: React.ReactNode; mono?: boolean }> = [
+    { k: "slug", v: trimmed || "—", mono: true },
+    { k: "universe", v: universe, mono: true },
+    { k: "alloc", v: `${allocation}%`, mono: true },
+    {
+      k: "variants",
+      v: variants.length ? `${variants.length} · ${variants.map((v) => v.name).join(" / ")}` : "—",
+      mono: true,
+    },
+    { k: "goal", v: goalMetricName ?? "—", mono: !!goalMetricName },
+  ];
+  return (
+    <>
+      <div className="t-caps dim-2 flex items-center gap-1.5">
+        <span className="inline-block size-[5px] rounded-full bg-[var(--se-accent)]" />
+        Summary
+      </div>
+      <dl className="flex flex-col gap-1.5">
+        {rows.map((r) => (
+          <div key={r.k} className="grid grid-cols-[72px_minmax(0,1fr)] items-baseline gap-2">
+            <dt className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-[var(--se-fg-3)]">
+              {r.k}
+            </dt>
+            <dd
+              className={
+                r.mono
+                  ? "truncate font-mono text-[12.5px] text-[var(--se-fg-2)]"
+                  : "truncate text-[12.5px] text-[var(--se-fg-2)]"
+              }
+            >
+              {r.v}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <div className="mt-1 rounded-[var(--radius-sm)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] p-2.5 font-mono text-[11px] text-[var(--se-fg-3)]">
+        shipeasy.experiment(&quot;{trimmed || "slug"}&quot;).group
+      </div>
+    </>
+  );
+}
+
+function MetricChipPicker({
+  title,
+  description,
+  options,
+  selected,
+  disable,
+  onToggle,
+}: {
+  title: string;
+  description: string;
+  options: ComboboxOption[];
+  selected: string[];
+  disable: string[];
+  onToggle: (id: string) => void;
 }) {
   return (
-    <div className="rounded-md border border-[var(--se-line)] bg-[var(--se-bg-2)] p-3">
-      <div className="t-caps dim-2">{label}</div>
-      <div className={mono ? "mt-1 font-mono text-[13px]" : "mt-1 text-[13px]"}>{value}</div>
+    <div>
+      <Label>{title}</Label>
+      <p className="t-mono-xs dim-2 mt-0.5 mb-2">{description}</p>
+      {options.length === 0 ? (
+        <div className="rounded-md border border-dashed border-[var(--se-line)] px-3 py-2.5 text-[12px] text-[var(--se-fg-3)]">
+          No metrics registered.
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {options.map((o) => {
+            const on = selected.includes(o.value);
+            const disabled = disable.includes(o.value);
+            return (
+              <button
+                type="button"
+                key={o.value}
+                onClick={() => !disabled && onToggle(o.value)}
+                disabled={disabled}
+                aria-pressed={on}
+                className={
+                  on
+                    ? "rounded-full border border-[color-mix(in_oklab,var(--se-accent)_45%,transparent)] bg-[var(--se-accent-soft)] px-2.5 py-0.5 font-mono text-[11.5px] text-[var(--se-accent)]"
+                    : disabled
+                      ? "rounded-full border border-[var(--se-line)] bg-[var(--se-bg-2)] px-2.5 py-0.5 font-mono text-[11.5px] text-[var(--se-fg-4)] line-through"
+                      : "rounded-full border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 py-0.5 font-mono text-[11.5px] text-[var(--se-fg-2)] hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)]"
+                }
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
+}
+
+function ExperimentIntegrate({ slug, variants }: { slug: string; variants: Variant[] }) {
+  const variantNames = variants.map((v) => v.name);
+  const snippets = useMemo(() => buildExperimentSnippets(slug, variantNames), [slug, variantNames]);
+  return (
+    <Tabs defaultValue="ts">
+      <TabsList>
+        <TabsTrigger value="ts">TypeScript</TabsTrigger>
+        <TabsTrigger value="py">Python</TabsTrigger>
+        <TabsTrigger value="go">Go</TabsTrigger>
+        <TabsTrigger value="curl">cURL</TabsTrigger>
+      </TabsList>
+      <TabsContent value="ts" className="mt-3">
+        <CodeBlock language="ts">{snippets.ts}</CodeBlock>
+      </TabsContent>
+      <TabsContent value="py" className="mt-3">
+        <CodeBlock language="py">{snippets.py}</CodeBlock>
+      </TabsContent>
+      <TabsContent value="go" className="mt-3">
+        <CodeBlock language="go">{snippets.go}</CodeBlock>
+      </TabsContent>
+      <TabsContent value="curl" className="mt-3">
+        <CodeBlock language="bash">{snippets.curl}</CodeBlock>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function buildExperimentSnippets(slug: string, variants: string[]) {
+  const switchBody = variants
+    .map((v) => `    case '${v}': return render_${v.replace(/[^a-z0-9_]/gi, "_")}();`)
+    .join("\n");
+  return {
+    ts: `import { shipeasy } from '@shipeasy/sdk';
+
+const { group } = await shipeasy.experiment('${slug}', {
+  user_id: ctx.user.id,
+});
+
+switch (group) {
+${variants.map((v) => `  case '${v}': return render_${v.replace(/[^a-z0-9_]/gi, "_")}();`).join("\n")}
+  case 'holdout': return renderControl();
+}`,
+    py: `from shipeasy import client
+
+assignment = client.experiment(
+    "${slug}",
+    user_id=ctx.user.id,
+)
+
+if assignment.group == "holdout":
+    return render_control()
+${variants.map((v) => `if assignment.group == "${v}":\n    return render_${v.replace(/[^a-z0-9_]/gi, "_")}()`).join("\n")}`,
+    go: `assignment, _ := shipeasy.Experiment(ctx, "${slug}", &shipeasy.Subject{
+    UserID: ctx.User.ID,
+})
+
+switch assignment.Group {
+${switchBody}
+case "holdout":
+    return renderControl()
+}`,
+    curl: `curl -H "Authorization: Bearer $SHIPEASY_KEY" \\
+  -H "Content-Type: application/json" \\
+  -X POST https://api.shipeasy.dev/v1/experiments/${slug}/evaluate \\
+  -d '{ "user_id": "u_123" }'`,
+  };
 }
