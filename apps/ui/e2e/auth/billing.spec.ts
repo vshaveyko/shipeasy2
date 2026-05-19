@@ -71,4 +71,44 @@ test.describe("Billing", () => {
     await expect(page).toHaveURL(/\/auth\/signin/);
     await ctx.close();
   });
+
+  // ── Plan-config surface (moved from plans.spec.ts) ─────────────────────────
+  // Plan info that used to render on /settings now lives only on /billing.
+
+  test("subscription card surfaces a Plan stat with the plan name", async ({ page }) => {
+    await page.goto("/dashboard/billing");
+    const main = page.getByRole("main");
+    await expect(main.getByText(/^plan$/i).first()).toBeVisible();
+    // e2e user is on the free plan — display_name resolves to "Free"
+    await expect(main.getByText(/\bfree\b/i).first()).toBeVisible();
+  });
+
+  test("plan limits card shows SDK poll interval in seconds", async ({ page }) => {
+    await page.goto("/dashboard/billing");
+    const main = page.getByRole("main");
+    await expect(main.getByText(/sdk poll interval/i)).toBeVisible();
+    // Value renders as `${seconds}s` next to the label
+    await expect(main.getByText(/^\d+s$/).first()).toBeVisible();
+  });
+
+  test("plan limits card has a refresh cadence section", async ({ page }) => {
+    await page.goto("/dashboard/billing");
+    await expect(page.getByText(/refresh cadence/i)).toBeVisible();
+  });
+
+  test("paid-only features list mentions analytics retention", async ({ page }) => {
+    await page.goto("/dashboard/billing");
+    // e2e user is free → "Unlock with a paid plan" card is rendered
+    await expect(page.getByText(/analytics retention/i)).toBeVisible();
+  });
+
+  test("paid-only features list mentions sequential testing", async ({ page }) => {
+    await page.goto("/dashboard/billing");
+    await expect(page.getByText(/sequential testing/i)).toBeVisible();
+  });
+
+  test("paid-only features list mentions CUPED variance reduction", async ({ page }) => {
+    await page.goto("/dashboard/billing");
+    await expect(page.getByText(/cuped/i).or(page.getByText(/variance reduction/i))).toBeVisible();
+  });
 });

@@ -25,10 +25,19 @@
 - [drawer.tsx](apps/ui/src/components/ui/drawer.tsx) — Base UI Dialog wrapper styled as a slide-in panel (`side="right|left|top|bottom"`).
 - [field-array.tsx](apps/ui/src/components/ui/field-array.tsx) — `<FieldArray>` + `<FieldArrayRow>` (drag handle / content / remove) + `<FieldArrayAdd>` (dashed "Add row" button). For rules / variants / metrics lists in wizards.
 
-**Phase 1c — existing primitive polish — partial:**
+**Phase 1c — existing primitive polish — DONE (2026-05-18).**
 
 - [dialog.tsx](apps/ui/src/components/ui/dialog.tsx) gained `size="default" | "big-modal"`. Big-modal: 1180px max-width × calc(100vh-130px), grid 3-row (head/body/foot), radial-gradient backdrop + blur(6px), layered shadow + inset highlight. Used as chrome by `BigModalWizard`.
-- **Deferred to per-feature application:** button intent palette, input mono variant, badge intent palette, card padding tuning, empty-state polish, code-block tab-switcher verification. These are cosmetic and easier to verify against real screens; will be done as part of each Phase 3 feature step.
+- [button.tsx](apps/ui/src/components/ui/button.tsx) — `variant` enum extended with `primary` (alias of `default`) and `danger` (alias of `destructive`) so callers can opt into the intent-named API without breaking the existing `default`/`destructive` consumers. Size variants (h-8/h-7/h-9 = 32/28/36px) already matched the design.
+- [input.tsx](apps/ui/src/components/ui/input.tsx) + [textarea.tsx](apps/ui/src/components/ui/textarea.tsx) — `data-mono` attribute now swaps to `font-mono` + tighter tracking + 13px size for identifier fields (keys, slugs, JSON). Showcase Inputs section gained a "Mono (identifiers)" demo.
+- [badge.tsx](apps/ui/src/components/ui/badge.tsx) — added orthogonal `intent` prop (`none|running|success|info|warn|danger|neutral`) layering soft-mix backgrounds on top of the existing `variant`. Pair with `variant="outline"` for the canonical intent chip. Showcase Badges section gained "Intent palette".
+- [status-badge.tsx](apps/ui/src/components/ui/status-badge.tsx) — `tone` enum widened with `running` (= live), `success` (= live), `warn` (= paused), `danger` (= killed), `info` (= completed) aliases so callers can use semantic intent names instead of lifecycle-specific tones. Existing `live`/`paused`/`killed`/`completed`/`draft`/`neutral` consumers untouched.
+- [card.tsx](apps/ui/src/components/ui/card.tsx) — added `elevation` prop (`none|1|2|pop`) mapped to `--se-shadow-1`/`-2`/`-pop`. Default unchanged (`none`, ring-only). Existing per-card padding (16px) intentionally retained — the 18px body / 14px head tuning from the plan would visually drift every existing card on the app for no functional gain.
+- [code-block.tsx](apps/ui/src/components/ui/code-block.tsx) — added `<CodeBlockTabs tabs={[…]}>` that wraps a tab strip (TypeScript / Python / Ruby / Go / Java / cURL — full design parity vs the prior wizard-side Tabs+CodeBlock comp, which only shipped TS/Py/Go/cURL) over the existing CodeBlock. Showcase CodeBlock section gained a CodeBlockTabs example with all six language tabs.
+- [empty-state.tsx](apps/ui/src/components/ui/empty-state.tsx) — verified against `standards-empty.html`: pulse-dot eyebrow ✓, 32px headline ✓, mono fixture slot via `visual` prop ✓, 3-col stat grid via `stats` prop ✓, primary CTA via `actions` prop ✓. No edits needed.
+- [dropdown-menu.tsx](apps/ui/src/components/ui/dropdown-menu.tsx) — visual parity confirmed; no API change.
+
+Type-check (src/) + lint clean on all touched files.
 
 **Phase 2a — UnifiedList shell — DONE.** [src/components/shell/unified-list.tsx](apps/ui/src/components/shell/unified-list.tsx). Generic `<UnifiedList<T>>`. API:
 
@@ -274,8 +283,14 @@ Touched: [keys/page.tsx](apps/ui/src/app/dashboard/[projectId]/keys/page.tsx), [
 **Open items still outstanding:**
 
 - Reference prototype extracted at `/tmp/design-anZ1vXWhHX91yU9rqSXWXw/shipeasy/project/app/`. NB: the tar bundle is in a tempdir — re-extract from the design bundle if `/tmp` was wiped (see "Reference material" below for the source URL).
-- 10 `.skip`-marked obsolete specs need a product-level decision on whether to restore the dropped copy or rewrite the assertions against the new surfaces. TODOs in-file with redesign-followup tag.
+- 6 `.skip`-marked obsolete specs in [experiment-results-detail.spec.ts](apps/ui/e2e/auth/experiment-results-detail.spec.ts) still need a product-level decision (v2 standalone `/experiments/[id]` dropped the 4 stat tiles / Wait verdict / LIVE header badge / sequential-testing activity row). TODOs in-file with redesign-followup tag.
 - 2 pre-existing flakes (`keys-full:185` sqlite-lock contention; `settings-interactions:48` state-leak across batch runs) — sqlite + e2e infra concerns, separate follow-up.
+
+**Plans / billing spec migration (2026-05-18).** Product decision: plan-config surface lives permanently on `/dashboard/billing`. Assertions retargeted accordingly:
+
+- [billing.spec.ts](apps/ui/e2e/auth/billing.spec.ts) extended with 6 new cases — Plan stat tile + plan name, SDK poll interval label + `${seconds}s` value, Refresh cadence section header, paid-only feature list copy for analytics retention / sequential testing / CUPED variance reduction.
+- [plans.spec.ts](apps/ui/e2e/auth/plans.spec.ts) — the 4 `Plans — settings page display` / `Plans — plan config values` skip blocks (current plan / Manage billing link / poll interval / poll-interval default / retention) plus the 2 `Plans — gated feature display` experiments-page skip blocks (sequential testing / CUPED on experiment results) deleted. Same intent now covered on `/billing`. Spec keeps the `Translate with AI` i18n-keys disabled check and the `System health — analysis staleness banner` checks.
+- Local run: `billing.spec.ts` + `plans.spec.ts` together = 19 passed, 1 pre-existing skip (`system_health` stale-row needs DB seed; unrelated).
 
 ## Context
 

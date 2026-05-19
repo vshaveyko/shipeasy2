@@ -19,7 +19,7 @@ import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CodeBlock } from "@/components/ui/code-block";
+import { CodeBlock, CodeBlockTabs } from "@/components/ui/code-block";
 import { Combobox } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -426,6 +426,28 @@ function BadgesSection() {
             <Badge variant="destructive">Destructive</Badge>
           </div>
         </Demo>
+        <Demo title="Intent palette">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" intent="running">
+              Running
+            </Badge>
+            <Badge variant="outline" intent="success">
+              Success
+            </Badge>
+            <Badge variant="outline" intent="info">
+              Info
+            </Badge>
+            <Badge variant="outline" intent="warn">
+              Warn
+            </Badge>
+            <Badge variant="outline" intent="danger">
+              Danger
+            </Badge>
+            <Badge variant="outline" intent="neutral">
+              Neutral
+            </Badge>
+          </div>
+        </Demo>
       </div>
     </Section>
   );
@@ -493,6 +515,10 @@ function InputsSection() {
             <Input placeholder="With leading icon" />
           </FieldRow>
           <Textarea placeholder="Multi-line description…" />
+        </Demo>
+        <Demo title="Mono (identifiers)">
+          <Input data-mono defaultValue="checkout_v3" />
+          <Textarea data-mono defaultValue='{ "key": "checkout_v3" }' />
         </Demo>
       </div>
     </Section>
@@ -767,12 +793,42 @@ function CodeBlockSection() {
       title="Code block"
       sub="Syntax-tinted via the .se-json class. Copy button shows on hover/focus."
     >
-      <CodeBlock language="ts">{`import { shipeasy } from "@shipeasy/sdk/server";
+      <div className="flex flex-col gap-4">
+        <CodeBlock language="ts">{`import { shipeasy } from "@shipeasy/sdk/server";
 
 await shipeasy({ apiKey: process.env.NEXT_PUBLIC_SHIPEASY_CLIENT_KEY ?? "" });
 
 const variant = await shipeasy.experiment("checkout_v3");
 console.log(variant.id, variant.payload);`}</CodeBlock>
+        <CodeBlockTabs
+          tabs={[
+            {
+              language: "typescript",
+              code: `import { shipeasy } from "@shipeasy/sdk/server";\nconst v = await shipeasy.experiment("checkout_v3");`,
+            },
+            {
+              language: "python",
+              code: `from shipeasy import Shipeasy\nv = Shipeasy(api_key=KEY).experiment("checkout_v3")`,
+            },
+            {
+              language: "ruby",
+              code: `require "shipeasy"\nv = Shipeasy.new(api_key: KEY).experiment("checkout_v3")`,
+            },
+            {
+              language: "go",
+              code: `client := shipeasy.New(KEY)\nv, _ := client.Experiment(ctx, "checkout_v3")`,
+            },
+            {
+              language: "java",
+              code: `Shipeasy se = new Shipeasy(KEY);\nVariant v = se.experiment("checkout_v3");`,
+            },
+            {
+              language: "curl",
+              code: `curl -H "Authorization: Bearer $KEY" \\\n  https://api.shipeasy.ai/sdk/experiments/checkout_v3`,
+            },
+          ]}
+        />
+      </div>
     </Section>
   );
 }

@@ -10,12 +10,20 @@ const statusBadgeVariants = cva(
       tone: {
         neutral: "border-[var(--se-line-2)] bg-[var(--se-bg-3)] text-[var(--se-fg-2)]",
         live: "border-[color-mix(in_oklab,var(--se-accent)_30%,transparent)] bg-[var(--se-accent-soft)] text-[var(--se-accent)]",
+        running:
+          "border-[color-mix(in_oklab,var(--se-accent)_30%,transparent)] bg-[var(--se-accent-soft)] text-[var(--se-accent)]",
+        success:
+          "border-[color-mix(in_oklab,var(--se-accent)_30%,transparent)] bg-[var(--se-accent-soft)] text-[var(--se-accent)]",
         paused:
           "border-[color-mix(in_oklab,var(--se-warn)_30%,transparent)] bg-[var(--se-warn-soft)] text-[var(--se-warn)]",
+        warn: "border-[color-mix(in_oklab,var(--se-warn)_30%,transparent)] bg-[var(--se-warn-soft)] text-[var(--se-warn)]",
         killed:
+          "border-[color-mix(in_oklab,var(--se-danger)_30%,transparent)] bg-[var(--se-danger-soft)] text-[var(--se-danger)]",
+        danger:
           "border-[color-mix(in_oklab,var(--se-danger)_30%,transparent)] bg-[var(--se-danger-soft)] text-[var(--se-danger)]",
         completed:
           "border-[color-mix(in_oklab,var(--se-info)_30%,transparent)] bg-[var(--se-info-soft)] text-[var(--se-info)]",
+        info: "border-[color-mix(in_oklab,var(--se-info)_30%,transparent)] bg-[var(--se-info-soft)] text-[var(--se-info)]",
         draft: "border-[var(--se-line)] bg-[var(--se-bg-3)] text-[var(--se-fg-3)]",
       },
       pulse: {

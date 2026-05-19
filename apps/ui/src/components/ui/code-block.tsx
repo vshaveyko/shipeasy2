@@ -66,4 +66,86 @@ function CodeBlock({
   );
 }
 
-export { CodeBlock };
+export type CodeLanguage =
+  | "typescript"
+  | "python"
+  | "ruby"
+  | "go"
+  | "java"
+  | "curl"
+  | (string & {});
+
+interface CodeTab {
+  language: CodeLanguage;
+  label?: string;
+  code: string;
+}
+
+interface CodeBlockTabsProps extends Omit<React.ComponentProps<"div">, "defaultValue"> {
+  tabs: CodeTab[];
+  defaultValue?: CodeLanguage;
+}
+
+const DEFAULT_LABELS: Record<string, string> = {
+  typescript: "TypeScript",
+  python: "Python",
+  ruby: "Ruby",
+  go: "Go",
+  java: "Java",
+  curl: "cURL",
+};
+
+function CodeBlockTabs({ tabs, defaultValue, className, ...props }: CodeBlockTabsProps) {
+  const [active, setActive] = React.useState<CodeLanguage>(
+    defaultValue ?? tabs[0]?.language ?? "typescript",
+  );
+  const current = tabs.find((t) => t.language === active) ?? tabs[0];
+
+  return (
+    <div
+      data-slot="code-block-tabs"
+      className={cn(
+        "overflow-hidden rounded-[var(--radius-md)] border border-[var(--se-line)] bg-[var(--se-bg-2)]",
+        className,
+      )}
+      {...props}
+    >
+      <div
+        role="tablist"
+        className="flex items-center gap-1 border-b border-[var(--se-line)] bg-[var(--se-bg-1)] px-2 py-1.5"
+      >
+        {tabs.map((t) => {
+          const selected = t.language === active;
+          return (
+            <button
+              key={t.language}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setActive(t.language)}
+              className={cn(
+                "cursor-pointer rounded-sm px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.06em] transition-colors",
+                selected
+                  ? "bg-[var(--se-bg-3)] text-[var(--se-fg)]"
+                  : "text-[var(--se-fg-3)] hover:text-[var(--se-fg-2)]",
+              )}
+            >
+              {t.label ?? DEFAULT_LABELS[t.language] ?? t.language}
+            </button>
+          );
+        })}
+      </div>
+      {current ? (
+        <CodeBlock
+          language={current.language}
+          copyValue={current.code}
+          className="rounded-none border-0"
+        >
+          {current.code}
+        </CodeBlock>
+      ) : null}
+    </div>
+  );
+}
+
+export { CodeBlock, CodeBlockTabs };
