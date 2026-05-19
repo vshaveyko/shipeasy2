@@ -62,6 +62,7 @@ dist/
 **/playwright-report/
 **/playwright/.cache/
 **/e2e/.auth/
+.playwright-mcp/
 
 
 !.dev.vars.example

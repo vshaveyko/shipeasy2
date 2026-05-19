@@ -1,13 +1,18 @@
-import { Globe2 } from "lucide-react";
+import type { Metadata } from "next";
+import { AlertTriangle, Globe2 } from "lucide-react";
 import { auth } from "@/auth";
 import { listAllUniverses } from "@/lib/handlers/universes";
+
+export const metadata: Metadata = { title: "Universes" };
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { readFlashError } from "@/lib/flash-error";
 import { createUniverseAction, deleteUniverseAction } from "./actions";
+import { UNIVERSE_ERROR_COOKIE } from "./universe-error-cookie";
 
 export default async function UniversesPage() {
   const session = await auth();
@@ -26,6 +31,8 @@ export default async function UniversesPage() {
     }
   }
 
+  const error = await readFlashError(UNIVERSE_ERROR_COOKIE);
+
   return (
     <Page>
       <PageHeader
@@ -33,6 +40,25 @@ export default async function UniversesPage() {
         description="A universe groups experiments that share a holdout. Users held out of a universe see no experiment inside it."
       />
       <PageBody className="space-y-6">
+        {error && (
+          <div
+            className="rounded-[var(--radius-md)] border p-4"
+            style={{
+              background: "color-mix(in oklab, var(--se-danger) 12%, var(--se-bg-1))",
+              borderColor: "color-mix(in oklab, var(--se-danger) 35%, transparent)",
+            }}
+            role="alert"
+          >
+            <div
+              className="t-caps mb-2 flex items-center gap-2"
+              style={{ color: "var(--se-danger)" }}
+            >
+              <AlertTriangle className="size-3" />
+              <span>Couldn&rsquo;t create universe</span>
+            </div>
+            <p className="text-[13px] text-[var(--se-fg)]">{error}</p>
+          </div>
+        )}
         <p className="text-sm text-muted-foreground">
           One default universe is always present. Create a custom universe to reserve a percentage
           of users as a long-term holdout.

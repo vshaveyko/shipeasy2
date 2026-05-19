@@ -29,6 +29,8 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
       },
       decisions: [],
       liveExperiments: [],
+      pulse24h: Array.from({ length: 24 }, () => 0),
+      activity: [],
       projectName: null,
       planName: "Free",
     };

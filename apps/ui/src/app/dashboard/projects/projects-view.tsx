@@ -54,7 +54,7 @@ export function ProjectsHeaderActions({ createProject }: { createProject: Create
   return (
     <>
       <a
-        href="/docs"
+        href="https://docs.shipeasy.ai"
         target="_blank"
         rel="noreferrer"
         className={buttonVariants({ variant: "secondary", size: "sm" })}
@@ -241,6 +241,15 @@ function Stat({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
   );
 }
 
+function toSlugPreview(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
 function CreateProjectModal({
   onClose,
   createProject,
@@ -248,6 +257,7 @@ function CreateProjectModal({
   onClose: () => void;
   createProject: CreateAction;
 }) {
+  const [nameDraft, setNameDraft] = useState("");
   return (
     <div
       role="dialog"
@@ -276,9 +286,24 @@ function CreateProjectModal({
           <div className="flex flex-col gap-3.5 px-6 py-6">
             <div>
               <div className="t-caps dim-2 mb-1.5">Display name</div>
-              <Input name="name" placeholder="My app" required autoFocus />
+              <Input
+                name="name"
+                placeholder="My app"
+                required
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+              />
               <div className="t-mono-xs dim-2 mt-1">
                 Shown in the sidebar and across the dashboard.
+                {nameDraft.trim().length > 0 && (
+                  <>
+                    {" · slug "}
+                    <code className="font-mono text-[var(--se-fg-2)]">
+                      {toSlugPreview(nameDraft) || "—"}
+                    </code>
+                  </>
+                )}
               </div>
             </div>
             <div>

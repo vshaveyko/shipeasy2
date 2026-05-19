@@ -82,13 +82,18 @@ export default async function BillingPage() {
             </div>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-2">
               <Stat label="Plan" value={effectivePlan?.display_name ?? "—"} />
-              <Stat label="Gates" value={fmtLimit(effectivePlan?.max_flags ?? 0)} />
-              <Stat label="Configs" value={fmtLimit(effectivePlan?.max_configs ?? 0)} />
               <Stat
-                label="Running experiments"
-                value={fmtLimit(effectivePlan?.max_experiments_running ?? 0)}
+                label="Status"
+                value={(() => {
+                  if (subscriptionStatus === "active") return "Active";
+                  if (subscriptionStatus === "trialing") return "Trial";
+                  if (subscriptionStatus === "past_due") return "Payment overdue";
+                  if (subscriptionStatus === "canceled") return "Canceled";
+                  if (subscriptionStatus === "incomplete") return "Incomplete";
+                  return isPaid ? "Active" : "Free tier";
+                })()}
               />
             </div>
 

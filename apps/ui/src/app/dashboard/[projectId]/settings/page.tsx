@@ -32,11 +32,7 @@ function pickTab(raw: string | string[] | undefined): SettingsTabKey {
   return isSettingsTab(candidate) ? candidate : "general";
 }
 
-export default async function SettingsPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function SettingsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const tab = pickTab(params.tab);
 
@@ -86,7 +82,7 @@ export default async function SettingsPage({
         description="Manage your project, experiment defaults, integrations, and billing."
         actions={
           <a
-            href="/docs"
+            href="https://docs.shipeasy.ai"
             target="_blank"
             rel="noreferrer"
             className={buttonVariants({ variant: "ghost", size: "sm" })}
@@ -167,7 +163,8 @@ function BillingPanel({
   seatsUsed: number;
 }) {
   const seatsCapDisplay = seatsCap < 0 ? "∞" : seatsCap;
-  const evalsDisplay = evaluationsCap < 0 ? "Unlimited" : `${(evaluationsCap / 1_000_000).toFixed(1)}M`;
+  const evalsDisplay =
+    evaluationsCap < 0 ? "Unlimited" : `${(evaluationsCap / 1_000_000).toFixed(1)}M`;
   // Real billing reflects Stripe state; usage values come from analytics — show
   // the cap with a 0% bar in dev so the page renders without analytics data.
   return (
@@ -225,7 +222,17 @@ function BillingPanel({
           <div className="billing-mini-card">
             <div className="t-caps dim-2 mb-2">Subscription status</div>
             <div className="flex items-center gap-3">
-              <Badge variant="secondary">{project.subscriptionStatus ?? "none"}</Badge>
+              <Badge variant="secondary">
+                {(() => {
+                  const s = project.subscriptionStatus;
+                  if (s === "active") return "Active";
+                  if (s === "trialing") return "Trial";
+                  if (s === "past_due") return "Payment overdue";
+                  if (s === "canceled") return "Canceled";
+                  if (s === "incomplete") return "Incomplete";
+                  return "Free tier";
+                })()}
+              </Badge>
               {project.currentPeriodEnd ? (
                 <div className="t-mono-xs dim-2">
                   Renews {new Date(project.currentPeriodEnd).toLocaleDateString()}

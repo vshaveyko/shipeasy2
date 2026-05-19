@@ -1,9 +1,12 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { createMetric, deleteMetric, bulkDeleteMetrics } from "@/lib/handlers/metrics";
+
+import { METRIC_ERROR_COOKIE } from "./metric-error-cookie";
 
 export async function createMetricAction(formData: FormData) {
   const identity = await getIdentity();
@@ -16,14 +19,26 @@ export async function createMetricAction(formData: FormData) {
   const winsorize_pct = winsorizeRaw ? Number(winsorizeRaw) : 99;
   const mdeRaw = formData.get("min_detectable_effect") as string | null;
   const min_detectable_effect = mdeRaw && mdeRaw.trim() !== "" ? Number(mdeRaw) : null;
-  await createMetric(identity, {
-    name,
-    event_name,
-    aggregation,
-    winsorize_pct,
-    value_path,
-    min_detectable_effect,
-  });
+  const cookieStore = await cookies();
+  try {
+    await createMetric(identity, {
+      name,
+      event_name,
+      aggregation,
+      winsorize_pct,
+      value_path,
+      min_detectable_effect,
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to create metric";
+    cookieStore.set(METRIC_ERROR_COOKIE, message, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: `/dashboard/${identity.projectId}/experiments/metrics`,
+      maxAge: 30,
+    });
+  }
   revalidatePath("/dashboard/[projectId]/experiments/metrics", "page");
   redirect(`/dashboard/${identity.projectId}/experiments/metrics`);
 }

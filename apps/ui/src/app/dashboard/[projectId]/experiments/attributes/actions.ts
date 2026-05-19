@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { createAttribute, deleteAttribute, bulkDeleteAttributes } from "@/lib/handlers/attributes";
+import { setFlashError } from "@/lib/flash-error";
+import { ATTRIBUTE_ERROR_COOKIE } from "./attribute-error-cookie";
 
 export async function createAttributeAction(formData: FormData) {
   const identity = await getIdentity();
@@ -17,7 +19,15 @@ export async function createAttributeAction(formData: FormData) {
           .map((v) => v.trim())
           .filter(Boolean)
       : null;
-  await createAttribute(identity, { name, type, enum_values, required: false });
+  try {
+    await createAttribute(identity, { name, type, enum_values, required: false });
+  } catch (e) {
+    await setFlashError({
+      cookieName: ATTRIBUTE_ERROR_COOKIE,
+      scopePath: `/dashboard/${identity.projectId}/experiments/attributes`,
+      message: e instanceof Error ? e.message : "Failed to create attribute",
+    });
+  }
   revalidatePath("/dashboard/[projectId]/experiments/attributes", "page");
   redirect(`/dashboard/${identity.projectId}/experiments/attributes`);
 }
@@ -25,7 +35,15 @@ export async function createAttributeAction(formData: FormData) {
 export async function deleteAttributeAction(formData: FormData) {
   const identity = await getIdentity();
   const id = formData.get("id") as string;
-  await deleteAttribute(identity, id);
+  try {
+    await deleteAttribute(identity, id);
+  } catch (e) {
+    await setFlashError({
+      cookieName: ATTRIBUTE_ERROR_COOKIE,
+      scopePath: `/dashboard/${identity.projectId}/experiments/attributes`,
+      message: e instanceof Error ? e.message : "Failed to delete attribute",
+    });
+  }
   revalidatePath("/dashboard/[projectId]/experiments/attributes", "page");
   redirect(`/dashboard/${identity.projectId}/experiments/attributes`);
 }

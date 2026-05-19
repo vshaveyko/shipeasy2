@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -15,6 +16,21 @@ import {
 import { auth } from "@/auth";
 import { findProjectById } from "@shipeasy/core";
 import type { ProjectModuleKey } from "@shipeasy/core";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const env = await getEnvAsync();
+    const project = await findProjectById(env.DB, id);
+    return { title: project?.name ?? "Project" };
+  } catch {
+    return { title: "Project" };
+  }
+}
 import { listAllKeys } from "@/lib/handlers/keys";
 import { getEnvAsync } from "@/lib/env";
 import { getIdentity } from "@/lib/server-action";

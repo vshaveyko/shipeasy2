@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { FolderTree } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { auth } from "@/auth";
+
+export const metadata: Metadata = { title: "Profiles" };
 import { listProfiles, listKeys } from "@/lib/handlers/i18n";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";

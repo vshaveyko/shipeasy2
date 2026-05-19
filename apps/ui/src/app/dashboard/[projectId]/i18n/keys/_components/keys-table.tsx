@@ -1252,9 +1252,19 @@ export function KeysTable({ profiles, drafts, draftKeysByDraft }: Props) {
         )}
 
         <div className="ml-auto">
-          <Button size="sm" variant="outline" disabled className="gap-1.5 text-xs">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled
+            title="Translate with AI — coming soon"
+            aria-label="Translate with AI (coming soon)"
+            className="gap-1.5 text-xs"
+          >
             <Sparkles className="size-3.5 text-[var(--se-accent)]" />
             Translate with AI
+            <span className="ml-1 rounded-[var(--radius-xs)] border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-1 py-0 font-mono text-[10px] text-[var(--se-fg-3)]">
+              soon
+            </span>
           </Button>
         </div>
       </div>

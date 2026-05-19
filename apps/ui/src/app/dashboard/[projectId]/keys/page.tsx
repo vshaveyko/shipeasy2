@@ -174,7 +174,7 @@ export default async function KeysPage({
         )}
 
         <div
-          className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]"
+          className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]"
           id="create-key"
         >
           <div className="flex flex-wrap items-center gap-3 border-b border-[var(--se-line)] px-4 py-3">

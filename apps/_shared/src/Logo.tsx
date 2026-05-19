@@ -1,21 +1,36 @@
-import type { SVGAttributes } from "react";
+import type { CSSProperties } from "react";
 
-export function Logo(props: SVGAttributes<SVGElement>) {
+/**
+ * Shipeasy brand mark — conic-gradient ring + inner rounded square.
+ * Matches BrandMark used in the dashboard sidebar and auth shell.
+ *
+ * Sized via CSS (className like `size-5` from tailwind, or inline width/height).
+ * The mark sets its own background; `currentColor` is unused.
+ */
+export function Logo({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
-    <svg
-      width="1em"
-      height="1em"
-      viewBox="0 0 200 200"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
+    <span
+      className={className}
+      style={{
+        display: "inline-block",
+        position: "relative",
+        borderRadius: "27%",
+        background:
+          "conic-gradient(from 140deg, var(--se-accent, #5dd39e), var(--se-bg, #0a0a0b) 40%, var(--se-accent, #5dd39e) 80%)",
+        boxShadow: "0 0 0 1px var(--se-line-2, rgba(255,255,255,0.14))",
+        ...style,
+      }}
+      aria-hidden="true"
     >
-      <path
-        fill="currentColor"
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M48 0H152A48 48 0 0 1 200 48V152A48 48 0 0 1 152 200H48A48 48 0 0 1 0 152V48A48 48 0 0 1 48 0ZM100 60L60 120H100V60ZM100 120H140L100 60V120ZM45 125L100 150L155 125L140 120H60L45 125Z"
+      <span
+        style={{
+          position: "absolute",
+          inset: "23%",
+          background: "var(--se-bg, #0a0a0b)",
+          borderRadius: "14%",
+          boxShadow: "inset 0 0 0 1px var(--se-line-2, rgba(255,255,255,0.14))",
+        }}
       />
-    </svg>
+    </span>
   );
 }

@@ -1,10 +1,15 @@
-import { Tags } from "lucide-react";
+import type { Metadata } from "next";
+import { AlertTriangle, Tags } from "lucide-react";
 import { auth } from "@/auth";
 import { listAttributes } from "@/lib/handlers/attributes";
+
+export const metadata: Metadata = { title: "Attributes" };
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
+import { readFlashError } from "@/lib/flash-error";
 import { AttributeForm } from "./attribute-form";
 import { AttributesContent } from "./attributes-content";
+import { ATTRIBUTE_ERROR_COOKIE } from "./attribute-error-cookie";
 
 export default async function AttributesPage() {
   const session = await auth();
@@ -23,6 +28,8 @@ export default async function AttributesPage() {
     }
   }
 
+  const error = await readFlashError(ATTRIBUTE_ERROR_COOKIE);
+
   return (
     <Page>
       <PageHeader
@@ -30,6 +37,25 @@ export default async function AttributesPage() {
         description="Declared attributes your SDKs can target on — country, plan, signup date, custom traits."
       />
       <PageBody className="space-y-6">
+        {error && (
+          <div
+            className="rounded-[var(--radius-md)] border p-4"
+            style={{
+              background: "color-mix(in oklab, var(--se-danger) 12%, var(--se-bg-1))",
+              borderColor: "color-mix(in oklab, var(--se-danger) 35%, transparent)",
+            }}
+            role="alert"
+          >
+            <div
+              className="t-caps mb-2 flex items-center gap-2"
+              style={{ color: "var(--se-danger)" }}
+            >
+              <AlertTriangle className="size-3" />
+              <span>Attribute action failed</span>
+            </div>
+            <p className="text-[13px] text-[var(--se-fg)]">{error}</p>
+          </div>
+        )}
         <AttributeForm />
 
         {attributes.length === 0 ? (

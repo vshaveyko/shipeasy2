@@ -19,8 +19,8 @@ export interface BulkAction<T = unknown> {
   /** Button variant. `destructive` tints it red. */
   variant?: "default" | "outline" | "destructive";
   /**
-   * If present, the bar shows a `window.confirm` with the returned message
-   * before invoking `run`. Return falsy to skip confirmation.
+   * If present, the bar swaps the action button for an inline Cancel/Confirm
+   * pair before invoking `run`. Return falsy to skip confirmation.
    */
   confirm?: (items: T[]) => string | null | undefined;
   /** The actual work — receives the full list of selected items. */

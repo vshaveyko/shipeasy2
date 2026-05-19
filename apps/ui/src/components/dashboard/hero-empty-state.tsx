@@ -1,7 +1,34 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { ArrowRight, Zap } from "lucide-react";
 
 import { LinkButton } from "@/components/ui/link-button";
+
+function scopeHref(href: string, projectId: string): string {
+  if (!projectId) return href;
+  if (!href.startsWith("/dashboard/")) return href;
+  // Already scoped: /dashboard/<projectId>/...
+  if (href === `/dashboard/${projectId}` || href.startsWith(`/dashboard/${projectId}/`)) {
+    return href;
+  }
+  // Workspace-level routes that intentionally live outside the project scope.
+  const workspaceRoots = ["projects", "team", "billing"];
+  const segment = href.slice("/dashboard/".length).split(/[/?#]/)[0];
+  if (workspaceRoots.includes(segment)) return href;
+  return href.replace("/dashboard/", `/dashboard/${projectId}/`);
+}
+
+function projectIdFromPath(pathname: string | null): string {
+  if (!pathname) return "";
+  const m = pathname.match(/^\/dashboard\/([^/]+)/);
+  if (!m) return "";
+  const seg = m[1];
+  // workspace-level routes — no project scope
+  if (seg === "projects" || seg === "team" || seg === "billing") return "";
+  return seg;
+}
 
 type CodeToken = string | { kind: "kw" | "fn" | "str" | "num" | "cmt" | "cursor"; text?: string };
 
@@ -353,7 +380,10 @@ export function HeroEmptyState({
   extraAction?: ReactNode;
 }) {
   const c = CONFIGS[kind];
-  const href = ctaHref ?? c.ctaHref;
+  const pathname = usePathname();
+  const projectId = projectIdFromPath(pathname);
+  const href = scopeHref(ctaHref ?? c.ctaHref, projectId);
+  const scopedDemoHref = demoHref ? scopeHref(demoHref, projectId) : undefined;
   const label = ctaLabel ?? c.cta;
 
   return (
@@ -456,8 +486,8 @@ export function HeroEmptyState({
               <Zap className="size-3.5" /> {label}
             </LinkButton>
           )}
-          {demoHref ? (
-            <LinkButton variant="ghost" href={demoHref} className="h-10 px-4 text-[14px]">
+          {scopedDemoHref ? (
+            <LinkButton variant="ghost" href={scopedDemoHref} className="h-10 px-4 text-[14px]">
               {demoLabel ?? "Explore demo"} <ArrowRight className="size-3" />
             </LinkButton>
           ) : null}

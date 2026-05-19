@@ -9,7 +9,7 @@ import {
   deleteGate as deleteGateHandler,
 } from "@/lib/handlers/gates";
 
-const GATES_PATH = "/dashboard/[projectId]/configs/gates";
+const GATES_PATH = "/dashboard/[projectId]/gates";
 
 export async function createGate(input: unknown) {
   const identity = await authenticateAdmin();

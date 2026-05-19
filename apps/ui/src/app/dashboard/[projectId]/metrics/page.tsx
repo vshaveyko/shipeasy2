@@ -1,13 +1,23 @@
 import type { Metadata } from "next";
 
-import { MetricsPageRoot } from "./metrics-page";
+import { MetricsContent } from "./metrics-content";
 
 export const metadata: Metadata = { title: "Metrics" };
 
-type SearchParams = Promise<{ demo?: string; setup?: string }>;
+type SearchParams = Promise<{
+  demo?: string;
+  setup?: string;
+  view?: string;
+  open?: string;
+}>;
 
 export default async function MetricsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const initialView = params.demo === "1" ? "dashboard" : "empty";
-  return <MetricsPageRoot initialView={initialView} />;
+  const initialView =
+    params.view === "dashboard"
+      ? "dashboard"
+      : params.demo === "1" || params.view === "list"
+        ? "list"
+        : "empty";
+  return <MetricsContent initialView={initialView} />;
 }

@@ -63,8 +63,12 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     setError(null);
     startTransition(async () => {
       try {
-        await inviteMembersAction(formData);
-        onClose();
+        const result = await inviteMembersAction(formData);
+        if (result.ok) {
+          onClose();
+        } else {
+          setError(result.error);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to send invites");
       }

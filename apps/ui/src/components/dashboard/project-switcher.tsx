@@ -45,7 +45,7 @@ export function ProjectSwitcher({ projects, activeProjectId, planLabel }: Projec
   const pathname = usePathname();
 
   const active = projects.find((p) => p.id === activeProjectId) ?? projects[0];
-  const displayName = active ? projectLabel(active.name, active.domain) : "Project";
+  const displayName = active?.name ?? "Project";
   const color = active ? colorForId(active.id) : "var(--se-accent)";
 
   useEffect(() => {

@@ -1,22 +1,26 @@
 import Link from "next/link";
 import {
   Activity,
+  AlertTriangle,
   ArrowRight,
   CheckCircle2,
   Circle,
   FlaskConical,
   Gauge,
+  Heart,
   KeyRound,
+  Pin,
   Power,
   Shield,
   Sliders,
   Sparkles,
+  Zap,
 } from "lucide-react";
 
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { HomeState, HomeStateKind } from "./state";
+import type { HomeActivityEntry, HomeState, HomeStateKind } from "./state";
 
 interface CockpitProps {
   projectId: string;
@@ -97,12 +101,47 @@ function HeroStat({
   );
 }
 
+function PulseStrip({ pulse, kind }: { pulse: number[]; kind: HomeStateKind }) {
+  const max = Math.max(1, ...pulse);
+  const total = pulse.reduce((a, b) => a + b, 0);
+  return (
+    <div data-slot="home-pulse" className="space-y-2">
+      <div className="flex items-baseline justify-between">
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-4)]">
+          Last 24h · {total} {total === 1 ? "event" : "events"}
+        </span>
+        <span className="font-mono text-[10px] text-[var(--se-fg-4)]">−24h ··· now</span>
+      </div>
+      <div className="flex h-10 items-end gap-[3px]">
+        {pulse.map((value, i) => {
+          const ratio = value / max;
+          const intensity =
+            value === 0
+              ? "bg-[var(--se-line)]"
+              : kind === "busy"
+                ? "bg-[var(--se-accent)]"
+                : "bg-[color-mix(in_oklab,var(--se-accent)_55%,transparent)]";
+          return (
+            <span
+              key={i}
+              className={`flex-1 rounded-[2px] transition-all ${intensity}`}
+              style={{ height: `${Math.max(8, ratio * 100)}%`, opacity: value === 0 ? 0.6 : 1 }}
+              aria-label={`${value} events ${23 - i}h ago`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Hero({ state, firstName }: { state: HomeState; firstName?: string }) {
   const copy = heroCopy(state.kind, firstName ?? "there", state.counts);
   const { counts } = state;
 
   return (
     <header data-slot="home-hero" data-state={state.kind} className="space-y-5">
+      <PulseStrip pulse={state.pulse24h} kind={state.kind} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="space-y-3">
           <div className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
@@ -358,36 +397,334 @@ function Launchpad({ projectId }: { projectId: string }) {
   );
 }
 
+function resourceIcon(type: string) {
+  if (type === "gate") return Shield;
+  if (type === "config") return Sliders;
+  if (type === "experiment") return FlaskConical;
+  if (type === "killswitch") return Power;
+  if (type === "key") return KeyRound;
+  return Activity;
+}
+
+function relativeTime(iso: string): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return iso;
+  const diff = Date.now() - t;
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function ActivityStream({
+  projectId,
+  activity,
+}: {
+  projectId: string;
+  activity: HomeActivityEntry[];
+}) {
+  if (activity.length === 0) {
+    return (
+      <section data-slot="home-activity" data-empty="true" className="space-y-3">
+        <h2 className="text-[15px] font-medium tracking-[-0.01em]">Recent activity</h2>
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] px-4 py-6 text-center text-[12.5px] text-[var(--se-fg-3)]">
+          No activity in the last 24h. Changes you ship show up here.
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section data-slot="home-activity" className="space-y-3">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[15px] font-medium tracking-[-0.01em]">Recent activity</h2>
+        <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
+          {activity.length} entr{activity.length === 1 ? "y" : "ies"}
+        </span>
+      </div>
+      <ol className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)]">
+        {activity.map((entry) => {
+          const Icon = resourceIcon(entry.resourceType);
+          const href = entry.resourceId
+            ? `/dashboard/${projectId}/${entry.resourceType}s?open=${entry.resourceId}`
+            : `/dashboard/${projectId}`;
+          return (
+            <li key={entry.id} className="border-b border-[var(--se-line)] last:border-b-0">
+              <Link
+                href={href}
+                className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--se-bg-2)]"
+              >
+                <Icon className="size-3.5 shrink-0 text-[var(--se-fg-3)]" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--se-fg-4)] w-14 shrink-0">
+                  {entry.action}
+                </span>
+                <span className="flex-1 truncate text-[12.5px] text-[var(--se-fg)]">
+                  {entry.resourceType}
+                  {entry.resourceId ? (
+                    <span className="text-[var(--se-fg-3)]"> · {entry.resourceId}</span>
+                  ) : null}
+                </span>
+                <span className="hidden truncate font-mono text-[11px] text-[var(--se-fg-4)] md:inline">
+                  {entry.actorEmail}
+                </span>
+                <span className="font-mono text-[11px] text-[var(--se-fg-3)] w-16 shrink-0 text-right">
+                  {relativeTime(entry.createdAt)}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+function HealthRingsCard({ state }: { state: HomeState }) {
+  const { counts } = state;
+  const rings = [
+    {
+      label: "Gates",
+      value: counts.gates,
+      tone: "var(--se-info)",
+    },
+    {
+      label: "Experiments",
+      value: counts.runningExperiments,
+      total: counts.experiments,
+      tone: "var(--se-accent)",
+    },
+    {
+      label: "Configs",
+      value: counts.configs,
+      tone: "var(--se-purple)",
+    },
+  ];
+  return (
+    <div
+      data-slot="home-health"
+      className="rounded-[var(--radius-lg)] border border-[var(--se-line)] bg-[var(--se-bg-1)] p-4 space-y-3"
+    >
+      <div className="flex items-center gap-2">
+        <Heart className="size-3.5 text-[var(--se-accent)]" />
+        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
+          Workspace health
+        </h3>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {rings.map((r) => {
+          const total = "total" in r && r.total ? r.total : Math.max(1, r.value);
+          const pct = total === 0 ? 0 : Math.min(100, Math.round((r.value / total) * 100));
+          const dash = (pct / 100) * 100;
+          return (
+            <div key={r.label} className="flex flex-col items-center gap-1.5">
+              <svg viewBox="0 0 36 36" className="size-12">
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.9155"
+                  fill="none"
+                  stroke="var(--se-line)"
+                  strokeWidth="3"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.9155"
+                  fill="none"
+                  stroke={r.tone}
+                  strokeWidth="3"
+                  strokeDasharray={`${dash} 100`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 18 18)"
+                />
+                <text
+                  x="18"
+                  y="20.5"
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="var(--se-fg)"
+                  fontFamily="var(--se-mono)"
+                >
+                  {r.value}
+                </text>
+              </svg>
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-[var(--se-fg-4)]">
+                {r.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AlertsCard({ state }: { state: HomeState }) {
+  // Placeholder rules — derives advisories from current counts until verdict
+  // data lands. Each entry surfaces something the operator can act on.
+  const alerts: { tone: "warn" | "info" | "danger"; title: string; sub: string }[] = [];
+  if (state.kind === "first-run") {
+    alerts.push({
+      tone: "info",
+      title: "No data yet",
+      sub: "Wire the SDK to start collecting events.",
+    });
+  } else {
+    if (state.counts.runningExperiments === 0 && state.counts.experiments > 0) {
+      alerts.push({
+        tone: "info",
+        title: "No running experiments",
+        sub: "Start a draft to ramp traffic.",
+      });
+    }
+    if (state.counts.runningExperiments >= 5) {
+      alerts.push({
+        tone: "warn",
+        title: "Many concurrent experiments",
+        sub: `${state.counts.runningExperiments} live — watch for interaction effects.`,
+      });
+    }
+  }
+  if (alerts.length === 0) {
+    return (
+      <div
+        data-slot="home-alerts"
+        data-empty="true"
+        className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] p-4"
+      >
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="size-3.5 text-[var(--se-fg-4)]" />
+          <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
+            Alerts
+          </h3>
+        </div>
+        <p className="mt-2 text-[12px] text-[var(--se-fg-3)]">No advisories right now.</p>
+      </div>
+    );
+  }
+  return (
+    <div data-slot="home-alerts" className="space-y-2">
+      <div className="flex items-center gap-2 px-1">
+        <AlertTriangle className="size-3.5 text-[var(--se-warn)]" />
+        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
+          Alerts · {alerts.length}
+        </h3>
+      </div>
+      {alerts.map((a, i) => {
+        const toneClass =
+          a.tone === "warn"
+            ? "border-[color-mix(in_oklab,var(--se-warn)_35%,transparent)] bg-[var(--se-warn-soft)]"
+            : a.tone === "danger"
+              ? "border-[color-mix(in_oklab,var(--se-danger)_35%,transparent)] bg-[var(--se-danger-soft)]"
+              : "border-[color-mix(in_oklab,var(--se-info)_25%,transparent)] bg-[var(--se-info-soft)]";
+        return (
+          <div key={i} className={`rounded-[var(--radius-md)] border px-3 py-2 ${toneClass}`}>
+            <div className="text-[12.5px] font-medium">{a.title}</div>
+            <div className="mt-0.5 text-[11.5px] text-[var(--se-fg-3)]">{a.sub}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PinnedCard({ projectId }: { projectId: string }) {
+  return (
+    <div
+      data-slot="home-pinned"
+      className="rounded-[var(--radius-lg)] border border-dashed border-[var(--se-line-2)] bg-[var(--se-bg-1)] p-4 space-y-2"
+    >
+      <div className="flex items-center gap-2">
+        <Pin className="size-3.5 text-[var(--se-fg-4)]" />
+        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-fg-3)]">
+          Pinned
+        </h3>
+      </div>
+      <p className="text-[12px] text-[var(--se-fg-3)]">
+        Pin a record to anchor it here.{" "}
+        <Link
+          href={`/dashboard/${projectId}/experiments`}
+          className="underline hover:text-[var(--se-fg)]"
+        >
+          Browse experiments
+        </Link>
+        .
+      </p>
+    </div>
+  );
+}
+
+function ClaudeTile({ projectId }: { projectId: string }) {
+  return (
+    <Link
+      href={`/dashboard/${projectId}/experiments?new=1`}
+      data-slot="home-claude"
+      className="block rounded-[var(--radius-lg)] border border-[color-mix(in_oklab,var(--se-purple)_30%,transparent)] bg-[color-mix(in_oklab,var(--se-purple)_8%,var(--se-bg-1))] p-4 transition-colors hover:bg-[color-mix(in_oklab,var(--se-purple)_14%,var(--se-bg-1))]"
+    >
+      <div className="flex items-center gap-2">
+        <Zap className="size-3.5 text-[var(--se-purple)]" />
+        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--se-purple)]">
+          Ask Claude
+        </h3>
+      </div>
+      <p className="mt-2 text-[12.5px] text-[var(--se-fg-2)]">
+        Spin up a new experiment from a hypothesis.{" "}
+        <span className="text-[var(--se-purple)]">→</span>
+      </p>
+    </Link>
+  );
+}
+
+function RightRail({ projectId, state }: { projectId: string; state: HomeState }) {
+  return (
+    <div data-slot="home-rail" className="space-y-3">
+      <HealthRingsCard state={state} />
+      <AlertsCard state={state} />
+      <PinnedCard projectId={projectId} />
+      <ClaudeTile projectId={projectId} />
+    </div>
+  );
+}
+
 export function HomeCockpit({ projectId, state, firstName }: CockpitProps) {
   return (
     <div data-slot="home-cockpit" data-state={state.kind} className="space-y-6">
       <Hero state={state} firstName={firstName} />
 
-      {state.kind === "first-run" ? (
-        <>
-          <Banner
-            intent="info"
-            title="Your workspace is ready"
-            action={
-              <Link href={`/dashboard/${projectId}/keys`}>
-                <Button size="sm">
-                  Create an SDK key <ArrowRight className="size-3" />
-                </Button>
-              </Link>
-            }
-          >
-            Each step below activates a piece of the cockpit. They unlock automatically as you go.
-          </Banner>
-          <OnboardingChecklist projectId={projectId} />
-          <Launchpad projectId={projectId} />
-        </>
-      ) : (
-        <>
-          <DecisionsRow projectId={projectId} decisions={state.decisions} />
-          <LiveNow projectId={projectId} liveExperiments={state.liveExperiments} />
-          <Launchpad projectId={projectId} />
-        </>
-      )}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-6">
+          {state.kind === "first-run" ? (
+            <>
+              <Banner
+                intent="info"
+                title="Your workspace is ready"
+                action={
+                  <Link href={`/dashboard/${projectId}/keys`}>
+                    <Button size="sm">
+                      Create an SDK key <ArrowRight className="size-3" />
+                    </Button>
+                  </Link>
+                }
+              >
+                Each step below activates a piece of the cockpit. They unlock automatically as you
+                go.
+              </Banner>
+              <OnboardingChecklist projectId={projectId} />
+              <Launchpad projectId={projectId} />
+            </>
+          ) : (
+            <>
+              <DecisionsRow projectId={projectId} decisions={state.decisions} />
+              <LiveNow projectId={projectId} liveExperiments={state.liveExperiments} />
+              <Launchpad projectId={projectId} />
+              <ActivityStream projectId={projectId} activity={state.activity} />
+            </>
+          )}
+        </div>
+        <RightRail projectId={projectId} state={state} />
+      </div>
     </div>
   );
 }

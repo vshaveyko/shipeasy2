@@ -1,14 +1,19 @@
-import { Activity } from "lucide-react";
+import type { Metadata } from "next";
+import { Activity, AlertTriangle } from "lucide-react";
 import { auth } from "@/auth";
 import { listEvents } from "@/lib/handlers/events";
+
+export const metadata: Metadata = { title: "Events" };
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { readFlashError } from "@/lib/flash-error";
 import { createEventAction } from "./actions";
 import { EventsContent } from "./events-content";
+import { EVENT_ERROR_COOKIE } from "./event-error-cookie";
 
 export default async function EventsPage() {
   const session = await auth();
@@ -27,6 +32,8 @@ export default async function EventsPage() {
     }
   }
 
+  const error = await readFlashError(EVENT_ERROR_COOKIE);
+
   return (
     <Page>
       <PageHeader
@@ -34,6 +41,25 @@ export default async function EventsPage() {
         description="The event catalog. Events auto-discover from SDK track() calls and wait for approval before becoming metric-eligible."
       />
       <PageBody className="space-y-6">
+        {error && (
+          <div
+            className="rounded-[var(--radius-md)] border p-4"
+            style={{
+              background: "color-mix(in oklab, var(--se-danger) 12%, var(--se-bg-1))",
+              borderColor: "color-mix(in oklab, var(--se-danger) 35%, transparent)",
+            }}
+            role="alert"
+          >
+            <div
+              className="t-caps mb-2 flex items-center gap-2"
+              style={{ color: "var(--se-danger)" }}
+            >
+              <AlertTriangle className="size-3" />
+              <span>Event action failed</span>
+            </div>
+            <p className="text-[13px] text-[var(--se-fg)]">{error}</p>
+          </div>
+        )}
         <Card>
           <CardHeader className="border-b pb-4">
             <CardTitle>New event</CardTitle>

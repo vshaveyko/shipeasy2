@@ -2,13 +2,11 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useAction } from "@/hooks/use-action";
-import {
-  resetNotificationPrefsAction,
-  updateNotificationPrefAction,
-} from "./actions";
+import { resetNotificationPrefsAction, updateNotificationPrefAction } from "./actions";
 import type { NotificationPrefRow } from "@/lib/handlers/notifications";
 
 type Row = NotificationPrefRow;
@@ -24,20 +22,25 @@ export function NotificationsForm({ initial }: { initial: Row[] }) {
   });
 
   function toggle(event: string, channel: "email" | "slack" | "claudeDm") {
-    setRows((prev) => {
-      const next = prev.map((r) =>
-        r.event === event ? { ...r, [channel]: !r[channel] } : r,
+    const prev = rows;
+    const next = prev.map((r) => (r.event === event ? { ...r, [channel]: !r[channel] } : r));
+    const updated = next.find((r) => r.event === event)!;
+    setRows(next);
+    const fd = new FormData();
+    fd.set("event", event);
+    fd.set("email", updated.email ? "on" : "off");
+    fd.set("slack", updated.slack ? "on" : "off");
+    fd.set("claudeDm", updated.claudeDm ? "on" : "off");
+    startTransition(() => {
+      updateNotificationPrefAction(fd).then(
+        () => {
+          toast.success(`Saved · ${updated.label}`);
+        },
+        (e: unknown) => {
+          setRows(prev);
+          toast.error(e instanceof Error ? e.message : "Couldn't save preference");
+        },
       );
-      const updated = next.find((r) => r.event === event)!;
-      const fd = new FormData();
-      fd.set("event", event);
-      fd.set("email", updated.email ? "on" : "off");
-      fd.set("slack", updated.slack ? "on" : "off");
-      fd.set("claudeDm", updated.claudeDm ? "on" : "off");
-      startTransition(() => {
-        void updateNotificationPrefAction(fd);
-      });
-      return next;
     });
   }
 

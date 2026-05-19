@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getIdentity } from "@/lib/server-action";
 import { createUniverse, deleteUniverse } from "@/lib/handlers/universes";
+import { setFlashError } from "@/lib/flash-error";
+import { UNIVERSE_ERROR_COOKIE } from "./universe-error-cookie";
 
 export async function createUniverseAction(formData: FormData) {
   const identity = await getIdentity();
@@ -15,7 +17,15 @@ export async function createUniverseAction(formData: FormData) {
     loRaw !== null && loRaw !== "" && hiRaw !== null && hiRaw !== ""
       ? [Number(loRaw), Number(hiRaw)]
       : null;
-  await createUniverse(identity, { name, unit_type, holdout_range });
+  try {
+    await createUniverse(identity, { name, unit_type, holdout_range });
+  } catch (e) {
+    await setFlashError({
+      cookieName: UNIVERSE_ERROR_COOKIE,
+      scopePath: `/dashboard/${identity.projectId}/experiments/universes`,
+      message: e instanceof Error ? e.message : "Failed to create universe",
+    });
+  }
   revalidatePath("/dashboard/[projectId]/experiments/universes", "page");
   redirect(`/dashboard/${identity.projectId}/experiments/universes`);
 }
@@ -23,7 +33,15 @@ export async function createUniverseAction(formData: FormData) {
 export async function deleteUniverseAction(formData: FormData) {
   const identity = await getIdentity();
   const id = formData.get("id") as string;
-  await deleteUniverse(identity, id);
+  try {
+    await deleteUniverse(identity, id);
+  } catch (e) {
+    await setFlashError({
+      cookieName: UNIVERSE_ERROR_COOKIE,
+      scopePath: `/dashboard/${identity.projectId}/experiments/universes`,
+      message: e instanceof Error ? e.message : "Failed to delete universe",
+    });
+  }
   revalidatePath("/dashboard/[projectId]/experiments/universes", "page");
   redirect(`/dashboard/${identity.projectId}/experiments/universes`);
 }

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NewProjectForm } from "./new-project-form";
+
+export const metadata: Metadata = { title: "New project" };
 
 export default function NewProjectPage() {
   return (

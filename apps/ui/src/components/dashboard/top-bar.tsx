@@ -59,12 +59,15 @@ export function TopBar({ user, projectName = "Default project", projectId }: Top
       <div className="flex flex-1 items-center justify-center">
         <button
           type="button"
-          className="flex h-8 w-[260px] items-center gap-2 rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 text-[12.5px] text-muted-foreground transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)]"
+          disabled
+          title="Global search — coming soon"
+          aria-label="Global search (coming soon)"
+          className="flex h-8 w-[260px] items-center gap-2 rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-3 text-[12.5px] text-muted-foreground transition-colors hover:border-[var(--se-line-3)] hover:bg-[var(--se-bg-3)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Search className="size-3.5 shrink-0" />
           <span className="flex-1 text-left">Search or ask Claude…</span>
           <kbd className="inline-flex items-center gap-0.5 rounded border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            ⌘K
+            soon
           </kbd>
         </button>
       </div>
@@ -73,10 +76,12 @@ export function TopBar({ user, projectName = "Default project", projectId }: Top
       <div className="flex items-center gap-1">
         <button
           type="button"
-          aria-label="Notifications"
+          disabled
+          aria-label="Notifications (coming soon)"
+          title="Notifications inbox — coming soon"
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
-            "size-8 p-0 text-muted-foreground",
+            "size-8 p-0 text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
           <Bell className="size-4" />

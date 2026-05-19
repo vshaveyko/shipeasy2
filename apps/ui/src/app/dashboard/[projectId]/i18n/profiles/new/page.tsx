@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { Page, PageBody, PageFooter, PageHeader } from "@/components/dashboard/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+export const metadata: Metadata = { title: "New profile" };
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";

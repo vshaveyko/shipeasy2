@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listProfiles } from "@/lib/handlers/i18n";
+
+export const metadata: Metadata = { title: "New draft" };
 import { Page, PageBody, PageHeader } from "@/components/dashboard/page";
 import { LinkButton } from "@/components/ui/link-button";
 import { NewDraftForm } from "./new-draft-form";

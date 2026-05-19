@@ -1,21 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Activity,
   AlertTriangle,
-  ArrowRight,
-  BookOpen,
   Check,
   Code,
   Key,
   Search,
   ShoppingCart,
-  Sparkles,
   TrendingUp,
   UserPlus,
   Wand2,
-  X,
   Zap,
 } from "lucide-react";
 
@@ -32,9 +28,15 @@ const FRAMEWORKS = [
   { id: "curl", label: "cURL · HTTP", sub: "Anything else" },
 ] as const;
 
-type FrameworkId = (typeof FRAMEWORKS)[number]["id"];
+export type FrameworkId = (typeof FRAMEWORKS)[number]["id"];
 
-const STEPS = ["Install", "Initialize", "Send first event", "Pick starter events", "Done"] as const;
+export const ONBOARDING_STEPS = [
+  "Install",
+  "Initialize",
+  "Send first event",
+  "Pick starter events",
+  "Done",
+] as const;
 
 const STARTERS = [
   { id: "user_signup", label: "user_signup", desc: "Account creation", icon: UserPlus },
@@ -283,7 +285,7 @@ function PingDetector({ status }: { status: "waiting" | "received" }) {
   );
 }
 
-function StepInstall({ fw, setFw }: { fw: FrameworkId; setFw: (f: FrameworkId) => void }) {
+export function StepInstall({ fw, setFw }: { fw: FrameworkId; setFw: (f: FrameworkId) => void }) {
   return (
     <div className="met-ob-body">
       <div className="met-ob-heading">
@@ -354,9 +356,9 @@ function StepInstall({ fw, setFw }: { fw: FrameworkId; setFw: (f: FrameworkId) =
           </div>
           <div className="text-[12.5px] dim">
             We&apos;ve created <span className="t-mono">sk_live_acme_…7f2a</span> for this project.
-            <a href="/dashboard/keys" style={{ color: "var(--se-accent)", marginLeft: 6 }}>
+            <Link href="/dashboard/keys" style={{ color: "var(--se-accent)", marginLeft: 6 }}>
               Manage keys →
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -364,7 +366,7 @@ function StepInstall({ fw, setFw }: { fw: FrameworkId; setFw: (f: FrameworkId) =
   );
 }
 
-function StepInit({ fw }: { fw: FrameworkId }) {
+export function StepInit({ fw }: { fw: FrameworkId }) {
   const lines = initCode(fw);
   return (
     <div className="met-ob-body">
@@ -431,7 +433,7 @@ function StepInit({ fw }: { fw: FrameworkId }) {
   );
 }
 
-function StepVerify({
+export function StepVerify({
   status,
   onSimulate,
   onReset,
@@ -518,7 +520,7 @@ function StepVerify({
   );
 }
 
-function StepStarters({
+export function StepStarters({
   picked,
   togglePick,
 }: {
@@ -634,7 +636,7 @@ function StepStarters({
   );
 }
 
-function StepDone({ picked }: { picked: string[] }) {
+export function StepDone({ picked }: { picked: string[] }) {
   return (
     <div className="met-ob-body" style={{ alignItems: "center", textAlign: "center", gap: 18 }}>
       <div
@@ -744,161 +746,6 @@ function StepDone({ picked }: { picked: string[] }) {
             Live
           </div>
           <div className="t-mono-xs dim-2">first event 64ms ago</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function OnboardingWizard({
-  onClose,
-  onComplete,
-}: {
-  onClose: () => void;
-  onComplete: () => void;
-}) {
-  const [step, setStep] = useState(0);
-  const [fw, setFw] = useState<FrameworkId>("react");
-  const [picked, setPicked] = useState<string[]>(["user_checkout", "feature_used"]);
-  const [pingStatus, setPingStatus] = useState<"waiting" | "received">("waiting");
-
-  useEffect(() => {
-    if (step === 2 && pingStatus === "waiting") {
-      const t = setTimeout(() => setPingStatus("received"), 2400);
-      return () => clearTimeout(t);
-    }
-  }, [step, pingStatus]);
-
-  const togglePick = (id: string) =>
-    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-  const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const back = () => setStep((s) => Math.max(s - 1, 0));
-
-  return (
-    <div
-      className="met-ob-bg"
-      onClick={onClose}
-      role="dialog"
-      aria-label="Metrics onboarding"
-      aria-modal="true"
-    >
-      <div className="met-ob" onClick={(e) => e.stopPropagation()}>
-        <div className="met-ob-rail">
-          <div className="met-ob-brand">
-            <div
-              className="met-ob-mark"
-              style={{
-                background:
-                  "conic-gradient(from 140deg, var(--se-accent), var(--se-bg) 40%, var(--se-accent) 80%)",
-              }}
-            />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Set up Metrics</div>
-              <div className="t-mono-xs dim-2" style={{ marginTop: 2 }}>
-                Auto-collect web vitals + your own log() events
-              </div>
-            </div>
-          </div>
-          <div className="met-ob-steps">
-            {STEPS.map((s, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`met-ob-step ${i === step ? "on" : ""} ${i < step ? "done" : ""}`}
-                onClick={() => i <= step && setStep(i)}
-                disabled={i > step}
-              >
-                <div className="dot">
-                  {i < step ? (
-                    <Check className="size-2.5" />
-                  ) : i === step ? (
-                    <span className="pulse" />
-                  ) : (
-                    <span>{i + 1}</span>
-                  )}
-                </div>
-                <span>{s}</span>
-              </button>
-            ))}
-          </div>
-          <div style={{ flex: 1 }} />
-          <div className="met-ob-help">
-            <div className="t-caps dim-2" style={{ marginBottom: 6 }}>
-              Need help
-            </div>
-            <a
-              className="met-ob-help-row"
-              href="https://docs.shipeasy.ai"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <BookOpen className="size-3" /> Read the docs
-            </a>
-            <a
-              className="met-ob-help-row"
-              href="https://docs.shipeasy.ai/examples"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Code className="size-3" /> Browse examples
-            </a>
-            <span className="met-ob-help-row">
-              <Sparkles className="size-3" /> Ask Claude
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            style={{ marginTop: 8, justifyContent: "center" }}
-            onClick={onComplete}
-          >
-            Skip · explore with demo data
-          </Button>
-        </div>
-
-        <div className="met-ob-main">
-          <button type="button" className="met-ob-x" onClick={onClose} aria-label="Close wizard">
-            <X className="size-3.5" />
-          </button>
-          {step === 0 && <StepInstall fw={fw} setFw={setFw} />}
-          {step === 1 && <StepInit fw={fw} />}
-          {step === 2 && (
-            <StepVerify
-              status={pingStatus}
-              onSimulate={() => setPingStatus("received")}
-              onReset={() => setPingStatus("waiting")}
-            />
-          )}
-          {step === 3 && <StepStarters picked={picked} togglePick={togglePick} />}
-          {step === 4 && <StepDone picked={picked} />}
-
-          <div className="met-ob-foot">
-            <div className="t-mono-xs dim-2">
-              Step {step + 1} of {STEPS.length}
-            </div>
-            <div className="met-ob-foot-bar">
-              {STEPS.map((_, i) => (
-                <div key={i} className={`seg ${i <= step ? "on" : ""}`} />
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {step > 0 && (
-                <Button variant="ghost" onClick={back}>
-                  Back
-                </Button>
-              )}
-              {step < STEPS.length - 1 ? (
-                <Button onClick={next} disabled={step === 2 && pingStatus !== "received"}>
-                  {step === 2 && pingStatus !== "received" ? "Waiting…" : "Continue"}{" "}
-                  <ArrowRight className="size-3" />
-                </Button>
-              ) : (
-                <Button onClick={onComplete}>
-                  <Check className="size-3" /> Open dashboard
-                </Button>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>
