@@ -31,6 +31,7 @@ export type ConfigSummary = {
   id: string;
   name: string;
   description: string | null;
+  folder: string | null;
   schema: JsonSchema;
   updatedAt: string;
   envs: Partial<Record<ConfigEnv, { version: number; publishedAt: string; publishedBy: string }>>;
@@ -155,6 +156,7 @@ export async function listConfigs(
     id: m.id,
     name: m.name,
     description: m.description,
+    folder: m.folder ?? null,
     schema: m.schemaJson,
     updatedAt: m.updatedAt,
     envs: envByConfig.get(m.id) ?? {},
@@ -243,6 +245,7 @@ export async function getConfig(identity: AdminIdentity, id: string): Promise<Co
     id: meta.id,
     name: meta.name,
     description: meta.description,
+    folder: meta.folder ?? null,
     schema: meta.schemaJson,
     updatedAt: meta.updatedAt,
     envs,

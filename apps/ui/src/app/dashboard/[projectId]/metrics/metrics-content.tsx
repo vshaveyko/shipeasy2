@@ -13,6 +13,7 @@ import { Sparkline } from "@/components/ui/sparkline";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { type UnifiedListColumn } from "@/components/shell/unified-list";
 import { ListPage, type ListPageTab } from "@/components/shell/list-page";
+import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
 
 import { customEvents, type CustomEvent } from "./mock-data";
 import { MetricsDashboard } from "./dashboard";
@@ -163,6 +164,12 @@ export function MetricsContent({ initialView = "empty" }: { initialView?: View }
     return true;
   });
 
+  const folderGroups = buildFolderGroups({
+    items: filtered,
+    getFolder: (e) => e.folder,
+    suppressed: q !== "",
+  });
+
   return (
     <>
       <ListPage<CustomEvent, MetricsTabKey>
@@ -200,6 +207,9 @@ export function MetricsContent({ initialView = "empty" }: { initialView?: View }
           selectedId: openName,
           onSelect: setOpen,
           railHeader: "Events",
+          railGroups: folderGroups,
+          tableGroups: folderGroups,
+          groupStorageKey: folderGroupStorageKey("metrics", projectId),
           renderRail: (ev, active) => <RailRow event={ev} active={active} />,
           detailHeader: (ev) => (
             <div className="flex min-w-0 items-center gap-2">

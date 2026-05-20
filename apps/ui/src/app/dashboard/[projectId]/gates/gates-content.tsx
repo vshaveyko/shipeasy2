@@ -14,6 +14,7 @@ import { ActionForm } from "@/components/ui/action-form";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { type UnifiedListColumn } from "@/components/shell/unified-list";
 import { ListPage, type ListPageTab } from "@/components/shell/list-page";
+import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -135,6 +136,12 @@ export function GatesContent() {
     return true;
   });
 
+  const folderGroups = buildFolderGroups({
+    items: filtered,
+    getFolder: (g) => g.folder,
+    suppressed: filter.trim() !== "",
+  });
+
   const tabs: readonly ListPageTab<GateTabKey>[] = GATE_TABS.map((t) => ({
     ...t,
     count: tabCounts[t.key],
@@ -208,6 +215,9 @@ export function GatesContent() {
           selectedId: openId,
           onSelect: setSelected,
           loading: isLoading,
+          railGroups: folderGroups,
+          tableGroups: folderGroups,
+          groupStorageKey: folderGroupStorageKey("gates", projectId),
           railHeader: "Gates",
           renderRail: (gate, active) => <RailRow gate={gate} active={active} />,
           detailHeader: (gate) => (

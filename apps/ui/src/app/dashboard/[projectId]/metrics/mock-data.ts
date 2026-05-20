@@ -10,6 +10,7 @@ export type MetricsTile = {
 
 export type CustomEvent = {
   name: string;
+  folder?: string | null;
   kind: "event" | "conversion" | "funnel" | "error";
   volume: string;
   perSession: string;

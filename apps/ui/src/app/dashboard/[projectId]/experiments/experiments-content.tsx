@@ -15,6 +15,7 @@ import { ActionForm } from "@/components/ui/action-form";
 import { IntegrationSnippetButton } from "@/components/integration";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { type UnifiedListColumn, type UnifiedListGroup } from "@/components/shell/unified-list";
+import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
 import { deleteExperimentAction, setExperimentStatusAction } from "./actions";
 import { NewExperimentWizard } from "./new-experiment-wizard";
 import { EmbeddedExperimentSummary } from "./embedded-experiment-summary";
@@ -119,29 +120,18 @@ export function ExperimentsContent() {
     });
   }, [experiments, tab, filter]);
 
-  // Folder grouping for the full-table view. Disabled while a search is
-  // active so users see all matches at once.
-  const folderGroups: UnifiedListGroup<ExperimentRow>[] | undefined = useMemo(() => {
-    if (filter.trim() !== "") return undefined;
-    const byFolder = new Map<string, ExperimentRow[]>();
-    for (const e of visible) {
-      const key = e.folder ?? "";
-      const arr = byFolder.get(key);
-      if (arr) arr.push(e);
-      else byFolder.set(key, [e]);
-    }
-    const folderKeys = [...byFolder.keys()].sort((a, b) => {
-      // Root bucket renders last so user-named folders surface first.
-      if (a === "" && b !== "") return 1;
-      if (b === "" && a !== "") return -1;
-      return a.localeCompare(b);
-    });
-    return folderKeys.map((k) => ({
-      id: k === "" ? "__root__" : k,
-      label: k === "" ? <span className="italic dim-2">No folder</span> : k,
-      items: byFolder.get(k)!,
-    }));
-  }, [visible, filter]);
+  // Folder grouping shared by the full-table and detail-open rail views.
+  // Suppressed while a search filter is active so users see all matches at
+  // once.
+  const folderGroups = useMemo(
+    () =>
+      buildFolderGroups({
+        items: visible,
+        getFolder: (e) => e.folder,
+        suppressed: filter.trim() !== "",
+      }),
+    [visible, filter],
+  );
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -170,7 +160,12 @@ export function ExperimentsContent() {
     if (row && tab !== "all" && row.status !== tab) setTab("all");
   }, [openId, experiments, tab]);
 
+  // Rail-pane (detail-open) grouping mirrors the full-table folder buckets
+  // so the user's mental map of folders carries through to the detail view.
+  // Falls back to a status-based bucketing when folder grouping is
+  // suppressed (e.g. active search).
   const railGroups: UnifiedListGroup<ExperimentRow>[] = useMemo(() => {
+    if (folderGroups) return folderGroups;
     const buckets: Record<StatusKey, ExperimentRow[]> = {
       running: [],
       draft: [],
@@ -189,7 +184,7 @@ export function ExperimentsContent() {
         label: `${TAB_LABELS[k]} · ${buckets[k].length}`,
         items: buckets[k],
       }));
-  }, [visible]);
+  }, [folderGroups, visible]);
 
   const columns: UnifiedListColumn<ExperimentRow>[] = useMemo(
     () => [
@@ -421,7 +416,7 @@ export function ExperimentsContent() {
           onSelect: handleSelect,
           railGroups,
           tableGroups: folderGroups,
-          groupStorageKey: `shipeasy.folders.experiments.${projectId}`,
+          groupStorageKey: folderGroupStorageKey("experiments", projectId),
           railHeader: "Experiments",
           renderRail: (exp) => (
             <span className="flex w-full min-w-0 items-center gap-2">

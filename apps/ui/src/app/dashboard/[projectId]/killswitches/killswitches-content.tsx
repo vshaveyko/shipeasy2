@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import { projectIdFromPathname } from "@/lib/project-path";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { type UnifiedListColumn, type UnifiedListGroup } from "@/components/shell/unified-list";
+import { type UnifiedListColumn } from "@/components/shell/unified-list";
 import { ListPage, type ListPageTab } from "@/components/shell/list-page";
+import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ export type KillswitchRow = {
   id: string;
   name: string;
   description: string | null;
+  folder: string | null;
   updatedAt: string;
   envs: Partial<
     Record<
@@ -102,35 +104,15 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
     });
   }, [initial, filter, tab]);
 
-  const railGroups: UnifiedListGroup<KillswitchRow>[] = useMemo(() => {
-    const m = new Map<string, KillswitchRow[]>();
-    for (const r of filtered) {
-      const { folder } = splitName(r.name);
-      let arr = m.get(folder);
-      if (!arr) {
-        arr = [];
-        m.set(folder, arr);
-      }
-      arr.push(r);
-    }
-    const groups: UnifiedListGroup<KillswitchRow>[] = [];
-    for (const [folder, rows] of m) {
-      rows.sort((a, b) => a.name.localeCompare(b.name));
-      groups.push({
-        id: `folder:${folder}`,
-        label: (
-          <span className="flex items-center gap-1.5">
-            <Folder className="size-3" /> {folder}
-            <span className="dim-3">·</span>
-            <span className="t-mono-xs dim">{rows.length}</span>
-          </span>
-        ),
-        items: rows,
-      });
-    }
-    groups.sort((a, b) => String(a.id).localeCompare(String(b.id)));
-    return groups;
-  }, [filtered]);
+  const folderGroups = useMemo(
+    () =>
+      buildFolderGroups({
+        items: filtered,
+        getFolder: (r) => r.folder,
+        suppressed: filter.trim() !== "",
+      }),
+    [filtered, filter],
+  );
 
   const { data: countsData } = useSWR<{ total: number; on: number; off: number }>(
     "/api/admin/killswitches/counts",
@@ -215,7 +197,9 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
           selectedId: openId,
           onSelect: setSelected,
           railHeader: "Killswitches",
-          railGroups,
+          railGroups: folderGroups,
+          tableGroups: folderGroups,
+          groupStorageKey: folderGroupStorageKey("killswitches", projectId),
           renderRail: (row, active) => <RailRow row={row} active={active} />,
           detailHeader: (row) => (
             <div className="flex min-w-0 items-center gap-2">

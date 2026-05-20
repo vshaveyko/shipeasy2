@@ -3,13 +3,14 @@
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
-import { ExternalLink, Folder, MoreHorizontal, SlidersHorizontal, Trash2 } from "lucide-react";
+import { ExternalLink, MoreHorizontal, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { type UnifiedListColumn, type UnifiedListGroup } from "@/components/shell/unified-list";
+import { type UnifiedListColumn } from "@/components/shell/unified-list";
+import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
 import { ListPage, type ListPageTab } from "@/components/shell/list-page";
 import {
   DropdownMenu,
@@ -55,11 +56,6 @@ const fetcher = async (url: string): Promise<ConfigRow[]> => {
   }
   return acc;
 };
-
-function namespaceOf(name: string): string {
-  const i = name.indexOf(".");
-  return i === -1 ? "misc" : name.slice(0, i);
-}
 
 function fieldCountOf(c: ConfigRow): number {
   const props = (c.schema as { properties?: Record<string, unknown> } | null | undefined)
@@ -130,35 +126,15 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
     });
   }, [rows, filter, tab]);
 
-  const railGroups: UnifiedListGroup<ConfigRow>[] = useMemo(() => {
-    const m = new Map<string, ConfigRow[]>();
-    for (const r of filtered) {
-      const ns = namespaceOf(r.name);
-      let arr = m.get(ns);
-      if (!arr) {
-        arr = [];
-        m.set(ns, arr);
-      }
-      arr.push(r);
-    }
-    const groups: UnifiedListGroup<ConfigRow>[] = [];
-    for (const [ns, list] of m) {
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      groups.push({
-        id: `ns:${ns}`,
-        label: (
-          <span className="flex items-center gap-1.5">
-            <Folder className="size-3" /> {ns}
-            <span className="dim-3">·</span>
-            <span className="t-mono-xs dim">{list.length}</span>
-          </span>
-        ),
-        items: list,
-      });
-    }
-    groups.sort((a, b) => String(a.id).localeCompare(String(b.id)));
-    return groups;
-  }, [filtered]);
+  const folderGroups = useMemo(
+    () =>
+      buildFolderGroups({
+        items: filtered,
+        getFolder: (r) => r.folder,
+        suppressed: filter.trim() !== "",
+      }),
+    [filtered, filter],
+  );
 
   const { data: countsData } = useSWR<{
     total: number;
@@ -264,7 +240,9 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
           selectedId: openId,
           onSelect: setSelected,
           railHeader: "Configs",
-          railGroups,
+          railGroups: folderGroups,
+          tableGroups: folderGroups,
+          groupStorageKey: folderGroupStorageKey("configs", projectId),
           renderRail: (row, active) => <RailRow row={row} active={active} />,
           detailHeader: (row) => (
             <div className="flex min-w-0 items-center gap-2">

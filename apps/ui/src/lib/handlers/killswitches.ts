@@ -29,6 +29,7 @@ export type KillswitchSummary = {
   id: string;
   name: string;
   description: string | null;
+  folder: string | null;
   updatedAt: string;
   envs: Partial<Record<ConfigEnv, KillswitchValue & { version: number; publishedAt: string }>>;
 };
@@ -119,6 +120,7 @@ export async function listKillswitches(
     id: m.id,
     name: m.name,
     description: m.description,
+    folder: m.folder ?? null,
     updatedAt: m.updatedAt,
     envs: byConfig.get(m.id) ?? {},
   }));
@@ -185,6 +187,7 @@ export async function getKillswitch(
     id: meta.id,
     name: meta.name,
     description: meta.description,
+    folder: meta.folder ?? null,
     updatedAt: meta.updatedAt,
     envs,
   };
