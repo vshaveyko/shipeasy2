@@ -1,17 +1,29 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { ExternalLink, MoreHorizontal, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import type { SortingState } from "@tanstack/react-table";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { type UnifiedListColumn } from "@/components/shell/unified-list";
-import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
-import { ListPage, type ListPageTab } from "@/components/shell/list-page";
+import { folderGroupStorageKey } from "@/lib/folder-groups";
+import {
+  DataListPage,
+  buildListToolbar,
+  type DataListPageTab,
+} from "@/components/shell/data-list-page";
+import {
+  DataTableMaster,
+  useCursorPages,
+  useSearchParamMutator,
+  parseSortParam,
+  formatSortParam,
+  type DataTableColumn,
+} from "@/components/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,29 +45,6 @@ import { NewConfigWizard } from "./new-config-wizard";
 import { EmbeddedConfigEditor } from "./embedded-config-editor";
 
 export type ConfigRow = ConfigSummary;
-
-const fetcher = async (url: string): Promise<ConfigRow[]> => {
-  const res = await fetch(url, { credentials: "same-origin" });
-  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-  const acc: ConfigRow[] = [];
-  let next: string | null | undefined;
-  let page = (await res.json()) as
-    | { data?: ConfigRow[]; next_cursor?: string | null }
-    | ConfigRow[];
-  if (Array.isArray(page)) return page;
-  acc.push(...(page.data ?? []));
-  next = page.next_cursor ?? null;
-  while (next) {
-    const r = await fetch(`${url}?cursor=${encodeURIComponent(next)}`, {
-      credentials: "same-origin",
-    });
-    if (!r.ok) break;
-    page = (await r.json()) as { data?: ConfigRow[]; next_cursor?: string | null };
-    acc.push(...(page.data ?? []));
-    next = page.next_cursor ?? null;
-  }
-  return acc;
-};
 
 function fieldCountOf(c: ConfigRow): number {
   const props = (c.schema as { properties?: Record<string, unknown> } | null | undefined)
@@ -82,31 +71,37 @@ function publishedEnvCount(c: ConfigRow): number {
 
 export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const setParams = useSearchParamMutator();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
-  // `?new=1` only seeds the initial open state — keep local thereafter so
-  // closing the wizard never triggers a route change (caused the page blink).
   const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
-  const { data, isLoading, mutate } = useSWR<ConfigRow[]>("/api/admin/configs", fetcher, {
-    fallbackData: initial,
-    dedupingInterval: 0,
-  });
-  const rows = data ?? [];
+  /* URL-synced UI state */
+  const filter = searchParams.get("q") ?? "";
+  const setFilter = (next: string) => setParams({ q: next || null });
+  const tabParam = searchParams.get("tab");
+  const tab: ConfigTabKey =
+    tabParam === "live" || tabParam === "draft" || tabParam === "empty" ? tabParam : "all";
+  const setTab = (next: ConfigTabKey) => setParams({ tab: next === "all" ? null : next });
+  const sorting = parseSortParam(searchParams.get("sort"));
+  const setSorting = (next: SortingState) => setParams({ sort: formatSortParam(next) });
 
-  const [filter, setFilter] = useState("");
-  const [tab, setTab] = useState<ConfigTabKey>("all");
+  const {
+    rows: livePages,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    mutate,
+  } = useCursorPages<ConfigRow>({ baseUrl: "/api/admin/configs" });
+  const rows = livePages.length > 0 ? livePages : initial;
+
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, startTransition] = useTransition();
 
   function setSelected(id: string | null) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id) params.set("open", id);
-    else params.delete("open");
-    const qs = params.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    setParams({ open: id });
   }
 
   function setNewWizardOpen(open: boolean) {
@@ -125,16 +120,6 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
       return true;
     });
   }, [rows, filter, tab]);
-
-  const folderGroups = useMemo(
-    () =>
-      buildFolderGroups({
-        items: filtered,
-        getFolder: (r) => r.folder,
-        suppressed: filter.trim() !== "",
-      }),
-    [filtered, filter],
-  );
 
   const { data: countsData } = useSWR<{
     total: number;
@@ -160,7 +145,7 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
     draft: draftTotal,
     empty: emptyCount,
   };
-  const tabs: readonly ListPageTab<ConfigTabKey>[] = CONFIG_TABS.map((t) => ({
+  const tabs: readonly DataListPageTab<ConfigTabKey>[] = CONFIG_TABS.map((t) => ({
     ...t,
     count: tabCounts[t.key],
   }));
@@ -206,11 +191,22 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
     });
   }
 
-  const columns = listColumns({ onDelete: (id) => setPendingDeleteId(id) });
+  const columns: DataTableColumn<ConfigRow>[] = listColumns({
+    onDelete: (id) => setPendingDeleteId(id),
+  });
+
+  const toolbar = buildListToolbar<ConfigTabKey>({
+    tabs,
+    tab,
+    onTabChange: setTab,
+    filter,
+    onFilterChange: setFilter,
+    filterPlaceholder: "Filter configs",
+  });
 
   return (
     <>
-      <ListPage<ConfigRow, ConfigTabKey>
+      <DataListPage
         title="Configs"
         description="Schema-driven configuration with per-environment publishing. Edge-cached — SDK reads hit KV in under 5ms."
         stats={[
@@ -227,24 +223,28 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
             New config
           </Button>
         }
-        tabs={tabs}
-        tab={tab}
-        onTabChange={setTab}
-        filter={filter}
-        onFilterChange={setFilter}
-        filterPlaceholder="Filter configs"
-        list={{
-          items: filtered,
-          getId: (r) => r.id,
-          columns,
-          selectedId: openId,
-          onSelect: setSelected,
-          railHeader: "Configs",
-          railGroups: folderGroups,
-          tableGroups: folderGroups,
-          groupStorageKey: folderGroupStorageKey("configs", projectId),
-          renderRail: (row, active) => <RailRow row={row} active={active} />,
-          detailHeader: (row) => (
+      >
+        <DataTableMaster<ConfigRow>
+          rows={filtered}
+          getRowId={(r) => r.id}
+          columns={columns}
+          loading={isLoading && rows.length === 0}
+          getFolder={(r) => r.folder}
+          groupingDisabled={filter.trim() !== ""}
+          groupStorageKey={folderGroupStorageKey("configs", projectId)}
+          columnVisibilityStorageKey={`shipeasy.columns.configs.${projectId}`}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          hasMore={hasMore}
+          loadingMore={isLoadingMore}
+          onLoadMore={loadMore}
+          selectedId={openId}
+          onSelect={setSelected}
+          toolbar={toolbar}
+          railHeader="Configs"
+          railCount={total}
+          renderCompactRow={(row, active) => <RailRow row={row} active={active} />}
+          detailHeader={(row) => (
             <div className="flex min-w-0 items-center gap-2">
               <SlidersHorizontal
                 className="size-3.5 shrink-0"
@@ -254,8 +254,8 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
               />
               <span className="truncate font-mono text-[13px] text-[var(--se-fg)]">{row.name}</span>
             </div>
-          ),
-          renderDetail: (row) => (
+          )}
+          renderDetail={(row) => (
             <DetailPane
               row={row}
               projectId={projectId}
@@ -265,9 +265,9 @@ export function ConfigsContent({ initial }: { initial: ConfigRow[] }) {
                 await mutate();
               }}
             />
-          ),
-        }}
-      />
+          )}
+        />
+      </DataListPage>
 
       <Dialog
         open={Boolean(pendingDelete)}
@@ -325,12 +325,14 @@ function listColumns({
   onDelete,
 }: {
   onDelete: (id: string) => void;
-}): UnifiedListColumn<ConfigRow>[] {
+}): DataTableColumn<ConfigRow>[] {
   return [
     {
-      key: "name",
-      label: "Config",
-      render: (row) => {
+      id: "name",
+      header: "Config",
+      canHide: false,
+      sortAccessor: (row) => row.name.toLowerCase(),
+      cell: (row) => {
         const drafts = draftCountOf(row);
         return (
           <div className="flex min-w-0 items-center gap-2">
@@ -347,10 +349,11 @@ function listColumns({
       },
     },
     {
-      key: "fields",
-      label: "Fields",
+      id: "fields",
+      header: "Fields",
       width: 90,
-      render: (row) => {
+      sortAccessor: (row) => fieldCountOf(row),
+      cell: (row) => {
         const n = fieldCountOf(row);
         return (
           <span className="font-mono text-[11px] text-[var(--se-fg-2)]">
@@ -360,10 +363,11 @@ function listColumns({
       },
     },
     {
-      key: "envs",
-      label: "Published",
+      id: "envs",
+      header: "Published",
       width: 110,
-      render: (row) => {
+      sortAccessor: (row) => publishedEnvCount(row),
+      cell: (row) => {
         const n = publishedEnvCount(row);
         return (
           <span className="font-mono text-[11px] text-[var(--se-fg-2)]">
@@ -373,10 +377,15 @@ function listColumns({
       },
     },
     {
-      key: "drafts",
-      label: "Status",
+      id: "drafts",
+      header: "Status",
       width: 120,
-      render: (row) => {
+      sortAccessor: (row) => {
+        const d = draftCountOf(row);
+        if (d > 0) return 1;
+        return publishedEnvCount(row) > 0 ? 2 : 0;
+      },
+      cell: (row) => {
         const d = draftCountOf(row);
         return d > 0 ? (
           <StatusBadge tone="paused">DRAFT</StatusBadge>
@@ -388,26 +397,29 @@ function listColumns({
       },
     },
     {
-      key: "updated",
-      label: "Updated",
+      id: "updated",
+      header: "Updated",
       width: 110,
-      render: (row) => (
+      sortAccessor: (row) => row.updatedAt ?? "",
+      cell: (row) => (
         <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
           {row.updatedAt?.slice(0, 10) ?? "—"}
         </span>
       ),
     },
     {
-      key: "snippet",
-      label: "",
+      id: "snippet",
+      header: "",
       width: 32,
-      render: (row) => <IntegrationSnippetButton kind="config" name={row.name} stopPropagation />,
+      canHide: false,
+      cell: (row) => <IntegrationSnippetButton kind="config" name={row.name} stopPropagation />,
     },
     {
-      key: "actions",
-      label: "",
+      id: "actions",
+      header: "",
       width: 32,
-      render: (row) => (
+      canHide: false,
+      cell: (row) => (
         <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger

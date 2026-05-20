@@ -2,16 +2,28 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, Folder, MoreHorizontal, Power, Trash2 } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Power, Trash2 } from "lucide-react";
 import useSWR from "swr";
 import { toast } from "sonner";
+import type { SortingState } from "@tanstack/react-table";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { type UnifiedListColumn } from "@/components/shell/unified-list";
-import { ListPage, type ListPageTab } from "@/components/shell/list-page";
-import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
+import {
+  DataListPage,
+  buildListToolbar,
+  type DataListPageTab,
+} from "@/components/shell/data-list-page";
+import {
+  DataTableMaster,
+  useCursorPages,
+  useSearchParamMutator,
+  parseSortParam,
+  formatSortParam,
+  type DataTableColumn,
+} from "@/components/data-table";
+import { folderGroupStorageKey } from "@/lib/folder-groups";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,23 +82,37 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const setParams = useSearchParamMutator();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
-  // `?new=1` only seeds the initial open state — keep local thereafter so
-  // closing the wizard never triggers a route change.
   const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
-  const [filter, setFilter] = useState("");
-  const [tab, setTab] = useState<KsTabKey>("all");
+  /* URL-synced UI state */
+  const filter = searchParams.get("q") ?? "";
+  const setFilter = (next: string) => setParams({ q: next || null });
+  const tabParam = searchParams.get("tab");
+  const tab: KsTabKey = tabParam === "on" || tabParam === "off" ? tabParam : "all";
+  const setTab = (next: KsTabKey) => setParams({ tab: next === "all" ? null : next });
+  const sorting = parseSortParam(searchParams.get("sort"));
+  const setSorting = (next: SortingState) => setParams({ sort: formatSortParam(next) });
+
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, startTransition] = useTransition();
 
+  // Initial rows are SSR-provided; the cursor hook supplies future pages once
+  // the user scrolls past the initial slice. SWRInfinite seeds page 0 with
+  // a real fetch, so the SSR data still drives first paint.
+  const {
+    rows: livePages,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+  } = useCursorPages<KillswitchRow>({ baseUrl: "/api/admin/killswitches" });
+  const rows = livePages.length > 0 ? livePages : initial;
+
   function setSelected(id: string | null) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id) params.set("open", id);
-    else params.delete("open");
-    const qs = params.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    setParams({ open: id });
   }
 
   function setNewWizardOpen(open: boolean) {
@@ -95,24 +121,14 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    return initial.filter((r) => {
+    return rows.filter((r) => {
       const on = Boolean(activeEnv(r)?.value);
       if (tab === "on" && !on) return false;
       if (tab === "off" && on) return false;
       if (q && !r.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [initial, filter, tab]);
-
-  const folderGroups = useMemo(
-    () =>
-      buildFolderGroups({
-        items: filtered,
-        getFolder: (r) => r.folder,
-        suppressed: filter.trim() !== "",
-      }),
-    [filtered, filter],
-  );
+  }, [rows, filter, tab]);
 
   const { data: countsData } = useSWR<{ total: number; on: number; off: number }>(
     "/api/admin/killswitches/counts",
@@ -126,14 +142,11 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
   const total = countsData?.total ?? 0;
   const onCount = countsData?.on ?? 0;
   const offCount = countsData?.off ?? 0;
-  const tabs: readonly ListPageTab<KsTabKey>[] = KS_TABS.map((t) => ({
+  const tabs: readonly DataListPageTab<KsTabKey>[] = KS_TABS.map((t) => ({
     ...t,
     count: t.key === "all" ? total : t.key === "on" ? onCount : offCount,
   }));
 
-  // Initial data comes from the server fetch (`initial`); counts arrive via
-  // SWR. Use `initial` for the empty-branch decision so the page doesn't
-  // flash the hero state while counts are still loading.
   if (initial.length === 0) {
     return (
       <>
@@ -151,7 +164,7 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
     );
   }
 
-  const pendingDelete = pendingDeleteId ? initial.find((r) => r.id === pendingDeleteId) : null;
+  const pendingDelete = pendingDeleteId ? rows.find((r) => r.id === pendingDeleteId) : null;
 
   function confirmDeleteRow(row: KillswitchRow) {
     startTransition(async () => {
@@ -167,11 +180,22 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
     });
   }
 
-  const columns = listColumns({ onDelete: (id) => setPendingDeleteId(id) });
+  const columns: DataTableColumn<KillswitchRow>[] = listColumns({
+    onDelete: (id) => setPendingDeleteId(id),
+  });
+
+  const toolbar = buildListToolbar<KsTabKey>({
+    tabs,
+    tab,
+    onTabChange: setTab,
+    filter,
+    onFilterChange: setFilter,
+    filterPlaceholder: "Filter folder.name",
+  });
 
   return (
     <>
-      <ListPage<KillswitchRow, KsTabKey>
+      <DataListPage
         title="Killswitches"
         description="Static on/off configs delivered as-is to the client. Each can carry per-key overrides that take precedence over the default value."
         stats={[
@@ -184,24 +208,28 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
             New killswitch
           </Button>
         }
-        tabs={tabs}
-        tab={tab}
-        onTabChange={setTab}
-        filter={filter}
-        onFilterChange={setFilter}
-        filterPlaceholder="Filter folder.name"
-        list={{
-          items: filtered,
-          getId: (r) => r.id,
-          columns,
-          selectedId: openId,
-          onSelect: setSelected,
-          railHeader: "Killswitches",
-          railGroups: folderGroups,
-          tableGroups: folderGroups,
-          groupStorageKey: folderGroupStorageKey("killswitches", projectId),
-          renderRail: (row, active) => <RailRow row={row} active={active} />,
-          detailHeader: (row) => (
+      >
+        <DataTableMaster<KillswitchRow>
+          rows={filtered}
+          getRowId={(r) => r.id}
+          columns={columns}
+          loading={isLoading && rows.length === 0}
+          getFolder={(r) => r.folder}
+          groupingDisabled={filter.trim() !== ""}
+          groupStorageKey={folderGroupStorageKey("killswitches", projectId)}
+          columnVisibilityStorageKey={`shipeasy.columns.killswitches.${projectId}`}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          hasMore={hasMore}
+          loadingMore={isLoadingMore}
+          onLoadMore={loadMore}
+          selectedId={openId}
+          onSelect={setSelected}
+          toolbar={toolbar}
+          railHeader="Killswitches"
+          railCount={total}
+          renderCompactRow={(row, active) => <RailRow row={row} active={active} />}
+          detailHeader={(row) => (
             <div className="flex min-w-0 items-center gap-2">
               <Power
                 className="size-3.5 shrink-0"
@@ -211,16 +239,16 @@ export function KillswitchesContent({ initial }: { initial: KillswitchRow[] }) {
               />
               <span className="truncate font-mono text-[13px] text-[var(--se-fg)]">{row.name}</span>
             </div>
-          ),
-          renderDetail: (row) => (
+          )}
+          renderDetail={(row) => (
             <DetailPane
               row={row}
               projectId={projectId}
               onDelete={() => setPendingDeleteId(row.id)}
             />
-          ),
-        }}
-      />
+          )}
+        />
+      </DataListPage>
 
       <Dialog
         open={Boolean(pendingDelete)}
@@ -273,12 +301,14 @@ function listColumns({
   onDelete,
 }: {
   onDelete: (id: string) => void;
-}): UnifiedListColumn<KillswitchRow>[] {
+}): DataTableColumn<KillswitchRow>[] {
   return [
     {
-      key: "name",
-      label: "Killswitch",
-      render: (row) => {
+      id: "name",
+      header: "Killswitch",
+      canHide: false,
+      sortAccessor: (row) => row.name.toLowerCase(),
+      cell: (row) => {
         const on = Boolean(activeEnv(row)?.value);
         return (
           <div className="flex min-w-0 items-center gap-2">
@@ -295,10 +325,11 @@ function listColumns({
       },
     },
     {
-      key: "default",
-      label: "Default",
+      id: "default",
+      header: "Default",
       width: 100,
-      render: (row) => {
+      sortAccessor: (row) => (activeEnv(row)?.value ? 1 : 0),
+      cell: (row) => {
         const on = Boolean(activeEnv(row)?.value);
         return on ? (
           <StatusBadge tone="killed">ON</StatusBadge>
@@ -308,10 +339,14 @@ function listColumns({
       },
     },
     {
-      key: "switches",
-      label: "Switches",
+      id: "switches",
+      header: "Switches",
       width: 100,
-      render: (row) => {
+      sortAccessor: (row) => {
+        const env = activeEnv(row);
+        return env?.switches ? Object.keys(env.switches).length : 0;
+      },
+      cell: (row) => {
         const env = activeEnv(row);
         const n = env?.switches ? Object.keys(env.switches).length : 0;
         return (
@@ -322,28 +357,29 @@ function listColumns({
       },
     },
     {
-      key: "updated",
-      label: "Updated",
+      id: "updated",
+      header: "Updated",
       width: 110,
-      render: (row) => (
+      sortAccessor: (row) => row.updatedAt,
+      cell: (row) => (
         <span className="font-mono text-[11px] text-[var(--se-fg-3)]">
           {row.updatedAt.slice(0, 10)}
         </span>
       ),
     },
     {
-      key: "snippet",
-      label: "",
+      id: "snippet",
+      header: "",
       width: 32,
-      render: (row) => (
-        <IntegrationSnippetButton kind="killswitch" name={row.name} stopPropagation />
-      ),
+      canHide: false,
+      cell: (row) => <IntegrationSnippetButton kind="killswitch" name={row.name} stopPropagation />,
     },
     {
-      key: "actions",
-      label: "",
+      id: "actions",
+      header: "",
       width: 32,
-      render: (row) => (
+      canHide: false,
+      cell: (row) => (
         <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger

@@ -1,8 +1,9 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import useSWR from "swr";
+import type { SortingState } from "@tanstack/react-table";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 import { ExternalLink, MoreHorizontal, Shield, Trash2 } from "lucide-react";
@@ -12,9 +13,20 @@ import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { Button } from "@/components/ui/button";
 import { ActionForm } from "@/components/ui/action-form";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { type UnifiedListColumn } from "@/components/shell/unified-list";
-import { ListPage, type ListPageTab } from "@/components/shell/list-page";
-import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
+import {
+  DataListPage,
+  buildListToolbar,
+  type DataListPageTab,
+} from "@/components/shell/data-list-page";
+import {
+  DataTableMaster,
+  useCursorPages,
+  formatSortParam,
+  parseSortParam,
+  useSearchParamMutator,
+  type DataTableColumn,
+} from "@/components/data-table";
+import { folderGroupStorageKey } from "@/lib/folder-groups";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,39 +56,33 @@ const GATE_TABS: readonly { key: GateTabKey; label: string }[] = [
   { key: "paused", label: "Paused" },
 ] as const;
 
-const fetcher = async (url: string): Promise<GateRow[]> => {
-  const res = await fetch(url, { credentials: "same-origin" });
-  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-  const acc: GateRow[] = [];
-  let next: string | null | undefined;
-  let page = (await res.json()) as { data?: GateRow[]; next_cursor?: string | null } | GateRow[];
-  if (Array.isArray(page)) return page;
-  acc.push(...(page.data ?? []));
-  next = page.next_cursor ?? null;
-  while (next) {
-    const r = await fetch(`${url}?cursor=${encodeURIComponent(next)}`, {
-      credentials: "same-origin",
-    });
-    if (!r.ok) break;
-    page = (await r.json()) as { data?: GateRow[]; next_cursor?: string | null };
-    acc.push(...(page.data ?? []));
-    next = page.next_cursor ?? null;
-  }
-  return acc;
-};
-
 export function GatesContent() {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const setParams = useSearchParamMutator();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
   const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
-  const { data, isLoading, mutate } = useSWR<GateRow[]>("/api/admin/gates", fetcher, {
-    dedupingInterval: 0,
-  });
-  const gates = data ?? [];
+  /* URL-synced UI state -------------------------------------------------- */
+  const filter = searchParams.get("q") ?? "";
+  const setFilter = (next: string) => setParams({ q: next || null });
+  const tabParam = searchParams.get("tab");
+  const tab: GateTabKey = tabParam === "enabled" || tabParam === "paused" ? tabParam : "all";
+  const setTab = (next: GateTabKey) => setParams({ tab: next === "all" ? null : next });
+  const sorting = parseSortParam(searchParams.get("sort"));
+  const setSorting = (next: SortingState) => setParams({ sort: formatSortParam(next) });
+
+  // Cursor-paginated rows. Pages load on demand as the user scrolls — the
+  // DataTable owns the IntersectionObserver and calls `loadMore` itself.
+  const {
+    rows: gates,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    mutate,
+  } = useCursorPages<GateRow>({ baseUrl: "/api/admin/gates" });
 
   // Counts come from the backend (single SQL aggregate) — never iterate rows
   // on the client to derive totals. Keeps the stat trio + filter tab labels
@@ -103,16 +109,10 @@ export function GatesContent() {
   );
 
   const [, startTransition] = useTransition();
-  const [filter, setFilter] = useState("");
-  const [tab, setTab] = useState<GateTabKey>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   function setSelected(id: string | null) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id) params.set("open", id);
-    else params.delete("open");
-    const qs = params.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+    setParams({ open: id });
   }
 
   function setNewWizardOpen(open: boolean) {
@@ -136,13 +136,7 @@ export function GatesContent() {
     return true;
   });
 
-  const folderGroups = buildFolderGroups({
-    items: filtered,
-    getFolder: (g) => g.folder,
-    suppressed: filter.trim() !== "",
-  });
-
-  const tabs: readonly ListPageTab<GateTabKey>[] = GATE_TABS.map((t) => ({
+  const tabs: readonly DataListPageTab<GateTabKey>[] = GATE_TABS.map((t) => ({
     ...t,
     count: tabCounts[t.key],
   }));
@@ -178,7 +172,7 @@ export function GatesContent() {
     });
   }
 
-  const columns = listColumns({
+  const columns: DataTableColumn<GateRow>[] = listColumns({
     onToggle: toggleGate,
     onDelete: (id) => setPendingDeleteId(id),
   });
@@ -187,9 +181,18 @@ export function GatesContent() {
     ? optimisticGates.find((g) => g.id === pendingDeleteId)
     : null;
 
+  const toolbar = buildListToolbar<GateTabKey>({
+    tabs,
+    tab,
+    onTabChange: setTab,
+    filter,
+    onFilterChange: setFilter,
+    filterPlaceholder: "Filter gates",
+  });
+
   return (
     <>
-      <ListPage<GateRow, GateTabKey>
+      <DataListPage
         title="Gates"
         description="Gates toggle features on and off per user, attribute, or percentage. Edge-cached — evaluations run against KV in under 5ms."
         stats={[
@@ -202,25 +205,28 @@ export function GatesContent() {
             New gate
           </Button>
         }
-        tabs={tabs}
-        tab={tab}
-        onTabChange={setTab}
-        filter={filter}
-        onFilterChange={setFilter}
-        filterPlaceholder="Filter gates"
-        list={{
-          items: filtered,
-          getId: (g) => g.id,
-          columns,
-          selectedId: openId,
-          onSelect: setSelected,
-          loading: isLoading,
-          railGroups: folderGroups,
-          tableGroups: folderGroups,
-          groupStorageKey: folderGroupStorageKey("gates", projectId),
-          railHeader: "Gates",
-          renderRail: (gate, active) => <RailRow gate={gate} active={active} />,
-          detailHeader: (gate) => (
+      >
+        <DataTableMaster<GateRow>
+          rows={filtered}
+          getRowId={(g) => g.id}
+          columns={columns}
+          loading={isLoading}
+          getFolder={(g) => g.folder}
+          groupingDisabled={filter.trim() !== ""}
+          groupStorageKey={folderGroupStorageKey("gates", projectId)}
+          columnVisibilityStorageKey={`shipeasy.columns.gates.${projectId}`}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          hasMore={hasMore}
+          loadingMore={isLoadingMore}
+          onLoadMore={loadMore}
+          selectedId={openId}
+          onSelect={setSelected}
+          toolbar={toolbar}
+          railHeader="Gates"
+          railCount={total}
+          renderCompactRow={(gate, active) => <RailRow gate={gate} active={active} />}
+          detailHeader={(gate) => (
             <div className="flex min-w-0 items-center gap-2">
               <Shield
                 className="size-3.5 shrink-0"
@@ -232,17 +238,17 @@ export function GatesContent() {
                 {gate.name}
               </span>
             </div>
-          ),
-          renderDetail: (gate) => (
+          )}
+          renderDetail={(gate) => (
             <DetailPane
               gate={gate}
               projectId={projectId}
               onToggle={toggleGate}
               onDelete={() => setPendingDeleteId(gate.id)}
             />
-          ),
-        }}
-      />
+          )}
+        />
+      </DataListPage>
 
       <Dialog
         open={Boolean(pendingDelete)}
@@ -311,12 +317,15 @@ function listColumns({
 }: {
   onToggle: (gate: GateRow, next: boolean) => void;
   onDelete: (id: string) => void;
-}): UnifiedListColumn<GateRow>[] {
+}): DataTableColumn<GateRow>[] {
   return [
     {
-      key: "name",
-      label: "Gate",
-      render: (gate) => {
+      id: "name",
+      header: "Gate",
+      visibilityLabel: "Gate name",
+      sortAccessor: (gate) => gate.name.toLowerCase(),
+      canHide: false,
+      cell: (gate) => {
         const isEnabled = Boolean(gate.enabled);
         return (
           <div className="flex min-w-0 items-center gap-2">
@@ -330,10 +339,11 @@ function listColumns({
       },
     },
     {
-      key: "rollout",
-      label: "Rollout",
+      id: "rollout",
+      header: "Rollout",
       width: 110,
-      render: (gate) => (
+      sortAccessor: (gate) => gate.rolloutPct ?? 0,
+      cell: (gate) => (
         <span
           className="font-mono text-[11px] text-[var(--se-fg-2)]"
           style={{ fontVariantNumeric: "tabular-nums" }}
@@ -343,10 +353,11 @@ function listColumns({
       ),
     },
     {
-      key: "rules",
-      label: "Rules",
+      id: "rules",
+      header: "Rules",
       width: 90,
-      render: (gate) => {
+      sortAccessor: (gate) => ruleCountOf(gate),
+      cell: (gate) => {
         const c = ruleCountOf(gate);
         return (
           <span className="font-mono text-[11px] text-[var(--se-fg-2)]">
@@ -356,10 +367,11 @@ function listColumns({
       },
     },
     {
-      key: "status",
-      label: "Status",
+      id: "status",
+      header: "Status",
       width: 120,
-      render: (gate) =>
+      sortAccessor: (gate) => (gate.enabled ? 1 : 0),
+      cell: (gate) =>
         Boolean(gate.enabled) ? (
           <StatusBadge tone="live">ENABLED</StatusBadge>
         ) : (
@@ -367,10 +379,11 @@ function listColumns({
         ),
     },
     {
-      key: "toggle",
-      label: "",
+      id: "toggle",
+      header: "",
       width: 64,
-      render: (gate) => {
+      canHide: false,
+      cell: (gate) => {
         const isEnabled = Boolean(gate.enabled);
         return (
           <button
@@ -386,16 +399,18 @@ function listColumns({
       },
     },
     {
-      key: "snippet",
-      label: "",
+      id: "snippet",
+      header: "",
       width: 32,
-      render: (gate) => <IntegrationSnippetButton kind="gate" name={gate.name} stopPropagation />,
+      canHide: false,
+      cell: (gate) => <IntegrationSnippetButton kind="gate" name={gate.name} stopPropagation />,
     },
     {
-      key: "actions",
-      label: "",
+      id: "actions",
+      header: "",
       width: 32,
-      render: (gate) => (
+      canHide: false,
+      cell: (gate) => (
         <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger

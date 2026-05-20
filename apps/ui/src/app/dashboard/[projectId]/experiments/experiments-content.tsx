@@ -1,21 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { FlaskConical, Play, Plus, Square, Trash2 } from "lucide-react";
+import type { SortingState } from "@tanstack/react-table";
 
 import { projectIdFromPathname } from "@/lib/project-path";
 
 import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
-import { ListPage, type ListPageTab } from "@/components/shell/list-page";
+import {
+  DataListPage,
+  buildListToolbar,
+  type DataListPageTab,
+} from "@/components/shell/data-list-page";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { ActionForm } from "@/components/ui/action-form";
 import { IntegrationSnippetButton } from "@/components/integration";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { type UnifiedListColumn, type UnifiedListGroup } from "@/components/shell/unified-list";
-import { buildFolderGroups, folderGroupStorageKey } from "@/lib/folder-groups";
+import {
+  DataTableMaster,
+  useCursorPages,
+  useSearchParamMutator,
+  parseSortParam,
+  formatSortParam,
+  type DataTableColumn,
+} from "@/components/data-table";
+import { folderGroupStorageKey } from "@/lib/folder-groups";
 import { deleteExperimentAction, setExperimentStatusAction } from "./actions";
 import { NewExperimentWizard } from "./new-experiment-wizard";
 import { EmbeddedExperimentSummary } from "./embedded-experiment-summary";
@@ -51,11 +63,11 @@ const STATUS_TONE: Record<string, "live" | "draft" | "paused" | "completed" | "n
   archived: "completed",
 };
 
-const fetcher = async (url: string): Promise<ExperimentRow[]> => {
-  const res = await fetch(url, { credentials: "same-origin" });
-  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-  const body = (await res.json()) as ExperimentRow[] | { data: ExperimentRow[] };
-  return Array.isArray(body) ? body : (body.data ?? []);
+const STATUS_ORDER: Record<string, number> = {
+  running: 0,
+  draft: 1,
+  stopped: 2,
+  archived: 3,
 };
 
 function variantCount(groups: unknown): number {
@@ -71,21 +83,35 @@ function fmtDate(iso: string | null | undefined): string {
   return iso.slice(0, 10);
 }
 
+function isTabKey(value: string | null): value is TabKey {
+  return value === "running" || value === "draft" || value === "stopped" || value === "archived";
+}
+
 export function ExperimentsContent() {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const setParams = useSearchParamMutator();
   const projectId = projectIdFromPathname(pathname) ?? "";
   const openId = searchParams.get("open");
   const [newOpen, setNewOpen] = useState(searchParams.get("new") === "1");
 
-  const { data, isLoading, mutate } = useSWR<ExperimentRow[]>("/api/admin/experiments", fetcher, {
-    dedupingInterval: 0,
-  });
-  const experiments = useMemo(() => data ?? [], [data]);
+  /* URL-synced UI state */
+  const filter = searchParams.get("q") ?? "";
+  const setFilter = (next: string) => setParams({ q: next || null });
+  const tabParam = searchParams.get("tab");
+  const tab: TabKey = isTabKey(tabParam) ? tabParam : "all";
+  const setTab = (next: TabKey) => setParams({ tab: next === "all" ? null : next });
+  const sorting = parseSortParam(searchParams.get("sort"));
+  const setSorting = (next: SortingState) => setParams({ sort: formatSortParam(next) });
 
-  const [tab, setTab] = useState<TabKey>("all");
-  const [filter, setFilter] = useState("");
+  const {
+    rows: experiments,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    mutate,
+  } = useCursorPages<ExperimentRow>({ baseUrl: "/api/admin/experiments" });
 
   // Counts come from the backend (single GROUP BY) — never iterate rows on
   // the client to derive totals. Falls back to zeros during the initial
@@ -120,78 +146,28 @@ export function ExperimentsContent() {
     });
   }, [experiments, tab, filter]);
 
-  // Folder grouping shared by the full-table and detail-open rail views.
-  // Suppressed while a search filter is active so users see all matches at
-  // once.
-  const folderGroups = useMemo(
-    () =>
-      buildFolderGroups({
-        items: visible,
-        getFolder: (e) => e.folder,
-        suppressed: filter.trim() !== "",
-      }),
-    [visible, filter],
-  );
-
-  const setParam = useCallback(
-    (key: string, value: string | null) => {
-      const next = new URLSearchParams(searchParams.toString());
-      if (value === null) next.delete(key);
-      else next.set(key, value);
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-    },
-    [pathname, router, searchParams],
-  );
-
-  const handleSelect = useCallback(
-    (id: string | null) => {
-      setParam("open", id);
-    },
-    [setParam],
-  );
+  const handleSelect = useCallback((id: string | null) => setParams({ open: id }), [setParams]);
 
   const openWizard = useCallback(() => setNewOpen(true), []);
   const closeWizard = useCallback(() => setNewOpen(false), []);
 
-  // Auto-select status tab when openId belongs to a non-matching tab
+  // Auto-select "all" tab when openId belongs to a non-matching tab
   useEffect(() => {
     if (!openId) return;
     const row = experiments.find((e) => e.id === openId);
-    if (row && tab !== "all" && row.status !== tab) setTab("all");
-  }, [openId, experiments, tab]);
-
-  // Rail-pane (detail-open) grouping mirrors the full-table folder buckets
-  // so the user's mental map of folders carries through to the detail view.
-  // Falls back to a status-based bucketing when folder grouping is
-  // suppressed (e.g. active search).
-  const railGroups: UnifiedListGroup<ExperimentRow>[] = useMemo(() => {
-    if (folderGroups) return folderGroups;
-    const buckets: Record<StatusKey, ExperimentRow[]> = {
-      running: [],
-      draft: [],
-      stopped: [],
-      archived: [],
-    };
-    for (const exp of visible) {
-      const k = (exp.status in buckets ? exp.status : "draft") as StatusKey;
-      buckets[k].push(exp);
+    if (row && tab !== "all" && row.status !== tab) {
+      setParams({ tab: null });
     }
-    const order: StatusKey[] = ["running", "draft", "stopped", "archived"];
-    return order
-      .filter((k) => buckets[k].length > 0)
-      .map((k) => ({
-        id: k,
-        label: `${TAB_LABELS[k]} · ${buckets[k].length}`,
-        items: buckets[k],
-      }));
-  }, [folderGroups, visible]);
+  }, [openId, experiments, tab, setParams]);
 
-  const columns: UnifiedListColumn<ExperimentRow>[] = useMemo(
+  const columns: DataTableColumn<ExperimentRow>[] = useMemo(
     () => [
       {
-        key: "name",
-        label: "Experiment",
-        render: (exp) => (
+        id: "name",
+        header: "Experiment",
+        canHide: false,
+        sortAccessor: (exp) => exp.name.toLowerCase(),
+        cell: (exp) => (
           <div className="flex min-w-0 items-center gap-2.5">
             <span
               className="grid size-7 shrink-0 place-items-center rounded-md border border-[var(--se-line-2)]"
@@ -214,21 +190,23 @@ export function ExperimentsContent() {
         ),
       },
       {
-        key: "status",
-        label: "Status",
+        id: "status",
+        header: "Status",
         width: 110,
-        render: (exp) => (
+        sortAccessor: (exp) => STATUS_ORDER[exp.status] ?? 99,
+        cell: (exp) => (
           <StatusBadge tone={STATUS_TONE[exp.status] ?? "neutral"}>
             {exp.status.toUpperCase()}
           </StatusBadge>
         ),
       },
       {
-        key: "traffic",
-        label: <span className="text-right block">Traffic</span>,
+        id: "traffic",
+        header: <span className="text-right block">Traffic</span>,
         width: 90,
         className: "text-right",
-        render: (exp) => (
+        sortAccessor: (exp) => exp.allocationPct ?? 0,
+        cell: (exp) => (
           <span
             className="font-mono text-[12px] text-[var(--se-fg-2)]"
             style={{ fontVariantNumeric: "tabular-nums" }}
@@ -238,11 +216,12 @@ export function ExperimentsContent() {
         ),
       },
       {
-        key: "variants",
-        label: <span className="text-right block">Variants</span>,
+        id: "variants",
+        header: <span className="text-right block">Variants</span>,
         width: 90,
         className: "text-right",
-        render: (exp) => (
+        sortAccessor: (exp) => variantCount(exp.groups),
+        cell: (exp) => (
           <span
             className="font-mono text-[12px] text-[var(--se-fg-2)]"
             style={{ fontVariantNumeric: "tabular-nums" }}
@@ -252,30 +231,33 @@ export function ExperimentsContent() {
         ),
       },
       {
-        key: "updated",
-        label: <span className="text-right block">Updated</span>,
+        id: "updated",
+        header: <span className="text-right block">Updated</span>,
         width: 110,
         className: "text-right",
-        render: (exp) => (
+        sortAccessor: (exp) => exp.updatedAt ?? exp.startedAt ?? "",
+        cell: (exp) => (
           <span className="t-mono-xs dim-2">{fmtDate(exp.updatedAt ?? exp.startedAt ?? null)}</span>
         ),
       },
       {
-        key: "snippet",
-        label: "",
+        id: "snippet",
+        header: "",
         width: 40,
-        render: (exp) => (
+        canHide: false,
+        cell: (exp) => (
           <span onClick={(e) => e.stopPropagation()}>
             <IntegrationSnippetButton kind="experiment" name={exp.name} stopPropagation />
           </span>
         ),
       },
       {
-        key: "actions",
-        label: "",
+        id: "actions",
+        header: "",
         width: 60,
+        canHide: false,
         className: "text-right",
-        render: (exp) => (
+        cell: (exp) => (
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
             {exp.status === "draft" ? (
               <ActionForm
@@ -344,7 +326,7 @@ export function ExperimentsContent() {
   );
 
   // Empty state — gate on !isLoading so the hero copy doesn't flash before
-  // SWR's first fetch resolves.
+  // the first cursor page resolves.
   if (!isLoading && experiments.length === 0) {
     return (
       <>
@@ -379,15 +361,27 @@ export function ExperimentsContent() {
     );
   }
 
-  const tabs: readonly ListPageTab<TabKey>[] = (Object.keys(TAB_LABELS) as TabKey[]).map((k) => ({
-    key: k,
-    label: TAB_LABELS[k],
-    count: counts[k],
-  }));
+  const tabs: readonly DataListPageTab<TabKey>[] = (Object.keys(TAB_LABELS) as TabKey[]).map(
+    (k) => ({
+      key: k,
+      label: TAB_LABELS[k],
+      count: counts[k],
+    }),
+  );
+
+  const toolbar = buildListToolbar<TabKey>({
+    tabs,
+    tab,
+    onTabChange: setTab,
+    filter,
+    onFilterChange: setFilter,
+    filterPlaceholder: "Filter by name, folder, or universe",
+    filterAriaLabel: "Filter experiments",
+  });
 
   return (
     <>
-      <ListPage<ExperimentRow, TabKey>
+      <DataListPage
         title="Experiments"
         description="Feature tests with auto-collected metrics, traffic allocation, and significance calculated continuously."
         stats={[
@@ -400,25 +394,27 @@ export function ExperimentsContent() {
           { label: "Total", value: counts.all },
         ]}
         actions={headerActions}
-        tabs={tabs}
-        tab={tab}
-        onTabChange={setTab}
-        filter={filter}
-        onFilterChange={setFilter}
-        filterPlaceholder="Filter by name, folder, or universe"
-        filterAriaLabel="Filter experiments"
-        list={{
-          items: visible,
-          getId: (row) => row.id,
-          columns,
-          loading: isLoading,
-          selectedId: openId,
-          onSelect: handleSelect,
-          railGroups,
-          tableGroups: folderGroups,
-          groupStorageKey: folderGroupStorageKey("experiments", projectId),
-          railHeader: "Experiments",
-          renderRail: (exp) => (
+      >
+        <DataTableMaster<ExperimentRow>
+          rows={visible}
+          getRowId={(row) => row.id}
+          columns={columns}
+          loading={isLoading}
+          getFolder={(e) => e.folder}
+          groupingDisabled={filter.trim() !== ""}
+          groupStorageKey={folderGroupStorageKey("experiments", projectId)}
+          columnVisibilityStorageKey={`shipeasy.columns.experiments.${projectId}`}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          hasMore={hasMore}
+          loadingMore={isLoadingMore}
+          onLoadMore={loadMore}
+          selectedId={openId}
+          onSelect={handleSelect}
+          toolbar={toolbar}
+          railHeader="Experiments"
+          railCount={counts.all}
+          renderCompactRow={(exp) => (
             <span className="flex w-full min-w-0 items-center gap-2">
               <FlaskConical className="size-3 shrink-0 text-[var(--se-fg-3)]" />
               <span className="min-w-0 flex-1 truncate font-mono text-[12.5px]">{exp.name}</span>
@@ -438,8 +434,8 @@ export function ExperimentsContent() {
                 }}
               />
             </span>
-          ),
-          renderDetail: (exp) => (
+          )}
+          renderDetail={(exp) => (
             <EmbeddedExperimentSummary
               experiment={exp}
               projectId={projectId}
@@ -449,8 +445,8 @@ export function ExperimentsContent() {
               }}
               onMutated={() => void mutate()}
             />
-          ),
-          detailHeader: (exp) => (
+          )}
+          detailHeader={(exp) => (
             <div className="flex min-w-0 items-center gap-3">
               <span className="truncate font-mono text-[13px] font-medium">{exp.name}</span>
               <StatusBadge tone={STATUS_TONE[exp.status] ?? "neutral"}>
@@ -489,14 +485,14 @@ export function ExperimentsContent() {
                 </ActionForm>
               </div>
             </div>
-          ),
-          emptyState: (
+          )}
+          emptyState={
             <div className="dim flex h-full items-center justify-center px-5 py-12 text-center text-[13px]">
               No experiments match this filter.
             </div>
-          ),
-        }}
-      />
+          }
+        />
+      </DataListPage>
 
       <NewExperimentWizard
         open={newOpen}
