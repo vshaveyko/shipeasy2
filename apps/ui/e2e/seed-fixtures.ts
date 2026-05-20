@@ -73,3 +73,51 @@ export function setProjectPlan(plan: "free" | "paid"): void {
     // ignore
   }
 }
+
+/** Insert (or no-op) an event row so the metric wizard's event picker has
+ *  something to select. `properties` is a JSON-encoded EventProperty[]. */
+export function seedEvent(
+  name: string,
+  properties: {
+    name: string;
+    type: "string" | "number" | "boolean";
+    required?: boolean;
+    description?: string;
+  }[] = [],
+): void {
+  const db = locateD1();
+  if (!db) return;
+  const pid = "e2e-project-id";
+  const id = `evt-e2e-${name}`;
+  const props = JSON.stringify(
+    properties.map((p) => ({
+      name: p.name,
+      type: p.type,
+      required: p.required ?? false,
+      description: p.description ?? "",
+    })),
+  ).replace(/'/g, "''");
+  const sql =
+    `INSERT OR IGNORE INTO events (id, project_id, name, description, folder, properties, pending, created_at) ` +
+    `VALUES ('${id}', '${pid}', '${name}', NULL, NULL, '${props}', 0, '2024-01-01T00:00:00.000Z')`;
+  try {
+    execSync(`sqlite3 "${db}" "${sql}"`);
+  } catch {
+    // ignore
+  }
+}
+
+/** Delete a seeded event (and any metric that referenced it). */
+export function cleanupEvent(name: string): void {
+  const db = locateD1();
+  if (!db) return;
+  const pid = "e2e-project-id";
+  try {
+    execSync(
+      `sqlite3 "${db}" "DELETE FROM metrics WHERE project_id='${pid}' AND event_name='${name}'"`,
+    );
+    execSync(`sqlite3 "${db}" "DELETE FROM events WHERE project_id='${pid}' AND name='${name}'"`);
+  } catch {
+    // ignore
+  }
+}

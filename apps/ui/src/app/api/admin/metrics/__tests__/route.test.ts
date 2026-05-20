@@ -35,9 +35,17 @@ beforeEach(async () => {
   mockEnv.FLAGS_KV = env.FLAGS_KV;
 });
 
+function defaultIr(event_name: string) {
+  return {
+    agg: { kind: "count_users" as const },
+    metric: event_name,
+    filters: [] as { label: string; op: "=" | "!=" | "=~" | "!~"; value: string }[],
+  };
+}
+
 async function createMetric(name = "revenue", event_name = "purchase") {
   const res = await POST(
-    req("POST", "/api/admin/metrics", { name, event_name, aggregation: "count_users" }),
+    req("POST", "/api/admin/metrics", { name, event_name, query_ir: defaultIr(event_name) }),
   );
   expect(res.status).toBe(201);
   return res.json() as Promise<{ id: string; name: string }>;
@@ -59,7 +67,11 @@ describe("GET /admin/metrics", () => {
 describe("POST /admin/metrics", () => {
   it("creates a metric (201)", async () => {
     const res = await POST(
-      req("POST", "/api/admin/metrics", { name: "signups", event_name: "purchase" }),
+      req("POST", "/api/admin/metrics", {
+        name: "signups",
+        event_name: "purchase",
+        query_ir: defaultIr("purchase"),
+      }),
     );
     expect(res.status).toBe(201);
     expect(((await res.json()) as { name: string }).name).toBe("signups");
@@ -68,22 +80,43 @@ describe("POST /admin/metrics", () => {
   it("returns 409 for duplicate name", async () => {
     await createMetric("dup");
     expect(
-      (await POST(req("POST", "/api/admin/metrics", { name: "dup", event_name: "purchase" })))
-        .status,
+      (
+        await POST(
+          req("POST", "/api/admin/metrics", {
+            name: "dup",
+            event_name: "purchase",
+            query_ir: defaultIr("purchase"),
+          }),
+        )
+      ).status,
     ).toBe(409);
   });
 
   it("returns 422 if event not found", async () => {
     expect(
-      (await POST(req("POST", "/api/admin/metrics", { name: "bad", event_name: "no_such_event" })))
-        .status,
+      (
+        await POST(
+          req("POST", "/api/admin/metrics", {
+            name: "bad",
+            event_name: "no_such_event",
+            query_ir: defaultIr("no_such_event"),
+          }),
+        )
+      ).status,
     ).toBe(422);
   });
 
   it("returns 422 for missing name", async () => {
-    expect((await POST(req("POST", "/api/admin/metrics", { event_name: "purchase" }))).status).toBe(
-      422,
-    );
+    expect(
+      (
+        await POST(
+          req("POST", "/api/admin/metrics", {
+            event_name: "purchase",
+            query_ir: defaultIr("purchase"),
+          }),
+        )
+      ).status,
+    ).toBe(422);
   });
 });
 
@@ -109,13 +142,21 @@ describe("GET /admin/metrics/:id", () => {
 });
 
 describe("PATCH /admin/metrics/:id", () => {
-  it("updates aggregation", async () => {
+  it("updates aggregation via query_ir", async () => {
     const { id } = await createMetric("patchable");
     expect(
       (
-        await PATCH(req("PATCH", `/api/admin/metrics/${id}`, { aggregation: "sum" }), {
-          params: Promise.resolve({ id }),
-        })
+        await PATCH(
+          req("PATCH", `/api/admin/metrics/${id}`, {
+            query_ir: {
+              agg: { kind: "sum" },
+              metric: "purchase",
+              valueLabel: "value",
+              filters: [],
+            },
+          }),
+          { params: Promise.resolve({ id }) },
+        )
       ).status,
     ).toBe(200);
   });

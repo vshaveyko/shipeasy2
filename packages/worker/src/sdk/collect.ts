@@ -2,7 +2,8 @@
 // exposure + metric → Analytics Engine (fire-and-forget); identify → D1 user_aliases.
 
 import { getCatalog, getDb, getExperiments } from "@shipeasy/core";
-import { events as eventsTable, userAliases } from "@shipeasy/core/db/schema";
+import { events as eventsTable, userAliases, type EventProperty } from "@shipeasy/core/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import type { AuthedContext } from "../lib/auth";
 
 type RawEvent =
@@ -30,7 +31,14 @@ type RawEvent =
       ts: number;
     };
 
-const AE_MAX_USER_PROPERTIES = 3;
+// AE METRIC_EVENTS wire layout:
+//   blobs   = [event_name, user_id, anonymous_id, str_prop_0..str_prop_4]
+//   doubles = [value, ts, num_prop_0..num_prop_4]
+// Up to 5 string + 5 numeric event properties land in the trailing slots, in the order
+// declared on the event row's `properties`. Booleans use a numeric slot (0/1).
+// Same shape is read back by @shipeasy/query-dsl's compiler.
+const AE_MAX_PROPS_PER_BUCKET = 5;
+const AE_MAX_USER_PROPERTIES = 10;
 
 export async function handleCollect(c: AuthedContext) {
   const key = c.get("key");
@@ -141,6 +149,29 @@ export async function handleCollect(c: AuthedContext) {
 
   // Write. AE is fire-and-forget. identify writes to D1.
   const db = getDb(c.env.DB);
+
+  // Load event property layouts for metric events with payloads. Single batched read.
+  // Events with no declared properties (or events emitted without a payload) keep the
+  // legacy 3-blob / 2-double layout.
+  const eventDefs = new Map<string, EventProperty[]>();
+  const namesNeedingProps = new Set<string>();
+  for (const e of events) {
+    if (e.type === "metric" && e.properties && Object.keys(e.properties).length > 0) {
+      namesNeedingProps.add(e.event_name);
+    }
+  }
+  if (namesNeedingProps.size > 0) {
+    const rows = await db
+      .select({ name: eventsTable.name, properties: eventsTable.properties })
+      .from(eventsTable)
+      .where(
+        and(
+          eq(eventsTable.projectId, key.project_id),
+          inArray(eventsTable.name, [...namesNeedingProps]),
+        ),
+      );
+    for (const r of rows) eventDefs.set(r.name, r.properties ?? []);
+  }
   for (const e of events) {
     if (e.type === "exposure") {
       // AE: one index only. Pack experiment + ids into blobs.
@@ -150,10 +181,32 @@ export async function handleCollect(c: AuthedContext) {
         doubles: [e.ts],
       });
     } else if (e.type === "metric") {
+      const def = eventDefs.get(e.event_name) ?? [];
+      const propBlobs: string[] = [];
+      const propDoubles: number[] = [];
+      if (def.length > 0 && e.properties) {
+        const strProps = def.filter((p) => p.type === "string").slice(0, AE_MAX_PROPS_PER_BUCKET);
+        const numProps = def
+          .filter((p) => p.type === "number" || p.type === "boolean")
+          .slice(0, AE_MAX_PROPS_PER_BUCKET);
+        for (const p of strProps) {
+          const v = e.properties[p.name];
+          propBlobs.push(v === undefined || v === null ? "" : String(v));
+        }
+        for (const p of numProps) {
+          const v = e.properties[p.name];
+          if (typeof v === "boolean") {
+            propDoubles.push(v ? 1 : 0);
+          } else {
+            const n = Number(v);
+            propDoubles.push(Number.isFinite(n) ? n : 0);
+          }
+        }
+      }
       c.env.METRIC_EVENTS?.writeDataPoint({
         indexes: [key.project_id],
-        blobs: [e.event_name, e.user_id ?? "", e.anonymous_id ?? ""],
-        doubles: [Number(e.value ?? 0), e.ts],
+        blobs: [e.event_name, e.user_id ?? "", e.anonymous_id ?? "", ...propBlobs],
+        doubles: [Number(e.value ?? 0), e.ts, ...propDoubles],
       });
     } else if (e.type === "identify" && e.user_id && e.anonymous_id) {
       await db

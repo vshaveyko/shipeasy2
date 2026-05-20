@@ -26,7 +26,7 @@ export async function runArchival(env: WorkerEnv): Promise<void> {
     const exposureSql = `
       SELECT blob2 AS grp, blob3 AS user_id, blob4 AS anonymous_id,
              double1 AS ts, blob1 AS experiment
-      FROM EXPOSURES
+      FROM shipeasy_exposures
       WHERE index1 = ${sqlString(proj.id)}
         AND double1 >= ${startMs}
         AND double1 <  ${endMs}
@@ -34,7 +34,7 @@ export async function runArchival(env: WorkerEnv): Promise<void> {
     const metricSql = `
       SELECT blob2 AS user_id, blob3 AS anonymous_id,
              double1 AS value, double2 AS ts, blob1 AS event_name
-      FROM METRIC_EVENTS
+      FROM shipeasy_metric_events
       WHERE index1 = ${sqlString(proj.id)}
         AND double2 >= ${startMs}
         AND double2 <  ${endMs}

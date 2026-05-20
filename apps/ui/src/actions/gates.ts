@@ -8,12 +8,16 @@ import {
   setGateEnabled,
   deleteGate as deleteGateHandler,
 } from "@/lib/handlers/gates";
+import { DOGFOOD_EVENTS, dogfoodTrack } from "@/lib/dogfood";
 
 const GATES_PATH = "/dashboard/[projectId]/gates";
 
 export async function createGate(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await createGateHandler(identity, input);
+  dogfoodTrack(identity.actorEmail || identity.projectId, DOGFOOD_EVENTS.gateCreated, {
+    project_id: identity.projectId,
+  });
   revalidatePath(GATES_PATH, "page");
   return result;
 }

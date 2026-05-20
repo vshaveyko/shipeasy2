@@ -1,5 +1,22 @@
 import { z } from "zod";
 import { folderSchema } from "./folder";
+import { metricNameSchema } from "./metrics";
+
+// Inline metric attachment by DSL string. Used on experiment create/update so callers
+// can declare a goal + guardrails in one shot. Each entry compiles via @shipeasy/query-dsl,
+// upserts the underlying event (if missing), upserts the metric, and attaches it with
+// the named role. `name` is optional — when omitted the handler derives a stable slug
+// from the event + agg kind so the same query re-runs are idempotent.
+export const experimentInlineMetricSchema = z.object({
+  name: metricNameSchema.optional(),
+  query: z
+    .string()
+    .min(1)
+    .max(4096)
+    .describe("Metric DSL string, e.g. `count_users(checkout_completed)`."),
+});
+
+export type ExperimentInlineMetric = z.infer<typeof experimentInlineMetricSchema>;
 
 export const experimentNameSchema = z
   .string()
@@ -111,6 +128,18 @@ export const experimentCreateSchema = z
       .describe(
         "Enable sequential testing (always-valid p-values). Requires Premium plan or higher.",
       ),
+    goal_metric: experimentInlineMetricSchema
+      .optional()
+      .describe(
+        "Single goal metric defined inline as a DSL query. The underlying event is auto-created if missing.",
+      ),
+    guardrail_metrics: z
+      .array(experimentInlineMetricSchema)
+      .max(10)
+      .default([])
+      .describe(
+        "Up to 10 guardrail metrics defined inline. Each is upserted (event + metric) and attached with role=guardrail.",
+      ),
   })
   .refine(
     (e) => e.groups.reduce((s, g) => s + g.weight, 0) === 10000,
@@ -150,6 +179,14 @@ export const experimentUpdateSchema = z
     min_runtime_days: z.number().int().min(0).max(365).optional(),
     min_sample_size: z.number().int().min(1).optional(),
     sequential_testing: z.boolean().optional(),
+    goal_metric: experimentInlineMetricSchema
+      .optional()
+      .describe("Replaces the goal metric (event auto-upserted)."),
+    guardrail_metrics: z
+      .array(experimentInlineMetricSchema)
+      .max(10)
+      .optional()
+      .describe("Replaces the guardrail set wholesale (event auto-upserted per entry)."),
   })
   .describe(
     "Body for `PATCH /api/admin/experiments/{id}`. Partial — only supplied fields change. `allocation_pct`, `groups`, `salt`, `universe`, `params` are immutable while the experiment is running (stop first).",

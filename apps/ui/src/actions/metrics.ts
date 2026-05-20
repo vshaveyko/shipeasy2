@@ -7,10 +7,14 @@ import {
   updateMetric as updateMetricHandler,
   deleteMetric as deleteMetricHandler,
 } from "@/lib/handlers/metrics";
+import { DOGFOOD_EVENTS, dogfoodTrack } from "@/lib/dogfood";
 
 export async function createMetric(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await createMetricHandler(identity, input);
+  dogfoodTrack(identity.actorEmail || identity.projectId, DOGFOOD_EVENTS.metricCreated, {
+    project_id: identity.projectId,
+  });
   revalidatePath("/dashboard/[projectId]/experiments/metrics", "page");
   return result;
 }

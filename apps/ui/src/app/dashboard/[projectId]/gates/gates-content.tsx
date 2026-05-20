@@ -44,7 +44,8 @@ import {
 import { IntegrationSnippetButton } from "@/components/integration";
 import { deleteGateAction, enableGateAction } from "./actions";
 import { NewGateWizard } from "./new-gate-wizard";
-import { EmbeddedGateEditor, type EmbeddedGateRow } from "./embedded-gate-editor";
+import { type EmbeddedGateRow } from "./embedded-gate-editor";
+import { ReadGateView } from "./read-gate-view";
 
 type GateRow = EmbeddedGateRow;
 
@@ -514,7 +515,7 @@ function DetailPane({
         </div>
       </header>
 
-      <EmbeddedGateEditor gate={gate} />
+      <ReadGateView gate={gate} />
     </div>
   );
 }

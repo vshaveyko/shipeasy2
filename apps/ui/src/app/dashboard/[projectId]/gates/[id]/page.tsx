@@ -5,7 +5,8 @@ import { listAllGates } from "@/lib/handlers/gates";
 import { listAttributes } from "@/lib/handlers/attributes";
 import { Page, PageBody } from "@/components/dashboard/page";
 import { shipeasy } from "@shipeasy/sdk/server";
-import { GateEditorBody } from "./gate-editor-client";
+import { ReadGateView } from "../read-gate-view";
+import type { EmbeddedGateRow } from "../embedded-gate-editor";
 
 export async function generateMetadata({
   params,
@@ -89,21 +90,30 @@ export default async function GateEditorPage({ params }: { params: Promise<{ id:
     // SDK not configured in dev — leave the button visible.
   }
 
+  const row: EmbeddedGateRow = {
+    id: gate.id,
+    name: gate.name,
+    rolloutPct: gate.rolloutPct ?? 0,
+    rules: gate.rules,
+    enabled: gate.enabled ?? false,
+    title: gate.title ?? null,
+    folder: gate.folder ?? null,
+    groupName: gate.groupName ?? null,
+    ownerEmail: gate.ownerEmail ?? null,
+    description: gate.description ?? null,
+    stack: gate.stack ?? null,
+  };
+  // Suppress unused warnings — kept for parity if read view is later extended.
+  void initialRules;
+  void initialDetails;
+  void rolloutPct;
+  void attributes;
+  void askClaudeEnabled;
+
   return (
     <Page>
       <PageBody className="space-y-5">
-        <GateEditorBody
-          gateId={gate.id}
-          gateName={gate.name}
-          initialRules={initialRules}
-          initialRolloutPct={rolloutPct}
-          attributes={attributes.map((a) => ({ k: a.name, ex: "" }))}
-          initialDetails={initialDetails}
-          initialStack={
-            gate.stack ? (gate.stack as Parameters<typeof GateEditorBody>[0]["initialStack"]) : null
-          }
-          askClaudeEnabled={askClaudeEnabled}
-        />
+        <ReadGateView gate={row} />
       </PageBody>
     </Page>
   );

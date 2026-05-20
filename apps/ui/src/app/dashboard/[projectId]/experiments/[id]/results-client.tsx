@@ -882,7 +882,8 @@ export function ResultsClient({ vm, actions }: { vm: ResultsViewModel; actions: 
   return (
     <div className="v2-page">
       <div className={`v2-shell ${metaCollapsed ? "collapsed" : ""}`}>
-        <div className="v2-main-col">
+        {/* Banner row spans full grid width; meta rail starts BELOW */}
+        <div className="v2-banner">
           {/* compact header */}
           <div className="v2-head">
             <span
@@ -931,7 +932,9 @@ export function ResultsClient({ vm, actions }: { vm: ResultsViewModel; actions: 
               <span style={{ color: "var(--se-fg-3)" }}>No live updates.</span>
             </div>
           )}
+        </div>
 
+        <div className="v2-main-col">
           {/* DRAFT */}
           {vm.verdict === "draft" ? (
             <div className="v2-draft">

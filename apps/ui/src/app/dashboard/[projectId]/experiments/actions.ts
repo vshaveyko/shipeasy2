@@ -170,11 +170,19 @@ export async function inlineCreateMetricAction(input: {
 }) {
   try {
     const identity = await getIdentity();
+    const agg =
+      input.aggregation === "retention_Nd"
+        ? { kind: "retention_Nd" as const, n: 7 }
+        : { kind: input.aggregation };
     const created = await createMetric(identity, {
       name: input.name,
       event_name: input.event_name,
-      value_path: input.value_path,
-      aggregation: input.aggregation,
+      query_ir: {
+        agg,
+        metric: input.event_name,
+        valueLabel: input.value_path ?? undefined,
+        filters: [],
+      },
       winsorize_pct: input.winsorize_pct ?? 99,
       min_detectable_effect: input.min_detectable_effect,
     });

@@ -73,6 +73,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // `pending` membership state forever.
       const isSignIn = !!user || trigger === "signIn" || trigger === "signUp";
       if (isSignIn) {
+        // Dogfood: emit our own admin_login_succeeded so dashboard metrics see real
+        // traffic. Lazy-imported because @/lib/dogfood imports the shipeasy SDK which
+        // would inflate the auth bundle on every route.
+        try {
+          const { dogfoodTrack, DOGFOOD_EVENTS } = await import("@/lib/dogfood");
+          dogfoodTrack(email, DOGFOOD_EVENTS.loginSucceeded);
+        } catch {
+          /* never block auth on telemetry */
+        }
         const env = await getEnvAsync();
         const accepted = await acceptPendingInvitesForEmail(env.DB, email);
         // Re-resolve project_id when:

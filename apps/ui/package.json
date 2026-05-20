@@ -30,6 +30,7 @@
     "@rjsf/validator-ajv8": "^6.5.2",
     "@shipeasy/core": "workspace:*",
     "@shipeasy/devtools": "workspace:*",
+    "@shipeasy/query-dsl": "workspace:*",
     "@shipeasy/sdk": "^2.2.0",
     "@shipeasy/shared": "workspace:*",
     "@tanstack/react-table": "^8.21.3",

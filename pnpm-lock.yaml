@@ -151,6 +151,9 @@ importers:
       '@shipeasy/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
+      '@shipeasy/query-dsl':
+        specifier: workspace:*
+        version: link:../../packages/query-dsl
       '@shipeasy/sdk':
         specifier: ^2.2.0
         version: 2.2.0
@@ -278,6 +281,9 @@ importers:
       '@shipeasy/openapi':
         specifier: workspace:^1.0.0
         version: link:../openapi
+      '@shipeasy/query-dsl':
+        specifier: workspace:*
+        version: link:../query-dsl
       chalk:
         specifier: ^5.3.0
         version: 5.6.2
@@ -461,11 +467,23 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
 
+  packages/query-dsl:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.4
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@20.19.39)(happy-dom@16.8.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(terser@5.16.9)
+
   packages/worker:
     dependencies:
       '@shipeasy/core':
         specifier: workspace:*
         version: link:../core
+      '@shipeasy/query-dsl':
+        specifier: workspace:*
+        version: link:../query-dsl
       drizzle-orm:
         specifier: ^0.36.0
         version: 0.36.4(@cloudflare/workers-types@4.20260416.2)(@types/better-sqlite3@7.6.13)(@types/react@19.2.14)(better-sqlite3@12.9.0)(react@19.2.5)

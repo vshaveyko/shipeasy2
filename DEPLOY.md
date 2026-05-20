@@ -71,6 +71,21 @@ Why each step:
 5. `pnpm --filter @shipeasy/ui exec opennextjs-cloudflare build` —
    OpenNext adapter compiles Next.js into a Worker bundle.
 
+**Secrets required on `shipeasy` (UI Worker):**
+
+- `CF_API_TOKEN` — Cloudflare API token with **Account Analytics** read
+  scope. The metric detail page calls `POST /api/admin/metrics/:id/series`,
+  which compiles the metric's IR to Analytics Engine SQL and runs it via
+  the AE SQL API. Without this secret the endpoint returns 503 with the
+  exact `wrangler secret put` command. Set once per environment:
+
+  ```
+  wrangler secret put CF_API_TOKEN
+  ```
+
+  (The edge worker also uses `CF_API_TOKEN` for the analysis cron — same
+  token, set separately on `shipeasy-worker`.)
+
 ### `shipeasy-worker` — edge / SDK hot path
 
 Root directory: repo root.

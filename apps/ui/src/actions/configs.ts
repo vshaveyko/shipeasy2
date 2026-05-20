@@ -8,12 +8,16 @@ import {
   updateConfigSchema as updateConfigSchemaHandler,
   deleteConfig as deleteConfigHandler,
 } from "@/lib/handlers/configs";
+import { DOGFOOD_EVENTS, dogfoodTrack } from "@/lib/dogfood";
 
 const CONFIGS_PATH = "/dashboard/configs/values";
 
 export async function createConfig(input: unknown) {
   const identity = await authenticateAdmin();
   const result = await createConfigHandler(identity, input);
+  dogfoodTrack(identity.actorEmail || identity.projectId, DOGFOOD_EVENTS.configCreated, {
+    project_id: identity.projectId,
+  });
   revalidatePath(CONFIGS_PATH);
   return result;
 }

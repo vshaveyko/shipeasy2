@@ -42,7 +42,7 @@ import { HeroEmptyState } from "@/components/dashboard/hero-empty-state";
 import { IntegrationSnippetButton } from "@/components/integration";
 import { deleteKillswitch } from "@/actions/killswitches";
 import { NewKillswitchWizard } from "./new-killswitch-wizard";
-import { EmbeddedKillswitchEditor } from "./embedded-killswitch-editor";
+import { ReadKillswitchView } from "./read-killswitch-view";
 
 type EnvKey = "dev" | "staging" | "prod";
 
@@ -481,7 +481,7 @@ function DetailPane({
         </div>
       </header>
 
-      <EmbeddedKillswitchEditor row={row} />
+      <ReadKillswitchView row={row} />
     </div>
   );
 }

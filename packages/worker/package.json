@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@shipeasy/core": "workspace:*",
+    "@shipeasy/query-dsl": "workspace:*",
     "drizzle-orm": "^0.36.0",
     "hono": "^4.6.0",
     "stripe": "^17.0.0"

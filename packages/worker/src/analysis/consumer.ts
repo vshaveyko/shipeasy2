@@ -6,14 +6,22 @@
 import { getDb, getPlan } from "@shipeasy/core";
 import {
   analysisFailures,
+  events as eventsTable,
   experimentMetrics,
   experimentResults,
   experiments as experimentsTable,
   metrics as metricsTable,
   projects as projectsTable,
   userMetricBaseline,
+  type MetricQueryIR,
 } from "@shipeasy/core/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
+import {
+  compilePerUser,
+  type MetricDef,
+  type Query as DslQuery,
+  type Registry,
+} from "@shipeasy/query-dsl";
 import { queryAE, sqlString } from "../lib/ae";
 import {
   confidenceInterval,
@@ -156,6 +164,7 @@ async function analyzeExperiment(
       eventName: metricsTable.eventName,
       aggregation: metricsTable.aggregation,
       winsorizePct: metricsTable.winsorizePct,
+      queryIr: metricsTable.queryIr,
     })
     .from(experimentMetrics)
     .innerJoin(metricsTable, eq(experimentMetrics.metricId, metricsTable.id))
@@ -163,10 +172,31 @@ async function analyzeExperiment(
 
   if (attached.length === 0) return;
 
+  // Build a registry from the events referenced by attached metrics. The DSL compiler
+  // resolves filter / groupBy / valueLabel against this so the SQL targets the right
+  // AE column slots (event property layout is per-event).
+  const eventNames = [...new Set(attached.map((m) => m.eventName))];
+  const eventRows = await db
+    .select({ name: eventsTable.name, properties: eventsTable.properties })
+    .from(eventsTable)
+    .where(and(eq(eventsTable.projectId, projectId), inArray(eventsTable.name, eventNames)));
+  const registry: Registry = {};
+  for (const row of eventRows) {
+    const def: MetricDef = {
+      dataset: "shipeasy_metric_events",
+      eventName: row.name,
+      defaultValueColumn: "double1",
+      properties: (row.properties ?? []).map((p) => ({ name: p.name, type: p.type })),
+    };
+    registry[row.name] = def;
+  }
+
   // Exposures: user → group (first-exposure wins).
+  // FROM is the AE *dataset* name from wrangler.toml, not the worker binding (binding
+  // names are write-side only — the SQL API only resolves real dataset names).
   const exposureSql = `
     SELECT blob3 AS user_id, blob2 AS grp, MIN(double1) AS first_ts
-    FROM EXPOSURES
+    FROM shipeasy_exposures
     WHERE index1 = ${sqlString(projectId)}
       AND blob1 = ${sqlString(exp.name)}
     GROUP BY blob3, blob2
@@ -205,19 +235,32 @@ async function analyzeExperiment(
   const srmDetected = srmP < 0.001 ? 1 : 0;
 
   for (const metric of attached) {
-    const metricSql = `
-      SELECT blob2 AS user_id, SUM(double1) AS total_value, COUNT(*) AS event_count
-      FROM METRIC_EVENTS
-      WHERE index1 = ${sqlString(projectId)}
-        AND blob1 = ${sqlString(metric.eventName)}
-        AND double2 >= ${windowStart}
-        AND double2 <  ${windowEnd}
-      GROUP BY blob2
-    `;
+    // Compile the per-user collapse query from the metric's IR. Falls back to a
+    // synthetic IR derived from the legacy aggregation/eventName columns for any
+    // metric row whose query_ir hasn't been populated yet (older rows the migration
+    // backfilled with a basic IR — should always be set in steady state).
+    const ir = (metric.queryIr ?? fallbackIr(metric)) as MetricQueryIR;
+    if (!registry[metric.eventName]) {
+      console.warn(
+        JSON.stringify({
+          event: "metric_event_missing_registry",
+          metric: metric.name,
+          event_name: metric.eventName,
+        }),
+      );
+      continue;
+    }
+    const baseSql = compilePerUser(ir as DslQuery, { from: windowStart, to: windowEnd }, registry);
+    // compilePerUser doesn't know about the per-project index — graft it on so we hit
+    // only this project's slice. AE rejects WHERE clauses that re-target index1, so we
+    // splice it into the existing WHERE chain.
+    const metricSql = baseSql.replace(/WHERE\s+/, `WHERE index1 = ${sqlString(projectId)}\n  AND `);
     const metricRows = await queryAE<{
       user_id: string;
       total_value: number;
       event_count: number;
+      first_ts: number;
+      last_ts: number;
     }>(metricSql, env);
 
     const userMetric = new Map<string, number>();
@@ -372,4 +415,19 @@ async function analyzeExperiment(
         });
     }
   }
+}
+
+function fallbackIr(metric: { eventName: string; aggregation: string }): MetricQueryIR {
+  if (metric.aggregation === "retention_Nd") {
+    return {
+      agg: { kind: "retention_Nd", n: 7 },
+      metric: metric.eventName,
+      filters: [],
+    };
+  }
+  return {
+    agg: { kind: metric.aggregation as "count_users" },
+    metric: metric.eventName,
+    filters: [],
+  };
 }

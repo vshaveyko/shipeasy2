@@ -14,19 +14,28 @@ export async function createMetricAction(formData: FormData) {
   const event_name = formData.get("event_name") as string;
   const aggregation = (formData.get("aggregation") as string) || "count_users";
   const valuePathRaw = formData.get("value_path") as string | null;
-  const value_path = valuePathRaw && valuePathRaw.trim() !== "" ? valuePathRaw.trim() : null;
+  const valueLabel = valuePathRaw && valuePathRaw.trim() !== "" ? valuePathRaw.trim() : undefined;
   const winsorizeRaw = formData.get("winsorize_pct") as string | null;
   const winsorize_pct = winsorizeRaw ? Number(winsorizeRaw) : 99;
   const mdeRaw = formData.get("min_detectable_effect") as string | null;
   const min_detectable_effect = mdeRaw && mdeRaw.trim() !== "" ? Number(mdeRaw) : null;
   const cookieStore = await cookies();
+  const aggIr =
+    aggregation === "retention_Nd"
+      ? { kind: "retention_Nd" as const, n: 7 }
+      : { kind: aggregation as "count_users" | "count_events" | "sum" | "avg" };
+  const query_ir = {
+    agg: aggIr,
+    metric: event_name,
+    valueLabel,
+    filters: [] as { label: string; op: "=" | "!=" | "=~" | "!~"; value: string }[],
+  };
   try {
     await createMetric(identity, {
       name,
       event_name,
-      aggregation,
+      query_ir,
       winsorize_pct,
-      value_path,
       min_detectable_effect,
     });
   } catch (e) {

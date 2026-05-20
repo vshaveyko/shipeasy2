@@ -4,7 +4,7 @@ import useSWR from "swr";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ConfigActivity, ConfigDetail } from "@/lib/handlers/configs";
-import { ConfigEditorBody } from "./[id]/editor";
+import { ReadConfigView } from "./read-config-view";
 
 const detailFetcher = async (url: string): Promise<ConfigDetail> => {
   const res = await fetch(url, { credentials: "same-origin" });
@@ -47,7 +47,7 @@ export function EmbeddedConfigEditor({
   }
 
   return (
-    <ConfigEditorBody
+    <ReadConfigView
       key={detail.id}
       initial={detail}
       initialActivity={activity ?? []}

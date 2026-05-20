@@ -57,6 +57,32 @@ export type EventProperty = {
   description: string;
 };
 
+// Structural mirror of @shipeasy/query-dsl Query type. Inlined to keep @shipeasy/core
+// dependency-free. Validated by the metric Zod schema at the handler boundary, so a drift
+// between the two declarations surfaces as a schema parse error, not a silent data bug.
+export type MetricAggKind =
+  | { kind: "count_users" }
+  | { kind: "count_events" }
+  | { kind: "sum" }
+  | { kind: "avg" }
+  | { kind: "min" }
+  | { kind: "max" }
+  | { kind: "unique" }
+  | { kind: "quantile"; p: number }
+  | { kind: "retention_Nd"; n: number };
+
+export type MetricFilter = { label: string; op: "=" | "!=" | "=~" | "!~"; value: string };
+
+export type MetricGroupBy = { op: "by" | "without"; labels: string[] };
+
+export type MetricQueryIR = {
+  agg: MetricAggKind;
+  metric: string;
+  valueLabel?: string;
+  filters: MetricFilter[];
+  groupBy?: MetricGroupBy;
+};
+
 export const projects = sqliteTable(
   "projects",
   {
@@ -572,6 +598,10 @@ export const metrics = sqliteTable(
     })
       .notNull()
       .default("count_users"),
+    // Typed IR for the event-aggregation DSL. Authoritative source of truth — the
+    // aggregation+value_path columns above are derived from it for the legacy
+    // experiment analyzer (see experiment-platform/event-aggregation.md).
+    queryIr: text("query_ir", { mode: "json" }).$type<MetricQueryIR>(),
     winsorizePct: integer("winsorize_pct").notNull().default(99),
     minDetectableEffect: real("min_detectable_effect"),
     updatedAt: text("updated_at").notNull(),
