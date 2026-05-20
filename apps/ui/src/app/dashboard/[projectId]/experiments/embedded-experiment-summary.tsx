@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowUpRightIcon, FlaskConicalIcon } from "lucide-react";
+import { ArrowUpRightIcon, FlaskConicalIcon, TargetIcon, ShieldCheckIcon } from "lucide-react";
+import Link from "next/link";
 
 import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { Banner } from "@/components/ui/banner";
+import { Sparkline } from "@/components/ui/sparkline";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { setExperimentStatusAction } from "./actions";
 import type { ExperimentRow } from "./experiments-content";
@@ -86,6 +88,8 @@ export function EmbeddedExperimentSummary({
         <Stat label="Variants" value={String(variants.length)} />
         <Stat label="Universe" value={exp.universe ?? "default"} mono />
       </div>
+
+      <MetricsBlock projectId={projectId} experiment={exp} />
 
       <section className="rounded-md border border-[var(--se-line)] bg-[var(--se-bg-1)]">
         <header className="t-caps dim-2 border-b border-[var(--se-line)] px-3 py-2">
@@ -189,4 +193,100 @@ function Stat({ label, value, mono }: { label: string; value: string; mono?: boo
       </div>
     </div>
   );
+}
+
+function MetricsBlock({ projectId, experiment }: { projectId: string; experiment: ExperimentRow }) {
+  const goal = experiment.goalMetric ?? null;
+  const guardrails = experiment.guardrails ?? [];
+  const lift = experiment.primaryLiftPct;
+  const sig = experiment.significancePct;
+  const sample = experiment.sampleSize;
+  const trend = experiment.trendPct ?? [];
+  const liftTone =
+    lift == null ? "var(--se-fg-3)" : lift > 0 ? "var(--se-accent)" : "var(--se-danger)";
+
+  return (
+    <section className="rounded-md border border-[var(--se-line)] bg-[var(--se-bg-1)]">
+      <header className="t-caps dim-2 flex items-center gap-1.5 border-b border-[var(--se-line)] px-3 py-2">
+        <TargetIcon className="size-3 text-[var(--se-accent)]" />
+        Goal
+      </header>
+      <div className="p-3">
+        {goal ? (
+          <div className="flex flex-wrap items-center gap-4">
+            <Link
+              href={`/dashboard/${projectId}/metrics/${goal.id}`}
+              className="font-mono text-[13.5px] text-[var(--se-fg-1)] hover:text-[var(--se-accent)]"
+            >
+              {goal.name}
+            </Link>
+            <div className="flex items-baseline gap-2">
+              <span
+                className="font-mono text-[18px]"
+                style={{ color: liftTone, fontVariantNumeric: "tabular-nums" }}
+              >
+                {lift == null ? "—" : `${lift > 0 ? "+" : ""}${lift.toFixed(1)}%`}
+              </span>
+              <span className="t-mono-xs dim-2">primary lift</span>
+            </div>
+            {sig != null ? (
+              <div className="flex items-baseline gap-1.5 font-mono text-[12px] text-[var(--se-fg-2)]">
+                <span style={{ fontVariantNumeric: "tabular-nums" }}>{sig.toFixed(1)}%</span>
+                <span className="t-mono-xs dim-2">sig</span>
+              </div>
+            ) : null}
+            {sample != null ? (
+              <div className="flex items-baseline gap-1.5 font-mono text-[12px] text-[var(--se-fg-2)]">
+                <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatN(sample)}</span>
+                <span className="t-mono-xs dim-2">n</span>
+              </div>
+            ) : null}
+            {trend.length > 1 ? (
+              <div className="ml-auto">
+                <Sparkline
+                  points={trend}
+                  width={140}
+                  height={28}
+                  intent={(lift ?? 0) >= 0 ? "accent" : "danger"}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="t-mono-xs dim-2">No goal metric attached.</p>
+        )}
+      </div>
+      <header className="t-caps dim-2 flex items-center gap-1.5 border-y border-[var(--se-line)] px-3 py-2">
+        <ShieldCheckIcon className="size-3" />
+        Guardrails
+        <span className="ml-1 rounded bg-[var(--se-bg-2)] px-1.5 py-px font-mono text-[10.5px] text-[var(--se-fg-3)]">
+          {guardrails.length}
+        </span>
+      </header>
+      <div className="p-3">
+        {guardrails.length === 0 ? (
+          <p className="t-mono-xs dim-2">No guardrails attached.</p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {guardrails.map((g) => (
+              <li key={g.id}>
+                <Link
+                  href={`/dashboard/${projectId}/metrics/${g.id}`}
+                  className="font-mono text-[12.5px] text-[var(--se-fg-2)] hover:text-[var(--se-accent)]"
+                >
+                  {g.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function formatN(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
 }

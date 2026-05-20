@@ -8,6 +8,7 @@ import {
   getDb,
 } from "@shipeasy/core";
 import {
+  events,
   experiments,
   experimentMetrics,
   experimentResults,
@@ -18,7 +19,10 @@ import {
   experimentCreateSchema,
   experimentUpdateSchema,
   experimentMetricsUpdateSchema,
+  type ExperimentInlineMetric,
 } from "@shipeasy/core/schemas/experiments";
+import { legacyAggFromIr, legacyValuePathFromIr } from "@shipeasy/core/schemas/metrics";
+import { parse as parseDsl, ParseError as DslParseError } from "@shipeasy/query-dsl";
 import type { Page, PageQuery } from "@shipeasy/core/pagination";
 import { scopedDb, scopedDbSA } from "../db";
 import { getEnv, getEnvAsync } from "../env";
@@ -30,7 +34,16 @@ import { keysetWhere, sliceWithCursor } from "./_pagination";
 
 const IMMUTABLE_WHILE_RUNNING = ["allocation_pct", "groups", "salt", "universe", "params"] as const;
 
-type ExperimentRow = Awaited<ReturnType<ReturnType<typeof scopedDb>["select"]>>[number];
+type BareExperimentRow = Awaited<ReturnType<ReturnType<typeof scopedDb>["select"]>>[number];
+export type ExperimentRow = BareExperimentRow & {
+  goalMetric: { id: string; name: string } | null;
+  guardrailCount: number;
+  guardrails: { id: string; name: string }[];
+  primaryLiftPct: number | null;
+  significancePct: number | null;
+  sampleSize: number | null;
+  trendPct: number[];
+};
 
 export async function listExperiments(
   identity: AdminIdentity,
@@ -41,11 +54,122 @@ export async function listExperiments(
   // scopedDb already filters deletedAt IS NULL; also drop archived from default lists.
   const notArchived = ne(experiments.status, "archived");
   const where = ks ? and(notArchived, ks)! : notArchived;
-  const rows = await s
+  const rows = (await s
     .selectWhere(experiments, where)
     .orderBy(desc(experiments.updatedAt), desc(experiments.id))
-    .limit(opts.limit + 1);
-  return sliceWithCursor(rows as ExperimentRow[], opts.limit);
+    .limit(opts.limit + 1)) as BareExperimentRow[];
+
+  // Enrich each row with its goal metric and guardrail count via a single
+  // grouped query — avoids N+1 round-trips against D1.
+  const enriched: ExperimentRow[] = rows.map((r) => ({
+    ...r,
+    goalMetric: null,
+    guardrailCount: 0,
+    guardrails: [],
+    primaryLiftPct: null,
+    significancePct: null,
+    sampleSize: null,
+    trendPct: [],
+  }));
+  if (enriched.length === 0) return sliceWithCursor(enriched, opts.limit);
+
+  const ids = enriched.map((e) => e.id);
+  const idList = sql.join(
+    ids.map((i) => sql`${i}`),
+    sql`, `,
+  );
+  const joined = await s.raw
+    .select({
+      experimentId: experimentMetrics.experimentId,
+      metricId: experimentMetrics.metricId,
+      role: experimentMetrics.role,
+      name: metrics.name,
+    })
+    .from(experimentMetrics)
+    .leftJoin(metrics, eq(experimentMetrics.metricId, metrics.id))
+    .where(sql`${experimentMetrics.experimentId} IN (${idList})`);
+  const byId = new Map<string, ExperimentRow>();
+  for (const e of enriched) byId.set(e.id, e);
+  for (const m of joined) {
+    const exp = byId.get(m.experimentId);
+    if (!exp) continue;
+    if (m.role === "goal" && m.name) {
+      exp.goalMetric = { id: m.metricId, name: m.name };
+    } else if (m.role === "guardrail") {
+      exp.guardrailCount += 1;
+      if (m.name) exp.guardrails.push({ id: m.metricId, name: m.name });
+    }
+  }
+
+  // Treatment group per experiment: first non-control group (fallback first).
+  const treatmentByExp = new Map<string, string | null>();
+  for (const e of enriched) {
+    const groups = Array.isArray(e.groups) ? (e.groups as { name: string }[]) : [];
+    const treatment =
+      groups.find((g) => g.name && g.name.toLowerCase() !== "control")?.name ??
+      groups[0]?.name ??
+      null;
+    treatmentByExp.set(e.id, treatment);
+  }
+
+  // Single batched results query for all experiments × their goal metric. We
+  // filter group-by group in JS because group_name varies per experiment.
+  const goalMetricNames = enriched.map((e) => e.goalMetric?.name).filter((n): n is string => !!n);
+  if (goalMetricNames.length > 0) {
+    const metricList = sql.join(
+      goalMetricNames.map((n) => sql`${n}`),
+      sql`, `,
+    );
+    const resultRows = await s.raw
+      .select({
+        experiment: experimentResults.experiment,
+        metric: experimentResults.metric,
+        groupName: experimentResults.groupName,
+        ds: experimentResults.ds,
+        n: experimentResults.n,
+        deltaPct: experimentResults.deltaPct,
+        pValue: experimentResults.pValue,
+      })
+      .from(experimentResults)
+      .where(
+        and(
+          eq(experimentResults.projectId, identity.projectId),
+          sql`${experimentResults.experiment} IN (${idList})`,
+          sql`${experimentResults.metric} IN (${metricList})`,
+        )!,
+      )
+      .orderBy(desc(experimentResults.ds));
+    // Group rows by experiment, keep only those for the goal metric + treatment group.
+    const perExp = new Map<string, typeof resultRows>();
+    for (const r of resultRows) {
+      const exp = byId.get(r.experiment);
+      if (!exp?.goalMetric || r.metric !== exp.goalMetric.name) continue;
+      const treatment = treatmentByExp.get(r.experiment);
+      if (!treatment || r.groupName !== treatment) continue;
+      const arr = perExp.get(r.experiment) ?? [];
+      arr.push(r);
+      perExp.set(r.experiment, arr);
+    }
+    for (const [expId, sorted] of perExp.entries()) {
+      const exp = byId.get(expId);
+      if (!exp) continue;
+      const latest = sorted[0];
+      if (latest) {
+        exp.primaryLiftPct =
+          latest.deltaPct != null ? Math.round(latest.deltaPct * 1000) / 10 : null;
+        exp.significancePct =
+          latest.pValue != null ? Math.round((1 - latest.pValue) * 1000) / 10 : null;
+        exp.sampleSize = latest.n ?? null;
+      }
+      // Trend: last 14 ds points (oldest → newest) of deltaPct.
+      exp.trendPct = sorted
+        .slice(0, 14)
+        .reverse()
+        .map((r) => (r.deltaPct != null ? r.deltaPct * 100 : 0));
+    }
+  }
+
+  return sliceWithCursor(enriched, opts.limit);
 }
 
 export async function listAllExperiments(identity: AdminIdentity): Promise<ExperimentRow[]> {
@@ -112,6 +236,129 @@ async function assertUniverseExists(projectId: string, name: string) {
   if (rows.length === 0) throw new ApiError(`Universe '${name}' not found`, 422);
 }
 
+// Parse + upsert a single inline metric (event auto-created if missing) and return its id.
+// Idempotent: re-running with the same `name`/derived-name + query returns the existing id.
+async function upsertInlineMetric(
+  projectId: string,
+  inline: ExperimentInlineMetric,
+): Promise<string> {
+  let ir;
+  try {
+    ir = parseDsl(inline.query);
+  } catch (e) {
+    if (e instanceof DslParseError) throw new ApiError(`Invalid metric query: ${e.message}`, 422);
+    throw e;
+  }
+  const eventName = ir.metric;
+  const metricName = inline.name ?? deriveMetricName(ir);
+
+  const s = await scopedDbSA(projectId);
+
+  // Upsert event with empty properties schema if missing. Existing events are left
+  // alone — overwriting their properties would silently break other metrics.
+  const existingEvent = await s.selectWhere(events, eq(events.name, eventName));
+  if (existingEvent.length === 0) {
+    try {
+      await s.insert(events).values({
+        id: crypto.randomUUID(),
+        name: eventName,
+        description: null,
+        folder: null,
+        properties: [],
+        pending: 0,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      if (!String(err).includes("UNIQUE")) throw err;
+    }
+  } else if (existingEvent[0].pending === 1) {
+    throw new ApiError(`Event '${eventName}' is pending review`, 422);
+  }
+
+  // Upsert metric. Reuse the row on UNIQUE collision (same project + folder + name).
+  const existingMetric = await s.selectWhere(metrics, eq(metrics.name, metricName));
+  if (existingMetric.length > 0) {
+    const row = existingMetric[0];
+    await s
+      .update(metrics)
+      .set({
+        eventName,
+        queryIr: ir,
+        aggregation: legacyAggFromIr(ir),
+        valuePath: legacyValuePathFromIr(ir),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(metrics.id, row.id));
+    return row.id;
+  }
+  const id = crypto.randomUUID();
+  await s.insert(metrics).values({
+    id,
+    name: metricName,
+    folder: null,
+    eventName,
+    queryIr: ir,
+    aggregation: legacyAggFromIr(ir),
+    valuePath: legacyValuePathFromIr(ir),
+    winsorizePct: 99,
+    minDetectableEffect: null,
+    updatedAt: new Date().toISOString(),
+  });
+  return id;
+}
+
+function deriveMetricName(ir: {
+  agg: { kind: string; n?: number; p?: number };
+  metric: string;
+}): string {
+  const aggLabel =
+    ir.agg.kind === "quantile"
+      ? `p${String(ir.agg.p ?? 99).replace("0.", "")}`
+      : ir.agg.kind === "retention_Nd"
+        ? `retention_${ir.agg.n ?? 7}d`
+        : ir.agg.kind;
+  return `${ir.metric}.${aggLabel}`.replace(/[^a-z0-9._-]/gi, "_").toLowerCase();
+}
+
+async function attachInlineMetrics(
+  projectId: string,
+  experimentId: string,
+  goal: ExperimentInlineMetric | undefined,
+  guardrails: ExperimentInlineMetric[] | undefined,
+): Promise<void> {
+  if (goal === undefined && guardrails === undefined) return;
+
+  const env = await getEnvAsync();
+  const db = getDb(env.DB);
+  const attachments: { metric_id: string; role: "goal" | "guardrail" }[] = [];
+  if (goal) {
+    attachments.push({ metric_id: await upsertInlineMetric(projectId, goal), role: "goal" });
+  }
+  for (const g of guardrails ?? []) {
+    attachments.push({ metric_id: await upsertInlineMetric(projectId, g), role: "guardrail" });
+  }
+  if (attachments.length === 0) return;
+
+  // Replace prior goal/guardrail attachments wholesale; preserve secondary attachments.
+  await db
+    .delete(experimentMetrics)
+    .where(
+      and(
+        eq(experimentMetrics.experimentId, experimentId),
+        ne(experimentMetrics.role, "secondary"),
+      ),
+    );
+  await db.insert(experimentMetrics).values(
+    attachments.map((a) => ({
+      id: crypto.randomUUID(),
+      experimentId,
+      metricId: a.metric_id,
+      role: a.role,
+      createdAt: Math.floor(Date.now() / 1000),
+    })),
+  );
+}
+
 export async function createExperiment(identity: AdminIdentity, input: unknown) {
   const parsed = experimentCreateSchema.parse(input);
   const project = await loadProject(identity.projectId);
@@ -167,6 +414,8 @@ export async function createExperiment(identity: AdminIdentity, input: unknown) 
     throw err;
   }
 
+  await attachInlineMetrics(identity.projectId, id, parsed.goal_metric, parsed.guardrail_metrics);
+
   await rebuildExperiments(env, identity.projectId);
   await writeAudit(identity, "experiment.create", "experiment", id, parsed);
   return { id, name: parsed.name };
@@ -213,6 +462,7 @@ export async function updateExperiment(identity: AdminIdentity, id: string, inpu
   if (parsed.sequential_testing !== undefined) patch.sequentialTesting = parsed.sequential_testing;
 
   await s.update(experiments).set(patch).where(eq(experiments.id, id));
+  await attachInlineMetrics(identity.projectId, id, parsed.goal_metric, parsed.guardrail_metrics);
   await rebuildExperiments(env, identity.projectId);
   await writeAudit(identity, "experiment.update", "experiment", id, parsed);
   return { id };

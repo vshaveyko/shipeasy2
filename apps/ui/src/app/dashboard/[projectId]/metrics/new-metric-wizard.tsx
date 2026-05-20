@@ -1,9 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
+
+import {
+  render as renderDsl,
+  type AggKind,
+  type Filter as DslFilter,
+  type GroupBy as DslGroupBy,
+  type MatchOp,
+  type Query as DslQuery,
+} from "@shipeasy/query-dsl";
 
 import { BigModalWizard, type WizardStep } from "@/components/shell/big-modal-wizard";
 import { Input } from "@/components/ui/input";
@@ -18,32 +27,77 @@ import { createMetric } from "@/actions/metrics";
 
 const NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
-type EventRow = { id: string; name: string; description?: string | null };
+type EventProperty = { name: string; type: "string" | "number" | "boolean"; required?: boolean };
 
-const AGGREGATIONS = [
+type EventRow = {
+  id: string;
+  name: string;
+  description?: string | null;
+  properties?: EventProperty[];
+};
+
+type AggregationKey =
+  | "count_users"
+  | "count_events"
+  | "sum"
+  | "avg"
+  | "min"
+  | "max"
+  | "unique"
+  | "quantile"
+  | "retention_Nd";
+
+type AggregationMeta = {
+  k: AggregationKey;
+  label: string;
+  hint: string;
+  needsValue: boolean;
+};
+
+const AGGREGATIONS: readonly AggregationMeta[] = [
   {
     k: "count_users",
     label: "Unique users",
     hint: "Distinct subjects with at least one event",
-    needsPath: false,
+    needsValue: false,
   },
   {
     k: "count_events",
     label: "Event count",
     hint: "Total events across all subjects",
-    needsPath: false,
+    needsValue: false,
   },
-  { k: "sum", label: "Sum of value", hint: "Add all numeric values", needsPath: true },
-  { k: "avg", label: "Average value", hint: "Mean of numeric values", needsPath: true },
+  { k: "sum", label: "Sum", hint: "Add all numeric values", needsValue: true },
+  { k: "avg", label: "Average", hint: "Mean of numeric values", needsValue: true },
+  { k: "min", label: "Minimum", hint: "Smallest observed value", needsValue: true },
+  { k: "max", label: "Maximum", hint: "Largest observed value", needsValue: true },
+  { k: "unique", label: "Unique values", hint: "Distinct numeric values seen", needsValue: true },
+  { k: "quantile", label: "Percentile", hint: "p50/p75/p90/p95/p99/p999", needsValue: true },
   {
     k: "retention_Nd",
     label: "N-day retention",
     hint: "Fraction returning within window",
-    needsPath: false,
+    needsValue: false,
   },
 ] as const;
 
-type AggregationKey = (typeof AGGREGATIONS)[number]["k"];
+const QUANTILE_CHOICES = [0.5, 0.75, 0.9, 0.95, 0.99, 0.999] as const;
+type QuantileChoice = (typeof QUANTILE_CHOICES)[number];
+const QUANTILE_LABEL: Record<string, string> = {
+  "0.5": "p50",
+  "0.75": "p75",
+  "0.9": "p90",
+  "0.95": "p95",
+  "0.99": "p99",
+  "0.999": "p999",
+};
+
+const FILTER_OPS: { op: MatchOp; label: string; stringOnly?: boolean }[] = [
+  { op: "=", label: "=" },
+  { op: "!=", label: "≠" },
+  { op: "=~", label: "matches", stringOnly: true },
+  { op: "!~", label: "no match", stringOnly: true },
+];
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const res = await fetch(url, { credentials: "same-origin" });
@@ -60,7 +114,8 @@ export type NewMetricWizardCreated = {
   name: string;
   eventName: string;
   aggregation: AggregationKey;
-  valuePath: string | null;
+  valueLabel: string | null;
+  queryIr: DslQuery;
   createdEvents: { name: string }[];
 };
 
@@ -94,8 +149,13 @@ export function NewMetricWizard({
   const [description, setDescription] = useState("");
   const [eventName, setEventName] = useState("");
   const [newEventDraft, setNewEventDraft] = useState("");
-  const [valuePath, setValuePath] = useState("");
   const [aggregation, setAggregation] = useState<AggregationKey>("count_users");
+  const [quantileP, setQuantileP] = useState<QuantileChoice>(0.99);
+  const [retentionN, setRetentionN] = useState<number>(7);
+  const [valueLabel, setValueLabel] = useState<string>("");
+  const [filters, setFilters] = useState<DslFilter[]>([]);
+  const [groupByOp, setGroupByOp] = useState<"by" | "without">("by");
+  const [groupByLabels, setGroupByLabels] = useState<string[]>([]);
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [winsorize, setWinsorize] = useState<number>(99);
   const [mdePct, setMdePct] = useState<number>(5);
@@ -116,8 +176,13 @@ export function NewMetricWizard({
       setDescription("");
       setEventName("");
       setNewEventDraft("");
-      setValuePath("");
       setAggregation("count_users");
+      setQuantileP(0.99);
+      setRetentionN(7);
+      setValueLabel("");
+      setFilters([]);
+      setGroupByOp("by");
+      setGroupByLabels([]);
       setDirection("up");
       setWinsorize(99);
       setMdePct(5);
@@ -134,8 +199,71 @@ export function NewMetricWizard({
     () => AGGREGATIONS.find((a) => a.k === aggregation) ?? AGGREGATIONS[0],
     [aggregation],
   );
-  const valuePathRequired = aggregationMeta.needsPath;
-  const shapeValid = !valuePathRequired || valuePath.trim().length > 0;
+  const valueRequired = aggregationMeta.needsValue;
+  const selectedEvent = useMemo(
+    () => (events ?? []).find((e) => e.name === eventName),
+    [events, eventName],
+  );
+  const eventProps = selectedEvent?.properties ?? [];
+  const numericProps = useMemo(() => eventProps.filter((p) => p.type === "number"), [eventProps]);
+  const stringProps = useMemo(() => eventProps.filter((p) => p.type === "string"), [eventProps]);
+  const allLabelNames = useMemo(
+    () => ["user_id", "anonymous_id", ...eventProps.map((p) => p.name)],
+    [eventProps],
+  );
+  // Group-by only makes sense for low-cardinality string labels; numeric
+  // properties (amounts, durations) would produce one series per distinct
+  // value. Keep the user-id columns (always strings) + string props only.
+  const groupableLabelNames = useMemo(
+    () => ["user_id", "anonymous_id", ...stringProps.map((p) => p.name)],
+    [stringProps],
+  );
+  const shapeValid =
+    (!valueRequired || valueLabel.trim().length > 0) &&
+    filters.every((f) => f.label && f.value.length > 0) &&
+    groupByLabels.every((l) => l.length > 0);
+
+  const aggIr: AggKind = useMemo(() => {
+    switch (aggregation) {
+      case "quantile":
+        return { kind: "quantile", p: quantileP };
+      case "retention_Nd":
+        return { kind: "retention_Nd", n: retentionN };
+      default:
+        return { kind: aggregation } as AggKind;
+    }
+  }, [aggregation, quantileP, retentionN]);
+
+  const groupByIr: DslGroupBy | undefined =
+    groupByLabels.length > 0 ? { op: groupByOp, labels: groupByLabels } : undefined;
+
+  const queryIr: DslQuery = useMemo(
+    () => ({
+      agg: aggIr,
+      metric: eventName || "event_name",
+      valueLabel: valueRequired && valueLabel ? valueLabel : undefined,
+      filters,
+      groupBy: groupByIr,
+    }),
+    [aggIr, eventName, valueRequired, valueLabel, filters, groupByIr],
+  );
+
+  const dslPreview = useMemo(() => {
+    try {
+      return renderDsl(queryIr);
+    } catch {
+      return "";
+    }
+  }, [queryIr]);
+
+  // When the source event changes, drop label refs that no longer exist on the new event.
+  useEffect(() => {
+    if (!eventName) return;
+    const known = new Set<string>(allLabelNames);
+    setFilters((prev) => prev.filter((f) => known.has(f.label)));
+    setGroupByLabels((prev) => prev.filter((l) => known.has(l)));
+    setValueLabel((prev) => (prev && numericProps.find((p) => p.name === prev) ? prev : ""));
+  }, [eventName, allLabelNames, numericProps]);
 
   const filteredEvents = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -217,7 +345,8 @@ export function NewMetricWizard({
           name={trimmed}
           eventName={eventName}
           aggregation={aggregation}
-          valuePath={valuePath}
+          valueLabel={valueLabel}
+          dsl={dslPreview}
         />
       ),
     },
@@ -313,7 +442,8 @@ export function NewMetricWizard({
           name={trimmed}
           eventName={eventName}
           aggregation={aggregation}
-          valuePath={valuePath}
+          valueLabel={valueLabel}
+          dsl={dslPreview}
         />
       ),
     },
@@ -357,21 +487,117 @@ export function NewMetricWizard({
               })}
             </div>
           </div>
-          {valuePathRequired ? (
+          {aggregation === "quantile" ? (
             <div>
-              <Label htmlFor="metric-value-path">Value path *</Label>
-              <Input
-                id="metric-value-path"
-                data-mono
-                value={valuePath}
-                onChange={(e) => setValuePath(e.target.value)}
-                placeholder="value.amount"
-              />
-              <p className="t-mono-xs dim-2 mt-1">
-                JSON pointer into the event payload, e.g. <code>value.amount</code>.
+              <Label>Percentile</Label>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {QUANTILE_CHOICES.map((p) => {
+                  const on = p === quantileP;
+                  return (
+                    <button
+                      type="button"
+                      key={p}
+                      onClick={() => setQuantileP(p)}
+                      aria-pressed={on}
+                      className={
+                        on
+                          ? "rounded-md border border-[color-mix(in_oklab,var(--se-accent)_45%,transparent)] bg-[var(--se-accent-soft)] px-2.5 py-1 font-mono text-[11.5px] text-[var(--se-accent)]"
+                          : "rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 py-1 font-mono text-[11.5px] text-[var(--se-fg-2)] hover:bg-[var(--se-bg-3)]"
+                      }
+                    >
+                      {QUANTILE_LABEL[String(p)]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          {aggregation === "retention_Nd" ? (
+            <div className="grid grid-cols-[auto_1fr] items-end gap-3">
+              <div>
+                <Label htmlFor="metric-retention-n">N (days)</Label>
+                <Input
+                  id="metric-retention-n"
+                  data-mono
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={retentionN}
+                  onChange={(e) =>
+                    setRetentionN(Math.max(1, Math.min(90, Number(e.target.value) || 1)))
+                  }
+                  className="w-24"
+                />
+              </div>
+              <p className="t-mono-xs dim-2">
+                Per-user reducer: 1 if the user has any event in [N, N+1) days after exposure.
               </p>
             </div>
           ) : null}
+          {valueRequired ? (
+            <div>
+              <Label htmlFor="metric-value-label">Value property *</Label>
+              {numericProps.length > 0 ? (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {numericProps.map((p) => {
+                    const on = p.name === valueLabel;
+                    return (
+                      <button
+                        type="button"
+                        key={p.name}
+                        onClick={() => setValueLabel(p.name)}
+                        aria-pressed={on}
+                        className={
+                          on
+                            ? "rounded-md border border-[color-mix(in_oklab,var(--se-accent)_45%,transparent)] bg-[var(--se-accent-soft)] px-2.5 py-1 font-mono text-[11.5px] text-[var(--se-accent)]"
+                            : "rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 py-1 font-mono text-[11.5px] text-[var(--se-fg-2)] hover:bg-[var(--se-bg-3)]"
+                        }
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Input
+                  id="metric-value-label"
+                  data-mono
+                  value={valueLabel}
+                  onChange={(e) => setValueLabel(e.target.value)}
+                  placeholder="value"
+                />
+              )}
+              <p className="t-mono-xs dim-2 mt-1">
+                Numeric property emitted with each event. Declare on the source event so the SDK
+                packs it into the right AE column.
+              </p>
+            </div>
+          ) : null}
+          <FiltersEditor
+            filters={filters}
+            onChange={setFilters}
+            stringProps={stringProps}
+            numericProps={numericProps}
+          />
+          <GroupByEditor
+            op={groupByOp}
+            labels={groupByLabels}
+            onOpChange={setGroupByOp}
+            onLabelsChange={setGroupByLabels}
+            availableLabels={groupableLabelNames}
+          />
+          <div>
+            <Label>DSL preview</Label>
+            <pre
+              className="mt-1.5 overflow-x-auto rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-1)] px-3 py-2 font-mono text-[12px] text-[var(--se-fg-2)]"
+              data-testid="metric-dsl-preview"
+            >
+              {dslPreview || "—"}
+            </pre>
+            <p className="t-mono-xs dim-2 mt-1">
+              Canonical text rendering of the query. The IR (not this text) is what we store.
+            </p>
+          </div>
           <div>
             <Label>Direction</Label>
             <div className="mt-1.5 inline-flex overflow-hidden rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)]">
@@ -453,7 +679,8 @@ export function NewMetricWizard({
           name={trimmed}
           eventName={eventName}
           aggregation={aggregation}
-          valuePath={valuePath}
+          valueLabel={valueLabel}
+          dsl={dslPreview}
         />
       ),
     },
@@ -463,14 +690,15 @@ export function NewMetricWizard({
       title: "Wire it up",
       hint: "Emit the source event from your code and the metric updates automatically.",
       content: (
-        <MetricIntegrate eventName={eventName} valuePath={valuePathRequired ? valuePath : null} />
+        <MetricIntegrate eventName={eventName} valueLabel={valueRequired ? valueLabel : null} />
       ),
       aside: (
         <MetricAside
           name={trimmed}
           eventName={eventName}
           aggregation={aggregation}
-          valuePath={valuePath}
+          valueLabel={valueLabel}
+          dsl={dslPreview}
         />
       ),
     },
@@ -481,24 +709,24 @@ export function NewMetricWizard({
       setStep(!nameValid ? 0 : !sourceValid ? 1 : 2);
       return;
     }
+    const finalIr: DslQuery = { ...queryIr, metric: eventName };
     startTransition(async () => {
       try {
         const created = (await createMetric({
           name: trimmed,
           event_name: eventName,
-          value_path: valuePathRequired ? valuePath.trim() : null,
-          aggregation,
+          query_ir: finalIr,
           winsorize_pct: winsorize,
           min_detectable_effect: mdePct / 100,
         })) as { id: string; name: string };
         if (onCreated) {
-          // Host wizard owns close/toast.
           await onCreated({
             id: created.id,
             name: created.name,
             eventName,
             aggregation,
-            valuePath: valuePathRequired ? valuePath.trim() : null,
+            valueLabel: valueRequired ? valueLabel : null,
+            queryIr: finalIr,
             createdEvents: inlineEvents,
           });
         } else {
@@ -533,18 +761,20 @@ function MetricAside({
   name,
   eventName,
   aggregation,
-  valuePath,
+  valueLabel,
+  dsl,
 }: {
   name: string;
   eventName: string;
   aggregation: string;
-  valuePath: string;
+  valueLabel: string;
+  dsl?: string;
 }) {
   const rows: Array<{ k: string; v: string }> = [
     { k: "name", v: name || "—" },
     { k: "event", v: eventName || "—" },
     { k: "agg", v: aggregation },
-    { k: "path", v: valuePath || "—" },
+    { k: "value", v: valueLabel || "—" },
   ];
   return (
     <>
@@ -562,6 +792,11 @@ function MetricAside({
           </div>
         ))}
       </dl>
+      {dsl ? (
+        <pre className="whitespace-pre-wrap break-all rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-1)] px-2.5 py-1.5 font-mono text-[11.5px] leading-snug text-[var(--se-fg-2)]">
+          {dsl}
+        </pre>
+      ) : null}
       <p className="t-sm dim">
         Metrics never hard-delete. You can archive them anytime once the dependent experiments stop
         referencing them.
@@ -570,16 +805,178 @@ function MetricAside({
   );
 }
 
+function FiltersEditor({
+  filters,
+  onChange,
+  stringProps,
+  numericProps,
+}: {
+  filters: DslFilter[];
+  onChange: (next: DslFilter[]) => void;
+  stringProps: EventProperty[];
+  numericProps: EventProperty[];
+}) {
+  const all = [...stringProps, ...numericProps];
+  function update(i: number, patch: Partial<DslFilter>) {
+    onChange(filters.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+  function add() {
+    const first = all[0];
+    onChange([...filters, { label: first?.name ?? "", op: "=", value: "" }]);
+  }
+  function remove(i: number) {
+    onChange(filters.filter((_, idx) => idx !== i));
+  }
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <Label>Filters</Label>
+        <Button type="button" size="sm" variant="outline" onClick={add} disabled={all.length === 0}>
+          <Plus className="size-3" /> Add filter
+        </Button>
+      </div>
+      {filters.length === 0 ? (
+        <p className="t-mono-xs dim-2 mt-1">
+          {all.length === 0
+            ? "Source event has no declared properties — register them on the event first."
+            : "No filters. All events with this name go into the metric."}
+        </p>
+      ) : (
+        <div className="mt-1.5 flex flex-col gap-1.5">
+          {filters.map((f, i) => {
+            const prop = all.find((p) => p.name === f.label);
+            const isNumeric = prop?.type === "number" || prop?.type === "boolean";
+            return (
+              <div
+                key={i}
+                className="grid grid-cols-[minmax(0,1fr)_120px_minmax(0,2fr)_auto] items-center gap-1.5"
+              >
+                <select
+                  value={f.label}
+                  onChange={(e) => update(i, { label: e.target.value })}
+                  className="h-8 rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 font-mono text-[12px] text-[var(--se-fg-2)]"
+                >
+                  {all.map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name} ({p.type})
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={f.op}
+                  onChange={(e) => update(i, { op: e.target.value as MatchOp })}
+                  className="h-8 rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2 font-mono text-[12px] text-[var(--se-fg-2)]"
+                >
+                  {FILTER_OPS.filter((o) => !o.stringOnly || !isNumeric).map((o) => (
+                    <option key={o.op} value={o.op}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  data-mono
+                  value={f.value}
+                  onChange={(e) => update(i, { value: e.target.value })}
+                  placeholder={isNumeric ? "0" : "value"}
+                />
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  className="rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] p-1.5 text-[var(--se-fg-3)] hover:text-[var(--se-fg-1)]"
+                  aria-label="Remove filter"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GroupByEditor({
+  op,
+  labels,
+  onOpChange,
+  onLabelsChange,
+  availableLabels,
+}: {
+  op: "by" | "without";
+  labels: string[];
+  onOpChange: (op: "by" | "without") => void;
+  onLabelsChange: (labels: string[]) => void;
+  availableLabels: string[];
+}) {
+  function toggle(l: string) {
+    if (labels.includes(l)) onLabelsChange(labels.filter((x) => x !== l));
+    else if (labels.length < 5) onLabelsChange([...labels, l]);
+  }
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <Label>Group by</Label>
+        <div className="inline-flex overflow-hidden rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)]">
+          {(["by", "without"] as const).map((o) => (
+            <button
+              key={o}
+              type="button"
+              onClick={() => onOpChange(o)}
+              aria-pressed={op === o}
+              className={
+                op === o
+                  ? "bg-[var(--se-accent-soft)] px-2.5 py-1 font-mono text-[11px] text-[var(--se-accent)]"
+                  : "px-2.5 py-1 font-mono text-[11px] text-[var(--se-fg-2)] hover:bg-[var(--se-bg-3)]"
+              }
+            >
+              {o}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {availableLabels.length === 0 ? (
+          <p className="t-mono-xs dim-2">No groupable labels for this event.</p>
+        ) : (
+          availableLabels.map((l) => {
+            const on = labels.includes(l);
+            return (
+              <button
+                key={l}
+                type="button"
+                onClick={() => toggle(l)}
+                aria-pressed={on}
+                className={
+                  on
+                    ? "rounded-md border border-[color-mix(in_oklab,var(--se-accent)_45%,transparent)] bg-[var(--se-accent-soft)] px-2.5 py-1 font-mono text-[11.5px] text-[var(--se-accent)]"
+                    : "rounded-md border border-[var(--se-line-2)] bg-[var(--se-bg-2)] px-2.5 py-1 font-mono text-[11.5px] text-[var(--se-fg-2)] hover:bg-[var(--se-bg-3)]"
+                }
+              >
+                {l}
+              </button>
+            );
+          })
+        )}
+      </div>
+      <p className="t-mono-xs dim-2 mt-1">
+        {op === "by"
+          ? "Time series split out per selected label."
+          : "Time series rolled up across all labels except the selected ones."}
+      </p>
+    </div>
+  );
+}
+
 function MetricIntegrate({
   eventName,
-  valuePath,
+  valueLabel,
 }: {
   eventName: string;
-  valuePath: string | null;
+  valueLabel: string | null;
 }) {
   const ev = eventName || "your_event";
-  const path = valuePath ?? null;
-  const snippets = useMemo(() => buildSnippets(ev, path), [ev, path]);
+  const snippets = useMemo(() => buildSnippets(ev, valueLabel), [ev, valueLabel]);
   return (
     <Tabs defaultValue="ts">
       <TabsList>
@@ -604,34 +1001,40 @@ function MetricIntegrate({
   );
 }
 
-function buildSnippets(eventName: string, valuePath: string | null) {
-  const payload = valuePath
-    ? `{ ${valuePath
-        .split(".")
-        .reverse()
-        .reduce((acc, k) => `${k}: ${acc}`, "amount")} }`
-    : "{ }";
+function buildSnippets(eventName: string, valueLabel: string | null) {
+  const props = valueLabel ? `{ ${valueLabel}: 1 }` : null;
   return {
     ts: `import { shipeasy } from '@shipeasy/sdk';
 
 shipeasy.event('${eventName}', {
-  user_id: ctx.user.id,
-  ${valuePath ? `payload: ${payload}` : "// no payload needed for this aggregation"}
+  user_id: ctx.user.id,${
+    props
+      ? `\n  value: 1,\n  properties: ${props},`
+      : "\n  // no value/properties needed for this aggregation"
+  }
 });`,
     py: `from shipeasy import client
 
 client.event(
     "${eventName}",
-    user_id=ctx.user.id,
-    ${valuePath ? `payload=${payload.replace(/: /g, "=")},` : "# no payload needed"}
+    user_id=ctx.user.id,${
+      props
+        ? `\n    value=1,\n    properties={"${valueLabel}": 1},`
+        : "\n    # no value/properties needed"
+    }
 )`,
     go: `shipeasy.Event(ctx, "${eventName}", &shipeasy.EventOpts{
-    UserID: ctx.User.ID,
-    ${valuePath ? `Payload: map[string]any${payload},` : "// no payload needed"}
+    UserID: ctx.User.ID,${
+      props
+        ? `\n    Value: 1,\n    Properties: map[string]any{"${valueLabel}": 1},`
+        : "\n    // no value/properties needed"
+    }
 })`,
     curl: `curl -H "Authorization: Bearer $SHIPEASY_KEY" \\
   -H "Content-Type: application/json" \\
   -X POST https://api.shipeasy.dev/v1/collect \\
-  -d '{ "name": "${eventName}", "user_id": "u_123"${valuePath ? `, "payload": ${payload}` : ""} }'`,
+  -d '{ "name": "${eventName}", "user_id": "u_123"${
+    props ? `, "value": 1, "properties": ${props}` : ""
+  } }'`,
   };
 }

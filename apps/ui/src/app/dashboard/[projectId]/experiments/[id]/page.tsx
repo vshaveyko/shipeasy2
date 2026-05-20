@@ -414,7 +414,10 @@ export default async function ExperimentDetailPage({
           },
           { label: "Allocation set", done: (exp?.allocationPct ?? 0) > 0 },
           {
-            label: `At least one guardrail attached (${guardAttached.length})`,
+            label:
+              guardAttached.length > 0
+                ? `Guardrails (${guardAttached.length}): ${guardAttached.map((m) => m.name).join(", ")}`
+                : "At least one guardrail attached (0)",
             done: guardAttached.length > 0,
           },
         ]

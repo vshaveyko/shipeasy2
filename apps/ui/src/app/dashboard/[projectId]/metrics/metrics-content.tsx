@@ -28,6 +28,7 @@ import { customEvents, type CustomEvent } from "./mock-data";
 import { MetricsDashboard } from "./dashboard";
 import { EmbeddedEventDetail } from "./embedded-event-detail";
 import { NewMetricWizard } from "./new-metric-wizard";
+import { RegisteredMetricsSection, type RegisteredMetric } from "./registered-metrics-section";
 
 type View = "empty" | "list" | "dashboard";
 
@@ -45,7 +46,13 @@ function isMetricsTab(value: string | null): value is MetricsTabKey {
   return value === "conversion" || value === "funnel" || value === "event" || value === "error";
 }
 
-export function MetricsContent({ initialView = "empty" }: { initialView?: View }) {
+export function MetricsContent({
+  initialView = "empty",
+  registered = [],
+}: {
+  initialView?: View;
+  registered?: RegisteredMetric[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -195,9 +202,22 @@ export function MetricsContent({ initialView = "empty" }: { initialView?: View }
 
   return (
     <>
+      {registered.length > 0 ? (
+        <div className="px-4 pt-4">
+          <RegisteredMetricsSection
+            projectId={projectId}
+            metrics={registered}
+            onCreate={() => setSetupOpen(true)}
+          />
+        </div>
+      ) : null}
       <DataListPage
         title="Metrics"
-        description="Custom events you've registered with log(). Auto-collected web vitals + errors stream in parallel — open any event to see its SDK call and trend."
+        description={
+          registered.length > 0
+            ? "Aggregations registered via the wizard or CLI, plus the events they roll up over."
+            : "Custom events you've registered with log(). Auto-collected web vitals + errors stream in parallel — open any event to see its SDK call and trend."
+        }
         stats={[
           { label: "Events", value: total },
           { label: "Conversions", value: conversions, tone: conversions > 0 ? "accent" : "muted" },

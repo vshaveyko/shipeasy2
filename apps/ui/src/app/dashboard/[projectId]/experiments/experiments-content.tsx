@@ -19,6 +19,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { ActionForm } from "@/components/ui/action-form";
 import { IntegrationSnippetButton } from "@/components/integration";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Sparkline } from "@/components/ui/sparkline";
 import {
   DataTableMaster,
   useCursorPages,
@@ -43,6 +44,13 @@ export interface ExperimentRow {
   description?: string | null;
   folder?: string | null;
   updatedAt?: string | null;
+  goalMetric?: { id: string; name: string } | null;
+  guardrailCount?: number;
+  guardrails?: { id: string; name: string }[];
+  primaryLiftPct?: number | null;
+  significancePct?: number | null;
+  sampleSize?: number | null;
+  trendPct?: number[];
 }
 
 type StatusKey = "running" | "draft" | "stopped" | "archived";
@@ -72,6 +80,12 @@ const STATUS_ORDER: Record<string, number> = {
 
 function variantCount(groups: unknown): number {
   return Array.isArray(groups) ? groups.length : 0;
+}
+
+function formatSample(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
 }
 
 function trafficPct(allocationPct: number): number {
@@ -214,6 +228,100 @@ export function ExperimentsContent() {
             {trafficPct(exp.allocationPct)}%
           </span>
         ),
+      },
+      {
+        id: "goal",
+        header: "Goal",
+        width: 200,
+        sortAccessor: (exp) => exp.goalMetric?.name ?? "",
+        cell: (exp) =>
+          exp.goalMetric ? (
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate font-mono text-[12px] text-[var(--se-fg-2)]">
+                {exp.goalMetric.name}
+              </span>
+              {exp.guardrailCount ? (
+                <span className="t-mono-xs dim-2">
+                  +{exp.guardrailCount} guardrail{exp.guardrailCount === 1 ? "" : "s"}
+                </span>
+              ) : null}
+            </div>
+          ) : (
+            <span className="t-mono-xs dim-2">—</span>
+          ),
+      },
+      {
+        id: "primaryLift",
+        header: <span className="text-right block">Primary lift</span>,
+        width: 110,
+        className: "text-right",
+        sortAccessor: (exp) => exp.primaryLiftPct ?? Number.NEGATIVE_INFINITY,
+        cell: (exp) => {
+          const v = exp.primaryLiftPct;
+          if (v == null) return <span className="t-mono-xs dim-2">—</span>;
+          const tone = v > 0 ? "var(--se-accent)" : v < 0 ? "var(--se-danger)" : "var(--se-fg-2)";
+          return (
+            <span
+              className="font-mono text-[12px]"
+              style={{ color: tone, fontVariantNumeric: "tabular-nums" }}
+            >
+              {v > 0 ? "+" : ""}
+              {v.toFixed(1)}%
+            </span>
+          );
+        },
+      },
+      {
+        id: "trend",
+        header: "Trend",
+        width: 140,
+        cell: (exp) =>
+          exp.trendPct && exp.trendPct.length > 1 ? (
+            <Sparkline
+              points={exp.trendPct}
+              width={120}
+              height={22}
+              intent={(exp.primaryLiftPct ?? 0) >= 0 ? "accent" : "danger"}
+            />
+          ) : (
+            <span className="t-mono-xs dim-2">—</span>
+          ),
+      },
+      {
+        id: "sig",
+        header: <span className="text-right block">Sig.</span>,
+        width: 80,
+        className: "text-right",
+        sortAccessor: (exp) => exp.significancePct ?? -1,
+        cell: (exp) =>
+          exp.significancePct != null ? (
+            <span
+              className="font-mono text-[12px] text-[var(--se-fg-2)]"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {exp.significancePct.toFixed(1)}%
+            </span>
+          ) : (
+            <span className="t-mono-xs dim-2">—</span>
+          ),
+      },
+      {
+        id: "sample",
+        header: <span className="text-right block">Sample</span>,
+        width: 90,
+        className: "text-right",
+        sortAccessor: (exp) => exp.sampleSize ?? -1,
+        cell: (exp) =>
+          exp.sampleSize != null ? (
+            <span
+              className="font-mono text-[12px] text-[var(--se-fg-2)]"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {formatSample(exp.sampleSize)}
+            </span>
+          ) : (
+            <span className="t-mono-xs dim-2">—</span>
+          ),
       },
       {
         id: "variants",
