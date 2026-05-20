@@ -77,35 +77,26 @@ export async function getMetricSeries(
     throw new ApiError("CF_ACCOUNT_ID is not configured", 503);
   }
 
-  const rows: MetricSeriesRow[] = [];
-  let cursor: string | undefined;
-  let safety = 0;
-  do {
-    const body: Record<string, unknown> = { query: sql };
-    if (cursor) body.cursor = cursor;
-    const res = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/analytics_engine/sql`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
+  // Cloudflare Analytics Engine SQL API takes the SQL as the raw request body
+  // (Content-Type: text/plain), not a JSON-wrapped { query }. Wrapping in
+  // JSON produces a parser error: "Expected an SQL statement, found: {".
+  const res = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/analytics_engine/sql`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "text/plain",
       },
-    );
-    if (!res.ok) {
-      const text = await res.text();
-      throw new ApiError(`Analytics Engine error ${res.status}: ${text.slice(0, 300)}`, 502);
-    }
-    const data = (await res.json()) as {
-      data?: MetricSeriesRow[];
-      meta?: { pagination?: { cursor?: string } };
-    };
-    rows.push(...(data.data ?? []));
-    cursor = data.meta?.pagination?.cursor;
-    if (++safety > 20) break; // 200k rows hard cap — dashboards should never need more.
-  } while (cursor);
+      body: sql,
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new ApiError(`Analytics Engine error ${res.status}: ${text.slice(0, 300)}`, 502);
+  }
+  const data = (await res.json()) as { data?: MetricSeriesRow[] };
+  const rows: MetricSeriesRow[] = data.data ?? [];
 
   return { sql, rows };
 }
