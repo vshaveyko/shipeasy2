@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { folderSchema } from "./folder";
 
 export const universeNameSchema = z
   .string()
@@ -19,6 +20,7 @@ export const holdoutRangeSchema = z
 export const universeCreateSchema = z
   .object({
     name: universeNameSchema,
+    folder: folderSchema,
     unit_type: z
       .string()
       .default("user_id")
@@ -31,6 +33,7 @@ export const universeCreateSchema = z
 
 export const universeUpdateSchema = z
   .object({
+    folder: folderSchema,
     holdout_range: holdoutRangeSchema.optional(),
   })
   .describe(

@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState, useTransition, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import useSWR from "swr";
 import {
   Activity,
   AlertTriangle,
@@ -29,6 +30,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FolderPicker } from "@/components/folder-picker";
 import {
   Dialog,
   DialogContent,
@@ -145,17 +147,14 @@ const AGG_OPTIONS: { k: MetricInfo["aggregation"]; desc: string }[] = [
   { k: "retention_Nd", desc: "Active on D+N from exposure" },
 ];
 
-const TAGS = [
-  "revenue",
-  "activation",
-  "engagement",
-  "marketing",
-  "performance",
-  "stability",
-  "search",
-] as const;
-
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+
+async function fetchJsonArray<T>(url: string): Promise<T[]> {
+  const res = await fetch(url, { credentials: "same-origin" });
+  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+  const body = (await res.json()) as T[] | { data: T[] };
+  return Array.isArray(body) ? body : (body.data ?? []);
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 function slugify(s: string) {
@@ -208,10 +207,24 @@ export default function NewExperimentClient({
     "goal" | "guardrail" | "secondary" | null
   >(null);
 
+  // Existing folder list for the FolderPicker autocomplete — fetched once on
+  // mount via SWR; falls back to empty when the request hasn't landed yet.
+  const { data: existingExps } = useSWR<{ folder?: string | null }[]>(
+    "/api/admin/experiments",
+    fetchJsonArray,
+  );
+  const existingExperimentFolders = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of existingExps ?? []) {
+      if (e.folder) set.add(e.folder);
+    }
+    return Array.from(set);
+  }, [existingExps]);
+
   // Form state
   const [profile, setProfile] = useState<ProfileKey>("conversion");
   const [name, setName] = useState("");
-  const [tag, setTag] = useState<string>("");
+  const [expFolder, setExpFolder] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
   const [success, setSuccess] = useState("");
   const [change, setChange] = useState("");
@@ -396,7 +409,7 @@ export default function NewExperimentClient({
       const res = await publishExperimentAction({
         name: slug,
         description,
-        tag: tag || null,
+        folder: expFolder,
         universe: universe.name,
         targeting_gate: gate?.name ?? null,
         allocation_pct: Math.round(alloc * 100),
@@ -526,19 +539,12 @@ export default function NewExperimentClient({
                     }
                   />
                 </Field>
-                <Field label="Tag (optional)">
-                  <select
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value)}
-                    className="h-9 rounded-[var(--radius-md)] border border-[var(--se-line-2)] bg-transparent px-2.5 text-[13px] outline-none focus:border-[var(--se-line-3)]"
-                  >
-                    <option value="">none</option>
-                    {TAGS.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                <Field label="Folder (optional)">
+                  <FolderPicker
+                    value={expFolder}
+                    onChange={setExpFolder}
+                    existingFolders={existingExperimentFolders}
+                  />
                 </Field>
               </div>
               <Field label="Question" hint="what you want to learn">
@@ -1172,7 +1178,7 @@ export default function NewExperimentClient({
               <SumSection label="Identity">
                 <KV k="name" v={slug || "—"} />
                 <KV k="profile" v={profile} />
-                {tag ? <KV k="tag" v={tag} /> : null}
+                {expFolder ? <KV k="folder" v={expFolder} /> : null}
               </SumSection>
               <SumSection label="Universe & holdout">
                 <KV k="universe" v={universe?.name ?? "—"} />

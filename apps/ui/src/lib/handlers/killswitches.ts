@@ -239,6 +239,7 @@ export async function createKillswitch(identity: AdminIdentity, input: unknown) 
       id,
       name: parsed.name,
       description: parsed.description ?? null,
+      folder: parsed.folder ?? null,
       kind: "killswitch",
       schemaJson: KILLSWITCH_SCHEMA,
       updatedAt: now,
@@ -281,13 +282,13 @@ export async function updateKillswitch(identity: AdminIdentity, id: string, inpu
   );
   if (rows.length === 0) throw new ApiError("Killswitch not found", 404);
 
-  // Description-only update doesn't change values.
+  // Description/folder-only update doesn't change values.
   if (parsed.value === undefined && parsed.switches === undefined) {
-    if (parsed.description !== undefined) {
-      await s
-        .update(configs)
-        .set({ description: parsed.description ?? null, updatedAt: now })
-        .where(eq(configs.id, id));
+    const metaPatch: Record<string, unknown> = { updatedAt: now };
+    if (parsed.description !== undefined) metaPatch.description = parsed.description ?? null;
+    if (parsed.folder !== undefined) metaPatch.folder = parsed.folder;
+    if (Object.keys(metaPatch).length > 1) {
+      await s.update(configs).set(metaPatch).where(eq(configs.id, id));
     }
     await writeAudit(identity, "killswitch.update", "killswitch", id, parsed);
     return { id };
@@ -310,6 +311,7 @@ export async function updateKillswitch(identity: AdminIdentity, id: string, inpu
 
   const patch: Record<string, unknown> = { updatedAt: now };
   if (parsed.description !== undefined) patch.description = parsed.description ?? null;
+  if (parsed.folder !== undefined) patch.folder = parsed.folder;
   await s.update(configs).set(patch).where(eq(configs.id, id));
 
   await rebuildFlags(env, identity.projectId, project.plan);

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { folderSchema } from "./folder";
 
 export const experimentNameSchema = z
   .string()
@@ -47,12 +48,7 @@ export const experimentCreateSchema = z
       .nullable()
       .default(null)
       .describe("Free-form description. Max 2000 chars, markdown rendered in the dashboard."),
-    tag: z
-      .string()
-      .max(64)
-      .nullable()
-      .default(null)
-      .describe("Optional tag used to group experiments in the dashboard."),
+    folder: folderSchema,
     universe: z
       .string()
       .min(1)
@@ -128,7 +124,7 @@ export const experimentUpdateSchema = z
   .object({
     name: experimentNameSchema.optional(),
     description: z.string().max(2000).nullable().optional(),
-    tag: z.string().max(64).nullable().optional(),
+    folder: folderSchema,
     targeting_gate: z.string().nullable().optional(),
     allocation_pct: z
       .number()
@@ -193,7 +189,7 @@ export const experimentResponseSchema = z.object({
   id: z.string().describe("Stable opaque experiment id (`exp_…`)."),
   name: experimentNameSchema,
   description: z.string().nullable(),
-  tag: z.string().nullable(),
+  folder: z.string().nullable(),
   status: z.enum(["draft", "running", "stopped", "archived"]),
   universe: z.string().describe("Universe name this experiment draws from."),
   targetingGate: z.string().nullable(),

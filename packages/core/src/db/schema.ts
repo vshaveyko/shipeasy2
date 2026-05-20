@@ -351,8 +351,9 @@ export const gates = sqliteTable(
   },
   (t) => ({
     projectIdx: index("gates_project").on(t.projectId),
-    projectNameUniq: uniqueIndex("gates_project_name")
-      .on(t.projectId, t.name)
+    folderIdx: index("gates_project_folder").on(t.projectId, t.folder),
+    projectFolderNameUniq: uniqueIndex("gates_project_folder_name")
+      .on(t.projectId, sql`coalesce(${t.folder}, '')`, t.name)
       .where(sql`deleted_at is null`),
   }),
 );
@@ -401,6 +402,7 @@ export const configs = sqliteTable(
     name: text("name").notNull(),
     description: text("description"),
     kind: text("kind", { enum: CONFIG_KINDS }).notNull().default("config"),
+    folder: text("folder"),
     schemaJson: text("schema_json", { mode: "json" })
       .$type<JsonSchema>()
       .notNull()
@@ -409,8 +411,9 @@ export const configs = sqliteTable(
     deletedAt: text("deleted_at"),
   },
   (t) => ({
-    uniq: uniqueIndex("configs_project_name")
-      .on(t.projectId, t.name)
+    folderIdx: index("configs_project_folder").on(t.projectId, t.folder),
+    uniq: uniqueIndex("configs_project_folder_name")
+      .on(t.projectId, sql`coalesce(${t.folder}, '')`, t.name)
       .where(sql`deleted_at is null`),
   }),
 );
@@ -472,6 +475,7 @@ export const universes = sqliteTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    folder: text("folder"),
     unitType: text("unit_type").notNull().default("user_id"),
     holdoutRange: text("holdout_range", { mode: "json" }).$type<[number, number] | null>(),
     createdAt: text("created_at").notNull(),
@@ -479,6 +483,9 @@ export const universes = sqliteTable(
   },
   (t) => ({
     projectIdx: index("universes_project").on(t.projectId),
+    folderIdx: index("universes_project_folder").on(t.projectId, t.folder),
+    // Folder is metadata only — universe references from experiments are by
+    // bare name, so name uniqueness stays per (project, name).
     projectUniq: uniqueIndex("universes_project_name")
       .on(t.projectId, t.name)
       .where(sql`deleted_at is null`),
@@ -494,7 +501,7 @@ export const experiments = sqliteTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
-    tag: text("tag"),
+    folder: text("folder"),
     universe: text("universe").notNull(),
     targetingGate: text("targeting_gate"),
     allocationPct: integer("allocation_pct").notNull().default(0),
@@ -516,7 +523,12 @@ export const experiments = sqliteTable(
   },
   (t) => ({
     projectIdx: index("experiments_project").on(t.projectId),
-    projectUniq: uniqueIndex("experiments_project_name").on(t.projectId, t.name),
+    folderIdx: index("experiments_project_folder").on(t.projectId, t.folder),
+    projectUniq: uniqueIndex("experiments_project_folder_name").on(
+      t.projectId,
+      sql`coalesce(${t.folder}, '')`,
+      t.name,
+    ),
   }),
 );
 
@@ -529,6 +541,7 @@ export const events = sqliteTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
+    folder: text("folder"),
     properties: text("properties", { mode: "json" }).$type<EventProperty[]>().notNull().default([]),
     pending: integer("pending").notNull().default(0),
     createdAt: text("created_at").notNull(),
@@ -536,8 +549,9 @@ export const events = sqliteTable(
   },
   (t) => ({
     projectIdx: index("events_project").on(t.projectId),
-    projectUniq: uniqueIndex("events_project_name")
-      .on(t.projectId, t.name)
+    folderIdx: index("events_project_folder").on(t.projectId, t.folder),
+    projectUniq: uniqueIndex("events_project_folder_name")
+      .on(t.projectId, sql`coalesce(${t.folder}, '')`, t.name)
       .where(sql`deleted_at is null`),
   }),
 );
@@ -550,6 +564,7 @@ export const metrics = sqliteTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    folder: text("folder"),
     eventName: text("event_name").notNull(),
     valuePath: text("value_path"),
     aggregation: text("aggregation", {
@@ -563,8 +578,9 @@ export const metrics = sqliteTable(
     deletedAt: text("deleted_at"),
   },
   (t) => ({
-    uniq: uniqueIndex("metrics_project_name")
-      .on(t.projectId, t.name)
+    folderIdx: index("metrics_project_folder").on(t.projectId, t.folder),
+    uniq: uniqueIndex("metrics_project_folder_name")
+      .on(t.projectId, sql`coalesce(${t.folder}, '')`, t.name)
       .where(sql`deleted_at is null`),
   }),
 );

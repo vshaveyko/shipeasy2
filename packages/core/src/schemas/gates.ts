@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { folderSchema } from "./folder";
 
 export const gateRuleSchema = z
   .object({
@@ -119,13 +120,7 @@ const gateMetadataFields = {
     .max(2000)
     .optional()
     .describe("Long-form description / runbook. Markdown is rendered in the dashboard."),
-  folder: z
-    .string()
-    .max(64)
-    .optional()
-    .describe(
-      "Folder label for dashboard organisation. Free-form; folders are inferred from the set of values.",
-    ),
+  folder: folderSchema,
   group: z
     .string()
     .max(64)

@@ -9,6 +9,7 @@ import { BigModalWizard, type WizardStep } from "@/components/shell/big-modal-wi
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FolderPicker } from "@/components/folder-picker";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
@@ -71,7 +72,7 @@ export function NewExperimentWizard({
   const [folder, setFolder] = useState("");
   const [leaf, setLeaf] = useState("");
   const [description, setDescription] = useState("");
-  const [tag, setTag] = useState("");
+  const [expFolder, setExpFolder] = useState<string | null>(null);
   const [universe, setUniverse] = useState<string>("default");
   const [allocation, setAllocation] = useState<number>(100);
   const [gate, setGate] = useState<string>("none");
@@ -96,6 +97,17 @@ export function NewExperimentWizard({
     open ? "/api/admin/metrics" : null,
     fetcher,
   );
+  const { data: existingExperiments } = useSWR<{ folder?: string | null }[]>(
+    open ? "/api/admin/experiments" : null,
+    fetcher,
+  );
+  const existingExperimentFolders = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of existingExperiments ?? []) {
+      if (e.folder) set.add(e.folder);
+    }
+    return Array.from(set);
+  }, [existingExperiments]);
 
   const [universeModalOpen, setUniverseModalOpen] = useState(false);
   const [metricModalOpen, setMetricModalOpen] = useState(false);
@@ -154,7 +166,7 @@ export function NewExperimentWizard({
       setFolder("");
       setLeaf("");
       setDescription("");
-      setTag("");
+      setExpFolder(null);
       setUniverse("default");
       setAllocation(100);
       setGate("none");
@@ -239,13 +251,12 @@ export function NewExperimentWizard({
             />
           </div>
           <div>
-            <Label htmlFor="experiment-tag">Tag (optional)</Label>
-            <Input
-              id="experiment-tag"
-              data-mono
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-              placeholder="q2-growth"
+            <Label htmlFor="experiment-folder">Folder (optional)</Label>
+            <FolderPicker
+              id="experiment-folder"
+              value={expFolder}
+              onChange={setExpFolder}
+              existingFolders={existingExperimentFolders}
             />
           </div>
         </div>
@@ -579,7 +590,7 @@ export function NewExperimentWizard({
       const result = await publishExperimentAction({
         name: trimmed,
         description: description.trim() || null,
-        tag: tag.trim() || null,
+        folder: expFolder,
         universe,
         targeting_gate: gate === "none" ? null : gate,
         allocation_pct: allocation * 100,

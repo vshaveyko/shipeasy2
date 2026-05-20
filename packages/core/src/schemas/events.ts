@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { folderSchema } from "./folder";
 
 export const eventNameSchema = z.string().regex(/^[a-zA-Z0-9_][a-zA-Z0-9_\-.]{0,127}$/);
 
@@ -11,16 +12,19 @@ export const eventPropertySchema = z.object({
 
 export const eventCreateSchema = z.object({
   name: eventNameSchema,
+  folder: folderSchema,
   description: z.string().optional(),
   properties: z.array(eventPropertySchema).default([]),
 });
 
 export const eventUpdateSchema = z.object({
+  folder: folderSchema,
   description: z.string().optional(),
   properties: z.array(eventPropertySchema).optional(),
 });
 
 export const eventApproveSchema = z.object({
+  folder: folderSchema,
   description: z.string().optional(),
   properties: z.array(eventPropertySchema).optional(),
 });

@@ -22,7 +22,20 @@ import { sdkCachePath } from "./cdn-cache-keys";
 import { purgeCache } from "./purge";
 
 const MAX_KV_BYTES = 24 * 1024 * 1024;
-const BLOB_FORMAT = 2;
+// Bumped from 2 → 3 when folder-prefixed lookup keys were introduced.
+// In format 3, gate/config/killswitch/experiment/universe entries are keyed
+// as `<folder>/<name>` (root entries keyed as `/<name>`), and each entry
+// payload includes a `folder` field (string | null).
+const BLOB_FORMAT = 3;
+
+/** Encode the lookup key for a foldered entity. Root entries (no folder) keep
+ *  the bare `name` so legacy SDK consumers calling `getConfig("foo")` keep
+ *  resolving. Foldered entries are keyed `folder/name`; the SDK resolver
+ *  splits on the first `/`. The folder regex disallows `/`, so the bare-vs-
+ *  folder distinction is unambiguous. */
+export function folderKey(folder: string | null | undefined, name: string): string {
+  return folder ? `${folder}/${name}` : name;
+}
 
 async function contentVersion(payload: string): Promise<string> {
   return (await sha256(payload)).slice(0, 16);
@@ -74,6 +87,8 @@ export async function rebuildFlags(
   const gatesMap: Record<string, unknown> = {};
   for (const g of gateRows) {
     const entry: Record<string, unknown> = {
+      name: g.name,
+      folder: g.folder ?? null,
       rules: g.rules,
       rolloutPct: g.rolloutPct,
       salt: g.salt,
@@ -86,16 +101,19 @@ export async function rebuildFlags(
     if (g.stack && Array.isArray(g.stack) && g.stack.length > 0) {
       entry.stack = g.stack;
     }
-    gatesMap[g.name] = entry;
+    gatesMap[folderKey(g.folder, g.name)] = entry;
   }
 
-  // Config id → (name, kind) lookup. Killswitches share the configs table but
-  // ship in a separate `killswitches` map so the SDK can expose them through
-  // a dedicated read API without re-deriving kind from the schema.
+  // Config id → (name, folder, kind) lookup. Killswitches share the configs
+  // table but ship in a separate `killswitches` map so the SDK can expose
+  // them through a dedicated read API without re-deriving kind from the
+  // schema.
   const nameByConfigId = new Map<string, string>();
+  const folderByConfigId = new Map<string, string | null>();
   const kindByConfigId = new Map<string, "config" | "killswitch">();
   for (const c of configRows) {
     nameByConfigId.set(c.id, c.name);
+    folderByConfigId.set(c.id, c.folder ?? null);
     kindByConfigId.set(c.id, (c.kind ?? "config") as "config" | "killswitch");
   }
 
@@ -122,10 +140,12 @@ export async function rebuildFlags(
       if (!entry) continue;
       const name = nameByConfigId.get(configId);
       if (!name) continue;
+      const folder = folderByConfigId.get(configId) ?? null;
       const kind = kindByConfigId.get(configId) ?? "config";
-      const payload = { value: entry.value, version: entry.version };
-      if (kind === "killswitch") killswitchesMap[name] = payload;
-      else configsMap[name] = payload;
+      const payload = { name, folder, value: entry.value, version: entry.version };
+      const key = folderKey(folder, name);
+      if (kind === "killswitch") killswitchesMap[key] = payload;
+      else configsMap[key] = payload;
     }
 
     const content = JSON.stringify({
@@ -171,14 +191,23 @@ export async function rebuildExperiments(env: CoreEnv, projectId: string): Promi
       .where(and(eq(experiments.projectId, projectId), ne(experiments.status, "archived"))),
   ]);
 
+  // Universe folder is admin-only metadata: experiments reference universes
+  // by bare name, so the KV blob keys them by bare name too.
   const universesMap: Record<string, unknown> = {};
   for (const u of universeRows) {
-    universesMap[u.name] = { holdout_range: u.holdoutRange, unit_type: u.unitType };
+    universesMap[u.name] = {
+      name: u.name,
+      folder: u.folder ?? null,
+      holdout_range: u.holdoutRange,
+      unit_type: u.unitType,
+    };
   }
 
   const experimentsMap: Record<string, unknown> = {};
   for (const e of experimentRows) {
-    experimentsMap[e.name] = {
+    experimentsMap[folderKey(e.folder, e.name)] = {
+      name: e.name,
+      folder: e.folder ?? null,
       universe: e.universe,
       targetingGate: e.targetingGate,
       allocationPct: e.allocationPct,

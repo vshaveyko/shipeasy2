@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CONFIG_ENVS, CONFIG_KINDS } from "../db/schema";
+import { folderSchema } from "./folder";
 
 const SEGMENT = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/;
 // `_default` is the reserved folder for legacy single-segment names.
@@ -59,6 +60,7 @@ export const configCreateSchema = z
       .max(512)
       .optional()
       .describe("Optional free-form description shown in the dashboard. Max 512 chars."),
+    folder: folderSchema,
     schema: jsonSchemaSchema,
     value: initialValuesSchema.optional(),
   })
@@ -78,6 +80,7 @@ export const configUpdateSchema = z
       .describe(
         "Flat value applied to **every** env. Publishes a new version per env. To target one env, use `PUT /{id}/drafts` then `POST /{id}/publish`.",
       ),
+    folder: folderSchema,
   })
   .describe(
     "Body for `PATCH /api/admin/configs/{id}`. Partial — only supplied fields change. `value` republishes on every env.",

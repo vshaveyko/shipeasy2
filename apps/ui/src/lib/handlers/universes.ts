@@ -58,6 +58,7 @@ export async function createUniverse(identity: AdminIdentity, input: unknown) {
     await s.insert(universes).values({
       id,
       name: parsed.name,
+      folder: parsed.folder ?? null,
       unitType: parsed.unit_type,
       holdoutRange: parsed.holdout_range,
       createdAt: new Date().toISOString(),
@@ -88,6 +89,7 @@ export async function updateUniverse(identity: AdminIdentity, id: string, input:
 
   const patch: Record<string, unknown> = {};
   if (parsed.holdout_range !== undefined) patch.holdoutRange = parsed.holdout_range;
+  if (parsed.folder !== undefined) patch.folder = parsed.folder;
 
   await s.update(universes).set(patch).where(eq(universes.id, id));
   await rebuildExperiments(env, identity.projectId);

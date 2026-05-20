@@ -146,7 +146,7 @@ export async function createExperiment(identity: AdminIdentity, input: unknown) 
       id,
       name: parsed.name,
       description: parsed.description ?? null,
-      tag: parsed.tag ?? null,
+      folder: parsed.folder ?? null,
       universe: parsed.universe,
       targetingGate: parsed.targeting_gate ?? null,
       allocationPct: parsed.allocation_pct,
@@ -196,7 +196,7 @@ export async function updateExperiment(identity: AdminIdentity, id: string, inpu
   const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (parsed.name !== undefined) patch.name = parsed.name;
   if (parsed.description !== undefined) patch.description = parsed.description;
-  if (parsed.tag !== undefined) patch.tag = parsed.tag;
+  if (parsed.folder !== undefined) patch.folder = parsed.folder;
   if (parsed.targeting_gate !== undefined) patch.targetingGate = parsed.targeting_gate;
   if (parsed.allocation_pct !== undefined) patch.allocationPct = parsed.allocation_pct;
   if (parsed.salt !== undefined) patch.salt = parsed.salt;

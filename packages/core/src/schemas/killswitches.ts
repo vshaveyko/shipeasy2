@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { configEnvSchema, configNameSchema } from "./configs";
+import { folderSchema } from "./folder";
 
 /** A switch key is a single lowercase segment (no dots). */
 export const switchKeySchema = z
@@ -46,6 +47,7 @@ export const killswitchCreateSchema = z
       .max(512)
       .optional()
       .describe("Optional free-form description shown in the dashboard. Max 512 chars."),
+    folder: folderSchema,
     value: z
       .boolean()
       .optional()
@@ -68,6 +70,7 @@ export const killswitchUpdateSchema = z
       .max(512)
       .nullish()
       .describe("New description, or `null` to clear it. Max 512 chars."),
+    folder: folderSchema,
     value: z
       .boolean()
       .optional()

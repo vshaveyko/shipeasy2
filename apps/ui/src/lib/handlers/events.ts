@@ -37,6 +37,7 @@ export async function createEvent(identity: AdminIdentity, input: unknown) {
     await s.insert(events).values({
       id,
       name: parsed.name,
+      folder: parsed.folder ?? null,
       description: parsed.description ?? null,
       properties: parsed.properties,
       pending: 0,
@@ -60,6 +61,7 @@ export async function updateEvent(identity: AdminIdentity, id: string, input: un
   if (rows.length === 0) throw new ApiError("Event not found", 404);
 
   const patch: Record<string, unknown> = {};
+  if (parsed.folder !== undefined) patch.folder = parsed.folder;
   if (parsed.description !== undefined) patch.description = parsed.description;
   if (parsed.properties !== undefined) patch.properties = parsed.properties;
 
@@ -77,6 +79,7 @@ export async function approveEvent(identity: AdminIdentity, id: string, input: u
   if (rows.length === 0) throw new ApiError("Event not found", 404);
 
   const patch: Record<string, unknown> = { pending: 0 };
+  if (parsed.folder !== undefined) patch.folder = parsed.folder;
   if (parsed.description !== undefined) patch.description = parsed.description;
   if (parsed.properties !== undefined) patch.properties = parsed.properties;
 

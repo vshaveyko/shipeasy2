@@ -18,7 +18,8 @@ import {
   type Verdict,
 } from "./results-client";
 
-const LOWER_BETTER = /latency|jank|refund|churn|error|crash|bounce|fail|abandon|no_results|cost|time_to|wait/i;
+const LOWER_BETTER =
+  /latency|jank|refund|churn|error|crash|bounce|fail|abandon|no_results|cost|time_to|wait/i;
 
 function isLowerBetter(metricName: string) {
   return LOWER_BETTER.test(metricName);
@@ -26,10 +27,7 @@ function isLowerBetter(metricName: string) {
 
 type ResultRow = Awaited<ReturnType<typeof listExperimentResults>>["results"][number];
 
-function latestPerGroup(
-  rows: ResultRow[],
-  metric: string,
-): Record<string, ResultRow> {
+function latestPerGroup(rows: ResultRow[], metric: string): Record<string, ResultRow> {
   const out: Record<string, ResultRow> = {};
   for (const r of rows) {
     if (r.metric !== metric) continue;
@@ -106,22 +104,24 @@ function deriveVerdict({
   if (!goal) return "wait";
   const ci = goal.ci;
   const sig = goal.sig;
-  const goalGood =
-    ci != null && (goal.lowerBetter ? ci[1] < 0 : ci[0] > 0);
+  const goalGood = ci != null && (goal.lowerBetter ? ci[1] < 0 : ci[0] > 0);
   const guardFailed = guards.some((g) => g.pass === false);
   if (guardFailed) return "hold";
   if (sig && goalGood) return "ship";
   return "wait";
 }
 
-function titleFor(verdict: Verdict, ctx: {
-  status: string;
-  daysRunning: number;
-  minRuntime: number;
-  goal?: ResultsMetricRow;
-  worstGuard?: ResultsMetricRow;
-  stoppedAgo?: number;
-}): { title: string; why: string } {
+function titleFor(
+  verdict: Verdict,
+  ctx: {
+    status: string;
+    daysRunning: number;
+    minRuntime: number;
+    goal?: ResultsMetricRow;
+    worstGuard?: ResultsMetricRow;
+    stoppedAgo?: number;
+  },
+): { title: string; why: string } {
   if (verdict === "draft")
     return {
       title: "Draft — not started.",
@@ -212,7 +212,11 @@ export default async function ExperimentDetailPage({
   let experiment: Awaited<ReturnType<typeof getExperiment>> | null = null;
   let results: ResultRow[] = [];
   let attachedMetrics: { metricId: string; role: string; name: string; aggregation: string }[] = [];
-  let universeRow: { name: string; unitType: string; holdoutRange: [number, number] | null } | null = null;
+  let universeRow: {
+    name: string;
+    unitType: string;
+    holdoutRange: [number, number] | null;
+  } | null = null;
   let projectName: string | null = null;
 
   if (projectId) {
@@ -256,7 +260,7 @@ export default async function ExperimentDetailPage({
   const exp = experiment as {
     name?: string;
     description?: string | null;
-    tag?: string | null;
+    folder?: string | null;
     universe?: string | null;
     targetingGate?: string | null;
     allocationPct?: number;
@@ -288,16 +292,10 @@ export default async function ExperimentDetailPage({
   const startedAt = exp?.startedAt ?? null;
   const stoppedAt = exp?.stoppedAt ?? null;
   const daysRunning = startedAt
-    ? Math.max(
-        0,
-        Math.floor((Date.now() - new Date(startedAt).getTime()) / 86_400_000),
-      )
+    ? Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 86_400_000))
     : 0;
   const stoppedAgo = stoppedAt
-    ? Math.max(
-        0,
-        Math.floor((Date.now() - new Date(stoppedAt).getTime()) / 86_400_000),
-      )
+    ? Math.max(0, Math.floor((Date.now() - new Date(stoppedAt).getTime()) / 86_400_000))
     : undefined;
   const daysGoal = Math.max(minRuntime, daysRunning, 1);
 
@@ -382,12 +380,10 @@ export default async function ExperimentDetailPage({
     : undefined;
   const srmLatestP =
     srmDetected && goalAttached
-      ? latestForMetric(goalAttached.name)[treatmentGroup]?.srmPValue ?? null
+      ? (latestForMetric(goalAttached.name)[treatmentGroup]?.srmPValue ?? null)
       : null;
   // Chi-square approximation from p-value isn't trivial; show the SDK-stored p directly.
-  const srm = srmDetected
-    ? { chiSq: 0, chiSqP: srmLatestP ?? 0 }
-    : undefined;
+  const srm = srmDetected ? { chiSq: 0, chiSqP: srmLatestP ?? 0 } : undefined;
 
   const timeseries = goalAttached
     ? buildTimeseries(results, goalAttached.name, treatmentGroup)
@@ -447,8 +443,16 @@ export default async function ExperimentDetailPage({
       bot: true,
       what: (
         <>
-          Auto-analysis run · {goalTreatment?.pValue != null ? `p = ${goalTreatment.pValue.toFixed(3)}` : "no p-value yet"}
-          {worstGuard ? <> · <b>{worstGuard.name}</b> regressed.</> : null}
+          Auto-analysis run ·{" "}
+          {goalTreatment?.pValue != null
+            ? `p = ${goalTreatment.pValue.toFixed(3)}`
+            : "no p-value yet"}
+          {worstGuard ? (
+            <>
+              {" "}
+              · <b>{worstGuard.name}</b> regressed.
+            </>
+          ) : null}
         </>
       ),
       when: results.length > 0 ? `latest ds ${results[results.length - 1].ds}` : "pending",
@@ -501,7 +505,8 @@ export default async function ExperimentDetailPage({
     draftChecklist,
     projectId: projectId ?? "",
     meta: {
-      hypothesis: exp?.description?.trim() ?? `${treatmentGroup} vs control on ${exp?.universe ?? "default"}`,
+      hypothesis:
+        exp?.description?.trim() ?? `${treatmentGroup} vs control on ${exp?.universe ?? "default"}`,
       success: goalAttached
         ? `${goalAttached.name} improves vs control with no guardrail regression at α = ${alpha}.`
         : `Attach a goal metric and define success criteria.`,
@@ -519,7 +524,7 @@ export default async function ExperimentDetailPage({
       minRuntime,
       sequential: !!exp?.sequentialTesting,
       owner,
-      tag: exp?.tag ?? null,
+      folder: exp?.folder ?? null,
       paramsSchema: exp?.params ?? {},
       startedAt,
       stoppedAt,
@@ -528,7 +533,7 @@ export default async function ExperimentDetailPage({
       project: projectName ?? projectId ?? "—",
       env: "prod",
       layer: exp?.universe ?? "default",
-      tags: exp?.tag ? [exp.tag] : [],
+      tags: exp?.folder ? [exp.folder] : [],
       activity,
       subscribers: [],
     },

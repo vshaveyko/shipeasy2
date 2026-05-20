@@ -35,16 +35,20 @@ export async function handleEvaluate(c: AuthedContext) {
     getExperiments(c.env, key.project_id),
   ]);
 
+  // KV blob keys are folder-encoded: bare `name` for root entries (legacy-
+  // compatible), `folder/name` for foldered. Pass through as-is.
+  const publicKey = (encoded: string): string => encoded;
+
   const flags: Record<string, boolean> = {};
   const gatesMap = flagsBlob.gates as Record<string, Gatekeeper>;
   for (const [name, gate] of Object.entries(gatesMap)) {
-    flags[name] = evalGatekeeper(gate, user);
+    flags[publicKey(name)] = evalGatekeeper(gate, user);
   }
 
   const configs: Record<string, unknown> = {};
   const configsMap = flagsBlob.configs as Record<string, { value: unknown }>;
   for (const [name, config] of Object.entries(configsMap)) {
-    configs[name] = config.value;
+    configs[publicKey(name)] = config.value;
   }
 
   const experiments: Record<string, ExperimentAssignment> = {};
@@ -56,13 +60,14 @@ export async function handleEvaluate(c: AuthedContext) {
   const expOverrides = body.experiment_overrides ?? {};
   for (const [name, exp] of Object.entries(expsMap)) {
     if (exp.status !== "running") continue;
+    const pubName = publicKey(name);
 
     // Forced variant from caller — short-circuits the eval pipeline.
-    const forcedGroup = expOverrides[name];
+    const forcedGroup = expOverrides[pubName] ?? expOverrides[name];
     if (forcedGroup) {
       const group = exp.groups.find((g) => g.name === forcedGroup);
       if (group) {
-        experiments[name] = { group: group.name, params: group.params, inExperiment: true };
+        experiments[pubName] = { group: group.name, params: group.params, inExperiment: true };
         continue;
       }
     }
@@ -70,7 +75,7 @@ export async function handleEvaluate(c: AuthedContext) {
     const universe = universesMap[exp.universe];
     const holdout = universe?.holdout_range ?? null;
     const result = evalExperiment(exp, user, flags, holdout);
-    if (result) experiments[name] = result;
+    if (result) experiments[pubName] = result;
   }
 
   const attrWarnings: Record<string, string[]> = {};
@@ -92,7 +97,7 @@ export async function handleEvaluate(c: AuthedContext) {
     const missing = Array.from(new Set(referenced)).filter(
       (attr) => user[attr] === undefined || user[attr] === null,
     );
-    if (missing.length > 0) attrWarnings[name] = missing;
+    if (missing.length > 0) attrWarnings[publicKey(name)] = missing;
   }
 
   return c.json({

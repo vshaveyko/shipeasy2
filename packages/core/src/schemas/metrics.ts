@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { folderSchema } from "./folder";
 
 export const metricNameSchema = z
   .string()
@@ -7,6 +8,7 @@ export const metricNameSchema = z
 
 export const metricCreateSchema = z.object({
   name: metricNameSchema,
+  folder: folderSchema,
   event_name: z.string().min(1),
   value_path: z.string().nullable().default(null),
   aggregation: z
@@ -17,6 +19,7 @@ export const metricCreateSchema = z.object({
 });
 
 export const metricUpdateSchema = z.object({
+  folder: folderSchema,
   event_name: z.string().min(1).optional(),
   value_path: z.string().nullable().optional(),
   aggregation: z.enum(["count_users", "count_events", "sum", "avg", "retention_Nd"]).optional(),

@@ -86,7 +86,7 @@ export interface ResultsViewModel {
     minRuntime: number;
     sequential: boolean;
     owner: { initial: string; color: string; name: string };
-    tag: string | null;
+    folder: string | null;
     paramsSchema: Record<string, string>;
     startedAt: string | null;
     stoppedAt: string | null;
@@ -96,7 +96,14 @@ export interface ResultsViewModel {
     env: string;
     layer: string;
     tags: string[];
-    activity: { who: string; av: string; color?: string; bot?: boolean; what: ReactNode; when: string }[];
+    activity: {
+      who: string;
+      av: string;
+      color?: string;
+      bot?: boolean;
+      what: ReactNode;
+      when: string;
+    }[];
     subscribers: { initial: string; color: string; name: string; role: string; ago: string }[];
   };
   projectId: string;
@@ -111,9 +118,15 @@ const fmtP = (p: number | null) => {
   return p < 0.001 ? "<0.001" : p.toFixed(3);
 };
 const renderMd = (s: string) =>
-  s.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-    part.startsWith("**") ? <strong key={i}>{part.slice(2, -2)}</strong> : <span key={i}>{part}</span>,
-  );
+  s
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((part, i) =>
+      part.startsWith("**") ? (
+        <strong key={i}>{part.slice(2, -2)}</strong>
+      ) : (
+        <span key={i}>{part}</span>
+      ),
+    );
 
 function BigCIBar({
   delta,
@@ -202,11 +215,21 @@ function ScoreboardRow({ m, kind }: { m: ResultsMetricRow; kind: "guard" | "sec"
   const regressed = kind === "guard" && m.pass === false;
   let StatusIcon: ReactNode;
   if (regressed)
-    StatusIcon = <AlertTriangle size={13} style={{ color: "var(--se-danger)" }} aria-label="regressed" />;
+    StatusIcon = (
+      <AlertTriangle size={13} style={{ color: "var(--se-danger)" }} aria-label="regressed" />
+    );
   else if (m.sig && goodChange)
-    StatusIcon = <Check size={13} style={{ color: "var(--se-accent)" }} aria-label="significant gain" />;
+    StatusIcon = (
+      <Check size={13} style={{ color: "var(--se-accent)" }} aria-label="significant gain" />
+    );
   else if (m.sig && !goodChange)
-    StatusIcon = <AlertTriangle size={13} style={{ color: "var(--se-danger)" }} aria-label="significant loss" />;
+    StatusIcon = (
+      <AlertTriangle
+        size={13}
+        style={{ color: "var(--se-danger)" }}
+        aria-label="significant loss"
+      />
+    );
   else
     StatusIcon = (
       <span
@@ -286,7 +309,9 @@ function TimeSeriesChart({
     return path.trim();
   };
   const lastCtrl = [...ctrlPts].reverse().find((v): v is number => v != null && Number.isFinite(v));
-  const lastTreat = [...treatPts].reverse().find((v): v is number => v != null && Number.isFinite(v));
+  const lastTreat = [...treatPts]
+    .reverse()
+    .find((v): v is number => v != null && Number.isFinite(v));
   const lastCtrlIdx = ctrlPts.findLastIndex((v) => v != null && Number.isFinite(v));
   const lastTreatIdx = treatPts.findLastIndex((v) => v != null && Number.isFinite(v));
   const tickLabels = Array.from({ length: Math.min(5, days) }, (_, i) =>
@@ -533,7 +558,9 @@ function MetaSidebar({
                 <span className="dot" />
                 <div className="label">
                   <div className="l">Started</div>
-                  <div className="s">{m.startedAt ? m.startedAt.slice(0, 16).replace("T", " ") : "—"}</div>
+                  <div className="s">
+                    {m.startedAt ? m.startedAt.slice(0, 16).replace("T", " ") : "—"}
+                  </div>
                 </div>
               </div>
               <div className="meta-tl-item now">
@@ -627,9 +654,7 @@ function MetaSidebar({
             <div className="meta-kv">
               <span className="k">Est. traffic</span>
               <span className="v">
-                {m.estTrafficPerDay > 0
-                  ? `${m.estTrafficPerDay.toLocaleString()} users/day`
-                  : "—"}
+                {m.estTrafficPerDay > 0 ? `${m.estTrafficPerDay.toLocaleString()} users/day` : "—"}
               </span>
             </div>
           </MetaSection>
@@ -847,13 +872,7 @@ const VERDICT_ICONS: Record<Verdict, ReactNode> = {
   draft: <MinusCircle size={12} />,
 };
 
-export function ResultsClient({
-  vm,
-  actions,
-}: {
-  vm: ResultsViewModel;
-  actions: ReactNode;
-}) {
+export function ResultsClient({ vm, actions }: { vm: ResultsViewModel; actions: ReactNode }) {
   const [metaCollapsed, setMetaCollapsed] = useState(false);
   const guardsFailed = vm.guards.filter((g) => g.pass === false).length;
   const guardsPassed = vm.guards.filter((g) => g.pass === true).length;
@@ -952,10 +971,7 @@ export function ResultsClient({
                           style={{ color: "var(--se-accent)", flexShrink: 0 }}
                         />
                       ) : (
-                        <MinusCircle
-                          size={14}
-                          style={{ color: "var(--se-fg-4)", flexShrink: 0 }}
-                        />
+                        <MinusCircle size={14} style={{ color: "var(--se-fg-4)", flexShrink: 0 }} />
                       )}
                       <span style={{ color: c.done ? "var(--se-fg)" : "var(--se-fg-3)" }}>
                         {c.label}
@@ -1014,7 +1030,9 @@ export function ResultsClient({
                   <div className="checklist-foot">
                     <h5>Debug checklist</h5>
                     <ul>
-                      <li>Is assignment running on every request, or short-circuiting for some users?</li>
+                      <li>
+                        Is assignment running on every request, or short-circuiting for some users?
+                      </li>
                       <li>
                         Is <code>user_id</code> stable between assignment and the goal event?
                       </li>
@@ -1039,7 +1057,9 @@ export function ResultsClient({
                   <p className="why">{renderMd(vm.why)}</p>
                   <div className="runtime">
                     <span>
-                      {vm.status === "stopped" ? `${vm.days} days run` : `Day ${vm.days}/${vm.daysGoal}`}
+                      {vm.status === "stopped"
+                        ? `${vm.days} days run`
+                        : `Day ${vm.days}/${vm.daysGoal}`}
                     </span>
                     <span className="dot" />
                     <span>α = {vm.meta.alpha}</span>
@@ -1064,7 +1084,9 @@ export function ResultsClient({
                           control
                         </span>
                         <span className="v">{fmtPct(vm.rawNumbers.ctrl)}</span>
-                        <span className="sub">n = {(vm.usersPerGroup[0] ?? 0).toLocaleString()}</span>
+                        <span className="sub">
+                          n = {(vm.usersPerGroup[0] ?? 0).toLocaleString()}
+                        </span>
                       </div>
                       <div className="v2-stat-line">
                         <span className="k">
@@ -1072,7 +1094,9 @@ export function ResultsClient({
                           {vm.meta.groups[1]?.name ?? "treatment"}
                         </span>
                         <span className="v">{fmtPct(vm.rawNumbers.test)}</span>
-                        <span className="sub">n = {(vm.usersPerGroup[1] ?? 0).toLocaleString()}</span>
+                        <span className="sub">
+                          n = {(vm.usersPerGroup[1] ?? 0).toLocaleString()}
+                        </span>
                       </div>
                       <div
                         className={`v2-stat-line delta ${vm.rawNumbers.delta > 0 ? "pos" : "neg"}`}
@@ -1089,9 +1113,7 @@ export function ResultsClient({
                       </div>
                       <div className="v2-stat-line p">
                         <span className="k">p-value</span>
-                        <span
-                          className={`v ${vm.rawNumbers.p < vm.meta.alpha ? "sig" : ""}`}
-                        >
+                        <span className={`v ${vm.rawNumbers.p < vm.meta.alpha ? "sig" : ""}`}>
                           {fmtP(vm.rawNumbers.p)}
                         </span>
                         <span className="sub">95% CI shown ↓</span>
@@ -1106,10 +1128,7 @@ export function ResultsClient({
                     </div>
                   </div>
                 ) : (
-                  <div
-                    className="right"
-                    style={{ justifyContent: "center", alignItems: "center" }}
-                  >
+                  <div className="right" style={{ justifyContent: "center", alignItems: "center" }}>
                     <Lock size={20} style={{ color: "var(--se-fg-4)" }} />
                     <div
                       style={{
@@ -1275,7 +1294,9 @@ function SetupFlow({ vm }: { vm: ResultsViewModel }) {
           {total > 0 ? holdout.toLocaleString() : "—"}
         </span>
         <span className="sub">
-          {vm.meta.holdoutRange ? `slots ${vm.meta.holdoutRange[0]}–${vm.meta.holdoutRange[1]}` : "—"}
+          {vm.meta.holdoutRange
+            ? `slots ${vm.meta.holdoutRange[0]}–${vm.meta.holdoutRange[1]}`
+            : "—"}
         </span>
       </div>
       <div className="node">
@@ -1290,9 +1311,7 @@ function SetupFlow({ vm }: { vm: ResultsViewModel }) {
           </span>
           <span className="v">{(perGroup[i] ?? 0).toLocaleString()}</span>
           <span className="sub">
-            {total > 0
-              ? `${(((perGroup[i] ?? 0) / total) * 100).toFixed(1)}% of universe`
-              : "—"}
+            {total > 0 ? `${(((perGroup[i] ?? 0) / total) * 100).toFixed(1)}% of universe` : "—"}
           </span>
         </div>
       ))}

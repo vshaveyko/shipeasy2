@@ -28,7 +28,7 @@ export interface ExperimentRow {
   status: string;
   startedAt?: string | null;
   description?: string | null;
-  tag?: string | null;
+  folder?: string | null;
   updatedAt?: string | null;
 }
 
@@ -113,11 +113,35 @@ export function ExperimentsContent() {
       if (!q) return true;
       return (
         exp.name.toLowerCase().includes(q) ||
-        (exp.tag ?? "").toLowerCase().includes(q) ||
+        (exp.folder ?? "").toLowerCase().includes(q) ||
         (exp.universe ?? "").toLowerCase().includes(q)
       );
     });
   }, [experiments, tab, filter]);
+
+  // Folder grouping for the full-table view. Disabled while a search is
+  // active so users see all matches at once.
+  const folderGroups: UnifiedListGroup<ExperimentRow>[] | undefined = useMemo(() => {
+    if (filter.trim() !== "") return undefined;
+    const byFolder = new Map<string, ExperimentRow[]>();
+    for (const e of visible) {
+      const key = e.folder ?? "";
+      const arr = byFolder.get(key);
+      if (arr) arr.push(e);
+      else byFolder.set(key, [e]);
+    }
+    const folderKeys = [...byFolder.keys()].sort((a, b) => {
+      // Root bucket renders last so user-named folders surface first.
+      if (a === "" && b !== "") return 1;
+      if (b === "" && a !== "") return -1;
+      return a.localeCompare(b);
+    });
+    return folderKeys.map((k) => ({
+      id: k === "" ? "__root__" : k,
+      label: k === "" ? <span className="italic dim-2">No folder</span> : k,
+      items: byFolder.get(k)!,
+    }));
+  }, [visible, filter]);
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -186,11 +210,6 @@ export function ExperimentsContent() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="truncate font-mono text-[13px] font-medium">{exp.name}</span>
-                {exp.tag ? (
-                  <span className="rounded-full border border-[var(--se-line-2)] bg-[var(--se-bg-3)] px-1.5 py-px font-mono text-[10px] uppercase tracking-wide text-[var(--se-fg-3)]">
-                    {exp.tag}
-                  </span>
-                ) : null}
               </div>
               <div className="t-mono-xs dim-2 mt-0.5 truncate">
                 {exp.description ?? `universe · ${exp.universe ?? "default"}`}
@@ -391,7 +410,7 @@ export function ExperimentsContent() {
         onTabChange={setTab}
         filter={filter}
         onFilterChange={setFilter}
-        filterPlaceholder="Filter by name, tag, or universe"
+        filterPlaceholder="Filter by name, folder, or universe"
         filterAriaLabel="Filter experiments"
         list={{
           items: visible,
@@ -401,6 +420,8 @@ export function ExperimentsContent() {
           selectedId: openId,
           onSelect: handleSelect,
           railGroups,
+          tableGroups: folderGroups,
+          groupStorageKey: `shipeasy.folders.experiments.${projectId}`,
           railHeader: "Experiments",
           renderRail: (exp) => (
             <span className="flex w-full min-w-0 items-center gap-2">

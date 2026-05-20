@@ -289,6 +289,7 @@ export async function createConfig(identity: AdminIdentity, input: unknown) {
       id,
       name: parsed.name,
       description: parsed.description ?? null,
+      folder: parsed.folder ?? null,
       kind: "config",
       schemaJson: parsed.schema,
       updatedAt: now,
@@ -354,8 +355,11 @@ export async function updateConfig(identity: AdminIdentity, id: string, input: u
     }
   }
 
-  const update: Partial<{ schemaJson: JsonSchema; updatedAt: string }> = { updatedAt: now };
+  const update: Partial<{ schemaJson: JsonSchema; folder: string | null; updatedAt: string }> = {
+    updatedAt: now,
+  };
   if (parsed.schema) update.schemaJson = parsed.schema;
+  if (parsed.folder !== undefined) update.folder = parsed.folder;
   await s.update(configs).set(update).where(eq(configs.id, id));
 
   if (parsed.value !== undefined) {

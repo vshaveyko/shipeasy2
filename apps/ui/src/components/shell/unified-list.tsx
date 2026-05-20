@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeftIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Table, TBody, TH, THead, TR, TD } from "@/components/ui/table";
@@ -34,6 +34,12 @@ export type UnifiedListProps<T> = {
   emptyState?: React.ReactNode;
   toolbar?: React.ReactNode;
   railGroups?: UnifiedListGroup<T>[];
+  /** Optional folder-aware grouping for the full-table layer. When supplied
+   *  (and the list pane is in full-table mode), rows are bucketed under
+   *  collapsible folder header rows. Persistence of the collapsed set is
+   *  controlled by `groupStorageKey`. */
+  tableGroups?: UnifiedListGroup<T>[];
+  groupStorageKey?: string;
   railHeader?: React.ReactNode;
   detailHeader?: (row: T) => React.ReactNode;
   className?: string;
@@ -52,6 +58,8 @@ export function UnifiedList<T>({
   emptyState,
   toolbar,
   railGroups,
+  tableGroups,
+  groupStorageKey,
   railHeader,
   detailHeader,
   className,
@@ -76,6 +84,42 @@ export function UnifiedList<T>({
   }, [open, onSelect]);
 
   const groups: UnifiedListGroup<T>[] = railGroups ?? [{ id: "all", label: "All", items }];
+
+  // Folder-aware collapse state for the full-table layer. Persisted per
+  // (entity-kind, project) via `groupStorageKey`. Default = all expanded.
+  const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set());
+  React.useEffect(() => {
+    if (!groupStorageKey) return;
+    try {
+      const raw = localStorage.getItem(groupStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed?.collapsed)) {
+          setCollapsed(new Set(parsed.collapsed.filter((s: unknown) => typeof s === "string")));
+        }
+      }
+    } catch {
+      // ignore parse errors — fall back to all expanded
+    }
+  }, [groupStorageKey]);
+  const toggleCollapse = React.useCallback(
+    (id: string) => {
+      setCollapsed((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        if (groupStorageKey) {
+          try {
+            localStorage.setItem(groupStorageKey, JSON.stringify({ collapsed: [...next] }));
+          } catch {
+            // ignore quota errors — collapse state is best-effort
+          }
+        }
+        return next;
+      });
+    },
+    [groupStorageKey],
+  );
 
   return (
     <section
@@ -141,18 +185,61 @@ export function UnifiedList<T>({
                   </tr>
                 </THead>
                 <TBody>
-                  {items.map((row) => {
-                    const id = getId(row);
-                    return (
-                      <TR key={id} interactive onClick={() => onSelect(id)}>
-                        {columns.map((c) => (
-                          <TD key={c.key} className={c.className}>
-                            {c.render(row)}
-                          </TD>
-                        ))}
-                      </TR>
-                    );
-                  })}
+                  {tableGroups && tableGroups.length > 0
+                    ? tableGroups.map((g) => {
+                        const isCollapsed = collapsed.has(g.id);
+                        return (
+                          <React.Fragment key={g.id}>
+                            <tr
+                              data-folder-header
+                              className="cursor-pointer bg-[var(--se-bg-2)] text-[var(--se-fg-2)] outline-none hover:bg-[var(--se-bg-3)]"
+                              onClick={() => toggleCollapse(g.id)}
+                            >
+                              <td
+                                colSpan={columns.length}
+                                className="px-3 py-1.5 text-[12px] font-medium"
+                              >
+                                <span className="inline-flex items-center gap-1.5">
+                                  {isCollapsed ? (
+                                    <ChevronRightIcon className="size-3.5 text-[var(--se-fg-3)]" />
+                                  ) : (
+                                    <ChevronDownIcon className="size-3.5 text-[var(--se-fg-3)]" />
+                                  )}
+                                  <span>{g.label}</span>
+                                  <span className="t-mono-xs dim-2 ml-1 rounded bg-[var(--se-bg-3)] px-1.5 py-0.5">
+                                    {g.items.length}
+                                  </span>
+                                </span>
+                              </td>
+                            </tr>
+                            {!isCollapsed &&
+                              g.items.map((row) => {
+                                const id = getId(row);
+                                return (
+                                  <TR key={id} interactive onClick={() => onSelect(id)}>
+                                    {columns.map((c) => (
+                                      <TD key={c.key} className={c.className}>
+                                        {c.render(row)}
+                                      </TD>
+                                    ))}
+                                  </TR>
+                                );
+                              })}
+                          </React.Fragment>
+                        );
+                      })
+                    : items.map((row) => {
+                        const id = getId(row);
+                        return (
+                          <TR key={id} interactive onClick={() => onSelect(id)}>
+                            {columns.map((c) => (
+                              <TD key={c.key} className={c.className}>
+                                {c.render(row)}
+                              </TD>
+                            ))}
+                          </TR>
+                        );
+                      })}
                 </TBody>
               </Table>
             )}

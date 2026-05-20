@@ -41,6 +41,7 @@ export async function createMetric(identity: AdminIdentity, input: unknown) {
     await s.insert(metrics).values({
       id,
       name: parsed.name,
+      folder: parsed.folder ?? null,
       eventName: parsed.event_name,
       valuePath: parsed.value_path,
       aggregation: parsed.aggregation,
@@ -66,6 +67,7 @@ export async function updateMetric(identity: AdminIdentity, id: string, input: u
     await assertEventExists(identity.projectId, parsed.event_name);
 
   const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+  if (parsed.folder !== undefined) patch.folder = parsed.folder;
   if (parsed.event_name !== undefined) patch.eventName = parsed.event_name;
   if (parsed.value_path !== undefined) patch.valuePath = parsed.value_path;
   if (parsed.aggregation !== undefined) patch.aggregation = parsed.aggregation;
