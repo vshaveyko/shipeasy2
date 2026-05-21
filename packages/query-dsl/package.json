@@ -1,31 +1,12 @@
 {
   "name": "@shipeasy/query-dsl",
   "version": "0.1.0",
-  "description": "Shipeasy query DSL — IR, parser, compiler, renderer for metric queries.",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shipeasy-ai/query-dsl.git"
-  },
-  "homepage": "https://shipeasy.ai",
+  "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./src/index.ts"
   },
-  "files": [
-    "dist/",
-    "src/"
-  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "type-check": "tsc --noEmit",
     "test": "vitest run"
   },
